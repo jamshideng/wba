@@ -145,6 +145,9 @@ type TugmaProps = {
   children: React.ReactNode
   variant?: keyof typeof TUGMA
   href?: string
+  /** Fayl yuklab beradigan manzil (masalan Excel). Oddiy <a> bo'ladi:
+      Next <Link> uni oldindan yuklab (prefetch) har safar faylni behuda yasardi. */
+  yuklab?: boolean
   type?: 'button' | 'submit'
   disabled?: boolean
   className?: string
@@ -156,6 +159,7 @@ export function Button({
   children,
   variant = 'asosiy',
   href,
+  yuklab,
   type = 'button',
   disabled,
   className = '',
@@ -163,6 +167,13 @@ export function Button({
 }: TugmaProps) {
   const cls = `inline-flex min-h-11 items-center justify-center gap-2 rounded-[10px] px-5 text-[13.5px] font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${TUGMA[variant]} ${className}`
 
+  if (href && yuklab) {
+    return (
+      <a href={href} download className={cls}>
+        {children}
+      </a>
+    )
+  }
   if (href) {
     return (
       <Link href={href} className={cls}>

@@ -327,6 +327,15 @@ export type LeaderboardRow = {
   ball: number
 }
 
+/** keyingi_darslar() — guruh jadvalidan hisoblangan keyingi dars (0018). */
+export type KeyingiDars = {
+  group_id: string
+  nom: string
+  sana: string
+  boshlanish: string
+  tugash: string
+}
+
 /** 0007_davomat.sql · bugun darsi bor guruhlar */
 export type BugungiDars = {
   group_id: string
@@ -410,8 +419,12 @@ export type Database = {
     }
     Functions: {
       woblr_leaderboard: {
-        Args: { p_group?: string | null; p_davr?: string | null }
+        Args: { p_group?: string | null; p_davr?: string | null; p_fan?: string | null }
         Returns: LeaderboardRow[]
+      }
+      keyingi_darslar: {
+        Args: { p_student: string; p_soni?: number }
+        Returns: KeyingiDars[]
       }
       create_monthly_invoices: { Args: { p_davr?: string }; Returns: number }
       generate_lessons: {

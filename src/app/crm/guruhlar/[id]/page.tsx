@@ -7,7 +7,7 @@ import { Card, CardHeader, Stat, Badge, Empty, Button } from '@/components/ui'
 import { Xabar } from '@/components/forma'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { IconArrowLeft } from '@/components/icons'
-import { pul, jadval, sana, davrNomi, joriyDavr, bosh } from '@/lib/format'
+import { pul, jadval, sana, davrNomi, joriyDavr, bosh, bugunToshkent } from '@/lib/format'
 import type { DayType } from '@/lib/types'
 
 export const metadata = { title: 'Guruh' }
@@ -70,7 +70,8 @@ export default async function GuruhProfil({
       .neq('holat', 'tugagan')
       .order('boshlandi'),
     supabase.from('v_group_stats').select('oquvchilar, tushum, qarz').eq('group_id', id).maybeSingle(),
-    supabase.from('lessons').select('id, sana, otkazildi').eq('group_id', id).order('sana', { ascending: false }).limit(10),
+    // Faqat bugungacha: jadvaldagi kelajak darslari "o'tkazilgan" bo'lib ko'rinmasin
+    supabase.from('lessons').select('id, sana, otkazildi').eq('group_id', id).lte('sana', bugunToshkent()).order('sana', { ascending: false }).limit(10),
   ])
 
   type Yozilish = {
@@ -133,7 +134,7 @@ export default async function GuruhProfil({
         amal={
           <div className="flex flex-wrap items-center gap-2">
             {g.holat === 'faol' ? <Badge ton="ok">Faol</Badge> : <Badge ton="jim">Yopilgan</Badge>}
-            <Button href={`/crm/davomat/eksport?guruh=${g.id}&davr=${davr}`} variant="ikkilamchi">
+            <Button href={`/crm/davomat/eksport?guruh=${g.id}&davr=${davr}`} yuklab variant="ikkilamchi">
               Oylik davomat (Excel)
             </Button>
             {adminmi(profil.rol) && (

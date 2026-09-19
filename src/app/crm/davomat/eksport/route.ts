@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { getProfile } from '@/lib/auth'
+import { bugunToshkent } from '@/lib/format'
 import type { AttendanceStatus } from '@/lib/types'
 
 /**
@@ -49,6 +50,9 @@ export async function GET(req: NextRequest) {
   const boshi = `${davr}-01`
   const [y, m] = davr.split('-').map(Number)
   const oxiri = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10)
+  // Kelajakdagi darslar ustun ham, foiz ham bo'lmaydi (v_attendance_monthly bilan bir qoida)
+  const bugun = bugunToshkent()
+  const gacha = oxiri < bugun ? oxiri : bugun
 
   const [{ data: darslar }, { data: yozilishlar }] = await Promise.all([
     supabase
@@ -56,7 +60,7 @@ export async function GET(req: NextRequest) {
       .select('id, sana')
       .eq('group_id', guruh)
       .gte('sana', boshi)
-      .lte('sana', oxiri)
+      .lte('sana', gacha)
       .order('sana'),
     supabase
       .from('enrollments')

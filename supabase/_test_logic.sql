@@ -551,5 +551,129 @@ exception when others then
 end $$;
 
 reset role;
+
+-- ============================================================
+--  13. PANELLAR (0018): foiz, keyingi darslar, reyting, Q5
+-- ============================================================
+
+reset request.jwt.claim.sub;
+
+\echo '--- kelajakdagi dars foizga kirmaydi, o''tgani kiradi ---'
+do $$
+declare
+  v_oldin int;
+  v_keyin int;
+  v_dars  uuid;
+begin
+  select coalesce(sum(darslar), 0) into v_oldin from v_attendance_monthly where student_id = 'S001';
+
+  insert into lessons (group_id, sana, otkazildi) values ('N01', bugun_toshkent() + 7, true)
+  on conflict (group_id, sana) do update set otkazildi = true
+  returning id into v_dars;
+  insert into attendance (lesson_id, student_id, holat) values (v_dars, 'S001', 'kelmadi')
+  on conflict (lesson_id, student_id) do update set holat = 'kelmadi';
+
+  select coalesce(sum(darslar), 0) into v_keyin from v_attendance_monthly where student_id = 'S001';
+  if v_keyin <> v_oldin then
+    raise exception 'XATO: kelajakdagi dars foizga kirdi (% -> %)', v_oldin, v_keyin;
+  end if;
+  raise notice 'OK: kelajakdagi dars sanalmadi';
+
+  insert into lessons (group_id, sana, otkazildi) values ('N01', bugun_toshkent() - 400, true)
+  returning id into v_dars;
+  insert into attendance (lesson_id, student_id, holat) values (v_dars, 'S001', 'keldi');
+
+  select coalesce(sum(darslar), 0) into v_keyin from v_attendance_monthly where student_id = 'S001';
+  if v_keyin <> v_oldin + 1 then
+    raise exception 'XATO: o''tgan dars sanalmadi (% -> %)', v_oldin, v_keyin;
+  end if;
+  raise notice 'OK: o''tgan dars sanaldi';
+end $$;
+
+set role authenticated;
+
+\echo '--- keyingi_darslar: jadvaldan, faqat o''ziniki ---'
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi S001
+do $$
+declare
+  v_soni  int;
+  v_yomon int;
+begin
+  select count(*), count(*) filter (where not dars_kunimi('toq', sana) or sana < bugun_toshkent())
+    into v_soni, v_yomon
+  from keyingi_darslar('S001', 5);
+  if v_soni <> 5 or v_yomon <> 0 then
+    raise exception 'XATO: keyingi_darslar % ta qaytardi, % tasi noto''g''ri kun', v_soni, v_yomon;
+  end if;
+  raise notice 'OK: keyingi 5 dars toq kunlarda, bugundan boshlab';
+
+  select count(*) into v_soni from keyingi_darslar('S002', 5);
+  if v_soni <> 0 then
+    raise exception 'XATO: o''quvchi begona o''quvchining darslarini ko''rdi';
+  end if;
+  raise notice 'OK: begona o''quvchining darslari yopiq';
+end $$;
+
+\echo '--- reyting (Q6): o''quvchi markaz va o''z fanini ko''radi, boshqasini yo''q ---'
+do $$
+begin
+  perform * from woblr_leaderboard();
+  perform * from woblr_leaderboard(p_fan => 'ingliz-tili');
+  perform * from woblr_leaderboard(p_group => 'N01');
+  raise notice 'OK: markaz, o''z fani va o''z guruhi ochiq';
+
+  begin
+    perform * from woblr_leaderboard(p_fan => 'matematika');
+    raise exception 'XATO: o''quvchi boshqa fan reytingini ko''rdi!';
+  exception when others then
+    if sqlerrm like '%fan reytingini%' then raise notice 'OK: boshqa fan yopiq';
+    else raise; end if;
+  end;
+
+  begin
+    perform * from woblr_leaderboard(p_group => 'N02');
+    raise exception 'XATO: o''quvchi begona guruh reytingini ko''rdi!';
+  exception when others then
+    if sqlerrm like '%guruh reytingini%' then raise notice 'OK: begona guruh yopiq';
+    else raise; end if;
+  end;
+end $$;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana (N01)
+do $$
+begin
+  perform * from woblr_leaderboard(p_fan => 'ingliz-tili');
+  raise notice 'OK: ustoz o''z fanini ko''radi';
+  begin
+    perform * from woblr_leaderboard(p_group => 'N02');
+    raise exception 'XATO: ustoz begona guruh reytingini ko''rdi!';
+  exception when others then
+    if sqlerrm like '%guruh reytingini%' then raise notice 'OK: ustozga begona guruh yopiq';
+    else raise; end if;
+  end;
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+select count(*) >= 0 as admin_matematika_ochiq from woblr_leaderboard(p_fan => 'matematika');
+
+\echo '--- Q5: ustoz o''tgan kunni saqlay olmaydi, admin saqlaydi ---'
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana
+do $$
+begin
+  perform davomat_saqla('N01', bugun_toshkent(), jsonb_build_object('S001', 'keldi'));
+  raise notice 'OK: ustoz bugungi darsni saqladi';
+  begin
+    perform davomat_saqla('N01', bugun_toshkent() - 1, jsonb_build_object('S001', 'keldi'));
+    raise exception 'XATO: ustoz o''tgan kun davomatini o''zgartirdi!';
+  exception when others then
+    if sqlerrm like '%faqat admin%' then raise notice 'OK: o''tgan kun ustozga yopiq';
+    else raise; end if;
+  end;
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+select davomat_saqla('N01', bugun_toshkent() - 1, jsonb_build_object('S001', 'kechikdi')) -> 'davomat' as admin_otgan_kun;
+
+reset role;
 \echo ''
 \echo '=== TEST TUGADI ==='

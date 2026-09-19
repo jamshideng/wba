@@ -6,8 +6,8 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Xabar } from '@/components/forma'
-import { pul, sana, jadval, davrNomi, joriyDavr, bugunToshkent } from '@/lib/format'
-import type { DayType, PaymentMethod, AttendanceStatus } from '@/lib/types'
+import { pul, sana, jadval, davrNomi, joriyDavr, bugunToshkent, vaqt } from '@/lib/format'
+import type { DayType, PaymentMethod, AttendanceStatus, KeyingiDars } from '@/lib/types'
 
 export const metadata = { title: 'Mening sahifam' }
 export const dynamic = 'force-dynamic'
@@ -121,15 +121,11 @@ export default async function MeningSahifam({
   const yList = (yozilishlar ?? []) as unknown as Yozilish[]
   const guruhNomi = new Map(yList.map((y) => [y.group_id, y.groups?.nom ?? y.group_id]))
 
-  /* Keyingi darslar — faqat o'zi o'qiydigan guruhlarning darslari
-     ko'rinadi (lessons_student_read). */
+  /* Keyingi darslar — guruh JADVALIDAN (kun turi + vaqt), bazada
+     hisoblanadi (0018: keyingi_darslar). Avval lessons jadvalidan
+     olinardi: u yerda faqat o'tgan va ko'chirilgan darslar bor edi. */
   const { data: darslar } = yList.length
-    ? await supabase
-        .from('lessons')
-        .select('id, group_id, sana, mavzu')
-        .gte('sana', bugun)
-        .order('sana')
-        .limit(8)
+    ? await supabase.rpc('keyingi_darslar', { p_student: oquvchi.id, p_soni: 8 })
     : { data: [] }
 
   const jamiQarz = ((balans ?? []) as { qarz: number }[]).reduce((a, b) => a + (Number(b.qarz) || 0), 0)
@@ -146,8 +142,7 @@ export default async function MeningSahifam({
   type Tolov = { id: number; sana: string; davr: string; summa: number; usul: PaymentMethod | null; tasdiqlangan: boolean; bekor: boolean }
   const tList = (tolovlar ?? []) as unknown as Tolov[]
 
-  type Dars = { id: string; group_id: string; sana: string; mavzu: string | null }
-  const darsList = (darslar ?? []) as unknown as Dars[]
+  const darsList = (darslar ?? []) as KeyingiDars[]
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -219,15 +214,15 @@ export default async function MeningSahifam({
           <CardHeader title="Keyingi darslarim" meta="8 tagacha" />
           <div className="flex flex-col px-5 pb-4">
             {darsList.length === 0 ? (
-              <Empty>Jadvalga dars qo‘yilmagan. Ustoz davomat belgilaganda darslar shu yerda ko‘rinadi.</Empty>
+              <Empty>Yaqin kunlarda dars yo‘q. Guruhga biriktirilgach, jadval bo‘yicha darslar shu yerda ko‘rinadi.</Empty>
             ) : (
               darsList.map((d) => (
-                <div key={d.id} className="flex items-center justify-between gap-3 border-b border-line-soft py-2.5 last:border-0">
+                <div key={`${d.group_id}-${d.sana}`} className="flex items-center justify-between gap-3 border-b border-line-soft py-2.5 last:border-0">
                   <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="truncate text-[12.5px]">{guruhNomi.get(d.group_id) ?? d.group_id}</span>
-                    {d.mavzu && <span className="truncate text-[11.5px] text-ink-3">{d.mavzu}</span>}
+                    <span className="truncate text-[12.5px]">{guruhNomi.get(d.group_id) ?? d.nom}</span>
+                    <span className="text-[11.5px] text-ink-3">{vaqt(d.boshlanish)}–{vaqt(d.tugash)}</span>
                   </span>
-                  <span className={`font-[family-name:var(--font-mono)] text-[12px] ${d.sana === bugun ? 'text-brand' : 'text-ink-3'}`}>
+                  <span className={`shrink-0 font-[family-name:var(--font-mono)] text-[12px] ${d.sana === bugun ? 'text-brand' : 'text-ink-3'}`}>
                     {d.sana === bugun ? 'bugun' : sana(d.sana)}
                   </span>
                 </div>
