@@ -100,6 +100,16 @@ Qator o'chirilmaydi (`deleteRow` — formulalarni buzadi): faqat qo'lda yozilgan
 | Q7 | Ochiq savollar (`CLAUDE.md`) | ustoz maoshi qoidasi · bir darsda eng ko'p necha wobl · chegirma miqdorlari (ikki fan, aka-uka) | keyinroq |
 | Q8 | **Domen** `wba.uz` kimniki, ulaymizmi (I8) | — | W11 |
 
+**Javoblar (Jamshid, 19.09):**
+- **Q2 = a** — Sheets asosiy. Sayt har soatda Sheets'dan yangilanadi (W2); saytda Sheets'dan keladigan ma'lumotni kiritish vaqtincha yopiladi, faqat ko'rish.
+- **Q3 = b** — "Terminal" alohida usul (`0018_usul_terminal.sql`, W1-4).
+- **Q4 = a** — "Dars o'tkazilmadi" davomat foiziga kirmaydi.
+- **Q5** — ustoz davomatni FAQAT o'sha kuni belgilaydi; kun o'tib ketsa faqat admin tuzatadi (W6).
+- **Q6** — woblar reytingi ikki xil: butun markaz va o'quvchining o'z fani (`groups.subject_id`) bo'yicha. Boshqa fanning reytingini o'quvchi ko'ra olmaydi (W7).
+- Q1, Q7, Q8 — hali ochiq.
+
+**Ish taqsimoti:** ustoz va o'quvchi panellari (W6, W7 va panellardagi davomat ko'rinishi) — Jamshid (Claude bilan). W1, W2, J11 (bulutdagi davomatni tozalash) va admin/direktor qismi — sxvs.
+
 ### J11 🟠 Bulutdagi davomatni tozalashga ruxsat (K1, K2)
 sxvs W1 ni tugatgach: kelajakdagi 95 dars va ularning 398 "kelmadi" belgisi, hamda belgilanmagan darslar bulutdan o'chiriladi va davomat qayta ko'chiriladi. Buyruqni sxvs tayyorlaydi, siz "ha" deysiz. Pul yozuvlariga tegilmaydi.
 
