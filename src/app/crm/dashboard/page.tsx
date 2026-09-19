@@ -25,8 +25,9 @@ export default async function Dashboard() {
       supabase.from('v_dashboard').select('*').single(),
       supabase.from('v_qarzdorlar').select('*').limit(6),
       supabase.from('v_teacher_stats').select('*').order('tushum', { ascending: false }),
-      // Tushum dinamikasi — kelasi oylarsiz (joriygacha), oxirgi 6 oy
-      supabase.from('v_monthly_income').select('davr, tushum').lte('davr', davr).order('davr').limit(12),
+      // Tushum dinamikasi — kelasi oylarsiz (joriygacha), oxirgi 6 oy.
+      // Kamayish tartibida: o'sish tartibida limit ENG ESKI oylarni qaytarardi.
+      supabase.from('v_monthly_income').select('davr, tushum').lte('davr', davr).order('davr', { ascending: false }).limit(6),
       // Botdagi "Bugun" / "Kunlik hisobot" — bitta so'rov, hisob bazada
       xodim ? supabase.rpc('tushum_hisobot', { p_dan: bugun, p_gacha: bugun }) : Promise.resolve({ data: null }),
       xodim
@@ -43,7 +44,8 @@ export default async function Dashboard() {
 
   // Tushum grafigi uchun — oxirgi 6 oy, qisqa oy nomi bilan
   const OY_QISQA = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek']
-  const oylikList = ((oylik ?? []) as { davr: string; tushum: number }[]).slice(-6)
+  // Bazadan yangidan eskiga keladi — grafik chapdan o'ngga eskidan yangiga
+  const oylikList = [...((oylik ?? []) as { davr: string; tushum: number }[])].reverse()
   const grafik = oylikList.map((o) => ({
     label: OY_QISQA[Number(o.davr.slice(5, 7)) - 1] ?? o.davr.slice(5),
     value: Number(o.tushum),
