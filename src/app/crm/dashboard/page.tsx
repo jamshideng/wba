@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { talabRol, staffmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardHeader, Stat, BarRow, Empty } from '@/components/ui'
+import { AreaGrafik } from '@/components/grafik'
 import { IconAlert, IconSearch } from '@/components/icons'
 import { pul, davrNomi, joriyDavr, sana, bugunToshkent } from '@/lib/format'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
@@ -19,11 +20,14 @@ export default async function Dashboard() {
   const bugun = bugunToshkent()
   const xodim = staffmi(profil.rol)
 
-  const [{ data: stats }, { data: qarzdorlar }, { data: ustozlar }, { data: kunlik }, { count: probniyBugun }] =
+  const [{ data: stats }, { data: qarzdorlar }, { data: ustozlar }, { data: oylik }, { data: kunlik }, { count: probniyBugun }] =
     await Promise.all([
       supabase.from('v_dashboard').select('*').single(),
       supabase.from('v_qarzdorlar').select('*').limit(6),
       supabase.from('v_teacher_stats').select('*').order('tushum', { ascending: false }),
+      // Tushum dinamikasi — kelasi oylarsiz (joriygacha), oxirgi 6 oy.
+      // Kamayish tartibida: o'sish tartibida limit ENG ESKI oylarni qaytarardi.
+      supabase.from('v_monthly_income').select('davr, tushum').lte('davr', davr).order('davr', { ascending: false }).limit(6),
       // Botdagi "Bugun" / "Kunlik hisobot" — bitta so'rov, hisob bazada
       xodim ? supabase.rpc('tushum_hisobot', { p_dan: bugun, p_gacha: bugun }) : Promise.resolve({ data: null }),
       xodim
@@ -37,6 +41,15 @@ export default async function Dashboard() {
   const uList = (ustozlar ?? []) as TeacherStats[]
   const maxTushum = Math.max(1, ...uList.map((u) => Number(u.tushum)))
   const jamiTushum = uList.reduce((a, u) => a + Number(u.tushum), 0)
+
+  // Tushum grafigi uchun — oxirgi 6 oy, qisqa oy nomi bilan
+  const OY_QISQA = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek']
+  // Bazadan yangidan eskiga keladi — grafik chapdan o'ngga eskidan yangiga
+  const oylikList = [...((oylik ?? []) as { davr: string; tushum: number }[])].reverse()
+  const grafik = oylikList.map((o) => ({
+    label: OY_QISQA[Number(o.davr.slice(5, 7)) - 1] ?? o.davr.slice(5),
+    value: Number(o.tushum),
+  }))
 
   return (
     <div className="flex flex-col gap-4 px-6 py-5 lg:px-7">
@@ -132,6 +145,15 @@ export default async function Dashboard() {
           ton="accent"
         />
       </div>
+
+      {xodim && grafik.length > 0 && (
+        <Card className="flex flex-col">
+          <CardHeader title="Tushum dinamikasi" meta="oxirgi oylar · so‘m" />
+          <div className="px-5 pb-4 pt-1">
+            <AreaGrafik nuqtalar={grafik} />
+          </div>
+        </Card>
+      )}
 
       <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
         <Card className="flex flex-col">
