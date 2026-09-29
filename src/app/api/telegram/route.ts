@@ -1,4 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import { createHmac } from 'node:crypto'
+import { NextResponse, after, type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { tg, html, xabar, type Tugma } from '@/lib/telegram'
 import { pul, sana, vaqt, davrNomi, bugunToshkent } from '@/lib/format'
@@ -41,7 +42,15 @@ export async function POST(req: NextRequest) {
   if (!sir || req.headers.get('x-telegram-bot-api-secret-token') !== sir) {
     return new NextResponse('ruxsat yo‘q', { status: 401 })
   }
-  const update = (await req.json().catch(() => null)) as TgUpdate | null
+  const xom = await req.text()
+  let update: TgUpdate | null = null
+  try { update = JSON.parse(xom) as TgUpdate } catch { update = null }
+
+  /* "WBA Hisobot" guruhidagi /buyruqlar — Apps Script'ga (hisobot Sheets'da) */
+  if (update?.message && guruhBuyrugimi(update.message)) {
+    after(() => guruhgaUzat(xom))
+    return NextResponse.json({ ok: true })
+  }
   const boshi = Date.now()
   const turi = update?.message ? (update.message.contact ? 'kontakt' : (update.message.text ?? '').split(' ')[0] || 'xabar') : update?.callback_query ? `tugma ${update.callback_query.data?.split('|')[0]}` : 'boshqa'
   try {
@@ -55,6 +64,37 @@ export async function POST(req: NextRequest) {
 }
 
 /* ------------------------------------------------------------------ */
+
+/**
+ * Hisobot guruhi buyruqlari (/hisobot_bugun, /tushum, /qarzdorlar …).
+ * Ma'lumot va hisobot kodi Apps Script'da (wba_bot/BOT_GuruhBuyruq.js),
+ * shuning uchun update o'zgarmasdan o'sha yerga uzatiladi. So'rov bot
+ * tokeni bilan imzolanadi (HMAC-SHA256, ?imzo=) — Apps Script tekshiradi.
+ */
+const HISOBOT_GURUH = process.env.TELEGRAM_GROUP_ID || '-1003908526489'
+const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL ||
+  'https://script.google.com/macros/s/AKfycbzCUCCnuzyDGcmDaJ0xTk_Df5duRMRtR4voroRMMYgpmaXfdausb_-rcGdA3K1gqGTj/exec'
+
+function guruhBuyrugimi(m: TgMessage) {
+  return String(m.chat.id) === HISOBOT_GURUH && (m.text ?? '').trim().startsWith('/')
+}
+
+async function guruhgaUzat(xom: string) {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) return
+  const imzo = createHmac('sha256', token).update(xom).digest('hex')
+  try {
+    const r = await fetch(`${APPS_SCRIPT_URL}?imzo=${imzo}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: xom,
+    })
+    const javob = (await r.text()).slice(0, 40)
+    if (javob !== 'ok') console.error('[telegram] guruh buyrug‘i uzatilmadi', r.status, javob)
+  } catch (e) {
+    console.error('[telegram] guruh buyrug‘i uzatilmadi', e)
+  }
+}
 
 const db = () => createAdminClient()
 
