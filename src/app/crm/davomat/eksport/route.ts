@@ -21,6 +21,11 @@ const BELGI: Record<AttendanceStatus, string> = {
   kelmadi: '-',
 }
 
+/** Excel "=", "+", "-", "@" bilan boshlangan matnni formula deb o'qiydi — oldiga ' qo'yiladi. */
+function xavfsiz(s: string): string {
+  return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s
+}
+
 function katak(v: string | number): string {
   const s = String(v)
   return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
@@ -90,7 +95,7 @@ export async function GET(req: NextRequest) {
   )
 
   const qatorlar: string[] = []
-  qatorlar.push([`${g.nom} — ${davr}`].map(katak).join(';'))
+  qatorlar.push([xavfsiz(`${g.nom} — ${davr}`)].map(katak).join(';'))
   qatorlar.push(['+ keldi', 'K kechikdi', 'S sababli', '- kelmadi'].map(katak).join(';'))
   qatorlar.push('')
   qatorlar.push(
@@ -111,7 +116,7 @@ export async function GET(req: NextRequest) {
     })
     const foiz = jami ? `${Math.round((kelgan * 100) / jami)}%` : ''
     qatorlar.push(
-      [i + 1, o.student_id, o.students?.fish ?? '', ...kataklar, kelgan, jami, foiz].map(katak).join(';'),
+      [i + 1, o.student_id, xavfsiz(o.students?.fish ?? ''), ...kataklar, kelgan, jami, foiz].map(katak).join(';'),
     )
   })
 

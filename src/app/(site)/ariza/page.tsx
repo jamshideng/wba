@@ -22,6 +22,7 @@ async function ipKaliti(): Promise<string> {
 }
 
 export const metadata = {
+  alternates: { canonical: '/ariza' },
   title: 'Bepul sinov darsiga yozilish',
   description:
     'Ism va telefon raqamingizni qoldiring — bir ish kuni ichida qo‘ng‘iroq qilamiz. Oldindan to‘lov yo‘q.',

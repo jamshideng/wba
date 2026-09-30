@@ -20,7 +20,7 @@ export function saytManzil(): string {
       // noto'g'ri qiymat — zaxiraga o'tamiz
     }
   }
-  return 'https://wba.uz'
+  return 'https://wbalc.uz'
 }
 
 export const MARKAZ = {

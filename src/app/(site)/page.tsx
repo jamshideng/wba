@@ -3,6 +3,8 @@ import { MARKAZ, NARX, YONALISHLAR } from '@/lib/markaz'
 import { pul } from '@/lib/format'
 import { IconAlert, IconPin } from '@/components/icons'
 
+export const metadata = { alternates: { canonical: '/' } }
+
 export default function Bosh() {
   const yil = new Date().getFullYear() - MARKAZ.tashkilYili
 
