@@ -8,7 +8,6 @@ import { Xabar } from '@/components/forma'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { IconArrowLeft } from '@/components/icons'
 import { pul, jadval, sana, davrNomi, joriyDavr, bosh, bugunToshkent } from '@/lib/format'
-import type { DayType } from '@/lib/types'
 
 export const metadata = { title: 'Guruh' }
 
@@ -43,7 +42,7 @@ export default async function GuruhProfil({
 
   const { data: guruh } = await supabase
     .from('groups')
-    .select('id, nom, boshlanish, tugash, kun_turi, oylik_narx, sigim, holat, teachers(id, ism)')
+    .select('id, nom, boshlanish, tugash, kunlar, oylik_narx, sigim, holat, teachers(id, ism)')
     .eq('id', id)
     .maybeSingle()
 
@@ -54,7 +53,7 @@ export default async function GuruhProfil({
     nom: string
     boshlanish: string
     tugash: string
-    kun_turi: DayType
+    kunlar: number[]
     oylik_narx: number
     sigim: number
     holat: string
@@ -128,7 +127,7 @@ export default async function GuruhProfil({
         nom={g.nom}
         izoh={
           <>
-            {g.teachers?.ism ?? '[ANIQLANMAGAN]'} · {jadval(g.boshlanish, g.tugash, g.kun_turi)}
+            {g.teachers?.ism ?? '[ANIQLANMAGAN]'} · {jadval(g.boshlanish, g.tugash, g.kunlar)}
           </>
         }
         amal={

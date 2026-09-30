@@ -3,47 +3,63 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/auth'
-import type { AttendanceStatus, DavomatNatija } from '@/lib/types'
+import type { AttendanceStatus } from '@/lib/types'
 
-export type SaqlashNatijasi =
-  | { ok: true; natija: DavomatNatija }
-  | { ok: false; xato: string }
+export type AmalNatijasi<T> = { ok: true; natija: T } | { ok: false; xato: string }
+
+const ROLLAR = ['admin', 'direktor', 'qabulxona', 'ustoz']
+
+/* Kirmagan odam bu amallarni bajara olmaydi. Asosiy tekshiruv bazada
+   (davomat_belgila, woblar_ber — o'z guruhi yoki admin, Q5), lekin kodda
+   ham to'sib qo'yamiz: bo'sh sessiya bilan RPC'ni bezovta qilmasin. */
+async function ruxsat(): Promise<string | null> {
+  const profil = await getProfile()
+  if (!profil) return 'Avval tizimga kiring.'
+  if (!ROLLAR.includes(profil.rol)) return 'Davomat qo‘yish huquqingiz yo‘q.'
+  return null
+}
 
 /**
- * Davomat va woblar — bitta amal.
- *
- * Uchala jadvalga (lessons, attendance, woblr) bazadagi bitta
- * funksiya yozadi, ya'ni yarim saqlanib qolish holati yo'q.
- * Huquqni ham o'sha funksiya tekshiradi.
+ * Jurnal katagi (yoki bir kunning bir nechta katagi). null — belgini
+ * olib tashlash. Woblarga tegmaydi. Hammasi bazadagi bitta funksiyada:
+ * dars ochiladi, belgi yoziladi, huquq tekshiriladi.
  */
-export async function davomatniSaqla(
+export async function davomatBelgila(
   guruhId: string,
   sana: string,
-  belgilar: Record<string, AttendanceStatus>,
-  ballar: Record<string, number>,
-): Promise<SaqlashNatijasi> {
-  /* Kirmagan odam bu amalni bajara olmaydi. Asosiy tekshiruv bazadagi
-     davomat_saqla() da (o'z guruhi yoki admin), lekin kodda ham to'sib
-     qo'yamiz: hech kim bo'sh sessiya bilan RPC'ni bezovta qilmasin. */
-  const profil = await getProfile()
-  if (!profil) return { ok: false, xato: 'Avval tizimga kiring.' }
-  if (!['admin', 'direktor', 'qabulxona', 'ustoz'].includes(profil.rol)) {
-    return { ok: false, xato: 'Davomat qo‘yish huquqingiz yo‘q.' }
-  }
+  belgilar: Record<string, AttendanceStatus | null>,
+): Promise<AmalNatijasi<number>> {
+  const xato = await ruxsat()
+  if (xato) return { ok: false, xato }
 
   const supabase = await createClient()
-
-  const { data, error } = await supabase.rpc('davomat_saqla', {
+  const { data, error } = await supabase.rpc('davomat_belgila', {
     p_group: guruhId,
     p_sana: sana,
     p_belgilar: belgilar,
-    p_ballar: ballar,
   })
-
   if (error) return { ok: false, xato: error.message }
 
   revalidatePath('/crm/davomat')
-  revalidatePath(`/crm/davomat/${guruhId}`)
+  return { ok: true, natija: Number(data) || 0 }
+}
 
-  return { ok: true, natija: data as unknown as DavomatNatija }
+/** Bugungi darsga woblar. Qaytaradi — o'quvchining bugungi jami woblari. */
+export async function woblarBer(guruhId: string, studentId: string, ball: number): Promise<AmalNatijasi<number>> {
+  const xato = await ruxsat()
+  if (xato) return { ok: false, xato }
+  if (!Number.isInteger(ball) || ball === 0 || ball < -10 || ball > 10) {
+    return { ok: false, xato: 'Woblar −10 dan +10 gacha bo‘lsin, 0 emas.' }
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('woblar_ber', {
+    p_group: guruhId,
+    p_student: studentId,
+    p_ball: ball,
+  })
+  if (error) return { ok: false, xato: error.message }
+
+  revalidatePath('/crm/woblr')
+  return { ok: true, natija: Number(data) || 0 }
 }

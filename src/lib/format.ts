@@ -93,15 +93,41 @@ export function vaqt(t: string | null | undefined): string {
   return t.slice(0, 5)
 }
 
-/** Guruh jadvali: "08:30–10:00, toq kun" */
+/** Guruh jadvali: "08:30–10:00, Du · Ch · Ju". Eski yozuvlar uchun kun turi ham qabul qilinadi. */
 export function jadval(
   boshlanish: string | null,
   tugash: string | null,
-  kunTuri: DayType | null,
+  kunlar: readonly number[] | DayType | null,
 ): string {
-  const kun = KUN_NOMI[kunTuri ?? 'har_kuni']
+  const kun = Array.isArray(kunlar) ? kunlarNomi(kunlar) : KUN_NOMI[(kunlar as DayType | null) ?? 'har_kuni']
   if (!boshlanish || !tugash) return kun
   return `${vaqt(boshlanish)}–${vaqt(tugash)}, ${kun}`
+}
+
+/** Hafta kunlari — ISO tartibida (1 = dushanba … 7 = yakshanba), bazadagi groups.kunlar bilan bir xil. */
+export const HAFTA_KUNLARI = [
+  { raqam: 1, qisqa: 'Du', nom: 'Dushanba' },
+  { raqam: 2, qisqa: 'Se', nom: 'Seshanba' },
+  { raqam: 3, qisqa: 'Ch', nom: 'Chorshanba' },
+  { raqam: 4, qisqa: 'Pa', nom: 'Payshanba' },
+  { raqam: 5, qisqa: 'Ju', nom: 'Juma' },
+  { raqam: 6, qisqa: 'Sh', nom: 'Shanba' },
+  { raqam: 7, qisqa: 'Ya', nom: 'Yakshanba' },
+] as const
+
+/** [1, 3, 5] → "Du · Ch · Ju" */
+export function kunlarNomi(kunlar: readonly number[] | null | undefined): string {
+  if (!kunlar?.length) return '—'
+  return [...kunlar]
+    .sort((a, b) => a - b)
+    .map((k) => HAFTA_KUNLARI[k - 1]?.qisqa ?? '?')
+    .join(' · ')
+}
+
+/** "2026-09-30" → ISO hafta kuni (1 = dushanba … 7 = yakshanba). Sana UTC'da o'qiladi — vaqt mintaqasi siljitmaydi. */
+export function haftaKuni(isoSana: string): number {
+  const d = new Date(`${isoSana}T00:00:00Z`).getUTCDay()
+  return d === 0 ? 7 : d
 }
 
 /**

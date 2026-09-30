@@ -90,6 +90,8 @@ export type Group = {
   boshlanish: string
   tugash: string
   kun_turi: DayType
+  /** ISO hafta kunlari (1 = dushanba … 7 = yakshanba) — 0028 */
+  kunlar: number[]
   oylik_narx: number
   sigim: number
   holat: GroupStatus
@@ -408,6 +410,7 @@ export type BugungiDars = {
   lesson_id: string | null
   belgilangan: boolean
   oquvchilar: number
+  kunlar: number[]
 }
 
 /** davomat_saqla() qaytaradigan natija */
@@ -505,6 +508,12 @@ export type Database = {
         Returns: DavomatNatija
       }
       dars_kunimi: { Args: { p_kun: DayType; p_sana: string }; Returns: boolean }
+      guruh_dars_kunimi: { Args: { p_kunlar: number[]; p_sana: string }; Returns: boolean }
+      davomat_belgila: {
+        Args: { p_group: string; p_sana: string; p_belgilar: Record<string, AttendanceStatus | null> }
+        Returns: number
+      }
+      woblar_ber: { Args: { p_group: string; p_student: string; p_ball: number }; Returns: number }
       keyingi_id: { Args: { p_jadval: string; p_prefiks: string; p_uzunlik?: number }; Returns: string }
       oquvchi_qosh: { Args: { p: Record<string, unknown> }; Returns: string }
       guruhga_biriktir: {

@@ -12,7 +12,7 @@ import { HisobForma } from '@/components/hisob'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { IconArrowLeft, IconPhone } from '@/components/icons'
 import { pul, sana, telefon, jadval, davrNomi, joriyDavr, bugunToshkent } from '@/lib/format'
-import type { StudentStatus, DayType, PaymentMethod, AttendanceStatus } from '@/lib/types'
+import type { StudentStatus, PaymentMethod, AttendanceStatus } from '@/lib/types'
 
 export const metadata = { title: 'O‘quvchi profili' }
 export const dynamic = 'force-dynamic'
@@ -74,7 +74,7 @@ export default async function OquvchiProfil({
     supabase
       .from('enrollments')
       .select(
-        'id, group_id, boshlandi, tugadi, holat, chegirma_summa, chegirma_oy, chegirma2_summa, chegirma2_oy, chegirma_sabab, groups(nom, boshlanish, tugash, kun_turi, oylik_narx, teachers(ism))',
+        'id, group_id, boshlandi, tugadi, holat, chegirma_summa, chegirma_oy, chegirma2_summa, chegirma2_oy, chegirma_sabab, groups(nom, boshlanish, tugash, kunlar, oylik_narx, teachers(ism))',
       )
       .eq('student_id', id)
       .order('boshlandi', { ascending: false }),
@@ -119,7 +119,7 @@ export default async function OquvchiProfil({
       nom: string
       boshlanish: string
       tugash: string
-      kun_turi: DayType
+      kunlar: number[]
       oylik_narx: number
       teachers: { ism: string } | null
     } | null
@@ -236,7 +236,7 @@ export default async function OquvchiProfil({
                       <span className="text-[13.5px] font-semibold">{y.groups?.nom ?? '—'}</span>
                       <span className="text-[12px] text-ink-3">
                         {y.groups?.teachers?.ism ?? '[ANIQLANMAGAN]'} ·{' '}
-                        {jadval(y.groups?.boshlanish ?? null, y.groups?.tugash ?? null, y.groups?.kun_turi ?? null)}
+                        {jadval(y.groups?.boshlanish ?? null, y.groups?.tugash ?? null, y.groups?.kunlar ?? null)}
                       </span>
                       <span className="text-[12px] text-ink-3">
                         {sana(y.boshlandi)} dan {y.tugadi ? `${sana(y.tugadi)} gacha` : 'hozirgacha'}
