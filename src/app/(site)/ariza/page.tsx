@@ -102,7 +102,9 @@ async function yubor(formData: FormData) {
 async function arizaXabari(a: { ism: string; telefon: string; yonalish?: string; izoh?: string }) {
   const yonalish = YONALISHLAR.find((y) => y.id === a.yonalish)?.nom ?? 'tanlanmagan'
   const qatorlar = [
-    '<b>YANGI ARIZA</b> (sayt)',
+    '<b>[SAYT · wbalc.uz] YANGI ARIZA</b>',
+    'Bu xabar saytdagi ariza formasidan — Sheets hisoboti emas.',
+    '',
     `Ism: <b>${html(a.ism)}</b>`,
     `Telefon: ${html(a.telefon)}`,
     `Yo‘nalish: ${html(yonalish)}`,
