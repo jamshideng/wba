@@ -9,6 +9,8 @@ import { Yuborish } from '@/components/yuborish'
 import { pul, sana, davrNomi, joriyDavr } from '@/lib/format'
 import { tolovTasdiqla, tolovBekor } from './actions'
 import type { PaymentMethod, DashboardStats } from '@/lib/types'
+import { qidiruvTuri } from '@/lib/qidiruv'
+import { JonliForma } from '@/components/jonli-forma'
 
 export const metadata = { title: 'To‘lovlar' }
 export const dynamic = 'force-dynamic'
@@ -76,11 +78,10 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
   else if (filtr === 'bekor') soorov = soorov.eq('bekor', true)
   if (davr) soorov = soorov.eq('davr', davr)
   if (usul) soorov = soorov.eq('usul', usul)
-  if (qidiruv) {
-    soorov = /^s\d+$/i.test(qidiruv)
-      ? soorov.eq('student_id', qidiruv.toUpperCase())
-      : soorov.ilike('students.fish', `%${qidiruv}%`)
-  }
+  // To'lovda telefon yo'q — raqam yozilsa ism sifatida emas, hech narsa topilmaydi; ID va ism yetarli
+  const qt = qidiruvTuri(qidiruv)
+  if (qt?.turi === 'id') soorov = soorov.ilike('student_id', qt.naqsh)
+  else if (qt) soorov = soorov.ilike('students.fish', qt.naqsh)
 
   const [{ data, count }, { data: panel }] = await Promise.all([
     soorov.order('sana', { ascending: false }).order('id', { ascending: false }).range(boshi, boshi + SAHIFA_SONI - 1),
@@ -135,11 +136,11 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
         {bolim('bekor', 'Bekor qilingan')}
       </div>
 
-      <form className="flex flex-wrap items-end gap-2.5">
+      <JonliForma className="flex flex-wrap items-end gap-2.5">
         {filtr !== 'hammasi' && <input type="hidden" name="filtr" value={filtr} />}
         <label className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-xs">
           <span className="lbl">O‘quvchi</span>
-          <input name="q" defaultValue={qidiruv} placeholder="Ism yoki ID…" className={kirishKlass} />
+          <input name="q" type="search" autoComplete="off" defaultValue={qidiruv} placeholder="Ism yoki ID…" className={kirishKlass} />
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="lbl">Oy</span>
@@ -154,10 +155,7 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
             ))}
           </select>
         </label>
-        <button type="submit" className="min-h-11 rounded-[9px] border border-line px-5 text-[13.5px] text-ink-2 transition hover:border-ink-3 hover:text-ink">
-          Ko‘rsatish
-        </button>
-      </form>
+      </JonliForma>
 
       {/* Direktor: sahifadagi hamma kutayotganni bir bosishda */}
       {direktor && kutayotgan.length > 1 && (

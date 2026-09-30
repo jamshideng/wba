@@ -9,6 +9,8 @@ import { Yuborish } from '@/components/yuborish'
 import { IconArrowLeft, IconSearch } from '@/components/icons'
 import { pul, joriyDavr, bugunToshkent, telefon } from '@/lib/format'
 import { tolovQosh } from '../actions'
+import { qidiruvTuri, telefonFiltri } from '@/lib/qidiruv'
+import { JonliForma } from '@/components/jonli-forma'
 
 export const metadata = { title: 'To‘lov qo‘shish' }
 export const dynamic = 'force-dynamic'
@@ -28,12 +30,12 @@ export default async function TolovQosh({ searchParams }: { searchParams: Promis
     const q = (s.q ?? '').trim()
     let topilganlar: { id: string; fish: string; shaxsiy_tel: string | null; ota_tel: string | null }[] = []
 
-    if (q) {
-      const raqam = q.replace(/\D/g, '')
+    const qt = qidiruvTuri(q)
+    if (qt) {
       let soorov = supabase.from('students').select('id, fish, shaxsiy_tel, ota_tel').eq('holat', 'faol')
-      if (/^s\d+$/i.test(q)) soorov = soorov.eq('id', q.toUpperCase())
-      else if (raqam.length >= 7) soorov = soorov.or(`ota_tel.ilike.%${raqam}%,ona_tel.ilike.%${raqam}%,shaxsiy_tel.ilike.%${raqam}%`)
-      else soorov = soorov.ilike('fish', `%${q}%`)
+      if (qt.turi === 'id') soorov = soorov.ilike('id', qt.naqsh)
+      else if (qt.turi === 'tel') soorov = soorov.or(telefonFiltri(qt.naqsh))
+      else soorov = soorov.ilike('fish', qt.naqsh)
       const { data } = await soorov.order('fish').limit(20)
       topilganlar = data ?? []
     }
@@ -46,21 +48,20 @@ export default async function TolovQosh({ searchParams }: { searchParams: Promis
         <Sarlavha nom="To‘lov qo‘shish" izoh="1 / 2 · kim to‘ladi" />
         <Xabar xato={s.xato} />
 
-        <form className="flex gap-2.5">
+        <JonliForma className="flex gap-2.5">
           <span className="flex min-h-11 flex-1 items-center gap-2.5 rounded-[9px] border border-line bg-surface px-3">
             <IconSearch size={15} />
             <input
               name="q"
+              type="search"
+              autoComplete="off"
               defaultValue={q}
               autoFocus
               placeholder="Ism, ID yoki telefon…"
               className="min-w-0 flex-1 bg-transparent text-[13.5px] text-ink outline-none placeholder:text-ink-4"
             />
           </span>
-          <button type="submit" className="min-h-11 rounded-[9px] bg-brand text-white px-5 text-[13.5px] font-semibold">
-            Qidirish
-          </button>
-        </form>
+        </JonliForma>
 
         {q && (
           <Card className="flex flex-col">

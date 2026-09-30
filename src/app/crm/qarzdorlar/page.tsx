@@ -8,6 +8,8 @@ import { kirishKlass } from '@/components/forma'
 import { IconPhone } from '@/components/icons'
 import { pul, telefon } from '@/lib/format'
 import type { Qarzdor } from '@/lib/types'
+import { qidiruvTuri, telefonFiltri } from '@/lib/qidiruv'
+import { JonliForma } from '@/components/jonli-forma'
 
 export const metadata = { title: 'Qarzdorlar' }
 export const dynamic = 'force-dynamic'
@@ -35,7 +37,10 @@ export default async function Qarzdorlar({
   const supabase = await createClient()
 
   let soorov = supabase.from('v_qarzdorlar').select('*', { count: 'exact' })
-  if (qidiruv) soorov = soorov.ilike('fish', `%${qidiruv}%`)
+  const qt = qidiruvTuri(qidiruv)
+  if (qt?.turi === 'id') soorov = soorov.ilike('student_id', qt.naqsh)
+  else if (qt?.turi === 'tel') soorov = soorov.or(telefonFiltri(qt.naqsh))
+  else if (qt) soorov = soorov.ilike('fish', qt.naqsh)
 
   const [{ data, count }, { data: panel }] = await Promise.all([
     soorov.order('qarz', { ascending: false }).range(boshi, boshi + SAHIFA_SONI - 1),
@@ -53,12 +58,9 @@ export default async function Qarzdorlar({
         <Stat label="Qarzdorlar" value={Number(panel?.qarzdorlar ?? 0)} sub="faol o‘quvchi" />
       </div>
 
-      <form className="flex gap-2.5">
-        <input name="q" defaultValue={qidiruv} placeholder="Ism bo‘yicha…" className={`${kirishKlass} sm:max-w-xs`} />
-        <button type="submit" className="min-h-11 rounded-[9px] border border-line px-5 text-[13.5px] text-ink-2 hover:text-ink">
-          Qidirish
-        </button>
-      </form>
+      <JonliForma className="flex gap-2.5">
+        <input name="q" type="search" autoComplete="off" defaultValue={qidiruv} placeholder="Ism, ID yoki telefon…" aria-label="Qidiruv" className={`${kirishKlass} sm:max-w-xs`} />
+      </JonliForma>
 
       <Card className="flex flex-col">
         {royxat.length === 0 ? (

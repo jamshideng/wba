@@ -1,12 +1,12 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { talabRol, staffmi } from '@/lib/auth'
+import { talabRol, staffmi, adminmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty, Button } from '@/components/ui'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { guruhgaBiriktir, guruhdanChiqar, chegirmaOzgartir } from '../actions'
+import { guruhgaBiriktir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor } from '../actions'
 import { ChegirmaMaydonlari } from '../bolaklar'
 import { HisobForma } from '@/components/hisob'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
@@ -70,6 +70,7 @@ export default async function OquvchiProfil({
     { data: davomat },
     { data: woblr },
     { data: barchaGuruhlar },
+    { data: tuzatishlar },
   ] = await Promise.all([
     supabase
       .from('enrollments')
@@ -92,6 +93,15 @@ export default async function OquvchiProfil({
     pulKoradi
       ? supabase.from('groups').select('id, nom').eq('holat', 'faol').order('nom')
       : Promise.resolve({ data: [] as { id: string; nom: string }[] }),
+    // RLS: pulni ko'radiganlar; o'quvchining yozilishlari bo'yicha
+    pulKoradi
+      ? supabase
+          .from('tuzatishlar')
+          .select('id, enrollment_id, davr, summa, sabab, bekor, bekor_sabab, created_at, enrollments!inner(student_id)')
+          .eq('enrollments.student_id', id)
+          .order('davr', { ascending: false })
+          .order('id', { ascending: false })
+      : Promise.resolve({ data: [] }),
   ])
 
   /* Hisobi bormi — email profilda turadi (0012), RLS uni adminga ko'rsatadi */
@@ -131,6 +141,10 @@ export default async function OquvchiProfil({
       (b) => [b.enrollment_id, b],
     ),
   )
+
+  type TuzatishQatori = { id: number; enrollment_id: string; davr: string; summa: number; sabab: string; bekor: boolean; bekor_sabab: string | null }
+  const tuzList = (tuzatishlar ?? []) as unknown as TuzatishQatori[]
+  const tuzatishAdmin = adminmi(profil.rol)
 
   const jamiQarz = [...bMap.values()].reduce((a, b) => a + (Number(b.qarz) || 0), 0)
   const jamiTolangan = [...bMap.values()].reduce((a, b) => a + (Number(b.tolangan) || 0), 0)
@@ -276,6 +290,59 @@ export default async function OquvchiProfil({
                             Saqlanganda hamma oylar yangi chegirma bilan qayta hisoblanadi (Sheets’dagi kabi).
                           </p>
                           <Yuborish kutish="…">Chegirmani saqlash</Yuborish>
+                        </form>
+                      </details>
+                    )}
+
+                    {pulKoradi && tuzList.some((t) => t.enrollment_id === y.id) && (
+                      <div className="flex w-full flex-col gap-1.5 rounded-[9px] bg-surface-2 px-3 py-2.5">
+                        <span className="lbl">Tuzatishlar (oydan ayirilgan)</span>
+                        {tuzList
+                          .filter((t) => t.enrollment_id === y.id)
+                          .map((t) => (
+                            <div key={t.id} className="flex flex-wrap items-center justify-between gap-2 text-[12.5px]">
+                              <span className={t.bekor ? 'text-ink-4 line-through' : ''}>
+                                {davrNomi(t.davr)} · −{pul(t.summa)} · {t.sabab}
+                              </span>
+                              {t.bekor ? (
+                                <span className="text-[11px] text-ink-4">bekor{t.bekor_sabab ? `: ${t.bekor_sabab}` : ''}</span>
+                              ) : (
+                                tuzatishAdmin && (
+                                  <form action={tuzatishBekor}>
+                                    <input type="hidden" name="student_id" value={oquvchi.id} />
+                                    <input type="hidden" name="id" value={t.id} />
+                                    <button type="submit" className="min-h-11 px-2 text-[12px] text-ink-3 transition hover:text-brand">
+                                      Bekor qilish
+                                    </button>
+                                  </form>
+                                )
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    )}
+
+                    {tuzatishAdmin && y.holat !== 'tugagan' && (
+                      <details className="w-full">
+                        <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Tuzatish — shu oydan ayirish</summary>
+                        <form action={tuzatishQosh} className="mt-2 flex flex-col gap-2">
+                          <input type="hidden" name="student_id" value={oquvchi.id} />
+                          <input type="hidden" name="enrollment_id" value={y.id} />
+                          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_2fr]">
+                            <Maydon nom="Oy">
+                              <input type="month" name="davr" required defaultValue={davr} className={kirishKlass} />
+                            </Maydon>
+                            <Maydon nom="Ayiriladi">
+                              <input name="summa" required inputMode="decimal" placeholder="150 000" className={kirishKlass} />
+                            </Maydon>
+                            <Maydon nom="Sabab">
+                              <input name="sabab" required placeholder="Masalan: kasal, 3 dars" className={kirishKlass} />
+                            </Maydon>
+                          </div>
+                          <p className="text-[11.5px] text-ink-3">
+                            Faqat tanlangan oy uchun: o‘sha oyning to‘lovidan ayiriladi, keyingi oylar o‘zgarmaydi (Sheets’dagi “Tuzatishlar” kabi).
+                          </p>
+                          <Yuborish kutish="…">Tuzatishni yozish</Yuborish>
                         </form>
                       </details>
                     )}

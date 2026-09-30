@@ -1,9 +1,10 @@
 import Link from 'next/link'
+import { TezQidiruv } from '@/components/tez-qidiruv'
 import { talabRol, staffmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardHeader, Stat, BarRow, Empty } from '@/components/ui'
 import { AreaGrafik } from '@/components/grafik'
-import { IconAlert, IconSearch } from '@/components/icons'
+import { IconAlert } from '@/components/icons'
 import { pul, davrNomi, joriyDavr, sana, bugunToshkent } from '@/lib/format'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Ulanmagan } from '@/components/crm'
@@ -63,10 +64,7 @@ export default async function Dashboard() {
 
         <div className="flex items-center gap-2.5">
           {xodim && (
-            <form action="/crm/oquvchilar" className="flex h-11 w-64 items-center gap-2.5 rounded-[9px] border border-line bg-surface px-3 max-sm:w-full">
-              <IconSearch size={15} />
-              <input name="q" placeholder="Ism, ID yoki telefon…" className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-4" />
-            </form>
+            <TezQidiruv />
           )}
           <span className="flex h-10 items-center rounded-[9px] border border-line bg-surface px-3 font-[family-name:var(--font-mono)] text-[12.5px]">
             {davr}

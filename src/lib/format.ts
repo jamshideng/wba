@@ -51,9 +51,12 @@ export function davrQisqa(davr: string): string {
   return OYLAR_QISQA[m - 1] ?? davr
 }
 
-/** Joriy davr: "2026-09" */
+/**
+ * Joriy davr: "2026-09" — Toshkent vaqti bilan. Server UTC'da turadi:
+ * getMonth() bilan yarim tundan keyin 5 soat eski oy chiqardi.
+ */
 export function joriyDavr(d: Date = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  return bugunToshkent(d).slice(0, 7)
 }
 
 /** Telefonni o'qishga qulay ko'rinishga keltiradi */

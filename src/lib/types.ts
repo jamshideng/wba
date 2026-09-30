@@ -165,6 +165,8 @@ export type Invoice = {
   davr: string
   summa: number
   chegirma: number
+  /** Shu oyga qo'lda ayirilgan summa (0029) */
+  tuzatish: number
   holat: InvoiceStatus
   created_at: string
   updated_at: string
@@ -413,6 +415,20 @@ export type BugungiDars = {
   kunlar: number[]
 }
 
+/** 0029 · oyma-oy qo'lda ayirish */
+export type Tuzatish = {
+  id: number
+  enrollment_id: string
+  davr: string
+  summa: number
+  sabab: string
+  kiritdi: string | null
+  bekor: boolean
+  bekor_sabab: string | null
+  bekor_qildi: string | null
+  created_at: string
+}
+
 /** davomat_saqla() qaytaradigan natija */
 export type DavomatNatija = {
   dars_id: string
@@ -468,6 +484,7 @@ export type Database = {
       invoices: Table<Invoice>
       payments: Table<Payment>
       leads: Table<Lead>
+      tuzatishlar: Table<Tuzatish>
       settings: Table<Setting>
       audit_log: Table<AuditLog>
     }
@@ -513,6 +530,11 @@ export type Database = {
         Args: { p_group: string; p_sana: string; p_belgilar: Record<string, AttendanceStatus | null> }
         Returns: number
       }
+      tuzatish_qosh: {
+        Args: { p_enrollment: string; p_davr: string; p_summa: number; p_sabab: string }
+        Returns: number
+      }
+      tuzatish_bekor: { Args: { p_id: number; p_sabab?: string | null }; Returns: undefined }
       woblar_ber: { Args: { p_group: string; p_student: string; p_ball: number }; Returns: number }
       keyingi_id: { Args: { p_jadval: string; p_prefiks: string; p_uzunlik?: number }; Returns: string }
       oquvchi_qosh: { Args: { p: Record<string, unknown> }; Returns: string }
