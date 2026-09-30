@@ -159,3 +159,50 @@ export async function chegirmaOzgartir(fd: FormData) {
   revalidatePath('/crm', 'layout')
   redirect(xabarliYol(yol, { ok: `Chegirma saqlandi. ${soni ?? 0} oyning hisobi qayta hisoblandi.` }))
 }
+
+/**
+ * Tuzatish — shu oy uchun aniq summani ayirish (Sheets "Tuzatishlar",
+ * 0029). Sababli kelmagan darslar yoki oy o'rtasida boshlagan bola.
+ * Faqat admin va direktor; bazada ham tekshiriladi.
+ */
+export async function tuzatishQosh(fd: FormData) {
+  await talabRol('admin', 'direktor')
+  const studentId = matn(fd.get('student_id'))
+  const enrollmentId = matn(fd.get('enrollment_id'))
+  const yol = `/crm/oquvchilar/${studentId}`
+  if (!studentId || !enrollmentId) redirect('/crm/oquvchilar')
+
+  const davr = matn(fd.get('davr'))
+  const summa = summaOqi(fd.get('summa'))
+  const sabab = matn(fd.get('sabab'))
+  if (!davr || !/^\d{4}-(0[1-9]|1[0-2])$/.test(davr)) redirect(xabarliYol(yol, { xato: 'Oyni tanlang.' }))
+  if (!summa) redirect(xabarliYol(yol, { xato: 'Ayiriladigan summani yozing. Masalan: 150000 yoki 150.' }))
+  if (!sabab) redirect(xabarliYol(yol, { xato: 'Sababini yozing — masalan: kasal, 3 dars.' }))
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('tuzatish_qosh', {
+    p_enrollment: enrollmentId!,
+    p_davr: davr!,
+    p_summa: summa!,
+    p_sabab: sabab!,
+  })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(yol, { ok: `Tuzatish yozildi: ${davr} oyidan ${summa!.toLocaleString('ru-RU')} so‘m ayirildi.` }))
+}
+
+export async function tuzatishBekor(fd: FormData) {
+  await talabRol('admin', 'direktor')
+  const studentId = matn(fd.get('student_id'))
+  const id = sonOqi(fd.get('id'))
+  const yol = `/crm/oquvchilar/${studentId}`
+  if (!studentId || !id) redirect('/crm/oquvchilar')
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('tuzatish_bekor', { p_id: id!, p_sabab: matn(fd.get('sabab')) })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(yol, { ok: 'Tuzatish bekor qilindi — o‘sha oy qayta hisoblandi.' }))
+}

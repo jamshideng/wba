@@ -854,5 +854,67 @@ begin
 end $$;
 
 reset role;
+
+\echo '--- 0029: tuzatishlar — faqat shu oydan ayiriladi ---'
+reset request.jwt.claim.sub;
+insert into enrollments (student_id, group_id, boshlandi) values ('S002', 'NX', '2026-09-01');
+
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  perform tuzatish_qosh((select id from enrollments where student_id = 'S002' and group_id = 'NX'), '2026-09', 100000, 'kasal');
+  raise exception 'XATO: ustoz tuzatish kiritdi!';
+exception when others then
+  if sqlerrm not like '%admin yoki direktor%' then raise; end if;
+  raise notice 'OK: tuzatish faqat admin/direktorga';
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare
+  v_e  uuid := (select id from enrollments where student_id = 'S002' and group_id = 'NX');
+  v_t  bigint;
+  v_09 numeric;
+  v_10 numeric;
+begin
+  perform yozilish_hisoblari(v_e);
+  v_t := tuzatish_qosh(v_e, '2026-09', 150000, 'kasal, 3 dars');
+  -- kelajak oyga oldindan: hisob-faktura hali yo'q, yaratilganda ayiriladi
+  perform tuzatish_qosh(v_e, '2030-01', 50000, 'oldindan');
+
+  select summa into v_09 from invoices where enrollment_id = v_e and davr = '2026-09';
+  if v_09 <> 500000 then raise exception 'XATO: 2026-09 = % (500000 kutilgan)', v_09; end if;
+  select summa into v_10 from invoices where enrollment_id = v_e and davr = '2026-10';
+  if v_10 is not null and v_10 <> 650000 then raise exception 'XATO: tuzatish boshqa oyga tegdi: %', v_10; end if;
+
+  insert into invoices (enrollment_id, davr, summa, chegirma) values (v_e, '2030-01', 650000, 0);
+  if (select summa from invoices where enrollment_id = v_e and davr = '2030-01') <> 600000 then
+    raise exception 'XATO: kelajak oy yaratilganda tuzatish ayirilmadi';
+  end if;
+
+  perform chegirma_ozgartir(v_e, '{"chegirma_summa":"50000"}');
+  if (select summa from invoices where enrollment_id = v_e and davr = '2026-09') <> 450000 then
+    raise exception 'XATO: chegirma + tuzatish noto''g''ri';
+  end if;
+
+  perform tuzatish_bekor(v_t, 'xato kiritildi');
+  if (select summa from invoices where enrollment_id = v_e and davr = '2026-09') <> 600000 then
+    raise exception 'XATO: bekor qilingan tuzatish qaytmadi';
+  end if;
+
+  -- RLS'da o'chirish qoidasi yo'q (0 qator), jadval egasi uchun trigger to'sadi
+  begin
+    delete from tuzatishlar where id = v_t;
+  exception when others then
+    if sqlerrm not like '%o''chirilmaydi%' then raise; end if;
+  end;
+  if not exists (select 1 from tuzatishlar where id = v_t) then
+    raise exception 'XATO: tuzatish o''chirildi!';
+  end if;
+  raise notice 'OK: tuzatish faqat o''z oyida, chegirma bilan, bekor qilinadi, o''chmaydi';
+end $$;
+
+reset role;
 \echo ''
 \echo '=== TEST TUGADI ==='

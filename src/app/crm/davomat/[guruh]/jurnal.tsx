@@ -25,22 +25,30 @@ export type DarsKuni = { sana: string; kun: number; hafta: string }
 /** Kim nimani o'zgartira oladi: admin — o'tgan kunlar ham, ustoz — faqat bugun (Q5). */
 export type Huquq = 'hammasi' | 'bugun' | 'yoq'
 
-/* Katak bosilganda navbat: bo'sh → keldi → kelmadi → kechikdi → sababli → bo'sh */
-const NAVBAT: (AttendanceStatus | null)[] = [null, 'keldi', 'kelmadi', 'kechikdi', 'sababli']
+/* Faqat ikki holat: keldi (✓) va kelmadi (✗). Bosilganda navbat:
+   bo'sh → keldi → kelmadi → bo'sh. Eski yozuvlardagi "kechikdi" keldi,
+   "sababli" kelmadi bo'lib ko'rinadi (bazada o'zgarmaydi). */
+type Ikki = 'keldi' | 'kelmadi'
+const NAVBAT: (Ikki | null)[] = [null, 'keldi', 'kelmadi']
 
-const BELGI: Record<AttendanceStatus, { nom: string; harf: string | null; ton: string }> = {
-  keldi: { nom: 'Keldi', harf: null, ton: 'border-ok bg-ok text-white' },
-  kelmadi: { nom: 'Kelmadi', harf: 'Y', ton: 'border-brand bg-brand text-white' },
-  kechikdi: { nom: 'Kechikdi', harf: 'K', ton: 'border-accent bg-accent text-white' },
-  sababli: { nom: 'Sababli', harf: 'S', ton: 'border-ink-3 bg-ink-3 text-white' },
+function ikkiga(h: AttendanceStatus | null | undefined): Ikki | null {
+  if (!h) return null
+  return h === 'keldi' || h === 'kechikdi' ? 'keldi' : 'kelmadi'
 }
 
-function Belgi({ holat }: { holat: AttendanceStatus }) {
-  const b = BELGI[holat]
-  if (b.harf) return <span className="text-[13px] font-bold">{b.harf}</span>
-  return (
+const BELGI: Record<Ikki, { nom: string; ton: string }> = {
+  keldi: { nom: 'Keldi', ton: 'border-ok bg-ok text-white' },
+  kelmadi: { nom: 'Kelmadi', ton: 'border-brand bg-brand text-white' },
+}
+
+function Belgi({ holat }: { holat: Ikki }) {
+  return holat === 'keldi' ? (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  ) : (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18" />
     </svg>
   )
 }
@@ -130,7 +138,7 @@ export function Jurnal({
   }
 
   function katakBos(q: JurnalQatori, sana: string) {
-    const hozir = q.belgilar[sana] ?? null
+    const hozir = ikkiga(q.belgilar[sana])
     const keyingi = NAVBAT[(NAVBAT.indexOf(hozir) + 1) % NAVBAT.length]
     saqla(sana, { [q.student_id]: keyingi })
   }
@@ -179,7 +187,7 @@ export function Jurnal({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-ink-3">
-        {(Object.keys(BELGI) as AttendanceStatus[]).map((h) => (
+        {(Object.keys(BELGI) as Ikki[]).map((h) => (
           <span key={h} className="flex items-center gap-1.5">
             <span className={`flex size-5 items-center justify-center rounded-[5px] border ${BELGI[h].ton}`}>
               <Belgi holat={h} />
@@ -251,7 +259,7 @@ export function Jurnal({
                   </span>
                 </th>
                 {kunlar.map((k) => {
-                  const holat = q.belgilar[k.sana] ?? null
+                  const holat = ikkiga(q.belgilar[k.sana])
                   const ochiq = tahrirmi(q, k.sana)
                   const kutmoqda = kutilayotgan.has(`${q.student_id}|${k.sana}`)
                   const bugunmi = k.sana === bugun

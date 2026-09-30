@@ -6,6 +6,8 @@ import { Card, Badge, Empty, Button } from '@/components/ui'
 import { Sarlavha, Ulanmagan, Sahifalash } from '@/components/crm'
 import { IconSearch } from '@/components/icons'
 import { pul, telefon } from '@/lib/format'
+import { qidiruvTuri, telefonFiltri } from '@/lib/qidiruv'
+import { JonliForma } from '@/components/jonli-forma'
 import type { StudentStatus } from '@/lib/types'
 
 export const metadata = { title: 'O‘quvchilar' }
@@ -88,18 +90,10 @@ export default async function Oquvchilar({
   const holat = (['faol', 'tanaffus', 'ketgan'] as const).find((h) => h === s.holat)
   if (holat) soorov = soorov.eq('holat', holat)
 
-  if (qidiruv) {
-    const raqam = qidiruv.replace(/\D/g, '')
-    if (/^s\d+$/i.test(qidiruv)) {
-      soorov = soorov.eq('id', qidiruv.toUpperCase())
-    } else if (raqam.length >= 7) {
-      soorov = soorov.or(
-        `ota_tel.ilike.%${raqam}%,ona_tel.ilike.%${raqam}%,shaxsiy_tel.ilike.%${raqam}%`,
-      )
-    } else {
-      soorov = soorov.ilike('fish', `%${qidiruv}%`)
-    }
-  }
+  const qt = qidiruvTuri(qidiruv)
+  if (qt?.turi === 'id') soorov = soorov.ilike('id', qt.naqsh)
+  else if (qt?.turi === 'tel') soorov = soorov.or(telefonFiltri(qt.naqsh))
+  else if (qt) soorov = soorov.ilike('fish', qt.naqsh)
 
   const { data: oquvchilar, count } = await soorov
     .order('fish')
@@ -158,15 +152,17 @@ export default async function Oquvchilar({
         amal={pulKoradi ? <Button href="/crm/oquvchilar/yangi">O‘quvchi qo‘shish</Button> : undefined}
       />
 
-      {/* Filtr — oddiy GET forma, JavaScriptsiz ham ishlaydi */}
-      <form className="flex flex-wrap items-end gap-2.5">
+      {/* Jonli filtr — yozish bilan natija yangilanadi */}
+      <JonliForma className="flex flex-wrap items-end gap-2.5">
         <label className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-xs">
           <span className="lbl">Qidiruv</span>
           <span className="flex min-h-11 items-center gap-2.5 rounded-[9px] border border-line bg-surface px-3">
             <IconSearch size={15} />
             <input
               name="q"
+              type="search"
               defaultValue={qidiruv}
+              autoComplete="off"
               placeholder="Ism, ID yoki telefon…"
               className="min-w-0 flex-1 bg-transparent text-[13.5px] text-ink outline-none placeholder:text-ink-4"
             />
@@ -210,13 +206,6 @@ export default async function Oquvchilar({
           </label>
         )}
 
-        <button
-          type="submit"
-          className="min-h-11 rounded-[9px] bg-brand text-white px-5 text-[13.5px] font-semibold transition hover:brightness-110"
-        >
-          Qidirish
-        </button>
-
         {(qidiruv || s.guruh || s.holat || qarzli) && (
           <Link
             href="/crm/oquvchilar"
@@ -225,7 +214,7 @@ export default async function Oquvchilar({
             Tozalash
           </Link>
         )}
-      </form>
+      </JonliForma>
 
       <Card className="flex flex-col">
         {qatorlar.length === 0 ? (
