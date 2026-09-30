@@ -2,10 +2,12 @@ import { createHash } from 'node:crypto'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { telefonNormal } from '@/lib/format'
-import { MARKAZ, YONALISHLAR } from '@/lib/markaz'
+import { MARKAZ, YONALISHLAR, saytManzil } from '@/lib/markaz'
+import { html, xabar, HISOBOT_GURUH } from '@/lib/telegram'
 
 // Bir IP soatiga shuncha arizadan ortiq yubora olmaydi (spam to'sish).
 const ARIZA_LIMIT = 5
@@ -89,7 +91,27 @@ async function yubor(formData: FormData) {
     redirect('/ariza?holat=nosozlik')
   }
 
+  // Ariza bazada. Hisobot guruhiga xabar javobdan KEYIN ketadi — Telegram
+  // sekinlashsa yoki xato bersa ham foydalanuvchi kutmaydi, ariza yo'qolmaydi.
+  const d = natija.data
+  after(() => arizaXabari({ ism: d.ism, telefon: tel, yonalish: d.yonalish, izoh: d.izoh }))
+
   redirect('/ariza?holat=yuborildi')
+}
+
+async function arizaXabari(a: { ism: string; telefon: string; yonalish?: string; izoh?: string }) {
+  const yonalish = YONALISHLAR.find((y) => y.id === a.yonalish)?.nom ?? 'tanlanmagan'
+  const qatorlar = [
+    '<b>YANGI ARIZA</b> (sayt)',
+    `Ism: <b>${html(a.ism)}</b>`,
+    `Telefon: ${html(a.telefon)}`,
+    `Yo‘nalish: ${html(yonalish)}`,
+    ...(a.izoh ? [`Izoh: ${html(a.izoh)}`] : []),
+    '',
+    `Probniylar: ${saytManzil()}/crm/probniylar`,
+  ]
+  const r = await xabar(Number(HISOBOT_GURUH), qatorlar.join('\n'))
+  if (!r.ok) console.error('[ariza] guruhga xabar ketmadi', r.error_code, r.description)
 }
 
 export default async function ArizaSahifasi({
