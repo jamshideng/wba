@@ -10,6 +10,9 @@ import 'server-only'
 
 export const BOT_NOMI = process.env.TELEGRAM_BOT_USERNAME || 'WBAlcBot'
 
+/** "WBA Hisobot" guruhi — kunlik hisobot, guruh buyruqlari va saytdagi arizalar shu yerga. */
+export const HISOBOT_GURUH = process.env.TELEGRAM_GROUP_ID || '-1003908526489'
+
 type TgJavob<T> = { ok: true; result: T } | { ok: false; error_code: number; description: string; parameters?: { retry_after?: number } }
 
 export async function tg<T = unknown>(metod: string, body: Record<string, unknown>): Promise<TgJavob<T>> {

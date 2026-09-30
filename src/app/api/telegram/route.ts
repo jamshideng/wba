@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto'
 import { NextResponse, after, type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { tg, html, xabar, type Tugma } from '@/lib/telegram'
+import { tg, html, xabar, HISOBOT_GURUH, type Tugma } from '@/lib/telegram'
 import { pul, sana, vaqt, davrNomi, bugunToshkent } from '@/lib/format'
 import { saytManzil } from '@/lib/markaz'
 import { kunlikHisobotMatn } from '@/lib/kunlik-hisobot'
@@ -71,7 +71,6 @@ export async function POST(req: NextRequest) {
  * shuning uchun update o'zgarmasdan o'sha yerga uzatiladi. So'rov bot
  * tokeni bilan imzolanadi (HMAC-SHA256, ?imzo=) — Apps Script tekshiradi.
  */
-const HISOBOT_GURUH = process.env.TELEGRAM_GROUP_ID || '-1003908526489'
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL ||
   'https://script.google.com/macros/s/AKfycbzCUCCnuzyDGcmDaJ0xTk_Df5duRMRtR4voroRMMYgpmaXfdausb_-rcGdA3K1gqGTj/exec'
 
