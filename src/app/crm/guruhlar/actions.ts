@@ -5,9 +5,6 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabRol } from '@/lib/auth'
 import { matn, sonOqi, summaOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
-import type { DayType } from '@/lib/types'
-
-const KUNLAR: DayType[] = ['toq', 'juft', 'dam_olish', 'har_kuni']
 
 type GuruhMaydonlari = {
   nom: string
@@ -16,7 +13,8 @@ type GuruhMaydonlari = {
   teacher_id: string | null
   boshlanish: string
   tugash: string
-  kun_turi: DayType
+  /** ISO hafta kunlari, 1 = dushanba … 7 = yakshanba */
+  kunlar: number[]
   oylik_narx: number
   sigim: number
 }
@@ -28,13 +26,15 @@ type GuruhMaydonlari = {
 async function oqi(fd: FormData): Promise<GuruhMaydonlari | string> {
   const boshlanish = matn(fd.get('boshlanish'))
   const tugash = matn(fd.get('tugash'))
-  const kun = KUNLAR.find((k) => k === fd.get('kun_turi'))
+  const kunlar = [...new Set(fd.getAll('kunlar').map(Number))]
+    .filter((k) => Number.isInteger(k) && k >= 1 && k <= 7)
+    .sort((a, b) => a - b)
   const narx = summaOqi(fd.get('oylik_narx'))
   const sigim = sonOqi(fd.get('sigim')) ?? 12
 
   if (!boshlanish || !tugash) return 'Dars boshlanish va tugash vaqtini kiriting.'
   if (tugash <= boshlanish) return 'Dars tugash vaqti boshlanishidan keyin bo‘lishi kerak.'
-  if (!kun) return 'Kun turini tanlang.'
+  if (!kunlar.length) return 'Dars kunlarini tanlang — kamida bitta kun.'
   if (!narx) return 'Oylik narx noto‘g‘ri. Masalan: 650000 yoki 650.'
   if (sigim < 1 || sigim > 12) return 'Guruh sig‘imi 1 dan 12 gacha (markaz qoidasi).'
 
@@ -62,7 +62,7 @@ async function oqi(fd: FormData): Promise<GuruhMaydonlari | string> {
     teacher_id: teacherId,
     boshlanish,
     tugash,
-    kun_turi: kun,
+    kunlar,
     oylik_narx: narx,
     sigim,
   }

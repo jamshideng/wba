@@ -7,7 +7,7 @@ import { Card, CardHeader, Stat, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Xabar } from '@/components/forma'
 import { pul, sana, jadval, davrNomi, joriyDavr, bugunToshkent, vaqt } from '@/lib/format'
-import type { DayType, PaymentMethod, AttendanceStatus, KeyingiDars } from '@/lib/types'
+import type { PaymentMethod, AttendanceStatus, KeyingiDars } from '@/lib/types'
 
 export const metadata = { title: 'Mening sahifam' }
 export const dynamic = 'force-dynamic'
@@ -84,7 +84,7 @@ export default async function MeningSahifam({
   ] = await Promise.all([
     supabase
       .from('enrollments')
-      .select('id, group_id, boshlandi, holat, groups(nom, boshlanish, tugash, kun_turi, oylik_narx, teachers(ism))')
+      .select('id, group_id, boshlandi, holat, groups(nom, boshlanish, tugash, kunlar, oylik_narx, teachers(ism))')
       .eq('student_id', oquvchi.id)
       .neq('holat', 'tugagan')
       .order('boshlandi'),
@@ -113,7 +113,7 @@ export default async function MeningSahifam({
       nom: string
       boshlanish: string
       tugash: string
-      kun_turi: DayType
+      kunlar: number[]
       oylik_narx: number
       teachers: { ism: string } | null
     } | null
@@ -220,7 +220,7 @@ export default async function MeningSahifam({
                       <span className="text-[13.5px] font-semibold">{y.groups?.nom ?? '—'}</span>
                       <span className="text-[12px] text-ink-3">
                         {y.groups?.teachers?.ism ?? '[ANIQLANMAGAN]'} ·{' '}
-                        {jadval(y.groups?.boshlanish ?? null, y.groups?.tugash ?? null, y.groups?.kun_turi ?? null)}
+                        {jadval(y.groups?.boshlanish ?? null, y.groups?.tugash ?? null, y.groups?.kunlar ?? null)}
                       </span>
                       <span className="text-[12px] text-ink-3">{sana(y.boshlandi)} dan o‘qiyapman</span>
                     </span>

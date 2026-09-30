@@ -1,6 +1,7 @@
 import 'server-only'
 import { google } from 'googleapis'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { kunlarNomi } from '@/lib/format'
 
 /**
  * BAZA → GOOGLE SHEETS KO'ZGUSI.
@@ -45,7 +46,7 @@ export async function kozguVaraqlari(): Promise<Varaq[]> {
 
   const [oquvchilar, guruhlar, ustozlar, yozilishlar, tolovlar, hisoblar, davomat, qarzdorlar, balans] = await Promise.all([
     hammasi((a, b) => db.from('students').select('id, fish, tugilgan_sana, ota_tel, ona_tel, shaxsiy_tel, qoshilgan_sana, holat, izoh').order('id').range(a, b)),
-    hammasi((a, b) => db.from('groups').select('id, nom, subject_id, teacher_id, boshlanish, tugash, kun_turi, oylik_narx, sigim, holat').order('id').range(a, b)),
+    hammasi((a, b) => db.from('groups').select('id, nom, subject_id, teacher_id, boshlanish, tugash, kunlar, oylik_narx, sigim, holat').order('id').range(a, b)),
     hammasi((a, b) => db.from('teachers').select('id, ism, telefon, telegram_id, holat').order('id').range(a, b)),
     hammasi((a, b) => db.from('enrollments').select('id, sheets_id, student_id, group_id, boshlandi, tugadi, chegirma_summa, chegirma_oy, chegirma2_summa, chegirma2_oy, chegirma_sabab, holat').order('sheets_id').range(a, b)),
     hammasi((a, b) => db.from('payments').select('id, sheets_id, sana, student_id, enrollment_id, davr, summa, usul, tasdiqlangan, bekor, izoh, manba').order('sana').range(a, b)),
@@ -92,8 +93,8 @@ export async function kozguVaraqlari(): Promise<Varaq[]> {
     {
       nom: 'BAZA_Guruhlar',
       qatorlar: [
-        ['ID', 'Nom', 'Fan', 'Ustoz', 'Boshlanish', 'Tugash', 'Kun turi', 'Oylik narx', 'Sig‘im', 'Holat'],
-        ...guruhlar.map((g) => [g.id, g.nom, matn(g.subject_id), uNomi.get(g.teacher_id ?? '') ?? '', matn(g.boshlanish), matn(g.tugash), g.kun_turi, som(g.oylik_narx), g.sigim, g.holat]),
+        ['ID', 'Nom', 'Fan', 'Ustoz', 'Boshlanish', 'Tugash', 'Dars kunlari', 'Oylik narx', 'Sig‘im', 'Holat'],
+        ...guruhlar.map((g) => [g.id, g.nom, matn(g.subject_id), uNomi.get(g.teacher_id ?? '') ?? '', matn(g.boshlanish), matn(g.tugash), kunlarNomi(g.kunlar), som(g.oylik_narx), g.sigim, g.holat]),
       ],
     },
     {

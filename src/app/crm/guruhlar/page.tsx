@@ -5,7 +5,6 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, Badge, Empty, Button } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { pul, jadval } from '@/lib/format'
-import type { DayType } from '@/lib/types'
 
 export const metadata = { title: 'Guruhlar' }
 export const dynamic = 'force-dynamic'
@@ -22,7 +21,7 @@ export default async function Guruhlar() {
      filtr shart emas, sarlavha esa kimligiga qarab o'zgaradi. */
   const { data: guruhlar } = await supabase
     .from('groups')
-    .select('id, nom, boshlanish, tugash, kun_turi, oylik_narx, holat, teachers(ism)')
+    .select('id, nom, boshlanish, tugash, kunlar, oylik_narx, holat, teachers(ism)')
     .order('holat')
     .order('nom')
 
@@ -31,7 +30,7 @@ export default async function Guruhlar() {
     nom: string
     boshlanish: string
     tugash: string
-    kun_turi: DayType
+    kunlar: number[]
     oylik_narx: number
     holat: string
     teachers: { ism: string } | null
@@ -91,7 +90,7 @@ export default async function Guruhlar() {
                   </div>
 
                   <span className="font-[family-name:var(--font-mono)] text-[11.5px] text-ink-2">
-                    {jadval(g.boshlanish, g.tugash, g.kun_turi)}
+                    {jadval(g.boshlanish, g.tugash, g.kunlar)}
                   </span>
 
                   <div className="mt-auto flex items-end justify-between gap-3 border-t border-line-soft pt-3">

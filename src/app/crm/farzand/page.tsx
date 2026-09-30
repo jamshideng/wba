@@ -4,7 +4,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { pul, sana, jadval, davrNomi, joriyDavr, bugunToshkent } from '@/lib/format'
-import type { DayType, PaymentMethod } from '@/lib/types'
+import type { PaymentMethod } from '@/lib/types'
 
 export const metadata = { title: 'Farzandim' }
 export const dynamic = 'force-dynamic'
@@ -43,7 +43,7 @@ export default async function Farzand() {
     await Promise.all([
       supabase
         .from('enrollments')
-        .select('id, group_id, boshlandi, holat, groups(nom, boshlanish, tugash, kun_turi, teachers(ism))')
+        .select('id, group_id, boshlandi, holat, groups(nom, boshlanish, tugash, kunlar, teachers(ism))')
         .eq('student_id', oquvchi.id)
         .neq('holat', 'tugagan')
         .order('boshlandi'),
@@ -67,7 +67,7 @@ export default async function Farzand() {
     id: string
     group_id: string
     boshlandi: string
-    groups: { nom: string; boshlanish: string; tugash: string; kun_turi: DayType; teachers: { ism: string } | null } | null
+    groups: { nom: string; boshlanish: string; tugash: string; kunlar: number[]; teachers: { ism: string } | null } | null
   }
   const yList = (yozilishlar ?? []) as unknown as Yozilish[]
   const jamiQarz = ((balans ?? []) as { qarz: number }[]).reduce((a, b) => a + (Number(b.qarz) || 0), 0)
@@ -113,7 +113,7 @@ export default async function Farzand() {
                   <span className="text-[13.5px] font-semibold">{y.groups?.nom ?? '—'}</span>
                   <span className="text-[12px] text-ink-3">
                     {y.groups?.teachers?.ism ?? '[ANIQLANMAGAN]'} ·{' '}
-                    {jadval(y.groups?.boshlanish ?? null, y.groups?.tugash ?? null, y.groups?.kun_turi ?? null)}
+                    {jadval(y.groups?.boshlanish ?? null, y.groups?.tugash ?? null, y.groups?.kunlar ?? null)}
                   </span>
                 </div>
               ))

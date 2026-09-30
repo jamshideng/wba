@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Maydon, FormaBolim, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { KUN_NOMI } from '@/lib/format'
-import type { DayType } from '@/lib/types'
+import { HAFTA_KUNLARI } from '@/lib/format'
 
 export type GuruhQiymati = {
   id?: string
@@ -12,7 +11,7 @@ export type GuruhQiymati = {
   teacher_id?: string | null
   boshlanish?: string
   tugash?: string
-  kun_turi?: DayType
+  kunlar?: number[]
   oylik_narx?: number
   sigim?: number
   holat?: string
@@ -38,10 +37,38 @@ export async function GuruhFormasi({
 
   const fanNomi = new Map((fanlar ?? []).map((f) => [f.id, f.nom]))
   const standart = Number(narx?.qiymat ?? 0) || undefined
+  const tanlangan = qiymat.kunlar ?? []
 
   return (
     <form action={amal} className="flex flex-col gap-4">
       {qiymat.id && <input type="hidden" name="id" value={qiymat.id} />}
+
+      <FormaBolim nom="Dars kunlari">
+        <fieldset className="flex flex-col gap-2">
+          <legend className="sr-only">Dars kunlari</legend>
+          <div className="grid grid-cols-7 gap-1.5">
+            {HAFTA_KUNLARI.map((k) => (
+              <label key={k.raqam} className="relative">
+                <input
+                  type="checkbox"
+                  name="kunlar"
+                  value={k.raqam}
+                  defaultChecked={tanlangan.includes(k.raqam)}
+                  className="peer sr-only"
+                />
+                <span
+                  title={k.nom}
+                  className="flex min-h-12 cursor-pointer flex-col items-center justify-center rounded-[9px] border border-line text-ink-3 transition hover:text-ink peer-checked:border-brand peer-checked:bg-brand-soft peer-checked:text-brand peer-focus-visible:outline-2 peer-focus-visible:outline-brand"
+                >
+                  <span className="text-[14px] font-bold">{k.qisqa}</span>
+                  <span className="hidden text-[10.5px] sm:block">{k.nom}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          <p className="lbl">Guruh qaysi kunlari o‘qiydi — bir yoki bir nechta kunni tanlang. Davomat jurnalida faqat shu kunlar chiqadi.</p>
+        </fieldset>
+      </FormaBolim>
 
       <FormaBolim nom="Yo‘nalish va ustoz">
         <div className="grid gap-3 sm:grid-cols-2">
@@ -77,20 +104,13 @@ export async function GuruhFormasi({
         </div>
       </FormaBolim>
 
-      <FormaBolim nom="Jadval va narx">
+      <FormaBolim nom="Vaqt va narx">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Maydon nom="Boshlanish">
             <input type="time" name="boshlanish" required defaultValue={qiymat.boshlanish?.slice(0, 5) ?? ''} className={kirishKlass} />
           </Maydon>
           <Maydon nom="Tugash">
             <input type="time" name="tugash" required defaultValue={qiymat.tugash?.slice(0, 5) ?? ''} className={kirishKlass} />
-          </Maydon>
-          <Maydon nom="Kunlar" className="col-span-2">
-            <select name="kun_turi" required defaultValue={qiymat.kun_turi ?? 'toq'} className={kirishKlass}>
-              {(Object.keys(KUN_NOMI) as DayType[]).map((k) => (
-                <option key={k} value={k}>{KUN_NOMI[k]}</option>
-              ))}
-            </select>
           </Maydon>
           <Maydon nom="Oylik narx" izoh={qiymat.id ? 'Yangi narx keyingi hisoblardan' : undefined} className="col-span-2">
             <input name="oylik_narx" required inputMode="decimal" defaultValue={qiymat.oylik_narx ?? standart ?? ''} className={kirishKlass} />

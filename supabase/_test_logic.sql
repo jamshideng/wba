@@ -777,5 +777,82 @@ exception when insufficient_privilege or check_violation then raise notice 'OK: 
 end $$;
 
 reset role;
+
+\echo '--- 0028: guruh kunlari, jurnal katagi, woblar ---'
+reset request.jwt.claim.sub;
+-- NX — haftaning hamma kuni: bugun har doim dars kuni
+insert into groups (id, nom, teacher_id, boshlanish, tugash, oylik_narx, kunlar)
+values ('NX', 'Jurnal sinovi', 'U01', '10:00', '11:30', 650000, '{7,1,2,3,4,5,6}');
+insert into enrollments (student_id, group_id, boshlandi) values ('S003', 'NX', '2026-01-01');
+
+do $$
+begin
+  if (select kunlar from groups where id = 'N02') <> '{2,4,6}'::smallint[] then
+    raise exception 'XATO: juft guruh kunlari {2,4,6} emas';
+  end if;
+  if (select kun_turi from groups where id = 'NX') <> 'har_kuni' then
+    raise exception 'XATO: 7 kunlik guruh kun_turi har_kuni emas';
+  end if;
+  update groups set kunlar = '{2,4,6}' where id = 'NX';
+  if (select kun_turi from groups where id = 'NX') <> 'juft' then
+    raise exception 'XATO: kunlar {2,4,6} → kun_turi juft bo''lmadi';
+  end if;
+  update groups set kunlar = '{1,2,3,4,5,6,7}' where id = 'NX';
+  raise notice 'OK: kunlar ↔ kun_turi mos';
+end $$;
+
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana (NX ustozi)
+do $$
+begin
+  if davomat_belgila('NX', bugun_toshkent(), '{"S003":"keldi"}') <> 1 then
+    raise exception 'XATO: ustoz bugungi katakni saqlay olmadi';
+  end if;
+  if woblar_ber('NX', 'S003', 3) <> 3 or woblar_ber('NX', 'S003', 2) <> 5 then
+    raise exception 'XATO: woblar_ber bugungi jamini noto''g''ri qaytardi';
+  end if;
+  begin
+    perform davomat_belgila('NX', bugun_toshkent() - 1, '{"S003":"kelmadi"}');
+    raise exception 'XATO: ustoz o''tgan kunni tuzatdi!';
+  exception when others then
+    if sqlerrm not like '%faqat admin%' then raise; end if;
+  end;
+  begin
+    perform davomat_belgila('N02', bugun_toshkent(), '{"S001":"keldi"}');
+    raise exception 'XATO: ustoz boshqa guruhga davomat qo''ydi!';
+  exception when others then
+    if sqlerrm not like '%huquqingiz yo%' then raise; end if;
+  end;
+  raise notice 'OK: ustoz — faqat o''z guruhi va faqat bugun';
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+begin
+  if davomat_belgila('NX', bugun_toshkent() - 1, '{"S003":"kelmadi"}') <> 1 then
+    raise exception 'XATO: admin o''tgan kunni tuzata olmadi';
+  end if;
+  begin
+    perform davomat_belgila('NX', bugun_toshkent() + 1, '{"S003":"keldi"}');
+    raise exception 'XATO: kelajak kunga davomat qo''yildi!';
+  exception when others then
+    if sqlerrm not like '%Kelasi kun%' then raise; end if;
+  end;
+  -- eski forma bo'sh ballar bilan saqlasa jurnal woblari o'chmasin
+  perform davomat_saqla('NX', bugun_toshkent(), '{"S003":"keldi"}');
+  if (select sum(ball) from woblr w join lessons l on l.id = w.lesson_id
+      where l.group_id = 'NX' and l.sana = bugun_toshkent()) <> 5 then
+    raise exception 'XATO: davomat_saqla jurnal woblarini o''chirdi';
+  end if;
+  -- null — belgini olib tashlaydi
+  perform davomat_belgila('NX', bugun_toshkent(), '{"S003":null}');
+  if exists (select 1 from attendance a join lessons l on l.id = a.lesson_id
+             where l.group_id = 'NX' and l.sana = bugun_toshkent()) then
+    raise exception 'XATO: null belgi o''chmadi';
+  end if;
+  raise notice 'OK: admin — o''tgan kun, kelajak yopiq, woblar saqlanadi';
+end $$;
+
+reset role;
 \echo ''
 \echo '=== TEST TUGADI ==='
