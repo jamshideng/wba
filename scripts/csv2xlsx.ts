@@ -1,5 +1,5 @@
 /** .secrets CSV → .xlsx (bir martalik yordamchi). Parollarni chop etmaydi. */
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import * as XLSX from 'xlsx'
 
 function csvOqi(yol: string): string[][] {
