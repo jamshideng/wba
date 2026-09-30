@@ -98,6 +98,8 @@ type Oquvchi = {
   qoshilgan_sana: string
   holat: 'faol' | 'tanaffus' | 'ketgan'
   izoh: string | null
+  /** VIP — pul to'lamaydi, lekin faol o'quvchi hisobida (Sheets Holat = "VIP") */
+  vip: boolean
 }
 
 type Yozilish = {
@@ -114,6 +116,16 @@ type Yozilish = {
   chegirma2_oy: number | null
   chegirma_sabab: string | null
   holat: 'faol' | 'tugagan'
+  /** VIP — hisob-fakturalari 0 so'm */
+  vip: boolean
+  /** Arxivdan qaytganning eski qarzi (O'quvchilar "Oldingi qoldiq") */
+  qoldiq: number
+  /**
+   * Arxivdagi yozilish — hisob qayta hisoblanmaydi: Arxiv varag'idagi
+   * "To'lashi kerak" chiqib ketgan kundagi yakuniy summa (admin uni qo'lda
+   * tuzatgan bo'lishi ham mumkin). Bitta hisob-faktura bo'lib yoziladi.
+   */
+  kerakQatiy?: number
   // solishtiruv uchun — Sheets o'zi hisoblagan qiymatlar
   sheetKerak: number
   sheetTolangan: number
@@ -123,7 +135,7 @@ type Yozilish = {
   sheetsXato: string | null
 }
 
-type Hisob = { kalit: string; davr: string; summa: number; chegirma: number }
+type Hisob = { kalit: string; davr: string; summa: number; chegirma: number; tuzatish: number }
 
 type Tolov = {
   sheets_id: string | null      // Tolovlar ID — T0001
@@ -291,7 +303,170 @@ function oquvchilarniQur(qatorlar: Qator[]): Oquvchi[] {
       qoshilgan_sana: sanaga(qiymat(q, "Qo'shilgan sana")) ?? '2026-09-01',
       holat: oquvchiHolati(matn(q, 'Holat')),
       izoh: matn(q, 'Izoh') || null,
+      vip: /^vip$/i.test(matn(q, 'Holat')),
     })
+  }
+  return natija
+}
+
+/**
+ * Arxiv varag'idagi (chiqib ketgan) o'quvchilar. O'quvchilar varag'ida
+ * qatori yo'q, lekin to'lovlari Tolovlar'da qolgan bo'lishi mumkin —
+ * shuning uchun ular ham ko'chadi: holat "ketgan", yozilishi "tugagan".
+ */
+function arxivniQur(
+  qatorlar: Qator[],
+  guruhlar: Guruh[],
+  bor: Set<string>,
+): { oquvchilar: Oquvchi[]; yozilishlar: Yozilish[] } {
+  const guruhId = new Map(guruhlar.map((g) => [g.nom, g.id]))
+  const oquvchilar: Oquvchi[] = []
+  const yozilishlar: Yozilish[] = []
+
+  for (const q of qatorlar) {
+    const id = matn(q, 'ID').toUpperCase()
+    const fish = matn(q, 'Ism familya')
+    if (!/^S\d+$/.test(id) || !fish) continue
+    // "Qaytdi" — shu ID yana O'quvchilar varag'ida; arxiv qatori tarix bo'lib qoladi
+    if (bor.has(id)) continue
+
+    const boshlandi = sanaga(qiymat(q, 'Boshlandi'))
+    const chiqdi = sanaga(qiymat(q, 'Chiqdi')) ?? sanaga(qiymat(q, "Arxivga o'tgan"))
+
+    oquvchilar.push({
+      id,
+      fish,
+      tugilgan_sana: sanaga(qiymat(q, "Tug'ilgan sana")),
+      ota_tel: telefonga(qiymat(q, 'Ota telefoni')),
+      ona_tel: telefonga(qiymat(q, 'Ona telefoni')),
+      shaxsiy_tel: telefonga(qiymat(q, 'Shaxsiy telefon')),
+      qoshilgan_sana: boshlandi ?? chiqdi ?? '2026-09-01',
+      holat: 'ketgan',
+      izoh: [matn(q, 'Sabab'), matn(q, 'Izoh')].filter(Boolean).join(' · ') || null,
+      vip: false,
+    })
+
+    const guruhNomi = matn(q, 'Guruh')
+    if (!guruhNomi) continue               // guruhsiz kiritilgan (xato yozuv) — yozilish yo'q
+    const gid = guruhId.get(guruhNomi)
+    if (!gid) {
+      ogoh(`Arxiv ${id}: guruh topilmadi — "${guruhNomi}" (${fish})`)
+      continue
+    }
+    if (!boshlandi) {
+      ogoh(`Arxiv ${id}: boshlanish sanasi yo'q — ${fish}`)
+      continue
+    }
+    yozilishlar.push({
+      kalit: `${id}|${gid}`,
+      sheets_id: id,
+      student_id: id,
+      group_id: gid,
+      guruhNomi,
+      boshlandi,
+      tugadi: chiqdi ?? boshlandi,
+      chegirma_summa: 0, chegirma_oy: 0, chegirma2_summa: 0, chegirma2_oy: 0,
+      chegirma_sabab: null,
+      holat: 'tugagan',
+      vip: false,
+      qoldiq: 0,
+      kerakQatiy: pulga(qiymat(q, "To'lashi kerak")),
+      sheetKerak: pulga(qiymat(q, "To'lashi kerak")),
+      sheetTolangan: pulga(qiymat(q, "To'langan")) + pulga(qiymat(q, "Arxivda to'langan")),
+      sheetQarz: pulga(qiymat(q, 'Qarz')),
+      sheetOylar: pulga(qiymat(q, 'Oylar')),
+      sheetsXato: null,
+    })
+  }
+  return { oquvchilar, yozilishlar }
+}
+
+/**
+ * 29.09.2026 dan Qatnashuv varag'i yo'q: u O'quvchilar ichiga birlashgan.
+ * Endi O'quvchilar'ning HAR QATORI = bitta bola × bitta fan, o'z ID'si bilan
+ * (ikki fanga yozilgan bola — ikkita qator, ikkita ID). Yozilish shu qatorning
+ * o'zidan olinadi; ID ham o'sha (S001) — qayta yurgizilsa yangilanadi.
+ */
+function yozilishlarOquvchilardan(
+  qatorlar: Qator[],
+  guruhlar: Guruh[],
+  oquvchilar: Oquvchi[],
+): Yozilish[] {
+  const guruhId = new Map(guruhlar.map((g) => [g.nom, g.id]))
+  const oquvchiBor = new Map(oquvchilar.map((o) => [o.id, o]))
+  const natija: Yozilish[] = []
+
+  for (const q of qatorlar) {
+    const id = matn(q, 'ID').toUpperCase()
+    const o = oquvchiBor.get(id)
+    if (!o) continue
+    const guruhNomi = matn(q, 'Guruh')
+    if (!guruhNomi) {
+      ogoh(`O'quvchilar ${q._qator}-qator: guruh yo'q — ${o.fish} (${id}), yozilishsiz ko'chadi`)
+      continue
+    }
+    const gid = guruhId.get(guruhNomi)
+    if (!gid) {
+      toxtat(`O'quvchilar ${q._qator}-qator: guruh Guruhlar varag'ida yo'q — "${guruhNomi}" (${o.fish})`)
+      continue
+    }
+    const boshlandiXom = qiymat(q, "Qo'shilgan sana")
+    const boshlandi = sanaga(boshlandiXom)
+    if (!boshlandi) {
+      toxtat(`O'quvchilar ${q._qator}-qator: "Qo'shilgan sana" yo'q — ${o.fish} (${id})`)
+      continue
+    }
+    const tugadi = sanaga(qiymat(q, 'Tugadi'))
+    const cheg1 = pulga(qiymat(q, '1-chegirma'))
+    const cheg2 = pulga(qiymat(q, '2-chegirma'))
+
+    natija.push({
+      kalit: `${id}|${gid}`,
+      sheets_id: id,
+      student_id: id,
+      group_id: gid,
+      guruhNomi,
+      boshlandi,
+      tugadi,
+      chegirma_summa: cheg1,
+      chegirma_oy: cheg1 > 0 ? chegirmaOylari(q, '1-necha oy') : 0,
+      chegirma2_summa: cheg2,
+      chegirma2_oy: cheg2 > 0 ? chegirmaOylari(q, '2-necha oy') : 0,
+      chegirma_sabab: null,
+      holat: tugadi ? 'tugagan' : 'faol',
+      vip: o.vip,
+      qoldiq: pulga(qiymat(q, 'Oldingi qoldiq')),
+      sheetKerak: pulga(qiymat(q, "To'lashi kerak")),
+      sheetTolangan: pulga(qiymat(q, "Jami to'langan")),
+      sheetQarz: pulga(qiymat(q, 'Qarz')),
+      sheetOylar: pulga(qiymat(q, 'Oylar')),
+      sheetsXato: typeof boshlandiXom === 'string'
+        ? `${id}: "Qo'shilgan sana" matn bo'lib kiritilgan ("${String(boshlandiXom)}")`
+        : null,
+    })
+  }
+  return natija
+}
+
+/**
+ * Tuzatishlar varag'i — o'quvchining ma'lum OYIDAGI to'lovidan aniq summa
+ * ayriladi (Y_Tuzatish.js). Kalit: O'quvchi ID → oy raqami → summa.
+ */
+function tuzatishlarniQur(qatorlar: Qator[]): Map<string, Map<number, number>> {
+  const natija = new Map<string, Map<number, number>>()
+  for (const q of qatorlar) {
+    const summa = pulga(qiymat(q, 'Summa (−)', 'Summa (-)', 'Summa'))
+    if (summa <= 0) continue
+    const { id } = kalitAjrat(qiymat(q, "O'quvchi · guruh", "O'quvchi"))
+    const sid = (matn(q, "O'quvchi ID") || id || '').toUpperCase()
+    const oy = oyRaqami(qiymat(q, 'Oy'))
+    if (!sid || oy <= 0) {
+      toxtat(`Tuzatish ${q._qator}-qator: o'quvchi yoki oy o'qilmadi (${summa})`)
+      continue
+    }
+    const oylar = natija.get(sid) ?? new Map<number, number>()
+    oylar.set(oy, (oylar.get(oy) ?? 0) + summa)
+    natija.set(sid, oylar)
   }
   return natija
 }
@@ -356,6 +531,8 @@ function yozilishlarniQur(
       chegirma2_oy: cheg2 > 0 ? chegirmaOylari(q, '2-necha oy') : 0,
       chegirma_sabab: matn(q, 'Izoh') || null,
       holat: tugadi ? 'tugagan' : 'faol',
+      vip: false,
+      qoldiq: 0,
       sheetKerak: pulga(qiymat(q, "To'lashi kerak")),
       sheetTolangan: pulga(qiymat(q, "To'langan")),
       sheetQarz: pulga(qiymat(q, 'Qarz')),
@@ -442,12 +619,19 @@ function hisoblarniQur(
   yozilishlar: Yozilish[],
   guruhlar: Guruh[],
   tarix: Map<string, NarxQator[]>,
+  tuzatishlar: Map<string, Map<number, number>> = new Map(),
   bugun = new Date(),
 ): Hisob[] {
   const guruhNarxi = new Map(guruhlar.map((g) => [g.id, g.oylik_narx]))
   const natija: Hisob[] = []
 
   for (const y of yozilishlar) {
+    if (y.kerakQatiy !== undefined) {
+      if (y.kerakQatiy > 0) {
+        natija.push({ kalit: y.kalit, davr: y.boshlandi.slice(0, 7), summa: y.kerakQatiy, chegirma: 0, tuzatish: 0 })
+      }
+      continue
+    }
     const oylar = oylarSoni(y.boshlandi, y.tugadi, bugun)
     if (oylar <= 0) continue
     if (y.sheetOylar > 0 && y.sheetOylar !== oylar) {
@@ -468,11 +652,20 @@ function hisoblarniQur(
         { summa: y.chegirma_summa, oylar: y.chegirma_oy },
         { summa: y.chegirma2_summa, oylar: y.chegirma2_oy },
       )
+      /* VIP — to'lamaydi: hisob 0 (Sheets T = 0). Tuzatish — shu oyning
+         summasidan aniq ayriladi; Sheets uni chegaralamaydi, shuning uchun
+         bu yerda ham manfiyga tushsa ogohlantiriladi. */
+      const tuz = tuzatishlar.get(y.student_id)?.get(oy) ?? 0
+      const toza = narx - chegirma - tuz
+      if (!y.vip && toza < 0) {
+        ogoh(`${y.student_id} · ${davrdan(oy)}: chegirma + tuzatish (${chegirma + tuz}) narxdan (${narx}) katta`)
+      }
       natija.push({
         kalit: y.kalit,
         davr: davrdan(oy),
-        summa: Math.max(narx - chegirma, 0),
-        chegirma: Math.min(chegirma, narx),
+        summa: y.vip ? 0 : toza,
+        chegirma: y.vip ? narx : chegirma,
+        tuzatish: y.vip ? 0 : tuz,
       })
     }
   }
@@ -483,7 +676,12 @@ function hisoblarniQur(
 /*  3. To'lovlar                                                       */
 /* ------------------------------------------------------------------ */
 
-function tolovlarniQur(qatorlar: Qator[], guruhlar: Guruh[], oquvchilar: Oquvchi[]): Tolov[] {
+function tolovlarniQur(
+  qatorlar: Qator[],
+  guruhlar: Guruh[],
+  oquvchilar: Oquvchi[],
+  yozilishKaliti: Map<string, string> = new Map(),
+): Tolov[] {
   const guruhId = new Map(guruhlar.map((g) => [g.nom, g.id]))
   const oquvchiBor = new Set(oquvchilar.map((o) => o.id))
   const natija: Tolov[] = []
@@ -523,7 +721,9 @@ function tolovlarniQur(qatorlar: Qator[], guruhlar: Guruh[], oquvchilar: Oquvchi
     natija.push({
       sheets_id: sheetsId,
       student_id: sid,
-      kalit: gid ? `${sid}|${gid}` : null,
+      // Yangi tuzilma: o'quvchi ID = bitta fan, to'lov shu yozilishga tegishli
+      // (kalitdagi guruh nomi eskirgan bo'lsa ham).
+      kalit: yozilishKaliti.get(sid) ?? (gid ? `${sid}|${gid}` : null),
       sana,
       davr,
       summa,
@@ -636,8 +836,26 @@ function davomatniQur(
 function malumotniQur(kitob: Map<string, ReturnType<typeof varaq>>) {
   const ustozlar = ustozlarniQur(varaq(kitob, 'Ustozlar').qatorlar)
   const guruhlar = guruhlarniQur(varaq(kitob, 'Guruhlar').qatorlar, ustozlar)
-  const oquvchilar = oquvchilarniQur(varaq(kitob, "O'quvchilar").qatorlar)
-  const yozilishlar = yozilishlarniQur(varaq(kitob, 'Qatnashuv').qatorlar, guruhlar, oquvchilar)
+  const oquvVaraq = varaq(kitob, "O'quvchilar")
+  const oquvchilar = oquvchilarniQur(oquvVaraq.qatorlar)
+
+  /* 29.09.2026 dan Qatnashuv yo'q — yozilish O'quvchilar qatorining o'zi.
+     Eski jadval (Qatnashuv bor) ham ishlayveradi. */
+  const qatnVaraq = varaqBormi(kitob, 'Qatnashuv')
+  const yangiTuzilma = !qatnVaraq
+  const yozilishlar = qatnVaraq
+    ? yozilishlarniQur(qatnVaraq.qatorlar, guruhlar, oquvchilar)
+    : yozilishlarOquvchilardan(oquvVaraq.qatorlar, guruhlar, oquvchilar)
+
+  const arxivVaraq = yangiTuzilma ? varaqBormi(kitob, 'Arxiv') : null
+  if (arxivVaraq) {
+    const a = arxivniQur(arxivVaraq.qatorlar, guruhlar, new Set(oquvchilar.map((o) => o.id)))
+    oquvchilar.push(...a.oquvchilar)
+    yozilishlar.push(...a.yozilishlar)
+  }
+
+  const tuzVaraq = yangiTuzilma ? varaqBormi(kitob, 'Tuzatishlar') : null
+  const tuzatishlar = tuzVaraq ? tuzatishlarniQur(tuzVaraq.qatorlar) : new Map<string, Map<number, number>>()
 
   const narxVaraq = varaqBormi(kitob, 'Narxlar')
   const tarix = narxTarixi(
@@ -651,8 +869,19 @@ function malumotniQur(kitob: Map<string, ReturnType<typeof varaq>>) {
     ogoh("Narxlar varag'i bo'sh — har oy guruhning joriy narxidan hisoblanadi.")
   }
 
-  const hisoblar = hisoblarniQur(yozilishlar, guruhlar, tarix)
-  const tolovlar = tolovlarniQur(varaq(kitob, 'Tolovlar').qatorlar, guruhlar, oquvchilar)
+  const hisoblar = hisoblarniQur(yozilishlar, guruhlar, tarix, tuzatishlar)
+  const tolovlar = tolovlarniQur(
+    varaq(kitob, 'Tolovlar').qatorlar,
+    guruhlar,
+    oquvchilar,
+    yangiTuzilma ? new Map(yozilishlar.map((y) => [y.student_id, y.kalit])) : new Map(),
+  )
+
+  /* Arxivga o'tgandan keyingi to'lovlar — alohida jurnalda (_Arxiv_tolovlar) */
+  const arxTolVaraq = yangiTuzilma ? varaqBormi(kitob, '_Arxiv_tolovlar') : null
+  const arxivTolovlari = (arxTolVaraq?.qatorlar ?? [])
+    .map((q) => ({ id: matn(q, 'ID').toUpperCase(), summa: pulga(qiymat(q, 'Summa')), sana: sanaga(qiymat(q, 'Sana')) }))
+    .filter((x) => x.id && x.summa > 0)
 
   const probVaraq = varaqBormi(kitob, 'Probniylar')
   const probniylar = probVaraq ? probniylarniQur(probVaraq.qatorlar, guruhlar, oquvchilar) : []
@@ -661,7 +890,7 @@ function malumotniQur(kitob: Map<string, ReturnType<typeof varaq>>) {
     ? davomatniQur(kitob, guruhlar, oquvchilar)
     : { darslar: [] as Dars[], belgilar: [] as Davomat[] }
 
-  return { ustozlar, guruhlar, oquvchilar, yozilishlar, hisoblar, tolovlar, probniylar, davomat }
+  return { ustozlar, guruhlar, oquvchilar, yozilishlar, hisoblar, tolovlar, probniylar, davomat, tuzatishlar, arxivTolovlari, yangiTuzilma }
 }
 
 type Tayyor = ReturnType<typeof malumotniQur>
@@ -688,7 +917,7 @@ function solishtir(d: Tayyor) {
   let jamiTolangan = 0, jamiTolanganSheets = 0
 
   for (const y of d.yozilishlar) {
-    const kerak = hisobJami.get(y.kalit) ?? 0
+    const kerak = (hisobJami.get(y.kalit) ?? 0) + y.qoldiq
     const tolangan = tolovJami.get(y.kalit) ?? 0
 
     jamiKerak += kerak
@@ -748,7 +977,7 @@ async function yoz(d: Tayyor) {
     })),
   )).error)
 
-  xato('students', (await db.from('students').upsert(d.oquvchilar)).error)
+  xato('students', (await db.from('students').upsert(d.oquvchilar.map(({ vip: _vip, ...o }) => o))).error)
 
   // Qatnashuv ID (Q001) bo'yicha — qayta yurgizilsa yangilanadi, ikkilanmaydi
   xato('enrollments', (await db.from('enrollments').upsert(
@@ -888,6 +1117,17 @@ async function ishga() {
   console.log(`  hisob-faktura   ${d.hisoblar.length}`)
   console.log(`  to‘lovlar       ${d.tolovlar.length}  (${pul(d.tolovlar.reduce((a, t) => a + t.summa, 0))} so‘m)`)
   console.log(`  probniylar      ${d.probniylar.length}`)
+  if (d.yangiTuzilma) {
+    const faol = d.oquvchilar.filter((o) => o.holat === 'faol')
+    const bolalar = new Set(faol.map((o) => `${o.fish.trim().toLowerCase()}|${o.ota_tel ?? ''}${o.ona_tel ?? ''}${o.shaxsiy_tel ?? ''}`))
+    const tuzSoni = [...d.tuzatishlar.values()].reduce((a, m) => a + m.size, 0)
+    const tuzJami = [...d.tuzatishlar.values()].reduce((a, m) => a + [...m.values()].reduce((x, y) => x + y, 0), 0)
+    console.log('  — yangi tuzilma (1 qator = 1 bola × 1 fan) —')
+    console.log(`  faol (fan bo‘yicha) ${faol.length} · bolalar ${bolalar.size} · VIP ${d.oquvchilar.filter((o) => o.vip).length}`)
+    console.log(`  arxivdagilar    ${d.oquvchilar.filter((o) => o.holat === 'ketgan').length}`)
+    console.log(`  tuzatishlar     ${tuzSoni}  (${pul(tuzJami)} so‘m)`)
+    console.log(`  arxiv to‘lovlari ${d.arxivTolovlari.length}  (${pul(d.arxivTolovlari.reduce((a, x) => a + x.summa, 0))} so‘m)`)
+  }
 
   const usulsiz = d.tolovlar.filter((t) => !t.usul).length
   if (usulsiz) console.log(`  · shundan ${usulsiz} tasining USULI [ANIQLANMAGAN]`)
