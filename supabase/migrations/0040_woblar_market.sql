@@ -49,6 +49,12 @@ alter table woblr_redemptions add column if not exists berildi_vaqt timestamptz;
 alter table woblr_redemptions add column if not exists bekor_sabab  text;
 alter table woblr_redemptions add column if not exists bekor_qildi  uuid references profiles (id) on delete set null;
 
+-- Market'dan oldingi (kodsiz) yozuvlar — allaqachon berilgan sovg'alar.
+-- Ular "olib ketilmagan" bo'lib ro'yxatga va nishonga tushmasin.
+update woblr_redemptions
+   set holat = 'berildi', berildi_vaqt = coalesce(berildi_vaqt, created_at)
+ where kod is null and holat = 'kutilmoqda';
+
 create unique index if not exists woblr_redemptions_kod_uniq on woblr_redemptions (kod) where kod is not null;
 create index if not exists woblr_redemptions_holat_idx on woblr_redemptions (holat, created_at desc);
 
