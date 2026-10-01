@@ -52,7 +52,8 @@ export async function POST(req: NextRequest) {
        qolgani  — Apps Script'ga (haqiqiy ish hozircha Sheets'da) */
   if (update?.message && guruhBuyrugimi(update.message)) {
     const m = update.message
-    if (bazaBuyrugimi(m.text ?? '')) {
+    // /baza_* hozircha o'chiq (Jamshid, 01.10: "keyinroq") — Vercel'da BAZA_BUYRUQLARI=1 qo'yilsa yoqiladi
+    if (process.env.BAZA_BUYRUQLARI === '1' && bazaBuyrugimi(m.text ?? '')) {
       after(async () => {
         try {
           await xabar(m.chat.id, await bazaBuyrugiMatn(m.text ?? ''))
