@@ -989,6 +989,50 @@ exception when others then
   raise notice 'OK: VIP faqat admin/direktorga';
 end $$;
 
+-- ============================================================
+--  DAVOMAT QULFI (0031): ustoz o'tgan kunni REST orqali ham o'zgartira olmaydi
+-- ============================================================
+reset role;
+reset request.jwt.claim.sub;
+insert into lessons (group_id, sana, otkazildi) values ('N01', bugun_toshkent() - 2, true)
+  on conflict (group_id, sana) do nothing;
+insert into attendance (lesson_id, student_id, holat)
+  select id, 'S001', 'keldi' from lessons where group_id = 'N01' and sana = bugun_toshkent() - 2
+  on conflict do nothing;
+
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana (N01)
+\echo '--- 0031: ustoz o''tgan kun belgisini to''g''ridan o''zgartira olmaydi ---'
+do $$
+declare n int;
+begin
+  update attendance set holat = 'kelmadi'
+   where student_id = 'S001'
+     and lesson_id = (select id from lessons where group_id = 'N01' and sana = bugun_toshkent() - 2);
+  get diagnostics n = row_count;
+  if n > 0 then raise exception 'XATO: ustoz o''tgan kun davomatini REST orqali o''zgartirdi!'; end if;
+  raise notice 'OK: o''tgan kun belgisi ustozga yopiq (0 qator)';
+
+  begin
+    insert into lessons (group_id, sana, otkazildi) values ('N01', bugun_toshkent() - 3, true);
+    raise exception 'XATO: ustoz o''tgan kunga dars ochdi!';
+  exception when insufficient_privilege then
+    raise notice 'OK: o''tgan kunga dars ochish ustozga yopiq';
+  end;
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare n int;
+begin
+  update attendance set holat = 'kechikdi'
+   where student_id = 'S001'
+     and lesson_id = (select id from lessons where group_id = 'N01' and sana = bugun_toshkent() - 2);
+  get diagnostics n = row_count;
+  if n = 0 then raise exception 'XATO: admin o''tgan kunni tuzata olmadi'; end if;
+  raise notice 'OK: admin o''tgan kunni tuzatdi';
+end $$;
+
 reset role;
 \echo ''
 \echo '=== TEST TUGADI ==='
