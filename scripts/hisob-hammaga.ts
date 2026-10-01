@@ -74,8 +74,12 @@ async function main() {
     if (data.users.length < 1000) break
   }
 
+  const { data: rahbarlar0 } = await db.from('profiles').select('id').in('rol', ['admin', 'direktor', 'qabulxona'])
+  const rahbarId = new Set((rahbarlar0 ?? []).map((r) => r.id as string))
+
   async function hisobOch(email: string, parol: string, ism: string, rol: 'ustoz' | 'oquvchi'): Promise<string> {
     const mavjud = bor.get(email)
+    if (mavjud && rahbarId.has(mavjud)) throw new Error(`${email} — rahbar hisobi, tegilmaydi`)
     if (mavjud) {
       const { error } = await db.auth.admin.updateUserById(mavjud, {
         password: parol,
@@ -101,7 +105,20 @@ async function main() {
   if (e1) throw e1
   const olingan = new Set<string>()
   const uNat: Natija[] = []
+  // Admin/direktor/qabulxona ham ustoz bo'lishi mumkin (Jamshid, Farrux) —
+  // ularning paroli va roli TEGILMAYDI (aks holda huquqi "ustoz"ga tushadi).
+  const { data: rahbarlar, error: e0 } = await db.from('profiles').select('id').in('rol', ['admin', 'direktor', 'qabulxona'])
+  if (e0) throw e0
+  const rahbar = new Set((rahbarlar ?? []).map((r) => r.id as string))
+  const { data: ustozProfil } = await db.from('teachers').select('id, profile_id')
+  const ustozPid = new Map((ustozProfil ?? []).map((t) => [t.id as string, t.profile_id as string | null]))
+
   for (const u of ustozlar ?? []) {
+    const pid = ustozPid.get(u.id)
+    if (pid && rahbar.has(pid)) {
+      console.log(`ustoz  ${u.id}  (rahbar hisobi — o'z paroli saqlandi)  ${u.ism}`)
+      continue
+    }
     let login = ustozLogin(u.ism) || `ustoz${u.id.toLowerCase()}`
     const baza = login
     let n = 2
@@ -109,6 +126,10 @@ async function main() {
     olingan.add(login)
     const parol = parolYarat()
     const email = `${login}@${DOMEN}`
+    if (rahbarId.has(bor.get(email) ?? '')) {
+      console.log(`ustoz  ${u.id}  (${login} — rahbar hisobi, tegilmadi)  ${u.ism}`)
+      continue
+    }
     const uid = await hisobOch(email, parol, u.ism, 'ustoz')
     await db.from('teachers').update({ profile_id: null }).eq('profile_id', uid)
     await db.from('teachers').update({ profile_id: uid }).eq('id', u.id)
