@@ -435,6 +435,20 @@ export type Tuzatish = {
   created_at: string
 }
 
+/** Markaz xarajati (0033). O'chirilmaydi — bekor qilinadi. */
+export type Xarajat = {
+  id: number
+  sana: string
+  toifa: 'ijara' | 'maosh' | 'kommunal' | 'reklama' | 'jihoz' | 'ofis' | 'soliq' | 'boshqa'
+  summa: number
+  izoh: string | null
+  kiritgan: string | null
+  bekor: boolean
+  bekor_sabab: string | null
+  created_at: string
+  updated_at: string
+}
+
 /** davomat_saqla() qaytaradigan natija */
 export type DavomatNatija = {
   dars_id: string
@@ -491,6 +505,7 @@ export type Database = {
       payments: Table<Payment>
       leads: Table<Lead>
       tuzatishlar: Table<Tuzatish>
+      xarajatlar: Table<Xarajat>
       settings: Table<Setting>
       audit_log: Table<AuditLog>
     }
@@ -553,6 +568,10 @@ export type Database = {
         Returns: { enrollment_id: string; davr: string; narx: number; chegirma: number; tuzatish: number; kerak: number; tolangan: number; holat: string }[]
       }
       keyingi_oylar: { Args: { p_student: string }; Returns: { enrollment_id: string; summa: number | null }[] }
+      oylik_moliya: {
+        Args: { p_davr: string }
+        Returns: { davr: string; tushum: number; xarajat: number; foyda: number; toifalar: { toifa: string; summa: number; soni: number }[] }
+      }
       keyingi_oy_summasi: { Args: { p_enrollment: string; p_davr?: string | null }; Returns: number }
       tuzatish_qosh: {
         Args: { p_enrollment: string; p_davr: string; p_summa: number; p_sabab: string }

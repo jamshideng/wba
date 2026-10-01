@@ -1060,6 +1060,64 @@ begin
   raise notice 'OK: admin o''quvchi profilini o''zgartira oladi';
 end $$;
 
+-- ============================================================
+--  XARAJATLAR (0033): huquq, o'zgarmaslik, oylik moliya
+-- ============================================================
+reset role;
+reset request.jwt.claim.sub;
+set role authenticated;
+\echo '--- 0033: xarajatlar ---'
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare v_id bigint; v jsonb;
+begin
+  insert into xarajatlar (toifa, summa, sana, izoh) values ('ijara', 3000000, bugun_toshkent(), 'sinov')
+    returning id into v_id;
+  v := oylik_moliya(to_char(bugun_toshkent(), 'YYYY-MM'));
+  if (v ->> 'xarajat')::numeric < 3000000 then raise exception 'XATO: oylik_moliya xarajatni sanamadi: %', v; end if;
+  if (v ->> 'foyda')::numeric <> (v ->> 'tushum')::numeric - (v ->> 'xarajat')::numeric then
+    raise exception 'XATO: foyda noto''g''ri: %', v;
+  end if;
+  begin
+    update xarajatlar set summa = 1 where id = v_id;
+    raise exception 'XATO: xarajat summasi o''zgardi!';
+  exception when others then
+    if sqlerrm not like '%bekor qilib%' then raise; end if;
+  end;
+  update xarajatlar set bekor = true, bekor_sabab = 'sinov' where id = v_id;
+  if (oylik_moliya(to_char(bugun_toshkent(), 'YYYY-MM')) ->> 'xarajat')::numeric >= (v ->> 'xarajat')::numeric then
+    raise exception 'XATO: bekor xarajat hisobda qoldi';
+  end if;
+  raise notice 'OK: admin yozadi, summa o''zgarmaydi, bekor hisobdan chiqadi';
+end $$;
+
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';   -- qabulxona
+do $$
+begin
+  perform count(*) from xarajatlar;
+  begin
+    insert into xarajatlar (toifa, summa) values ('ofis', 1000);
+    raise exception 'XATO: qabulxona xarajat yozdi!';
+  exception when insufficient_privilege then
+    raise notice 'OK: qabulxona faqat ko''radi';
+  end;
+end $$;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+declare n int;
+begin
+  select count(*) into n from xarajatlar;
+  if n > 0 then raise exception 'XATO: ustoz xarajatlarni ko''rdi!'; end if;
+  begin
+    perform oylik_moliya(to_char(bugun_toshkent(), 'YYYY-MM'));
+    raise exception 'XATO: ustoz moliyani ko''rdi!';
+  exception when others then
+    if sqlerrm not like '%faqat xodimlarga%' then raise; end if;
+  end;
+  raise notice 'OK: ustozga xarajat va moliya yopiq';
+end $$;
+
 reset role;
 \echo ''
 \echo '=== TEST TUGADI ==='

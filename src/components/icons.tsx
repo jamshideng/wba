@@ -190,3 +190,11 @@ export const IconArxiv = (p: P) => (
     <path d="M7.5 10h3" />
   </Svg>
 )
+
+export const IconXarajat = (p: P) => (
+  <Svg {...p}>
+    <rect x="2.5" y="4" width="13" height="10" rx="1.5" />
+    <path d="M2.5 7.5h13" />
+    <path d="M9 10v2.5M7.75 11.25 9 12.5l1.25-1.25" />
+  </Svg>
+)
