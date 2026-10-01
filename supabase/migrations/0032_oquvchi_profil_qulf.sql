@@ -1,7 +1,7 @@
 -- ============================================================
 --  0032 — O'QUVCHI PROFILI QULFI (Jamshid 01.10)
 --
---  O'quvchi o'z ismini, loginini va parolini o'zi o'zgartirmaydi —
+--  O'quvchi va ota-ona o'z ismini, loginini va parolini o'zi o'zgartirmaydi —
 --  ko'p o'ynab, bazani og'irlashtirmasin. Profilda unga faqat
 --  "Telegramga ulash" qoladi; ism/login/parol — admin orqali.
 --
@@ -15,10 +15,10 @@ language plpgsql set search_path = public as $$
 begin
   if auth.uid() is not null
      and auth.uid() = old.id
-     and old.rol = 'oquvchi'
+     and old.rol in ('oquvchi', 'ota_ona')
      and not app_is_admin()
      and (new.ism is distinct from old.ism or new.email is distinct from old.email) then
-    raise exception 'O''quvchi ism va loginni o''zi o''zgartira olmaydi — markaz adminiga murojaat qiling.';
+    raise exception 'Ism va loginni o''zingiz o''zgartira olmaysiz — markaz adminiga murojaat qiling.';
   end if;
   return new;
 end;
