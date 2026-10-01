@@ -233,3 +233,58 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .bn-tushish { animation: none; }
 }
+
+/* ── Ommaviy sayt: yengil animatsiyalar ──────────────────────────────
+   Faqat transform/opacity (GPU) — JS'siz, kutubxonasiz. Aylantirganda
+   paydo bo'lish — CSS scroll-driven (animation-timeline): qo'llamaydigan
+   brauzerda sahifa oddiy (animatsiyasiz) ko'rinadi. "Harakatni kamaytirish"
+   yoqilgan qurilmada hech biri ishlamaydi. */
+@keyframes sayt-kirish {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sayt-suzish {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+@keyframes sayt-paydo {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sayt-soya {
+  to { box-shadow: 0 10px 28px -16px rgb(0 0 0 / 0.22); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sayt-kirish { animation: sayt-kirish 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: var(--k, 0ms); }
+  .sayt-suzish { animation: sayt-suzish 6s ease-in-out 0.9s infinite; }
+
+  @supports (animation-timeline: view()) {
+    .sayt-paydo {
+      animation: sayt-paydo linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
+    .sayt-sarlavha {
+      animation: sayt-soya linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 140px;
+    }
+  }
+
+  .sayt-karta { transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s, border-color 0.3s; }
+  .sayt-karta:hover { transform: translateY(-4px); box-shadow: 0 20px 44px -22px rgb(0 0 0 / 0.3); }
+
+  .sayt-tugma { position: relative; overflow: hidden; isolation: isolate; }
+  .sayt-tugma::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.3) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.7s ease;
+    pointer-events: none;
+  }
+  .sayt-tugma:hover::after { transform: translateX(120%); }
+}

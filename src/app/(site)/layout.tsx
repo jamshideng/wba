@@ -13,7 +13,7 @@ const MENYU = [
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <header id="sarlavha" className="sticky top-0 z-20 border-b border-line-soft bg-bg/90 backdrop-blur">
+      <header id="sarlavha" className="sayt-sarlavha sticky top-0 z-20 border-b border-line-soft bg-bg/90 backdrop-blur">
         <div
           className="mx-auto flex max-w-[1260px] flex-wrap items-center justify-between gap-4 px-5 py-3.5 lg:px-8"
           style={{ paddingTop: 'max(0.875rem, env(safe-area-inset-top, 0px))' }}
@@ -39,7 +39,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
               </Link>
               <Link
                 href="/ariza"
-                className="inline-flex min-h-11 items-center rounded-[9px] bg-brand text-white px-5 text-[14px] font-bold transition hover:brightness-110"
+                className="sayt-tugma inline-flex min-h-11 items-center rounded-[9px] bg-brand text-white px-5 text-[14px] font-bold transition hover:brightness-110"
               >
                 Bepul sinov darsi
               </Link>

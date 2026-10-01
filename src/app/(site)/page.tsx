@@ -15,16 +15,16 @@ export default function Bosh() {
       {/* ---------------- Hero ---------------- */}
       <section className="grid items-center gap-10 pt-12 pb-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-14 lg:pt-16">
         <div className="flex flex-col gap-7 text-left">
-          <p className="lbl text-brand">
+          <p className="lbl sayt-kirish text-brand">
             Toshkent · {MARKAZ.tashkilYili} yildan beri
           </p>
-          <h1 className="h-display text-[40px] leading-[1.02] text-pretty sm:text-[56px] lg:text-[68px]">
+          <h1 className="h-display sayt-kirish text-[40px] leading-[1.02] text-pretty sm:text-[56px] lg:text-[68px]" style={{ '--k': '90ms' } as React.CSSProperties}>
             Biz shunchaki bilim bermaymiz, balki <span className="text-brand">hayotlarni o‘zgartiramiz</span>
           </h1>
-          <div className="flex flex-wrap items-center gap-3.5 pt-1">
+          <div className="sayt-kirish flex flex-wrap items-center gap-3.5 pt-1" style={{ '--k': '180ms' } as React.CSSProperties}>
             <Link
               href="/ariza"
-              className="inline-flex min-h-13 items-center rounded-[10px] bg-brand text-white px-7 text-[15px] font-bold transition hover:brightness-110"
+              className="sayt-tugma inline-flex min-h-13 items-center rounded-[10px] bg-brand text-white px-7 text-[15px] font-bold transition hover:brightness-110"
             >
               Bepul sinov darsiga yozilish
             </Link>
@@ -37,11 +37,13 @@ export default function Bosh() {
           </div>
         </div>
 
-        <Kitoblar className="mx-auto w-full max-w-[480px] lg:max-w-none" />
+        <div className="sayt-kirish w-full" style={{ '--k': '120ms' } as React.CSSProperties}>
+          <Kitoblar className="sayt-suzish mx-auto w-full max-w-[480px] lg:max-w-none" />
+        </div>
       </section>
 
       {/* ---------------- Faktlar ---------------- */}
-      <section className="mb-16 grid border-y border-line sm:grid-cols-2 lg:grid-cols-4">
+      <section className="sayt-paydo mb-16 grid border-y border-line sm:grid-cols-2 lg:grid-cols-4">
         {[
           { n: yil, t: 'yildan ortiq tajriba' },
           { n: YONALISHLAR.length, t: 'o‘quv yo‘nalishi' },
@@ -63,7 +65,7 @@ export default function Bosh() {
       </section>
 
       {/* ---------------- Kurslar ---------------- */}
-      <section id="kurslar" className="flex flex-col gap-7 pb-16">
+      <section id="kurslar" className="sayt-paydo flex flex-col gap-7 pb-16">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="flex flex-col gap-3">
             <p className="lbl">Yo‘nalishlar</p>
@@ -93,7 +95,7 @@ export default function Bosh() {
       </section>
 
       {/* ---------------- Dars qanday o'tadi ---------------- */}
-      <section id="dars" className="flex flex-col gap-7 pb-16">
+      <section id="dars" className="sayt-paydo flex flex-col gap-7 pb-16">
         <div className="flex flex-col gap-3">
           <p className="lbl">Dars qanday o‘tadi</p>
           <h2 className="h-display text-[30px] sm:text-[34px]">
@@ -159,7 +161,7 @@ export default function Bosh() {
       </section>
 
       {/* ---------------- Narxlar ---------------- */}
-      <section id="narxlar" className="flex flex-col gap-7 pb-16">
+      <section id="narxlar" className="sayt-paydo flex flex-col gap-7 pb-16">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="flex flex-col gap-3">
             <p className="lbl">Narxlar</p>
@@ -173,7 +175,7 @@ export default function Bosh() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-3">
-          <article className="flex flex-col gap-3.5 rounded-[14px] border border-line bg-surface p-7">
+          <article className="sayt-karta flex flex-col gap-3.5 rounded-[14px] border border-line bg-surface p-7">
             <p className="lbl">Tanishuv oyi</p>
             <p className="flex items-baseline gap-2">
               <span className="h-display tnum text-[36px] leading-none">{pul(NARX.tanishuvOyi)}</span>
@@ -185,7 +187,7 @@ export default function Bosh() {
             </p>
           </article>
 
-          <article className="flex flex-col gap-3.5 rounded-[14px] border border-line bg-surface p-7">
+          <article className="sayt-karta flex flex-col gap-3.5 rounded-[14px] border border-line bg-surface p-7">
             <p className="lbl">Ikkinchi oydan</p>
             <p className="flex items-baseline gap-2">
               <span className="h-display tnum text-[36px] leading-none">{pul(NARX.standart)}</span>
@@ -196,7 +198,7 @@ export default function Bosh() {
             </p>
           </article>
 
-          <article className="flex flex-col gap-3.5 rounded-[14px] border border-brand bg-surface p-7">
+          <article className="sayt-karta flex flex-col gap-3.5 rounded-[14px] border border-brand bg-surface p-7">
             <p className="flex items-center justify-between gap-3">
               <span className="lbl text-brand">Uch oylik</span>
               <span className="rounded-md bg-brand text-white px-2.5 py-1 text-[11px] font-bold">
@@ -228,7 +230,7 @@ export default function Bosh() {
       </section>
 
       {/* ---------------- Aloqa ---------------- */}
-      <section id="aloqa" className="pb-16">
+      <section id="aloqa" className="sayt-paydo pb-16">
         <div className="grid overflow-hidden rounded-[14px] border border-line bg-surface lg:grid-cols-2">
           <div className="flex flex-col gap-6 p-8 lg:p-10">
             <div className="flex flex-col gap-3">
@@ -298,7 +300,7 @@ export default function Bosh() {
       </section>
 
       {/* ---------------- Yakuniy chaqiriq ---------------- */}
-      <section className="flex flex-col items-center gap-5 border-t border-line py-14 text-center">
+      <section className="sayt-paydo flex flex-col items-center gap-5 border-t border-line py-14 text-center">
         <h2 className="h-display max-w-[740px] text-[30px] leading-tight text-pretty sm:text-[40px]">
           Birinchi dars bepul. Qolganini o‘zingiz hal qilasiz.
         </h2>
@@ -308,7 +310,7 @@ export default function Bosh() {
         </p>
         <Link
           href="/ariza"
-          className="inline-flex min-h-14 items-center rounded-[10px] bg-brand text-white px-9 text-base font-bold transition hover:brightness-110"
+          className="sayt-tugma inline-flex min-h-14 items-center rounded-[10px] bg-brand text-white px-9 text-base font-bold transition hover:brightness-110"
         >
           Bepul sinov darsiga yozilish
         </Link>
