@@ -1033,6 +1033,33 @@ begin
   raise notice 'OK: admin o''tgan kunni tuzatdi';
 end $$;
 
+-- ============================================================
+--  O'QUVCHI PROFILI QULFI (0032)
+-- ============================================================
+reset role;
+reset request.jwt.claim.sub;
+\echo '--- 0032: o''quvchi ismi/loginini o''zi o''zgartira olmaydi, admin o''zgartiradi ---'
+do $$
+declare v_id uuid;
+begin
+  select id into v_id from profiles where rol = 'oquvchi' limit 1;
+  if v_id is null then raise notice 'SKIP: o''quvchi profili yo''q'; return; end if;
+  perform set_config('request.jwt.claim.sub', v_id::text, true);
+  begin
+    update profiles set ism = 'Boshqa ism' where id = v_id;
+    raise exception 'XATO: o''quvchi ismini o''zgartirdi!';
+  exception when others then
+    if sqlerrm not like '%adminiga murojaat%' then raise; end if;
+    raise notice 'OK: o''quvchi ismi qulflangan';
+  end;
+  perform set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', true);
+  update profiles set ism = 'Admin tuzatdi' where id = v_id;
+  if (select ism from profiles where id = v_id) <> 'Admin tuzatdi' then
+    raise exception 'XATO: admin o''quvchi ismini o''zgartira olmadi';
+  end if;
+  raise notice 'OK: admin o''quvchi profilini o''zgartira oladi';
+end $$;
+
 reset role;
 \echo ''
 \echo '=== TEST TUGADI ==='
