@@ -27,12 +27,15 @@ export function SotibOlish({
   narx,
   balans,
   maks,
+  oldindan = false,
 }: {
   rewardId: string
   narx: number
   balans: number
   /** Bir buyurtmada eng ko'p dona (ombor va 5 dan oshmaydi) */
   maks: number
+  /** Oldindan buyurtma — tovar keyin keladi */
+  oldindan?: boolean
 }) {
   const [soni, setSoni] = useState(1)
   const [tasdiq, setTasdiq] = useState(false)
@@ -79,13 +82,17 @@ export function SotibOlish({
           onClick={() => setTasdiq(true)}
           className="min-h-12 rounded-[10px] bg-brand px-5 text-[15px] font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-ink-3"
         >
-          {yetadi ? `Olish — ${jami.toLocaleString('ru-RU')} woblar` : `Yana ${(-qoladi).toLocaleString('ru-RU')} woblar kerak`}
+          {yetadi
+            ? `${oldindan ? 'Oldindan olish' : 'Olish'} — ${jami.toLocaleString('ru-RU')} woblar`
+            : `Yana ${(-qoladi).toLocaleString('ru-RU')} woblar kerak`}
         </button>
       ) : (
         <div className="flex flex-col gap-3 rounded-[12px] border border-accent-line bg-accent-soft p-4">
           <p className="text-[13.5px] leading-relaxed text-ink">
-            <b>{jami.toLocaleString('ru-RU')} woblar</b> yechiladi, sizda <b>{qoladi.toLocaleString('ru-RU')}</b> qoladi.
-            Buyurtmadan keyin chek kodi beriladi — uni adminga ko‘rsatib, sovg‘ani olasiz.
+            <b>{jami.toLocaleString('ru-RU')} woblar</b> {oldindan ? 'band qilinadi' : 'yechiladi'}, sizda <b>{qoladi.toLocaleString('ru-RU')}</b> qoladi.{' '}
+            {oldindan
+              ? 'Chek kodi beriladi. Tovar kelganda xabar olasiz — keyin kodni adminga ko‘rsatib, sovg‘ani olasiz.'
+              : 'Buyurtmadan keyin chek kodi beriladi — uni adminga ko‘rsatib, sovg‘ani olasiz.'}
           </p>
           <div className="flex flex-wrap gap-2">
             <Tasdiq jami={jami} />

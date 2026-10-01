@@ -9,6 +9,9 @@ export type Mahsulot = {
   tavsif: string | null
   toifa: string | null
   rasm_url: string | null
+  rasmlar: string[]
+  rejim: 'sotuvda' | 'oldindan'
+  kelish_sana: string | null
   narx_ball: number
   qolgan_soni: number
   cheksiz: boolean
@@ -17,7 +20,7 @@ export type Mahsulot = {
   created_at: string
 }
 
-export type BuyurtmaHolati = 'kutilmoqda' | 'berildi' | 'bekor'
+export type BuyurtmaHolati = 'buyurtma' | 'kutilmoqda' | 'berildi' | 'bekor'
 
 export type Buyurtma = {
   id: string
@@ -30,16 +33,19 @@ export type Buyurtma = {
   holat: BuyurtmaHolati
   created_at: string
   berildi_vaqt: string | null
+  keldi_vaqt: string | null
   bekor_sabab: string | null
 }
 
 export const HOLAT_NOMI: Record<BuyurtmaHolati, string> = {
-  kutilmoqda: 'Olib ketilmagan',
+  buyurtma: 'Kelishi kutilmoqda',
+  kutilmoqda: 'Tayyor — olib keting',
   berildi: 'Berildi',
   bekor: 'Bekor qilingan',
 }
 
-export const HOLAT_TONI: Record<BuyurtmaHolati, 'accent' | 'ok' | 'jim'> = {
+export const HOLAT_TONI: Record<BuyurtmaHolati, 'accent' | 'ok' | 'jim' | 'brand'> = {
+  buyurtma: 'brand',
   kutilmoqda: 'accent',
   berildi: 'ok',
   bekor: 'jim',
@@ -63,6 +69,27 @@ export function kodNormal(xom: string | null | undefined): string | null {
 /** Rasm yuklash cheklovlari (bucket bilan bir xil — 0040) */
 export const RASM_TURLARI = ['image/jpeg', 'image/png', 'image/webp'] as const
 export const RASM_MAKS_BAYT = 3 * 1024 * 1024
+/** Bitta mahsulotga eng ko'p rasm (0042 cheklovi bilan bir xil) */
+export const RASM_MAKS_SONI = 8
+
+/**
+ * Formadan kelgan rasm manzillari — faqat o'zimizning 'market' bucketidagi
+ * ochiq fayllar o'tadi (begona sayt rasmi qo'yib bo'lmaydi).
+ */
+export function rasmlarniOqi(xom: unknown, supabaseUrl: string): string[] {
+  let royxat: unknown
+  try {
+    royxat = JSON.parse(String(xom ?? '[]'))
+  } catch {
+    return []
+  }
+  if (!Array.isArray(royxat)) return []
+  const boshi = `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/public/market/`
+  const toza = royxat.filter(
+    (u): u is string => typeof u === 'string' && u.startsWith(boshi) && /^[\w./-]+$/.test(u.slice(boshi.length)),
+  )
+  return [...new Set(toza)].slice(0, RASM_MAKS_SONI)
+}
 
 /** "2026-10-01T14:05:00Z" → "01.10.2026, 19:05" (Toshkent vaqti) */
 export function sanaVaqt(iso: string | null | undefined): string {
@@ -75,4 +102,23 @@ export function sanaVaqt(iso: string | null | undefined): string {
     }).formatToParts(d).map((p) => [p.type, p.value]),
   )
   return `${q.day}.${q.month}.${q.year}, ${q.hour}:${q.minute}`
+}
+
+/** Oldindan buyurtma tovari qachon keladi: o'z sanasi, bo'lmasa bozor kuni */
+export function kelishSanasi(m: Pick<Mahsulot, 'rejim' | 'kelish_sana'>, bozor: string | null): string | null {
+  if (m.rejim !== 'oldindan') return null
+  return m.kelish_sana ?? bozor
+}
+
+/** "2026-10-30" → "30-oktabr" */
+export function kunOy(sana: string | null | undefined): string {
+  if (!sana) return ''
+  const OY = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr']
+  const [, o, k] = sana.split('-').map(Number)
+  return o && k ? `${k}-${OY[o - 1]}` : ''
+}
+
+/** Bozor kunigacha necha kun: 0 — bugun, manfiy — o'tib ketgan */
+export function nechaKunQoldi(sana: string, bugun: string): number {
+  return Math.round((Date.parse(`${sana}T00:00:00Z`) - Date.parse(`${bugun}T00:00:00Z`)) / 86_400_000)
 }

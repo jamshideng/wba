@@ -166,6 +166,11 @@ export type WoblrReward = {
   /** Woblar Market (0040) */
   toifa: string | null
   rasm_url: string | null
+  /** 0042 — barcha rasmlar, birinchisi = rasm_url */
+  rasmlar: string[]
+  /** 0042 — sotuvda: hozir bor; oldindan: oldindan buyurtma, keyin keladi */
+  rejim: 'sotuvda' | 'oldindan'
+  kelish_sana: string | null
   cheksiz: boolean
   tartib: number
   updated_at: string
@@ -181,8 +186,9 @@ export type WoblrRedemption = {
   created_at: string
   kod: string | null
   soni: number
-  holat: 'kutilmoqda' | 'berildi' | 'bekor'
+  holat: 'buyurtma' | 'kutilmoqda' | 'berildi' | 'bekor'
   mahsulot_nomi: string | null
+  keldi_vaqt: string | null
   berildi_vaqt: string | null
   bekor_sabab: string | null
   bekor_qildi: string | null
@@ -580,6 +586,11 @@ export type Database = {
       market_buyurtma: { Args: { p_reward: string; p_soni?: number }; Returns: string }
       market_berildi: { Args: { p_kod: string }; Returns: undefined }
       market_bekor: { Args: { p_kod: string; p_sabab?: string | null }; Returns: undefined }
+      market_keldi: { Args: { p_kod: string }; Returns: string }
+      market_mahsulot_keldi: {
+        Args: { p_reward: string; p_sotuvga?: boolean }
+        Returns: { student_id: string; kod: string }[]
+      }
       davomat_belgila: {
         Args: { p_group: string; p_sana: string; p_belgilar: Record<string, AttendanceStatus | null> }
         Returns: number

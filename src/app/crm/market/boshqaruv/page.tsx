@@ -7,15 +7,16 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Xabar, kirishKlass } from '@/components/forma'
 import { JonliForma } from '@/components/jonli-forma'
 import { IconSearch } from '@/components/icons'
-import { HOLAT_NOMI, HOLAT_TONI, omborMatni, sanaVaqt, type Buyurtma, type BuyurtmaHolati, type Mahsulot } from '@/lib/market'
-import { joriyDavr } from '@/lib/format'
-import { buyurtmaBerildi, kodniOch } from '../actions'
+import { HOLAT_NOMI, HOLAT_TONI, kelishSanasi, kunOy, nechaKunQoldi, omborMatni, sanaVaqt, type Buyurtma, type BuyurtmaHolati, type Mahsulot } from '@/lib/market'
+import { bugunToshkent, joriyDavr } from '@/lib/format'
+import { bozorSanasi, buyurtmaBerildi, buyurtmaKeldi, kodniOch, mahsulotKeldi } from '../actions'
 import { MahsulotRasm, Woblar } from '../bolaklar'
+import { bozorKuni } from '../bozor'
 
 export const metadata = { title: 'Market boshqaruvi' }
 export const dynamic = 'force-dynamic'
 
-const HOLATLAR: (BuyurtmaHolati | 'hammasi')[] = ['kutilmoqda', 'berildi', 'bekor', 'hammasi']
+const HOLATLAR: (BuyurtmaHolati | 'hammasi')[] = ['kutilmoqda', 'buyurtma', 'berildi', 'bekor', 'hammasi']
 
 /**
  * Market boshqaruvi — xodim uchun.
@@ -38,10 +39,13 @@ export default async function Boshqaruv({
   const qidiruv = (s.q ?? '').trim().replace(/[%_,()"\\]/g, ' ').trim()
 
   const oyBoshi = `${joriyDavr()}-01`
-  const [{ count: kutilmoqdaSoni }, { data: oyBerilgan }] = await Promise.all([
+  const [{ count: kutilmoqdaSoni }, { data: oyBerilgan }, { count: oldindanSoni }, bozor] = await Promise.all([
     supabase.from('woblr_redemptions').select('id', { count: 'exact', head: true }).eq('holat', 'kutilmoqda'),
     supabase.from('woblr_redemptions').select('ball').eq('holat', 'berildi').gte('berildi_vaqt', oyBoshi),
+    supabase.from('woblr_redemptions').select('id', { count: 'exact', head: true }).eq('holat', 'buyurtma'),
+    bozorKuni(supabase),
   ])
+  const bugun = bugunToshkent()
   const oyWoblar = (oyBerilgan ?? []).reduce((a, r) => a + (Number(r.ball) || 0), 0)
 
   const tablar = (
@@ -78,9 +82,26 @@ export default async function Boshqaruv({
       />
       <Xabar ok={s.ok} xato={s.xato} />
 
-      <div className="grid max-w-2xl grid-cols-2 gap-3">
-        <Stat label="Olib ketilmagan" value={String(kutilmoqdaSoni ?? 0)} ton={kutilmoqdaSoni ? 'accent' : 'neytral'} />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat label="Tayyor, olib ketilmagan" value={String(kutilmoqdaSoni ?? 0)} ton={kutilmoqdaSoni ? 'accent' : 'neytral'} />
+        <Stat label="Oldindan buyurtmalar" value={String(oldindanSoni ?? 0)} sub="tovar kelishi kutilmoqda" ton={oldindanSoni ? 'brand' : 'neytral'} />
         <Stat label="Shu oy berildi" value={String(oyBerilgan?.length ?? 0)} sub={`${oyWoblar.toLocaleString('ru-RU')} woblar`} />
+        <div className="flex flex-col gap-1.5 rounded-[12px] border border-line bg-surface px-4 py-3.5">
+          <span className="lbl">Bozor kuni</span>
+          {admin ? (
+            <form action={bozorSanasi} className="flex items-center gap-2">
+              <input type="date" name="sana" defaultValue={bozor ?? ''} aria-label="Bozor kuni" className={`${kirishKlass} min-w-0 flex-1`} />
+              <Button type="submit" variant="ikkilamchi" className="px-3!">Saqlash</Button>
+            </form>
+          ) : (
+            <span className="h-display text-[20px]">{bozor ? kunOy(bozor) : '—'}</span>
+          )}
+          <span className="text-xs text-ink-3">
+            {bozor
+              ? nechaKunQoldi(bozor, bugun) > 0 ? `${nechaKunQoldi(bozor, bugun)} kun qoldi` : nechaKunQoldi(bozor, bugun) === 0 ? 'bugun!' : 'o‘tib ketgan — yangisini belgilang'
+              : 'belgilanmagan'}
+          </span>
+        </div>
       </div>
 
       {tablar}
@@ -88,7 +109,7 @@ export default async function Boshqaruv({
       {bolim === 'buyurtma' ? (
         <BuyurtmalarBolimi holat={holat} qidiruv={qidiruv} q={s.q} />
       ) : (
-        <MahsulotlarBolimi />
+        <MahsulotlarBolimi bozor={bozor} />
       )}
     </div>
   )
@@ -166,7 +187,7 @@ async function BuyurtmalarBolimi({ holat, qidiruv, q }: { holat: BuyurtmaHolati 
 
       {ro.length === 0 ? (
         <Card className="p-6">
-          <Empty>{qidiruv ? 'Topilmadi.' : holat === 'kutilmoqda' ? 'Olib ketilmagan buyurtma yo‘q.' : 'Buyurtma yo‘q.'}</Empty>
+          <Empty>{qidiruv ? 'Topilmadi.' : holat === 'kutilmoqda' ? 'Olib ketilmagan buyurtma yo‘q.' : holat === 'buyurtma' ? 'Oldindan buyurtma yo‘q.' : 'Buyurtma yo‘q.'}</Empty>
         </Card>
       ) : (
         <Card className="overflow-hidden">
@@ -184,7 +205,13 @@ async function BuyurtmalarBolimi({ holat, qidiruv, q }: { holat: BuyurtmaHolati 
                 </Link>
                 <span className="flex items-center gap-3">
                   <Woblar son={b.ball} />
-                  {b.holat === 'kutilmoqda' ? (
+                  {b.holat === 'buyurtma' && (
+                    <form action={buyurtmaKeldi}>
+                      <input type="hidden" name="kod" value={b.kod ?? ''} />
+                      <Button type="submit" variant="ikkilamchi">Keldi</Button>
+                    </form>
+                  )}
+                  {b.holat === 'kutilmoqda' || b.holat === 'buyurtma' ? (
                     <form action={buyurtmaBerildi}>
                       <input type="hidden" name="kod" value={b.kod ?? ''} />
                       <Button type="submit">Berildi</Button>
@@ -202,15 +229,20 @@ async function BuyurtmalarBolimi({ holat, qidiruv, q }: { holat: BuyurtmaHolati 
   )
 }
 
-async function MahsulotlarBolimi() {
+async function MahsulotlarBolimi({ bozor }: { bozor: string | null }) {
   const supabase = await createClient()
-  const { data } = await supabase
-    .from('woblr_rewards')
-    .select('*')
-    .order('holat', { ascending: true })
-    .order('tartib', { ascending: false })
-    .order('created_at', { ascending: false })
+  const [{ data }, { data: zakazQator }] = await Promise.all([
+    supabase
+      .from('woblr_rewards')
+      .select('*')
+      .order('holat', { ascending: true })
+      .order('tartib', { ascending: false })
+      .order('created_at', { ascending: false }),
+    supabase.from('woblr_redemptions').select('reward_id, soni').eq('holat', 'buyurtma'),
+  ])
   const ro = (data ?? []) as Mahsulot[]
+  const zakaz = new Map<string, number>()
+  for (const z of zakazQator ?? []) zakaz.set(z.reward_id, (zakaz.get(z.reward_id) ?? 0) + (Number(z.soni) || 1))
 
   if (ro.length === 0) {
     return (
@@ -225,25 +257,43 @@ async function MahsulotlarBolimi() {
       <ul className="divide-y divide-line">
         {ro.map((m) => {
           const ombor = omborMatni(m)
+          const oldindan = m.holat === 'faol' && m.rejim === 'oldindan'
+          const qachon = kelishSanasi(m, bozor)
+          const nechta = zakaz.get(m.id) ?? 0
           return (
-            <li key={m.id}>
+            <li key={m.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
               <Link
                 href={`/crm/market/boshqaruv/mahsulot/${m.id}`}
-                className="flex items-center gap-3 px-4 py-3 transition hover:bg-surface-2"
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-lg transition hover:opacity-80"
               >
                 <MahsulotRasm url={m.rasm_url} nom={m.nom} className="size-14! shrink-0 rounded-[9px]" />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-[13.5px] font-semibold">{m.nom}</span>
-                  <span className="text-[12px] text-ink-3">{m.toifa ?? 'Toifasiz'}</span>
+                  <span className="text-[12px] text-ink-3">
+                    {m.toifa ?? 'Toifasiz'}
+                    {m.rasmlar?.length > 1 ? ` · ${m.rasmlar.length} rasm` : ''}
+                  </span>
                 </span>
                 <span className="flex shrink-0 flex-col items-end gap-1">
                   <Woblar son={m.narx_ball} />
-                  <span className="flex gap-1">
+                  <span className="flex flex-wrap justify-end gap-1">
                     {m.holat !== 'faol' && <Badge ton="jim">yopilgan</Badge>}
+                    {oldindan && <Badge ton="accent">oldindan{qachon ? ` · ${kunOy(qachon)}` : ''}</Badge>}
+                    {oldindan && <Badge ton="brand">{nechta} ta zakaz</Badge>}
                     <Badge ton={ombor.tugagan ? 'brand' : ombor.kam ? 'accent' : 'ok'}>{ombor.matn}</Badge>
                   </span>
                 </span>
               </Link>
+              {oldindan && (
+                <form action={mahsulotKeldi} className="w-full sm:w-auto">
+                  <input type="hidden" name="id" value={m.id} />
+                  <input type="hidden" name="sotuvga" value="1" />
+                  <input type="hidden" name="qaytish" value="/crm/market/boshqaruv?bolim=mahsulot" />
+                  <Button type="submit" className="w-full sm:w-auto">
+                    Tovar keldi{nechta ? ` · ${nechta} ta zakazga xabar` : ''}
+                  </Button>
+                </form>
+              )}
             </li>
           )
         })}

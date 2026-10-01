@@ -9,7 +9,7 @@ import { Xabar } from '@/components/forma'
 import { IconArrowLeft } from '@/components/icons'
 import { HOLAT_NOMI, HOLAT_TONI, kodNormal, sanaVaqt, type Buyurtma } from '@/lib/market'
 import { MahsulotRasm, Woblar } from '../../bolaklar'
-import { buyurtmaBerildi, buyurtmaniBekorQil } from '../../actions'
+import { buyurtmaBerildi, buyurtmaKeldi, buyurtmaniBekorQil } from '../../actions'
 
 export const metadata = { title: 'Chek · Woblar market' }
 export const dynamic = 'force-dynamic'
@@ -60,6 +60,12 @@ export default async function Chek({
           Buyurtma qabul qilindi! Quyidagi kodni adminga ko‘rsating — sovg‘angizni beradi.
         </p>
       )}
+      {s.yangi && b.holat === 'buyurtma' && (
+        <p role="status" className="rounded-[10px] border border-ok bg-ok-soft px-4 py-3 text-[13.5px] text-ok">
+          Oldindan buyurtma qabul qilindi! Woblaringiz band qilindi. Tovar kelishi bilan Telegram’da xabar beramiz —
+          keyin markazga kelib, shu kodni adminga ko‘rsatasiz.
+        </p>
+      )}
 
       <Card className="mx-auto flex w-full max-w-md flex-col overflow-hidden">
         <div className="flex flex-col items-center gap-2 border-b border-dashed border-line bg-surface-2 px-5 py-6 text-center">
@@ -97,13 +103,27 @@ export default async function Chek({
           )}
         </dl>
 
-        {b.holat === 'kutilmoqda' && (
+        {(b.holat === 'kutilmoqda' || b.holat === 'buyurtma') && (
           <div className="flex flex-col gap-2 border-t border-line px-5 py-4">
             {xodim ? (
-              <form action={buyurtmaBerildi}>
-                <input type="hidden" name="kod" value={kod} />
-                <Button type="submit" className="w-full">Berildi deb belgilash</Button>
-              </form>
+              <>
+                {b.holat === 'buyurtma' && (
+                  <form action={buyurtmaKeldi}>
+                    <input type="hidden" name="kod" value={kod} />
+                    <input type="hidden" name="qaytish" value={yol} />
+                    <Button type="submit" variant="ikkilamchi" className="w-full">Tovar keldi — o‘quvchiga xabar berish</Button>
+                  </form>
+                )}
+                <form action={buyurtmaBerildi}>
+                  <input type="hidden" name="kod" value={kod} />
+                  <Button type="submit" className="w-full">Berildi deb belgilash</Button>
+                </form>
+              </>
+            ) : b.holat === 'buyurtma' ? (
+              <p className="text-center text-[12.5px] leading-relaxed text-ink-3">
+                Tovar hali kelmagan. Kelishi bilan xabar beramiz — keyin markazga kelib, kodni adminga ko‘rsatasiz.
+                Fikringiz o‘zgarsa, bekor qilishingiz mumkin — woblar qaytadi.
+              </p>
             ) : (
               <p className="text-center text-[12.5px] text-ink-3">
                 Kodni adminga ko‘rsating. Olib ketguningizcha bekor qilsangiz, woblar qaytadi.

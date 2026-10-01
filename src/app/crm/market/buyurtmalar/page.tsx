@@ -36,7 +36,8 @@ export default async function Buyurtmalarim({
     : { data: [] }
   const ro = (data ?? []) as Buyurtma[]
   const kutilmoqda = ro.filter((b) => b.holat === 'kutilmoqda')
-  const qolgan = ro.filter((b) => b.holat !== 'kutilmoqda')
+  const kelmagan = ro.filter((b) => b.holat === 'buyurtma')
+  const qolgan = ro.filter((b) => b.holat === 'berildi' || b.holat === 'bekor')
 
   const Qator = ({ b }: { b: Buyurtma }) => (
     <li>
@@ -75,10 +76,19 @@ export default async function Buyurtmalarim({
         <>
           {kutilmoqda.length > 0 && (
             <section className="flex flex-col gap-2">
-              <h2 className="lbl">Olib ketilmagan — kodni adminga ko‘rsating</h2>
+              <h2 className="lbl text-ok!">Tayyor — markazga kelib, kodni adminga ko‘rsating</h2>
               <Card className="overflow-hidden">
                 <ul className="divide-y divide-line">{kutilmoqda.map((b) => <Qator key={b.id} b={b} />)}</ul>
               </Card>
+            </section>
+          )}
+          {kelmagan.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <h2 className="lbl">Oldindan buyurtmalar — tovar kelishi kutilmoqda</h2>
+              <Card className="overflow-hidden">
+                <ul className="divide-y divide-line">{kelmagan.map((b) => <Qator key={b.id} b={b} />)}</ul>
+              </Card>
+              <p className="text-[12px] text-ink-3">Tovar kelishi bilan Telegram’da xabar olasiz.</p>
             </section>
           )}
           {qolgan.length > 0 && (

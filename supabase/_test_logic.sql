@@ -1315,4 +1315,62 @@ end $$;
 reset role;
 reset request.jwt.claim.sub;
 
+\echo '--- 0042: oldindan buyurtma ---'
+reset role;
+insert into woblr_rewards (id, nom, narx_ball, qolgan_soni, cheksiz, holat, rejim) values
+  ('cccccccc-0000-0000-0000-000000000005', 'Bozor futbolkasi', 1, 5, false, 'faol', 'oldindan');
+-- S001 ga yana woblar (oldingi bloklar sarflagan)
+insert into woblr (student_id, lesson_id, teacher_id, bergan_profile, ball, sabab)
+select 'S001', l.id, 'U01', '33333333-3333-3333-3333-333333333333', 5, 'faollik'
+from lessons l where l.group_id = 'N01' order by l.sana desc limit 1;
+
+set role authenticated;
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi S001
+do $$
+declare v_kod text; v_kod2 text;
+begin
+  v_kod := market_buyurtma('cccccccc-0000-0000-0000-000000000005', 1);
+  if (select holat from woblr_redemptions where kod = v_kod) <> 'buyurtma' then
+    raise exception 'XATO: oldindan tovar buyurtmasi "buyurtma" holatida emas';
+  end if;
+  begin
+    perform market_keldi(v_kod);
+    raise exception 'XATO: o''quvchi o''zi "keldi" qildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  v_kod2 := market_buyurtma('cccccccc-0000-0000-0000-000000000005', 1);
+  perform market_bekor(v_kod2, null);   -- kelmagan buyurtmani ham bekor qilsa bo'ladi
+  if (select qolgan_soni from woblr_rewards where id = 'cccccccc-0000-0000-0000-000000000005') <> 4 then
+    raise exception 'XATO: oldindan buyurtma bekor bo''lganda joy qaytmadi';
+  end if;
+  update market_t set qiymat = v_kod where kalit = 'kod1';
+  raise notice 'OK: oldindan buyurtma — o''quvchi qismi';
+end $$;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  perform * from market_mahsulot_keldi('cccccccc-0000-0000-0000-000000000005', true);
+  raise exception 'XATO: ustoz mahsulotni "keldi" qildi';
+exception when others then if sqlerrm like 'XATO%' then raise; end if;
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare v_soni int; v_kod text := (select qiymat from market_t where kalit = 'kod1');
+begin
+  select count(*) into v_soni from market_mahsulot_keldi('cccccccc-0000-0000-0000-000000000005', true);
+  if v_soni <> 1 then raise exception 'XATO: keldi qilinganda % ta buyurtma tayyor bo''ldi (1 kutilgan)', v_soni; end if;
+  if (select holat from woblr_redemptions where kod = v_kod) <> 'kutilmoqda' then
+    raise exception 'XATO: buyurtma tayyor bo''lmadi';
+  end if;
+  if (select rejim from woblr_rewards where id = 'cccccccc-0000-0000-0000-000000000005') <> 'sotuvda' then
+    raise exception 'XATO: mahsulot sotuvga o''tmadi';
+  end if;
+  perform market_berildi(v_kod);
+  raise notice 'OK: oldindan buyurtma — keldi, sotuvga o''tdi, berildi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+
 \echo '=== TEST TUGADI ==='

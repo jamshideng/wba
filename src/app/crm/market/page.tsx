@@ -7,13 +7,16 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Xabar, kirishKlass } from '@/components/forma'
 import { JonliForma } from '@/components/jonli-forma'
 import { IconSearch } from '@/components/icons'
-import { omborMatni, type Mahsulot } from '@/lib/market'
+import { omborMatni, kelishSanasi, kunOy, nechaKunQoldi, type Mahsulot } from '@/lib/market'
+import { bugunToshkent } from '@/lib/format'
 import { MahsulotRasm, Woblar } from './bolaklar'
+import { bozorKuni } from './bozor'
 
 export const metadata = { title: 'Woblar market' }
 export const dynamic = 'force-dynamic'
 
 const TARTIBLAR = { yangi: 'Yangilari', arzon: 'Arzonlari', qimmat: 'Qimmatlari' } as const
+const TURLAR = { sotuvda: 'Hozir bor', oldindan: 'Oldindan buyurtma' } as const
 
 /**
  * WOBLAR MARKET — vitrina (Uzum / Yandex Market kabi).
@@ -23,7 +26,7 @@ const TARTIBLAR = { yangi: 'Yangilari', arzon: 'Arzonlari', qimmat: 'Qimmatlari'
 export default async function Market({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; toifa?: string; tartib?: string; ok?: string; xato?: string }>
+  searchParams: Promise<{ q?: string; toifa?: string; tartib?: string; tur?: string; ok?: string; xato?: string }>
 }) {
   const profil = await talabProfil()
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Woblar market" />
@@ -34,8 +37,10 @@ export default async function Market({
   const tartib = (Object.keys(TARTIBLAR) as (keyof typeof TARTIBLAR)[]).find((t) => t === s.tartib) ?? 'yangi'
   const qidiruv = (s.q ?? '').trim().replace(/[%_,()"\\]/g, ' ').trim()
 
+  const tur = (Object.keys(TURLAR) as (keyof typeof TURLAR)[]).find((t) => t === s.tur) ?? null
   let soorov = supabase.from('woblr_rewards').select('*').eq('holat', 'faol')
   if (s.toifa) soorov = soorov.eq('toifa', s.toifa)
+  if (tur) soorov = soorov.eq('rejim', tur)
   if (qidiruv) soorov = soorov.ilike('nom', `%${qidiruv}%`)
   soorov =
     tartib === 'arzon'
@@ -44,11 +49,15 @@ export default async function Market({
         ? soorov.order('narx_ball', { ascending: false })
         : soorov.order('tartib', { ascending: false }).order('created_at', { ascending: false })
 
-  const [{ data: mahsulotlar }, { data: toifaQatorlar }, { data: men }] = await Promise.all([
+  const [{ data: mahsulotlar }, { data: toifaQatorlar }, { data: men }, bozor, { count: oldindanSoni }] = await Promise.all([
     soorov,
     supabase.from('woblr_rewards').select('toifa').eq('holat', 'faol').not('toifa', 'is', null),
     oquvchimi ? supabase.from('students').select('id').eq('profile_id', profil.id).maybeSingle() : Promise.resolve({ data: null }),
+    bozorKuni(supabase),
+    supabase.from('woblr_rewards').select('id', { count: 'exact', head: true }).eq('holat', 'faol').eq('rejim', 'oldindan'),
   ])
+  const bugun = bugunToshkent()
+  const bozorOldinda = bozor && nechaKunQoldi(bozor, bugun) >= 0 ? bozor : null
 
   const [{ data: bal }, { count: kutilmoqda }] = men
     ? await Promise.all([
@@ -61,9 +70,10 @@ export default async function Market({
   const mList = (mahsulotlar ?? []) as Mahsulot[]
   const toifalar = [...new Set((toifaQatorlar ?? []).map((t) => t.toifa as string))].sort((a, b) => a.localeCompare(b, 'uz'))
 
-  const toifaHavola = (t: string | null) => {
+  const toifaHavola = (t: string | null, turi: string | null = tur) => {
     const p = new URLSearchParams()
     if (t) p.set('toifa', t)
+    if (turi) p.set('tur', turi)
     if (s.q) p.set('q', s.q)
     if (tartib !== 'yangi') p.set('tartib', tartib)
     const qs = p.toString()
@@ -99,8 +109,43 @@ export default async function Market({
         </Card>
       )}
 
+      {oquvchimi && (kutilmoqda ?? 0) > 0 && (
+        <Link
+          href="/crm/market/buyurtmalar"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-[12px] border border-ok bg-ok-soft px-5 py-3.5 text-[13.5px] text-ok transition hover:brightness-95"
+        >
+          <span>
+            <b>{kutilmoqda} ta buyurtmangiz tayyor!</b> Markazga kelib, chek kodini adminga ko‘rsating.
+          </span>
+          <span className="font-bold">Ko‘rish →</span>
+        </Link>
+      )}
+
+      {(bozorOldinda || (oldindanSoni ?? 0) > 0) && (
+        <Card className="flex flex-wrap items-center justify-between gap-4 overflow-hidden border-brand/30! bg-brand-soft! px-5 py-4">
+          <span className="flex min-w-0 flex-col gap-1">
+            <span className="lbl text-brand!">WBA bozori</span>
+            <span className="h-display text-[20px] leading-tight">
+              {bozorOldinda
+                ? nechaKunQoldi(bozorOldinda, bugun) === 0
+                  ? 'Bozor — bugun!'
+                  : `Keyingi bozor: ${kunOy(bozorOldinda)}`
+                : 'Oldindan buyurtma ochiq'}
+            </span>
+            <span className="max-w-xl text-[12.5px] leading-relaxed text-ink-2">
+              {bozorOldinda && nechaKunQoldi(bozorOldinda, bugun) > 0 && <b>{nechaKunQoldi(bozorOldinda, bugun)} kun qoldi. </b>}
+              Hali kelmagan tovarlarni hoziroq zakaz qiling — woblaringiz band qilinadi, tovar kelishi bilan sizga xabar beramiz.
+            </span>
+          </span>
+          {(oldindanSoni ?? 0) > 0 && tur !== 'oldindan' && (
+            <Button href={toifaHavola(null, 'oldindan')}>Oldindan buyurtma · {oldindanSoni}</Button>
+          )}
+        </Card>
+      )}
+
       <JonliForma className="flex flex-wrap items-end gap-2.5">
         {s.toifa && <input type="hidden" name="toifa" value={s.toifa} />}
+        {tur && <input type="hidden" name="tur" value={tur} />}
         <label className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-sm">
           <span className="lbl">Qidiruv</span>
           <span className="flex min-h-11 items-center gap-2.5 rounded-[9px] border border-line bg-surface px-3">
@@ -124,6 +169,23 @@ export default async function Market({
           </select>
         </label>
       </JonliForma>
+
+      {(oldindanSoni ?? 0) > 0 && (
+        <nav aria-label="Tovar turi" className="flex gap-1.5">
+          {([null, 'sotuvda', 'oldindan'] as const).map((t) => (
+            <Link
+              key={t ?? 'hammasi'}
+              href={toifaHavola(s.toifa ?? null, t)}
+              aria-current={tur === t ? 'page' : undefined}
+              className={`flex min-h-11 items-center rounded-[10px] px-3.5 text-[13px] font-semibold transition ${
+                tur === t ? 'bg-ink text-bg' : 'text-ink-2 hover:bg-surface-2 hover:text-ink'
+              }`}
+            >
+              {t ? TURLAR[t] : 'Hammasi'}
+            </Link>
+          ))}
+        </nav>
+      )}
 
       {toifalar.length > 0 && (
         <nav aria-label="Toifalar" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
@@ -160,6 +222,8 @@ export default async function Market({
           {mList.map((m) => {
             const ombor = omborMatni(m)
             const yetmaydi = balans !== null && balans < m.narx_ball
+            const oldindan = m.rejim === 'oldindan'
+            const qachon = kelishSanasi(m, bozor)
             return (
               <li key={m.id}>
                 <Link
@@ -168,11 +232,18 @@ export default async function Market({
                 >
                   <span className="relative">
                     <MahsulotRasm url={m.rasm_url} nom={m.nom} className="transition group-hover:brightness-95" />
-                    {(ombor.tugagan || ombor.kam) && (
-                      <span className={`absolute top-2 left-2 rounded-md px-2 py-0.5 text-[11px] font-bold ${ombor.tugagan ? 'bg-ink text-bg' : 'bg-brand text-white'}`}>
-                        {ombor.matn}
-                      </span>
-                    )}
+                    <span className="absolute top-2 left-2 flex flex-col items-start gap-1">
+                      {oldindan && (
+                        <span className="rounded-md bg-accent px-2 py-0.5 text-[11px] font-bold text-bg">
+                          Oldindan{qachon ? ` · ${kunOy(qachon)}` : ''}
+                        </span>
+                      )}
+                      {(ombor.tugagan || ombor.kam) && (
+                        <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${ombor.tugagan ? 'bg-ink text-bg' : 'bg-brand text-white'}`}>
+                          {oldindan && !ombor.tugagan ? `${m.qolgan_soni} ta joy` : ombor.matn}
+                        </span>
+                      )}
+                    </span>
                   </span>
                   <span className="flex flex-1 flex-col gap-1.5 p-3">
                     <Woblar son={m.narx_ball} />
@@ -187,7 +258,7 @@ export default async function Market({
                         </span>
                       ) : (
                         <span className="block rounded-[9px] bg-brand py-2 text-center text-[13px] font-bold text-white transition group-hover:brightness-110">
-                          {oquvchimi ? 'Olish' : 'Ko‘rish'}
+                          {oquvchimi ? (oldindan ? 'Oldindan olish' : 'Olish') : 'Ko‘rish'}
                         </span>
                       )}
                     </span>
