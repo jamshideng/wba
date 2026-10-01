@@ -488,6 +488,41 @@ export type DavomatNatija = {
   ball: number
 }
 
+/** 0044 · Hisobotlar bo'limlari */
+export type HisobotMoliya = {
+  oylar: { davr: string; hisoblangan: number; chegirma: number; vip: number; tuzatish: number; yigilgan: number; yozilish: number }[]
+  qarz_oylar: { davr: string; qarz: number }[]
+  qarz: number
+  qarzdor_yozilish: number
+  oldindan: number
+  keyingi_davr: string
+  keyingi_kutilgan: number
+  boglanmagan_tolov: number
+}
+export type HisobotOquvchilar = {
+  oylar: {
+    davr: string; yangi_bola: number; yangi_fan: number; ketgan_bola: number; tugagan_fan: number
+    faol_bola: number; faol_fan: number; probniy: number; probniy_yozildi: number
+  }[]
+  fanlar: { fan: string; yozilish: number; bola: number; guruh: number }[]
+  faol_bola: number
+  faol_fan: number
+  ikki_fanli: number
+  vip: number
+  arxiv: number
+}
+export type HisobotUstoz = {
+  id: string; ism: string; guruh: number; yozilish: number; belgi: number; kelgan: number
+  dars: number; tushum: number; qarz: number; woblar: number
+}
+export type HisobotDavomat = {
+  jami_belgi: number
+  jami_kelgan: number
+  haftalar: { hafta: string; belgi: number; kelgan: number }[]
+  guruhlar: { id: string; nom: string; ustoz: string; oquvchi: number; belgi: number; kelgan: number }[]
+  qoldiruvchilar: { student_id: string; fish: string; guruh: string; belgi: number; kelmadi: number }[]
+}
+
 /** 0010 · tushum_hisobot() natijasi */
 export type HisobotQator = { nom: string; summa: number; soni: number }
 export type Hisobot = {
@@ -634,6 +669,10 @@ export type Database = {
       yozilish_hisoblari: { Args: { p_enrollment: string }; Returns: number }
       probniy_doimiy: { Args: { p_lead: string; p_boshlandi?: string | null }; Returns: string }
       tushum_hisobot: { Args: { p_dan: string; p_gacha: string }; Returns: Hisobot }
+      hisobot_moliya: { Args: { p_oylar?: number }; Returns: HisobotMoliya }
+      hisobot_oquvchilar: { Args: { p_oylar?: number }; Returns: HisobotOquvchilar }
+      hisobot_ustozlar: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotUstoz[] }
+      hisobot_davomat: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotDavomat }
       chegirma_ozgartir: { Args: { p_enrollment: string; p: Record<string, unknown> }; Returns: number }
       telegram_token_ol: { Args: Record<string, never>; Returns: string }
       telegram_ula_token: { Args: { p_token: string; p_chat: number; p_tg_ism: string }; Returns: UlanishNatija[] }

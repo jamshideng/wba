@@ -6,10 +6,30 @@ import { Card, CardHeader, Stat, BarRow, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, kirishKlass } from '@/components/forma'
 import { pul, sana, davrNomi, bugunToshkent } from '@/lib/format'
-import type { Hisobot, MonthlyIncome } from '@/lib/types'
+import type { Hisobot, HisobotDavomat, HisobotMoliya, HisobotOquvchilar, HisobotUstoz, MonthlyIncome } from '@/lib/types'
+import { DavomatBolimi, MoliyaBolimi, OquvchilarBolimi, UstozlarBolimi } from './bolimlar'
 
 export const metadata = { title: 'Hisobotlar' }
 export const dynamic = 'force-dynamic'
+
+/** Bo'limlar: Umumiy — tushum va kunlik nazorat; qolganlari — tahlil */
+const BOLIMLAR = {
+  umumiy: 'Umumiy',
+  moliya: 'Moliya',
+  oquvchilar: 'O‘quvchilar',
+  ustozlar: 'Ustozlar',
+  davomat: 'Davomat',
+} as const
+type Bolim = keyof typeof BOLIMLAR
+/** Oylik bo'limlar (Moliya, O'quvchilar) sana oralig'i emas, oxirgi N oy bilan */
+const OYLIK: Bolim[] = ['moliya', 'oquvchilar']
+const OY_TANLOV = [3, 6, 12] as const
+
+/** Bo'lim havolasi: boshqa parametrlar bilan birga */
+function yol(q: Record<string, string>): string {
+  const p = new URLSearchParams(q).toString()
+  return p ? `/crm/hisobotlar?${p}` : '/crm/hisobotlar'
+}
 
 const USUL_NOMI: Record<string, string> = {
   naqd: 'Naqd',
@@ -37,6 +57,12 @@ function oraliq(tur: string, dan?: string, gacha?: string): { tur: string; dan: 
     const haftaKuni = (new Date(`${bugun}T00:00:00Z`).getUTCDay() + 6) % 7 // dushanba = 0
     return { tur, dan: kunQosh(bugun, -haftaKuni), gacha: bugun }
   }
+  if (tur === '30kun') return { tur, dan: kunQosh(bugun, -29), gacha: bugun }
+  if (tur === 'otgan') {
+    const boshi = `${bugun.slice(0, 7)}-01`
+    const oxiri = kunQosh(boshi, -1)
+    return { tur, dan: `${oxiri.slice(0, 7)}-01`, gacha: oxiri }
+  }
   if (tur === 'oraliq' && dan && gacha && /^\d{4}-\d{2}-\d{2}$/.test(dan) && /^\d{4}-\d{2}-\d{2}$/.test(gacha)) {
     return dan <= gacha ? { tur, dan, gacha } : { tur, dan: gacha, gacha: dan }
   }
@@ -46,18 +72,43 @@ function oraliq(tur: string, dan?: string, gacha?: string): { tur: string; dan: 
 export default async function Hisobotlar({
   searchParams,
 }: {
-  searchParams: Promise<{ tur?: string; dan?: string; gacha?: string }>
+  searchParams: Promise<{ tur?: string; dan?: string; gacha?: string; bolim?: string; oy?: string }>
 }) {
   await talabRol('admin', 'direktor', 'qabulxona')
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Hisobotlar" />
 
   const s = await searchParams
-  const o = oraliq(s.tur ?? 'oy', s.dan, s.gacha)
+  const bolim: Bolim = (Object.keys(BOLIMLAR) as Bolim[]).find((b) => b === s.bolim) ?? 'umumiy'
+  // Tahlil bo'limlarida standart — oxirgi 30 kun (oy boshida "Shu oy" bo'sh bo'ladi)
+  const standartTur = bolim === 'umumiy' ? 'oy' : '30kun'
+  const o = oraliq(s.tur ?? standartTur, s.dan, s.gacha)
+  const oyNechta = OY_TANLOV.find((n) => String(n) === s.oy) ?? 6
+  const oylikmi = OYLIK.includes(bolim)
+
+  // Bo'limlar orasida o'tganda tanlangan oraliq / oy saqlanadi
+  const oraliqQs: Record<string, string> =
+    o.tur === 'oraliq' ? { tur: 'oraliq', dan: o.dan, gacha: o.gacha } : o.tur === standartTur ? {} : { tur: o.tur }
+  const bolimQs: Record<string, string> = bolim === 'umumiy' ? {} : { bolim }
+  const bolimHavola = (b: Bolim) =>
+    yol({ ...(b === 'umumiy' ? {} : { bolim: b }), ...(OYLIK.includes(b) ? (s.oy ? { oy: s.oy } : {}) : oraliqQs) })
 
   const supabase = await createClient()
-  const [{ data: hisobot, error }, { data: oylik }] = await Promise.all([
-    supabase.rpc('tushum_hisobot', { p_dan: o.dan, p_gacha: o.gacha }),
-    supabase.from('v_monthly_income').select('*').order('davr', { ascending: false }).limit(12),
+  const [{ data: hisobot, error }, { data: oylik }, bolimData] = await Promise.all([
+    bolim === 'umumiy'
+      ? supabase.rpc('tushum_hisobot', { p_dan: o.dan, p_gacha: o.gacha })
+      : Promise.resolve({ data: null, error: null }),
+    bolim === 'umumiy'
+      ? supabase.from('v_monthly_income').select('*').order('davr', { ascending: false }).limit(12)
+      : Promise.resolve({ data: [] }),
+    bolim === 'moliya'
+      ? supabase.rpc('hisobot_moliya', { p_oylar: oyNechta })
+      : bolim === 'oquvchilar'
+        ? supabase.rpc('hisobot_oquvchilar', { p_oylar: oyNechta })
+        : bolim === 'ustozlar'
+          ? supabase.rpc('hisobot_ustozlar', { p_dan: o.dan, p_gacha: o.gacha })
+          : bolim === 'davomat'
+            ? supabase.rpc('hisobot_davomat', { p_dan: o.dan, p_gacha: o.gacha })
+            : Promise.resolve({ data: null, error: null }),
   ])
 
   const h = hisobot as Hisobot | null
@@ -65,7 +116,7 @@ export default async function Hisobotlar({
 
   const tugma = (tur: string, nom: string) => (
     <Link
-      href={`/crm/hisobotlar?tur=${tur}`}
+      href={yol({ ...bolimQs, ...(tur === standartTur ? {} : { tur }) })}
       className={`flex min-h-11 items-center rounded-[9px] border px-4 text-[13px] transition ${
         o.tur === tur ? 'border-brand bg-brand-soft text-ink' : 'border-line text-ink-3 hover:text-ink'
       }`}
@@ -91,14 +142,47 @@ export default async function Hisobotlar({
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha
         nom="Hisobotlar"
-        izoh={o.dan === o.gacha ? sana(o.dan) : `${sana(o.dan)} — ${sana(o.gacha)}`}
+        izoh={oylikmi ? `oxirgi ${oyNechta} oy` : o.dan === o.gacha ? sana(o.dan) : `${sana(o.dan)} — ${sana(o.gacha)}`}
       />
 
+      <nav aria-label="Hisobot bo‘limlari" className="-mx-1 flex gap-1 overflow-x-auto border-b border-line px-1">
+        {(Object.keys(BOLIMLAR) as Bolim[]).map((b) => (
+          <Link
+            key={b}
+            href={bolimHavola(b)}
+            aria-current={bolim === b ? 'page' : undefined}
+            className={`-mb-px flex min-h-11 shrink-0 items-center border-b-2 px-4 text-[13.5px] font-semibold transition ${
+              bolim === b ? 'border-brand text-ink' : 'border-transparent text-ink-3 hover:text-ink'
+            }`}
+          >
+            {BOLIMLAR[b]}
+          </Link>
+        ))}
+      </nav>
+
+      {oylikmi ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {OY_TANLOV.map((n) => (
+            <Link
+              key={n}
+              href={yol({ ...bolimQs, oy: String(n) })}
+              className={`flex min-h-11 items-center rounded-[9px] border px-4 text-[13px] transition ${
+                oyNechta === n ? 'border-brand bg-brand-soft text-ink' : 'border-line text-ink-3 hover:text-ink'
+              }`}
+            >
+              Oxirgi {n} oy
+            </Link>
+          ))}
+        </div>
+      ) : (
       <div className="flex flex-wrap items-end gap-2">
         {tugma('bugun', 'Bugun')}
         {tugma('hafta', 'Shu hafta')}
         {tugma('oy', 'Shu oy')}
+        {tugma('30kun', 'Oxirgi 30 kun')}
+        {tugma('otgan', 'O‘tgan oy')}
         <form className="flex flex-wrap items-end gap-2">
+          {bolim !== 'umumiy' && <input type="hidden" name="bolim" value={bolim} />}
           <input type="hidden" name="tur" value="oraliq" />
           <Maydon nom="Dan">
             <input type="date" name="dan" defaultValue={o.dan} className={kirishKlass} />
@@ -111,8 +195,23 @@ export default async function Hisobotlar({
           </button>
         </form>
       </div>
+      )}
 
-      {error || !h ? (
+      {bolim !== 'umumiy' ? (
+        bolimData.error || !bolimData.data ? (
+          <Card className="p-5">
+            <Empty>Hisobotni olib bo‘lmadi{bolimData.error ? `: ${bolimData.error.message}` : ''}.</Empty>
+          </Card>
+        ) : bolim === 'moliya' ? (
+          <MoliyaBolimi m={bolimData.data as HisobotMoliya} />
+        ) : bolim === 'oquvchilar' ? (
+          <OquvchilarBolimi o={bolimData.data as HisobotOquvchilar} />
+        ) : bolim === 'ustozlar' ? (
+          <UstozlarBolimi u={bolimData.data as HisobotUstoz[]} />
+        ) : (
+          <DavomatBolimi d={bolimData.data as HisobotDavomat} />
+        )
+      ) : error || !h ? (
         <Card className="p-5">
           <Empty>Hisobotni olib bo‘lmadi{error ? `: ${error.message}` : ''}.</Empty>
         </Card>
