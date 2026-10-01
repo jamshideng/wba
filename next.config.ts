@@ -25,7 +25,8 @@ const CSP = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  // Woblar Market rasmlari — Supabase Storage (0040)
+  `img-src 'self' data: blob: https://*.supabase.co${supabaseManzil()}`,
   "font-src 'self' data:",
   `connect-src 'self' https://*.supabase.co wss://*.supabase.co${supabaseManzil()}${dev ? ' ws://localhost:*' : ''}`,
   "frame-src 'none'",
@@ -45,6 +46,8 @@ const nextConfig: NextConfig = {
     // Server action'lar faqat shu domenlardan chaqirilsin
     serverActions: {
       allowedOrigins: ['localhost:3000', 'wbalc.uz', 'www.wbalc.uz'],
+      // Market mahsulot rasmi (3 MB gacha) forma bilan yuboriladi
+      bodySizeLimit: '4mb',
     },
   },
 

@@ -220,3 +220,18 @@ export const IconMenyu = (p: P) => (
     <path d="M3 13h8" />
   </Svg>
 )
+
+export const IconMarket = (p: P) => (
+  <Svg {...p}>
+    <path d="M3.5 6h11l-1 9.5a1 1 0 0 1-1 .9h-7a1 1 0 0 1-1-.9z" />
+    <path d="M6.5 6V4.8a2.5 2.5 0 0 1 5 0V6" />
+  </Svg>
+)
+
+/** Woblar tangasi */
+export const IconTanga = (p: P) => (
+  <Svg {...p}>
+    <circle cx="9" cy="9" r="6.5" />
+    <path d="M6.5 7l1.2 4.5L9 8l1.3 3.5L11.5 7" />
+  </Svg>
+)

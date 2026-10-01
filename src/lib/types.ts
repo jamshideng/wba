@@ -163,6 +163,29 @@ export type WoblrReward = {
   qolgan_soni: number
   holat: GroupStatus
   created_at: string
+  /** Woblar Market (0040) */
+  toifa: string | null
+  rasm_url: string | null
+  cheksiz: boolean
+  tartib: number
+  updated_at: string
+}
+
+/** Woblar Market buyurtmasi (0040) */
+export type WoblrRedemption = {
+  id: string
+  student_id: string
+  reward_id: string
+  ball: number
+  berdi: string | null
+  created_at: string
+  kod: string | null
+  soni: number
+  holat: 'kutilmoqda' | 'berildi' | 'bekor'
+  mahsulot_nomi: string | null
+  berildi_vaqt: string | null
+  bekor_sabab: string | null
+  bekor_qildi: string | null
 }
 
 export type Invoice = {
@@ -501,6 +524,7 @@ export type Database = {
       attendance: Table<Attendance>
       woblr: Table<Woblr>
       woblr_rewards: Table<WoblrReward>
+      woblr_redemptions: Table<WoblrRedemption>
       invoices: Table<Invoice>
       payments: Table<Payment>
       leads: Table<Lead>
@@ -551,6 +575,9 @@ export type Database = {
       guruh_dars_kunimi: { Args: { p_kunlar: number[]; p_sana: string }; Returns: boolean }
       dam_kunimi: { Args: { p_sana: string }; Returns: boolean }
       kunlik_band: { Args: { p_kun: string }; Returns: boolean }
+      market_buyurtma: { Args: { p_reward: string; p_soni?: number }; Returns: string }
+      market_berildi: { Args: { p_kod: string }; Returns: undefined }
+      market_bekor: { Args: { p_kod: string; p_sabab?: string | null }; Returns: undefined }
       davomat_belgila: {
         Args: { p_group: string; p_sana: string; p_belgilar: Record<string, AttendanceStatus | null> }
         Returns: number
