@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import * as XLSX from 'xlsx'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { getProfile } from '@/lib/auth'
@@ -6,12 +7,12 @@ import { bugunToshkent } from '@/lib/format'
 import type { AttendanceStatus } from '@/lib/types'
 
 /**
- * Guruhning bir oylik davomati — Excel ochadigan CSV.
+ * Guruhning bir oylik davomati — Excel fayli (.xlsx).
  * Botdagi "Oylik davomat (Excel)" tugmasi bilan bir xil vazifa.
  *
  * Huquq RLS'da: ustoz boshqa guruhni so'rasa guruh "topilmaydi".
- * Ajratuvchi ";" va boshida BOM — o'zbek/rus sozlamali Excel ustunlarni
- * to'g'ri ajratib, kirillcha/o'zbekcha harflarni buzmay ochsin.
+ * Kataklar matn/son sifatida yoziladi (formula emas) — "=", "+" bilan
+ * boshlangan ism ham Excel'da formula bo'lib ishlab ketmaydi.
  */
 
 const BELGI: Record<AttendanceStatus, string> = {
@@ -19,16 +20,6 @@ const BELGI: Record<AttendanceStatus, string> = {
   kechikdi: 'K',
   sababli: 'S',
   kelmadi: '-',
-}
-
-/** Excel "=", "+", "-", "@" bilan boshlangan matnni formula deb o'qiydi — oldiga ' qo'yiladi. */
-function xavfsiz(s: string): string {
-  return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s
-}
-
-function katak(v: string | number): string {
-  const s = String(v)
-  return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
 export async function GET(req: NextRequest) {
@@ -94,15 +85,13 @@ export async function GET(req: NextRequest) {
     ]),
   )
 
-  const qatorlar: string[] = []
-  qatorlar.push([xavfsiz(`${g.nom} — ${davr}`)].map(katak).join(';'))
-  qatorlar.push(['+ keldi', 'K kechikdi', 'S sababli', '- kelmadi'].map(katak).join(';'))
-  qatorlar.push('')
-  qatorlar.push(
-    ['№', 'ID', 'F.I.Sh', ...dList.map((d) => d.sana.slice(8, 10) + '.' + d.sana.slice(5, 7)), 'Kelgan', 'Darslar', 'Foiz']
-      .map(katak)
-      .join(';'),
-  )
+  const sanalar = dList.map((d) => d.sana.slice(8, 10) + '.' + d.sana.slice(5, 7))
+  const qatorlar: (string | number)[][] = [
+    [`${g.nom} — ${davr}`],
+    ['+ keldi', 'K kechikdi', 'S sababli', '- kelmadi'],
+    [],
+    ['№', 'ID', 'F.I.Sh', ...sanalar, 'Kelgan', 'Darslar', 'Foiz'],
+  ]
 
   oquvchilar.forEach((o, i) => {
     let kelgan = 0
@@ -115,17 +104,19 @@ export async function GET(req: NextRequest) {
       return BELGI[h]
     })
     const foiz = jami ? `${Math.round((kelgan * 100) / jami)}%` : ''
-    qatorlar.push(
-      [i + 1, o.student_id, xavfsiz(o.students?.fish ?? ''), ...kataklar, kelgan, jami, foiz].map(katak).join(';'),
-    )
+    qatorlar.push([i + 1, o.student_id, o.students?.fish ?? '', ...kataklar, kelgan, jami, foiz])
   })
 
-  const csv = '﻿' + qatorlar.join('\r\n')
-  const fayl = `davomat-${g.id}-${davr}.csv`
+  const varaq = XLSX.utils.aoa_to_sheet(qatorlar)
+  varaq['!cols'] = [{ wch: 4 }, { wch: 8 }, { wch: 30 }, ...sanalar.map(() => ({ wch: 6 })), { wch: 8 }, { wch: 8 }, { wch: 7 }]
+  const kitob = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(kitob, varaq, 'Davomat')
+  const fayl = `davomat-${g.id}-${davr}.xlsx`
+  const bufer = XLSX.write(kitob, { type: 'buffer', bookType: 'xlsx' }) as Buffer
 
-  return new NextResponse(csv, {
+  return new NextResponse(new Uint8Array(bufer), {
     headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="${fayl}"`,
       'Cache-Control': 'no-store',
     },
