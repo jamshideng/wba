@@ -29,12 +29,21 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
                 {m.nom}
               </a>
             ))}
-            <Link
-              href="/ariza"
-              className="inline-flex min-h-11 items-center rounded-[9px] bg-brand text-white px-5 text-[14px] font-bold transition hover:brightness-110"
-            >
-              Bepul sinov darsi
-            </Link>
+            <span className="flex items-center gap-2.5">
+              {/* O'quvchi va ustozlar tizimga kirishni darhol topsin */}
+              <Link
+                href="/kirish"
+                className="inline-flex min-h-11 items-center rounded-[9px] border-2 border-ink px-6 text-[14px] font-bold text-ink transition hover:bg-ink hover:text-bg"
+              >
+                Kirish
+              </Link>
+              <Link
+                href="/ariza"
+                className="inline-flex min-h-11 items-center rounded-[9px] bg-brand text-white px-5 text-[14px] font-bold transition hover:brightness-110"
+              >
+                Bepul sinov darsi
+              </Link>
+            </span>
           </nav>
         </div>
       </header>
