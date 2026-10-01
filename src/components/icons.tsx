@@ -205,3 +205,10 @@ export const IconAudit = (p: P) => (
     <path d="m6.75 9 1.5 1.5 3-3" />
   </Svg>
 )
+
+export const IconJadval = (p: P) => (
+  <Svg {...p}>
+    <rect x="2.5" y="3.5" width="13" height="12" rx="1.5" />
+    <path d="M2.5 7h13M6 2v3M12 2v3M5.5 10h2M10.5 10h2M5.5 12.75h2" />
+  </Svg>
+)
