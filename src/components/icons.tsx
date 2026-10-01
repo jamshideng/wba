@@ -196,3 +196,11 @@ export const IconJadval = (p: P) => (
     <path d="M2.5 7h13M6 2v3M12 2v3M5.5 10h2M10.5 10h2M5.5 12.75h2" />
   </Svg>
 )
+
+export const IconMenyu = (p: P) => (
+  <Svg {...p}>
+    <path d="M3 5h12" />
+    <path d="M3 9h12" />
+    <path d="M3 13h8" />
+  </Svg>
+)

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { talabRol, ROL_NOMI } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
@@ -63,7 +64,7 @@ export default async function Sozlamalar({
               const ozim = x.id === men.id
               return (
                 <li key={x.id} className="border-t border-line-soft px-5 py-3.5">
-                  <form action={xodimSaqla} className="grid gap-2.5 sm:grid-cols-[1.5fr_1fr_1fr_1.3fr_auto] sm:items-end">
+                  <form action={xodimSaqla} className="grid gap-2.5 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)_7rem] sm:items-end">
                     <input type="hidden" name="id" value={x.id} />
                     <span className="flex min-w-0 flex-col gap-0.5 self-center">
                       <span className="truncate text-[13.5px] font-semibold">{x.ism}</span>
@@ -99,7 +100,8 @@ export default async function Sozlamalar({
                           ))}
                       </select>
                     </Maydon>
-                    {!ozim && <Yuborish tur="ikkilamchi" kutish="…">Saqlash</Yuborish>}
+                    {/* O'z qatorida tugma yo'q — joyi bo'sh turadi, ustunlar surilmasin */}
+                    {ozim ? <span aria-hidden="true" /> : <Yuborish tur="ikkilamchi" kutish="…">Saqlash</Yuborish>}
                   </form>
                 </li>
               )
@@ -107,8 +109,8 @@ export default async function Sozlamalar({
           </ul>
         )}
         <p className="border-t border-line-soft px-5 py-3 text-[12px] text-ink-3">
-          Yangi hisob server tomonda ochiladi (o‘zi ro‘yxatdan o‘tish yopiq):{' '}
-          <code className="font-[family-name:var(--font-mono)] text-ink-2">npm run hisob -- --email … --ism … --rol ustoz</code>
+          Yangi xodim hisobi, parolni almashtirish —{' '}
+          <Link href="/crm/xodimlar" className="text-accent hover:text-brand">Xodimlar</Link> bo‘limida; ustoz hisobi — “Ustozlar”da.
         </p>
       </Card>
 

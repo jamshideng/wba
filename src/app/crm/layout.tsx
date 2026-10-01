@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { talabProfil, getUstoz, ROL_NOMI, staffmi, tasdiqlaydimi } from '@/lib/auth'
 import { menyular, type MenyuBand } from '@/lib/menyu'
+import { MENYU_COOKIE } from '@/lib/menyu-holat'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Logo } from '@/components/ui'
@@ -9,6 +11,7 @@ import { bosh } from '@/lib/format'
 import { IconChevronDown } from '@/components/icons'
 import { TemaTugma } from '@/components/tema'
 import { ProfilMenyu } from '@/components/profil-menyu'
+import { MenyuTugma } from '@/components/menyu-tugma'
 
 async function chiqish() {
   'use server'
@@ -21,11 +24,11 @@ async function chiqish() {
 function Band({ band, nishon }: { band: MenyuBand; nishon?: number }) {
   const ichi = (
     <>
-      <band.Icon size={17} />
-      <span className="flex-1">{band.nom}</span>
+      <band.Icon size={17} className="shrink-0" />
+      <span className="flex-1 truncate group-data-[menyu=yopiq]/qobiq:hidden">{band.nom}</span>
       {band.tayyor ? (
         nishon ? (
-          <span className="tnum font-[family-name:var(--font-mono)] text-[11px] text-brand">
+          <span className="tnum font-[family-name:var(--font-mono)] text-[11px] text-brand group-data-[menyu=yopiq]/qobiq:hidden">
             {nishon}
           </span>
         ) : null
@@ -50,7 +53,8 @@ function Band({ band, nishon }: { band: MenyuBand; nishon?: number }) {
   return (
     <Link
       href={band.href}
-      className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-[13.5px] text-ink-2 transition hover:bg-surface-2 hover:text-ink"
+      title={band.nom}
+      className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-[13.5px] whitespace-nowrap text-ink-2 transition hover:bg-surface-2 hover:text-ink group-data-[menyu=yopiq]/qobiq:justify-center group-data-[menyu=yopiq]/qobiq:px-0"
     >
       {ichi}
     </Link>
@@ -59,6 +63,7 @@ function Band({ band, nishon }: { band: MenyuBand; nishon?: number }) {
 
 export default async function CrmLayout({ children }: { children: React.ReactNode }) {
   const profil = await talabProfil()
+  const menyuYopiq = (await cookies()).get(MENYU_COOKIE)?.value === 'yopiq'
   const ustoz = await getUstoz()
   const bolimlar = menyular(profil.rol, Boolean(ustoz))
 
@@ -93,16 +98,18 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   ].filter((x): x is string => Boolean(x))
 
   return (
-    <div className="flex min-h-dvh">
-      <aside className="flex w-56 shrink-0 flex-col gap-6 border-r border-line bg-surface px-3.5 py-5 max-lg:hidden">
-        <Link href="/crm" className="px-2">
-          <Logo />
+    <div id="crm-qobiq" data-menyu={menyuYopiq ? 'yopiq' : 'ochiq'} className="group/qobiq flex min-h-dvh">
+      {/* Menyu sahifa bilan birga surilmaydi: o'z joyida qotgan, kengligi o'zgarmaydi.
+          Yig'ilganda faqat ikonkalar (nomi — sichqoncha ustida). */}
+      <aside className="sticky top-0 flex h-dvh w-56 shrink-0 flex-col gap-6 overflow-x-hidden overflow-y-auto [scrollbar-width:none] border-r border-line bg-surface px-3.5 py-5 transition-[width] max-lg:hidden group-data-[menyu=yopiq]/qobiq:w-[68px] group-data-[menyu=yopiq]/qobiq:px-2">
+        <Link href="/crm" className="px-2 group-data-[menyu=yopiq]/qobiq:px-0">
+          <Logo matnKlass="group-data-[menyu=yopiq]/qobiq:hidden" />
         </Link>
 
         <nav className="flex flex-col gap-5">
           {bolimlar.map((bolim) => (
             <div key={bolim.nom} className="flex flex-col gap-0.5">
-              <span className="lbl px-3 pb-1">{bolim.nom}</span>
+              <span className="lbl truncate px-3 pb-1 group-data-[menyu=yopiq]/qobiq:hidden">{bolim.nom}</span>
               {bolim.bandlar.map((band) => (
                 <Band key={band.href} band={band} nishon={nishon(band)} />
               ))}
@@ -150,7 +157,9 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Kompyuter: o'ng yuqori burchakda tema va profil (bosilsa: Profil, Chiqish) */}
-        <header className="sticky top-0 z-10 flex items-center justify-end gap-2 border-b border-line bg-surface/90 px-5 py-2 backdrop-blur max-lg:hidden lg:px-7">
+        <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface/90 px-5 py-2 backdrop-blur max-lg:hidden lg:px-7">
+          <MenyuTugma />
+          <span className="flex-1" />
           <TemaTugma />
           <ProfilMenyu
             ism={profil.ism}

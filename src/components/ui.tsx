@@ -4,7 +4,7 @@ import { pul } from '@/lib/format'
 
 /* ---------------- Logo ---------------- */
 
-export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+export function Logo({ size = 'md', matnKlass = '' }: { size?: 'sm' | 'md' | 'lg'; /** yozuv qismiga (masalan yig'ilgan menyuda yashirish) */ matnKlass?: string }) {
   const w = size === 'sm' ? 28 : size === 'lg' ? 44 : 34
   const nomi = size === 'sm' ? 'text-[15px]' : size === 'lg' ? 'text-xl' : 'text-[17px]'
 
@@ -20,7 +20,7 @@ export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
         className="shrink-0 object-contain"
         priority
       />
-      <span className="flex flex-col leading-tight">
+      <span className={`flex flex-col leading-tight ${matnKlass}`}>
         <span className={`font-[family-name:var(--font-display)] font-extrabold tracking-[0.05em] ${nomi}`}>
           WBA
         </span>

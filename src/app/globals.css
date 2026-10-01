@@ -181,3 +181,9 @@
 .tnum {
   font-variant-numeric: tabular-nums;
 }
+
+/* Uzun va qisqa sahifa o'rtasida o'tganda scroll chizig'i paydo bo'lib
+   butun sahifani (menyu, sarlavha) yonga surmasin — joyi doim ajratilgan. */
+html {
+  scrollbar-gutter: stable;
+}
