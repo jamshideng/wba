@@ -223,3 +223,13 @@ html {
     cursor: not-allowed;
   }
 }
+
+/* Bildirishnoma / panel — tepadan yumshoq tushish (faqat transform+opacity) */
+@keyframes bn-tushish {
+  from { opacity: 0; transform: translateY(-14px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.bn-tushish { animation: bn-tushish 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .bn-tushish { animation: none; }
+}

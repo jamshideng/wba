@@ -15,6 +15,8 @@ import { TemaTugma } from '@/components/tema'
 import { ProfilMenyu } from '@/components/profil-menyu'
 import { MenyuTugma } from '@/components/menyu-tugma'
 import { YuklanishChizigi, HavolaHolati } from '@/components/yuklanish'
+import { BildirishnomaJoyi } from '@/components/bildirishnomalar'
+import type { MeningBildirishnomam } from '@/lib/bildirishnoma'
 
 async function chiqish() {
   'use server'
@@ -75,7 +77,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   /* Bir-biriga bog'liq bo'lmagan so'rovlar — parallel (ketma-ket emas).
      Tasdiqlanmagan to'lovlar soni — pul ko'radiganlarga; ustozga umuman
      chiqmaydi (botdagi qoida). Market: olib ketilmagan buyurtmalar (0040). */
-  const [kuki, ustoz, tolovSoni, marketSoni] = await Promise.all([
+  const [kuki, ustoz, tolovSoni, marketSoni, bildirish] = await Promise.all([
     cookies(),
     getUstoz(),
     supabase
@@ -84,7 +86,12 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
     supabase
       ? supabase.from('woblr_redemptions').select('id', { count: 'exact', head: true }).eq('holat', 'kutilmoqda')
       : Promise.resolve({ count: 0 }),
+    // Sayt ichidagi bildirishnomalar — faqat menga tegishli faollari (0047)
+    supabaseSozlanganmi()
+      ? createClient().then((c) => c.rpc('mening_bildirishnomalarim'))
+      : Promise.resolve({ data: [] }),
   ])
+  const bildirishnomalar = (Array.isArray(bildirish.data) ? bildirish.data : []) as MeningBildirishnomam[]
   const menyuYopiq = kuki.get(MENYU_COOKIE)?.value === 'yopiq'
   const bolimlar = menyular(profil.rol, Boolean(ustoz))
   const tasdiqlanmagan = tolovSoni.count ?? 0
@@ -140,6 +147,10 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
         <Link href="/crm">
           <Logo size="sm" />
         </Link>
+        <span className="flex-1" />
+        <span className="mr-2">
+          <BildirishnomaJoyi joy="mobil" royxat={bildirishnomalar} />
+        </span>
         <ProfilMenyu
           ixcham
           ism={profil.ism}
@@ -178,6 +189,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
           <MenyuTugma />
           <span className="flex-1" />
           <TemaTugma />
+          <BildirishnomaJoyi joy="kompyuter" royxat={bildirishnomalar} />
           <ProfilMenyu
             ism={profil.ism}
             rolMatn={kim.length ? kim.join(' · ') : ROL_NOMI[profil.rol]}

@@ -83,6 +83,7 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
         ...(adminmi(rol)
           ? [
               { href: '/crm/xabarlar', nom: 'Xabarlar', Icon: IconSend, tayyor: true },
+              { href: '/crm/bildirishnomalar', nom: 'Bildirishnomalar', Icon: IconAlert, tayyor: true },
               { href: '/crm/ustozlar', nom: 'Ustozlar', Icon: IconTeacher, tayyor: true },
               { href: '/crm/xodimlar', nom: 'Xodimlar', Icon: IconStudents, tayyor: true },
               { href: '/crm/audit', nom: 'Audit', Icon: IconAudit, tayyor: true },

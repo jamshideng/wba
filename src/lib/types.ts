@@ -491,6 +491,26 @@ export type DavomatNatija = {
   ball: number
 }
 
+/** 0047 · Sayt ichidagi bildirishnoma */
+export type Bildirishnoma = {
+  id: number
+  turi: 'eslatma' | 'elon' | 'reklama' | 'sorovnoma'
+  sarlavha: string
+  matn: string | null
+  havola: string | null
+  havola_matn: string | null
+  kimga: TelegramKim[]
+  filtr: ElonFiltr
+  muhim: boolean
+  kop_tanlov: boolean
+  natija_ochiq: boolean
+  boshlanish: string
+  tugash: string | null
+  holat: 'faol' | 'yopilgan'
+  yaratdi: string | null
+  created_at: string
+}
+
 /** 0045 · hisobot_grafik() — kunlik qatorlar va trend */
 export type HisobotGrafik = {
   kunlar: { sana: string; tushum: number; belgi: number; kelgan: number; yangi: number }[]
@@ -569,6 +589,8 @@ export type Database = {
       profiles: Table<Profile>
       telegram_ulanish: Table<TelegramUlanish>
       elonlar: Table<Elon>
+      bildirishnomalar: Table<Bildirishnoma>
+      bildirishnoma_variantlar: Table<{ id: number; bildirishnoma_id: number; matn: string; tartib: number }>
       elon_yetkazish: Table<ElonYetkazish>
       subjects: Table<Subject>
       levels: Table<Level>
@@ -699,6 +721,11 @@ export type Database = {
       }
       telegram_bloklagan: { Args: { p_chat: number }; Returns: undefined }
       elon_oluvchilar: { Args: { p_kimga: TelegramKim[]; p_filtr?: ElonFiltr }; Returns: ElonOluvchi[] }
+      bildirishnoma_belgila: { Args: { p_id: number; p_yopildi?: boolean }; Returns: undefined }
+      sorovnomaga_javob: { Args: { p_id: number; p_variantlar: number[] }; Returns: undefined }
+      sorovnoma_natija: { Args: { p_id: number }; Returns: { variant_id: number; matn: string; ovoz: number; jami: number }[] }
+      bildirishnoma_statistika: { Args: Record<string, never>; Returns: { bildirishnoma_id: number; korgan: number; yopgan: number; javob_bergan: number }[] }
+      mening_bildirishnomalarim: { Args: Record<string, never>; Returns: unknown }
       rate_limit_hit: {
         Args: { p_bucket: string; p_kalit: string; p_limit: number; p_oyna_sek: number }
         Returns: boolean

@@ -1435,4 +1435,83 @@ begin
   raise notice 'OK: tanaffus — qaytish sanasi saqlanadi, faolda tozalanadi';
 end $$;
 
+\echo '--- 0047: bildirishnomalar ---'
+reset role;
+insert into bildirishnomalar (id, turi, sarlavha, kimga, filtr, yaratdi) values
+  (9001, 'eslatma',   'N01 o''quvchilariga', array['oquvchi'], '{"guruh":"N01"}', '11111111-1111-1111-1111-111111111111'),
+  (9002, 'sorovnoma', 'Hammaga savol',       array['oquvchi','ustoz'], '{}',   '11111111-1111-1111-1111-111111111111'),
+  (9003, 'elon',      'Faqat ustozlarga',    array['ustoz'], '{}',              '11111111-1111-1111-1111-111111111111');
+insert into bildirishnomalar (id, turi, sarlavha, kimga, holat) values (9004, 'elon', 'Yopilgan', array['oquvchi'], 'yopilgan');
+insert into bildirishnoma_variantlar (id, bildirishnoma_id, matn, tartib) values (9101, 9002, 'Ha', 0), (9102, 9002, 'Yo''q', 1);
+
+set role authenticated;
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi S001 (N01)
+do $$
+declare v jsonb := mening_bildirishnomalarim();
+begin
+  if not (v @> '[{"id":9001}]' and v @> '[{"id":9002}]') then raise exception 'XATO: o''quvchi o''ziga tegishlisini ko''rmadi: %', v; end if;
+  if v @> '[{"id":9003}]' then raise exception 'XATO: ustozlarniki o''quvchiga chiqdi'; end if;
+  if v @> '[{"id":9004}]' then raise exception 'XATO: yopilgan bildirishnoma chiqdi'; end if;
+  if (select count(*) from bildirishnomalar where id = 9003) <> 0 then raise exception 'XATO: RLS — o''quvchi begona bildirishnomani o''qidi'; end if;
+
+  begin
+    perform sorovnomaga_javob(9002, array[9101, 9102]::bigint[]);
+    raise exception 'XATO: bitta tanlovli so''rovnomada 2 ta ovoz o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    perform sorovnomaga_javob(9002, array[999999]::bigint[]);
+    raise exception 'XATO: begona variantga ovoz o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    insert into bildirishnoma_javoblar (bildirishnoma_id, variant_id, profile_id) values (9002, 9101, auth.uid());
+    raise exception 'XATO: javob to''g''ridan-to''g''ri yozildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+
+  perform sorovnomaga_javob(9002, array[9101]::bigint[]);
+  perform sorovnomaga_javob(9002, array[9102]::bigint[]);   -- fikrini o'zgartirdi
+  if (select count(*) from bildirishnoma_javoblar where bildirishnoma_id = 9002) <> 1 then
+    raise exception 'XATO: ovoz almashtirilganda eski ovoz qoldi';
+  end if;
+  if (select ovoz from sorovnoma_natija(9002) where variant_id = 9102) <> 1 then raise exception 'XATO: natija noto''g''ri'; end if;
+
+  perform bildirishnoma_belgila(9001, true);
+  if (mening_bildirishnomalarim() -> 0 ->> 'id') is null then null; end if;
+  if not (select yopildi_at is not null from bildirishnoma_holat where bildirishnoma_id = 9001 and profile_id = auth.uid()) then
+    raise exception 'XATO: yopildi belgilanmadi';
+  end if;
+  raise notice 'OK: bildirishnoma — o''quvchi: ko''rinish, ovoz, yopish';
+end $$;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+declare v jsonb := mening_bildirishnomalarim();
+begin
+  if not (v @> '[{"id":9003}]' and v @> '[{"id":9002}]') then raise exception 'XATO: ustoz o''ziga tegishlisini ko''rmadi'; end if;
+  if v @> '[{"id":9001}]' then raise exception 'XATO: o''quvchilarniki ustozga chiqdi'; end if;
+  begin
+    perform * from sorovnoma_natija(9002);
+    raise exception 'XATO: ovoz bermagan natijani ko''rdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    insert into bildirishnomalar (turi, sarlavha, kimga) values ('elon', 'Ustoz e''loni', array['oquvchi']);
+    raise exception 'XATO: ustoz bildirishnoma yaratdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: bildirishnoma — ustoz: faqat o''ziniki, yarata olmaydi';
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+begin
+  if (select count(*) from bildirishnomalar where id between 9001 and 9004) <> 4 then raise exception 'XATO: admin hammasini ko''rmadi'; end if;
+  if (select javob_bergan from bildirishnoma_statistika() where bildirishnoma_id = 9002) <> 1 then raise exception 'XATO: statistika noto''g''ri'; end if;
+  raise notice 'OK: bildirishnoma — admin: hammasi va statistika';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+
 \echo '=== TEST TUGADI ==='
