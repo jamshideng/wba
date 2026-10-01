@@ -3,7 +3,9 @@
  * parolni yangilaydi — ikkilanmaydi).
  *
  *   Ustoz    login = ismi (lotin slug, unique)      · rol = ustoz
- *   O'quvchi login = 5 xonali raqam (10001, 10002…) · rol = oquvchi
+ *   O'quvchi login = 10000 + ID raqami (S020 → 10020) · rol = oquvchi
+ *            (tartib raqami emas: o'quvchi qo'shilsa/o'chsa boshqalarniki surilmaydi)
+ *            Arxivdagilarga (holat = ketgan) hisob ochilmaydi.
  *
  * Parol — tasodifiy. Natija ikki CSV faylga (Excel ochadi) yoziladi:
  *   .secrets/ustozlar-hisob.csv · .secrets/oquvchilar-hisob.csv
@@ -117,13 +119,14 @@ async function main() {
     console.log(`ustoz  ${u.id}  ${login}  ${u.ism}`)
   }
 
-  // ── O'quvchilar ── login = 10001, 10002 …
-  const { data: oquvchilar, error: e2 } = await db.from('students').select('id, fish').order('id')
+  // ── O'quvchilar ── login = 10000 + ID raqami
+  const { data: oquvchilar, error: e2 } = await db.from('students').select('id, fish').neq('holat', 'ketgan').order('id')
   if (e2) throw e2
   const oNat: Natija[] = []
-  let raqam = 10001
   for (const o of oquvchilar ?? []) {
-    const login = String(raqam++)
+    const n = Number(o.id.replace(/\D/g, ''))
+    if (!n) throw new Error(`O'quvchi ID'sidan raqam chiqmadi: ${o.id}`)
+    const login = String(10000 + n)
     const parol = parolYarat()
     const email = `${login}@${DOMEN}`
     const uid = await hisobOch(email, parol, o.fish, 'oquvchi')
