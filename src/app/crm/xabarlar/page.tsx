@@ -80,11 +80,11 @@ export default async function Xabarlar({
         ))}
       </div>
 
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Card className="flex flex-col">
           <CardHeader title="Yangi xabar" meta="avval ko‘rib chiqiladi" />
           <form className="flex flex-col gap-3 px-5 pb-5">
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Maydon nom="Turi">
                 <select name="turi" defaultValue={e.turi} className={kirishKlass}>
                   {TURLAR.map((t) => (

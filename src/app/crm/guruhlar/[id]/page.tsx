@@ -167,7 +167,7 @@ export default async function GuruhProfil({
         )}
       </div>
 
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <Card className="flex flex-col">
           <CardHeader title="O‘quvchilar" meta={`${yList.length} ta`} />
           <div className="flex flex-col px-5 pb-4">
@@ -183,7 +183,7 @@ export default async function GuruhProfil({
                     href={pulKoradi ? `/crm/oquvchilar/${y.student_id}` : null}
                   >
                     <span className="flex min-w-0 items-center gap-3">
-                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-soft font-[family-name:var(--font-display)] text-[12px] font-bold text-brand">
+                      <span className="grid grid-cols-1 size-9 shrink-0 place-items-center rounded-full bg-brand-soft font-[family-name:var(--font-display)] text-[12px] font-bold text-brand">
                         {bosh(y.students?.fish ?? y.student_id)}
                       </span>
                       <span className="flex min-w-0 flex-col gap-0.5">

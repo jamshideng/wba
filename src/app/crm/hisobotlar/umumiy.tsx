@@ -125,7 +125,7 @@ export function UmumiyBolim({ h, g, oylar }: { h: Hisobot; g: HisobotGrafik; oyl
         )}
       </Card>
 
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
         <Card className="flex flex-col">
           <CardHeader title="Davomat · kunlar bo‘yicha" meta={davJ === null ? undefined : `o‘rtacha ${davJ.toFixed(1)}%`} />
           <div className="px-3 pb-4">
@@ -144,7 +144,7 @@ export function UmumiyBolim({ h, g, oylar }: { h: Hisobot; g: HisobotGrafik; oyl
         </Card>
       </div>
 
-      <div className="grid gap-3.5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
         <Card className="flex flex-col">
           <CardHeader title="Eng ko‘p tushum — guruhlar" meta="tanlangan oraliqda" />
           <div className="px-3 pb-4">
@@ -177,7 +177,7 @@ export function UmumiyBolim({ h, g, oylar }: { h: Hisobot; g: HisobotGrafik; oyl
         </Card>
       </div>
 
-      <div className="grid gap-3.5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
         <Card className="flex flex-col">
           <CardHeader title="Oylar bo‘yicha tushum" meta="to‘lov qaysi oy uchun · oxirgi 12 oy" />
           <div className="px-3 pb-4">

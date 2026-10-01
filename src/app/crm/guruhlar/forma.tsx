@@ -66,12 +66,12 @@ export async function GuruhFormasi({
               </label>
             ))}
           </div>
-          <p className="lbl">Guruh qaysi kunlari o‘qiydi — bir yoki bir nechta kunni tanlang. Davomat jurnalida faqat shu kunlar chiqadi.</p>
+          <p className="text-[12px] leading-relaxed text-ink-3">Guruh qaysi kunlari o‘qiydi — bir yoki bir nechta kunni tanlang. Davomat jurnalida faqat shu kunlar chiqadi.</p>
         </fieldset>
       </FormaBolim>
 
       <FormaBolim nom="Yo‘nalish va ustoz">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Maydon nom="Yo‘nalish">
             <select name="subject_id" defaultValue={qiymat.subject_id ?? ''} className={kirishKlass}>
               <option value="">—</option>

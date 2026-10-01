@@ -57,7 +57,7 @@ export default async function Sozlamalar({
         <ul>
           {sList.map((x) => (
             <li key={x.kalit} className="border-t border-line-soft px-5 py-3">
-              <form action={sozlamaSaqla} className="grid gap-2 sm:grid-cols-[1.4fr_1.6fr_auto] sm:items-center">
+              <form action={sozlamaSaqla} className="grid grid-cols-1 gap-2 sm:grid-cols-[1.4fr_1.6fr_auto] sm:items-center">
                 <input type="hidden" name="kalit" value={x.kalit} />
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="font-[family-name:var(--font-mono)] text-[12px]">{x.kalit}</span>

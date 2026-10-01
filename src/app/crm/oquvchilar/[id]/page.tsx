@@ -275,7 +275,7 @@ export default async function OquvchiProfil({
         />
       </div>
 
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         {/* ── Guruhlari ── */}
         <Card className="flex flex-col">
           <CardHeader title="Guruhlari" meta={`${yList.length} ta`} />
@@ -421,7 +421,7 @@ export default async function OquvchiProfil({
                         <form action={tuzatishQosh} className="mt-2 flex flex-col gap-2">
                           <input type="hidden" name="student_id" value={oquvchi.id} />
                           <input type="hidden" name="enrollment_id" value={y.id} />
-                          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_2fr]">
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_2fr]">
                             <Maydon nom="Oy">
                               <input type="month" name="davr" required defaultValue={davr} className={kirishKlass} />
                             </Maydon>
@@ -463,7 +463,7 @@ export default async function OquvchiProfil({
                 <summary className="cursor-pointer text-[13px] font-semibold text-ink-2">+ Guruhga biriktirish</summary>
                 <form action={guruhgaBiriktir} className="mt-3 flex flex-col gap-3">
                   <input type="hidden" name="student_id" value={oquvchi.id} />
-                  <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr]">
                     <Maydon nom="Guruh">
                       <select name="group_id" required defaultValue="" className={kirishKlass}>
                         <option value="" disabled>Tanlang…</option>
@@ -555,7 +555,7 @@ export default async function OquvchiProfil({
         </Card>
       </div>
 
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         {/* ── To'lov tarixi ── */}
         {pulKoradi && (
           <Card className="flex flex-col">

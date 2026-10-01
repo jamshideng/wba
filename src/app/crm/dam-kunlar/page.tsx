@@ -58,7 +58,7 @@ export default async function DamKunlar({ searchParams }: { searchParams: Promis
         <Card className="flex flex-col">
           <CardHeader title="Dam kuni qo‘shish" meta="bir kun yoki oraliq" />
           <form action={damKunQosh} className="flex flex-col gap-3 px-5 pb-5">
-            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_2fr]">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_2fr]">
               <Maydon nom="Sana (dan)">
                 <input type="date" name="dan" required defaultValue={bugun} className={kirishKlass} />
               </Maydon>

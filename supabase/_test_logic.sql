@@ -1514,4 +1514,30 @@ end $$;
 reset role;
 reset request.jwt.claim.sub;
 
+-- ============================================================
+--  OTA-ONA QARZI (0050): ota-ona farzandining qarzini o'quvchining o'zi bilan bir xil ko'radi
+-- ============================================================
+reset role;
+reset request.jwt.claim.sub;
+insert into auth.users (id, email) values ('88888888-8888-8888-8888-888888888888', 's001-ota@wba.uz')
+  on conflict do nothing;
+update profiles set rol = 'ota_ona', ism = 'Sinov Ota', oquvchi_id = 'S001'
+  where id = '88888888-8888-8888-8888-888888888888';
+\echo '--- 0050: ota-ona qarzi = o''quvchi qarzi ---'
+set role authenticated;
+do $$
+declare v_oquvchi numeric; v_ota numeric;
+begin
+  perform set_config('request.jwt.claim.sub', '44444444-4444-4444-4444-444444444444', true);
+  select coalesce(sum(qarz), 0) into v_oquvchi from v_enrollment_balance where student_id = 'S001';
+  perform set_config('request.jwt.claim.sub', '88888888-8888-8888-8888-888888888888', true);
+  select coalesce(sum(qarz), 0) into v_ota from v_enrollment_balance where student_id = 'S001';
+  if v_ota is distinct from v_oquvchi then
+    raise exception 'XATO: ota-ona qarzi % , o''quvchiniki %', v_ota, v_oquvchi;
+  end if;
+  raise notice 'OK: ota-ona qarzni to''g''ri ko''radi (%)', v_ota;
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+
 \echo '=== TEST TUGADI ==='

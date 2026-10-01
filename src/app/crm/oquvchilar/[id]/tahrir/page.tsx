@@ -47,7 +47,7 @@ export default async function OquvchiTahrir({
         <input type="hidden" name="id" value={o.id} />
 
         <FormaBolim nom="Shaxsiy ma’lumot">
-          <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr]">
             <Maydon nom="Ism familya">
               <input name="fish" required defaultValue={o.fish} className={kirishKlass} />
             </Maydon>

@@ -69,7 +69,7 @@ export default async function Guruhlar() {
           </Empty>
         </Card>
       ) : (
-        <ul className="grid gap-3.5 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3.5 md:grid-cols-2 xl:grid-cols-3">
           {gList.map((g) => {
             const s = sMap.get(g.id)
             const qarz = Number(s?.qarz ?? 0)

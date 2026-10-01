@@ -53,7 +53,7 @@ export function HisobForma({
           </Maydon>
         )}
 
-        <div className="grid gap-3 sm:grid-cols-[1.4fr_1.2fr_auto] sm:items-end">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.4fr_1.2fr_auto] sm:items-end">
 
         <Maydon nom="Login" izoh="Oddiy so‘z yetadi. O‘quvchi keyin Profil bo‘limida o‘zi almashtiradi.">
           <input

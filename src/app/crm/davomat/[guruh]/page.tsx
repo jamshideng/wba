@@ -266,14 +266,14 @@ export default async function DavomatJurnali({
         />
       )}
 
-      <p className="lbl leading-relaxed">
+      <p className="text-[12.5px] leading-relaxed text-ink-3">
         {huquq === 'bugun'
           ? 'Siz faqat bugungi darsni belgilaysiz. O‘tgan kunni tuzatish kerak bo‘lsa — admin tuzatadi.'
           : huquq === 'hammasi'
             ? 'Admin o‘tgan kunlarni ham tuzata oladi. Kelajak kunlar yopiq.'
             : 'Faqat ko‘rish.'}{' '}
         Woblar faqat dars kuni beriladi; boshqa kuni —{' '}
-        <Link href={`/crm/woblr?guruh=${guruh}`} className="text-accent hover:text-brand">Woblar bo‘limi</Link>.
+        <Link href={`/crm/woblr?guruh=${guruh}`} className="text-accent underline underline-offset-2 hover:text-brand">Woblar bo‘limi</Link>.
       </p>
     </div>
   )

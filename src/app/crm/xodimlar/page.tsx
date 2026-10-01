@@ -77,7 +77,7 @@ export default async function Xodimlar({ searchParams }: { searchParams: Promise
                   {tegsaBoladi && (
                     <details>
                       <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Parol, lavozim, bloklash</summary>
-                      <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <form action={xodimParol} className="flex flex-wrap items-end gap-2">
                           <input type="hidden" name="id" value={x.id} />
                           <Maydon nom="Yangi parol" izoh="kamida 8 belgi">
@@ -131,7 +131,7 @@ export default async function Xodimlar({ searchParams }: { searchParams: Promise
         <CardHeader title="Yangi xodim" meta="masalan: qabulxona" />
         <form action={xodimQosh} className="flex flex-col gap-3 px-5 pb-5">
           <FormaBolim nom="Kim">
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Maydon nom="Ism familya">
                 <input name="ism" required placeholder="Muhammadamin Karimov" className={kirishKlass} />
               </Maydon>

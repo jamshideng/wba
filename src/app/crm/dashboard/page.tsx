@@ -165,7 +165,7 @@ export default async function Dashboard() {
         </Card>
       )}
 
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
         <Card className="flex flex-col">
           <CardHeader title="O‘qituvchi bo‘yicha tushum" meta={`${davrNomi(davr)} · so‘m`} />
           <div className="flex flex-col px-5 pb-4">

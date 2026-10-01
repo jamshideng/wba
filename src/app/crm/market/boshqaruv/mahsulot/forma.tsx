@@ -103,7 +103,7 @@ export function MahsulotForma({
   const ozgardiRejim = m && boshRejim !== rejim
 
   return (
-    <form action={mahsulotSaqla} className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
+    <form action={mahsulotSaqla} className="grid grid-cols-1 gap-5 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
       {m && <input type="hidden" name="id" value={m.id} />}
       <input type="hidden" name="rasmlar" value={JSON.stringify(rasmlar)} />
 
@@ -169,7 +169,7 @@ export function MahsulotForma({
           <input name="nom" required maxLength={120} defaultValue={m?.nom ?? ''} placeholder="Masalan: WBA daftar" className={kirishKlass} />
         </Maydon>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Maydon nom="Narxi (woblarda)">
             <input name="narx_ball" type="number" required min={1} step={1} inputMode="numeric" defaultValue={m?.narx_ball ?? ''} className={kirishKlass} />
           </Maydon>
@@ -185,7 +185,7 @@ export function MahsulotForma({
         <fieldset className="flex flex-col gap-2">
           <legend className="lbl mb-1.5">Holati</legend>
           <input type="hidden" name="rejim" value={rejim} />
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {REJIMLAR.map((r) => (
               <button
                 key={r.k}
@@ -219,7 +219,7 @@ export function MahsulotForma({
           </p>
         )}
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Maydon nom={rejim === 'oldindan' ? 'Nechta buyurtma olinadi' : 'Omborda nechta'}>
             <input
               name="qolgan_soni"

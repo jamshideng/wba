@@ -153,7 +153,7 @@ export default async function TolovQosh({ searchParams }: { searchParams: Promis
         </FormaBolim>
 
         <FormaBolim nom="To‘lov">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Maydon nom="Summa" izoh="650000 yoki qisqa: 650 (minglarda), 1.2 mln">
               <input name="summa" required inputMode="decimal" placeholder="650 000" className={kirishKlass} />
             </Maydon>

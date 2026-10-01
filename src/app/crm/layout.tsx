@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import './telefon.css'
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'

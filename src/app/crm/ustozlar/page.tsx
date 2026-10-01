@@ -102,7 +102,7 @@ export default async function Ustozlar({
 
                   <details>
                     <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Tahrirlash</summary>
-                    <form action={ustozTahrir} className="mt-2 grid gap-2 sm:grid-cols-[2fr_1.5fr_1fr_auto] sm:items-end">
+                    <form action={ustozTahrir} className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[2fr_1.5fr_1fr_auto] sm:items-end">
                       <input type="hidden" name="id" value={u.id} />
                       <Maydon nom="Ism">
                         <input name="ism" required defaultValue={u.ism} className={kirishKlass} />
@@ -128,7 +128,7 @@ export default async function Ustozlar({
 
       <Card className="flex flex-col">
         <CardHeader title="Yangi ustoz" />
-        <form action={ustozQosh} className="grid gap-3 px-5 pb-5 sm:grid-cols-[2fr_1.5fr_auto] sm:items-end">
+        <form action={ustozQosh} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-[2fr_1.5fr_auto] sm:items-end">
           <Maydon nom="Ism">
             <input name="ism" required placeholder="Masalan: Komila Bozorova" className={kirishKlass} />
           </Maydon>

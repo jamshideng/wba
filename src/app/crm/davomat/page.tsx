@@ -119,7 +119,7 @@ export default async function Davomat({
       {gList.length > 0 && (
         <Card className="flex flex-col">
           <CardHeader title="Oylik davomat (Excel)" meta="Excel ochadigan fayl" />
-          <form action="/crm/davomat/eksport" className="grid gap-3 px-5 pb-5 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
+          <form action="/crm/davomat/eksport" className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
             <Maydon nom="Guruh">
               <select name="guruh" required className={kirishKlass}>
                 {gList.map((g) => (

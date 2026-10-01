@@ -171,7 +171,7 @@ export default async function Woblr({
       {beraOladi && guruh && oquvchilar.length > 0 && (
         <Card className="flex flex-col">
           <CardHeader title="Woblar berish" meta="davomatdan keyin ham beriladi" />
-          <form action={woblrBer} className="grid gap-3 px-5 pb-5 sm:grid-cols-[2fr_1fr_1.2fr_1.5fr_auto] sm:items-end">
+          <form action={woblrBer} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-[2fr_1fr_1.2fr_1.5fr_auto] sm:items-end">
             <input type="hidden" name="guruh" value={guruh} />
             <Maydon nom="O‘quvchi">
               <select name="student_id" required defaultValue="" className={kirishKlass}>

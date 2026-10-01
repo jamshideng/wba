@@ -1,0 +1,29 @@
+/*
+ * CRM — telefon uchun tuzatishlar (02.10 diagnostikasi).
+ *
+ * iPhone (Safari) 16px dan kichik shriftli maydonga bosilganda sahifani
+ * o'zi kattalashtiradi — ustoz va o'quvchi "sahifa buzildi" deb o'ylaydi.
+ * Telefonda hamma kiritish maydoni 16px. Qatlamsiz (unlayered) qoida
+ * Tailwind'ning text-[13.5px] kabi utility'laridan ustun turadi.
+ */
+@media (max-width: 1023.98px), (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/*
+ * Uzun variantli <select> (masalan, guruh nomlari) o'z matni kengligida
+ * cho'zilib, butun sahifani ekrandan chiqarib yubormasin.
+ */
+@media (max-width: 1023.98px) {
+  select {
+    max-width: 100%;
+  }
+  label:has(> select) {
+    min-width: 0;
+    max-width: 100%;
+  }
+}

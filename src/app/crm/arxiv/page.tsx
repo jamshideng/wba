@@ -75,7 +75,7 @@ export default async function Arxiv() {
         )}
       </Card>
 
-      <div className="grid gap-3.5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
         <Card className="flex flex-col">
           <CardHeader title="Yopilgan guruhlar" meta={`${gList.length} ta`} />
           {gList.length === 0 ? (

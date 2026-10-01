@@ -77,7 +77,7 @@ export function BildirishnomaKarta({
             <span className="text-[14.5px] leading-snug font-bold text-ink">{b.sarlavha}</span>
           </div>
           {onYop && (
-            <button type="button" onClick={onYop} aria-label="Yopish" className="-mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-lg text-ink-3 transition hover:bg-surface-2 hover:text-ink">
+            <button type="button" onClick={onYop} aria-label="Yopish" className="-mt-1 -mr-1 grid grid-cols-1 size-9 shrink-0 place-items-center rounded-lg text-ink-3 transition hover:bg-surface-2 hover:text-ink">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden><path d="M18 6 6 18M6 6l12 12" /></svg>
             </button>
           )}
@@ -221,13 +221,13 @@ export function Bildirishnomalar({ royxat }: { royxat: MeningBildirishnomam[] })
           onClick={() => setPanel((p) => !p)}
           aria-label={`Bildirishnomalar${oqilmagan ? ` — ${oqilmagan} ta yangi` : ''}`}
           aria-expanded={panel}
-          className="relative grid size-10 place-items-center rounded-[10px] border border-line bg-surface text-ink-2 transition hover:border-ink-3 hover:text-ink"
+          className="relative grid grid-cols-1 size-10 place-items-center rounded-[10px] border border-line bg-surface text-ink-2 transition hover:border-ink-3 hover:text-ink"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
           </svg>
           {oqilmagan > 0 && (
-            <span className="tnum absolute -top-1.5 -right-1.5 grid min-w-5 place-items-center rounded-full bg-brand px-1 text-[10.5px] leading-5 font-bold text-white ring-2 ring-bg">
+            <span className="tnum absolute -top-1.5 -right-1.5 grid grid-cols-1 min-w-5 place-items-center rounded-full bg-brand px-1 text-[10.5px] leading-5 font-bold text-white ring-2 ring-bg">
               {oqilmagan}
             </span>
           )}
@@ -273,7 +273,7 @@ export function Bildirishnomalar({ royxat }: { royxat: MeningBildirishnomam[] })
 
       {/* Muhim — ekran o'rtasida */}
       {muhim && (
-        <div className="fixed inset-0 z-[80] grid place-items-center bg-black/40 p-4 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-label={muhim.sarlavha}>
+        <div className="fixed inset-0 z-[80] grid grid-cols-1 place-items-center bg-black/40 p-4 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-label={muhim.sarlavha}>
           <div className="bn-tushish w-full max-w-[460px] rounded-[18px] border border-line bg-surface p-5 shadow-2xl">
             <BildirishnomaKarta
               b={muhim}
@@ -281,7 +281,7 @@ export function Bildirishnomalar({ royxat }: { royxat: MeningBildirishnomam[] })
               onJavob={() => javobBerdi(muhim.id)}
             />
             {muhim.turi === 'sorovnoma' && !muhim.javob_berdim && (
-              <button type="button" onClick={() => setYashirin((s) => new Set([...s, muhim.id]))} className="mt-3 w-full text-center text-[12px] text-ink-3 hover:text-ink">
+              <button type="button" onClick={() => setYashirin((s) => new Set([...s, muhim.id]))} className="mt-2 min-h-11 w-full text-center text-[13px] text-ink-3 hover:text-ink">
                 Keyinroq javob beraman
               </button>
             )}

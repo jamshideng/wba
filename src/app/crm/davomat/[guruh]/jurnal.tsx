@@ -265,7 +265,7 @@ export function Jurnal({
                 <th scope="row" className="sticky left-0 z-10 bg-surface px-3 py-1.5 text-left font-normal">
                   <span className="flex items-center gap-2">
                     <span className="tnum w-5 shrink-0 text-right text-[11.5px] text-ink-4">{i + 1}.</span>
-                    <span className="max-w-[110px] truncate font-semibold sm:max-w-none">{q.fish}</span>
+                    <span title={q.fish} className="line-clamp-2 max-w-[120px] break-words text-[13px] leading-tight font-semibold sm:max-w-none sm:text-[13.5px]">{q.fish}</span>
                     {q.ketgan && <span className="shrink-0 text-[11px] text-ink-4">chiqqan</span>}
                     {q.probniy && <span className="shrink-0 rounded-[5px] bg-accent-soft px-1.5 text-[10.5px] font-semibold text-accent">probniy</span>}
                   </span>

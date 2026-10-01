@@ -32,7 +32,7 @@ export function BildirishnomaForma({
 
   const sorov = turi === 'sorovnoma'
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
       <form action={bildirishnomaYarat} className="flex flex-col gap-4">
         <input type="hidden" name="turi" value={turi} />
         <fieldset className="flex flex-col gap-2">
@@ -104,7 +104,7 @@ export function BildirishnomaForma({
           </select>
         </Maydon>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Maydon nom="Tugma matni" izoh="Ixtiyoriy, masalan: Batafsil">
             <input name="havola_matn" maxLength={40} value={havolaMatn} onChange={(e) => setHavolaMatn(e.target.value)} className={kirishKlass} />
           </Maydon>
@@ -113,7 +113,7 @@ export function BildirishnomaForma({
           </Maydon>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Maydon nom="Qachondan" izoh="Bo‘sh — hozirdan">
             <input name="boshlanish" type="datetime-local" className={kirishKlass} />
           </Maydon>

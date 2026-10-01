@@ -59,7 +59,7 @@ export function TelefonMaydonlari({
   qiymat?: { ota_tel?: string | null; ona_tel?: string | null; shaxsiy_tel?: string | null }
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       <Maydon nom="Shaxsiy telefon">
         <input name="shaxsiy_tel" type="tel" defaultValue={qiymat?.shaxsiy_tel ?? ''} placeholder="90 123 45 67" className={kirishKlass} />
       </Maydon>

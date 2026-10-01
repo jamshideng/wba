@@ -62,7 +62,7 @@ export default async function DarsJadvali() {
           <Empty>Faol guruh yo‘q.</Empty>
         </Card>
       ) : (
-        <div className="grid gap-3.5 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 xl:grid-cols-4">
           {jadval
             .filter((k) => k.darslar.length > 0 || k.kun <= 6)
             .map((k) => {

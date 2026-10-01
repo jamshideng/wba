@@ -70,7 +70,11 @@ export default async function Farzand() {
     groups: { nom: string; boshlanish: string; tugash: string; kunlar: number[]; teachers: { ism: string } | null } | null
   }
   const yList = (yozilishlar ?? []) as unknown as Yozilish[]
-  const jamiQarz = ((balans ?? []) as { qarz: number }[]).reduce((a, b) => a + (Number(b.qarz) || 0), 0)
+  /* O'quvchi sahifasi (/crm/men) bilan bir qoida: qarz va oldindan to'lov
+     alohida — manfiy qarz "−1 100 000" bo'lib ota-onani chalg'itmasin. */
+  const qarzlar = ((balans ?? []) as { qarz: number }[]).map((b) => Number(b.qarz) || 0)
+  const jamiQarz = qarzlar.reduce((a, q) => a + Math.max(q, 0), 0)
+  const oldindan = qarzlar.reduce((a, q) => a + Math.max(-q, 0), 0)
   const w = (woblr ?? null) as { jami_ball: number; balans: number } | null
 
   type Davomat = { davr: string; darslar: number; kelgan: number; foiz: number }
@@ -89,10 +93,18 @@ export default async function Farzand() {
         amal={oquvchi.holat === 'faol' ? <Badge ton="ok">Faol</Badge> : <Badge ton="accent">{oquvchi.holat}</Badge>}
       />
 
-      <p className="lbl">To‘lovlar tarixi, oylik davomat jadvali va bildirishnomalar — tez orada.</p>
-
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <Stat label="Qarz" value={jamiQarz} sub="so‘m" ton={jamiQarz > 0 ? 'brand' : 'ok'} border={jamiQarz > 0 ? 'brand' : undefined} />
+        {jamiQarz === 0 && oldindan > 0 ? (
+          <Stat label="Oldindan to‘langan" value={oldindan} sub="keyingi oylar uchun · so‘m" ton="ok" />
+        ) : (
+          <Stat
+            label="Qarz"
+            value={jamiQarz}
+            sub={oldindan > 0 ? `yana ${pul(oldindan)} oldindan to‘langan` : 'so‘m'}
+            ton={jamiQarz > 0 ? 'brand' : 'ok'}
+            border={jamiQarz > 0 ? 'brand' : undefined}
+          />
+        )}
         <Stat label="Woblar" value={w ? Number(w.balans) : 0} sub={w ? `jami ${Number(w.jami_ball)} olingan` : 'hali yo‘q'} ton="accent" />
         <Stat
           label={`Davomat · ${davrNomi(davr)}`}
@@ -103,7 +115,7 @@ export default async function Farzand() {
         <Stat label="Guruhlar" value={yList.length} sub="hozir o‘qiyapti" />
       </div>
 
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Card className="flex flex-col">
           <CardHeader title="Guruhlari" meta={`${yList.length} ta`} />
           <div className="flex flex-col gap-2.5 px-5 pb-4">

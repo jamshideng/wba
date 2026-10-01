@@ -82,7 +82,7 @@ export default async function Boshqaruv({
       />
       <Xabar ok={s.ok} xato={s.xato} />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Tayyor, olib ketilmagan" value={String(kutilmoqdaSoni ?? 0)} ton={kutilmoqdaSoni ? 'accent' : 'neytral'} />
         <Stat label="Oldindan buyurtmalar" value={String(oldindanSoni ?? 0)} sub="tovar kelishi kutilmoqda" ton={oldindanSoni ? 'brand' : 'neytral'} />
         <Stat label="Shu oy berildi" value={String(oyBerilgan?.length ?? 0)} sub={`${oyWoblar.toLocaleString('ru-RU')} woblar`} />

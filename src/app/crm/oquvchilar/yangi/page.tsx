@@ -31,7 +31,7 @@ export default async function YangiOquvchi({ searchParams }: { searchParams: Pro
 
       <form action={oquvchiQosh} className="flex flex-col gap-4">
         <FormaBolim nom="Shaxsiy ma’lumot">
-          <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr]">
             <Maydon nom="Ism familya">
               <input name="fish" required autoFocus className={kirishKlass} />
             </Maydon>
@@ -46,7 +46,7 @@ export default async function YangiOquvchi({ searchParams }: { searchParams: Pro
         </FormaBolim>
 
         <FormaBolim nom="Guruh">
-          <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr]">
             <Maydon nom="Guruh" izoh="Keyin ham biriktirsa bo‘ladi">
               <select name="group_id" defaultValue="" className={kirishKlass}>
                 <option value="">Hozircha guruhsiz</option>

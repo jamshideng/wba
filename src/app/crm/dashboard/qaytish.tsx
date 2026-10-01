@@ -56,7 +56,7 @@ export function QaytishKutilmoqda({ royxat, jami, bugun }: { royxat: Tanaffusdag
           const tel = o.ota_tel ?? o.ona_tel ?? o.shaxsiy_tel
           return (
             <li key={o.id} className="flex items-center gap-3 px-5 py-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-[11.5px] font-bold text-accent">
+              <span className="grid grid-cols-1 size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-[11.5px] font-bold text-accent">
                 {bosh(o.fish)}
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">

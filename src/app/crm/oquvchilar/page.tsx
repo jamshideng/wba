@@ -186,12 +186,12 @@ export default async function Oquvchilar({
           </span>
         </label>
 
-        <label className="flex flex-col gap-1.5">
+        <label className="flex min-w-0 max-w-full flex-col gap-1.5">
           <span className="lbl">Guruh</span>
           <select
             name="guruh"
             defaultValue={s.guruh ?? ''}
-            className="min-h-11 rounded-[9px] border border-line bg-surface px-3 text-[13.5px] text-ink"
+            className="min-h-11 w-full max-w-full rounded-[9px] border border-line bg-surface px-3 text-[13.5px] text-ink"
           >
             <option value="">Hammasi</option>
             {(guruhlar ?? []).map((g) => (

@@ -74,7 +74,7 @@ export default async function Profil({
           <Card className="flex flex-col">
             <CardHeader title="Login" meta={`hozirgi: ${loginNomi(men.email)}`} />
             <form action={loginOzgartir} className="flex flex-col gap-3 px-5 pb-5">
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Maydon nom="Yangi login" izoh={LOGIN_QOIDASI}>
                   <input name="login" required autoComplete="username" placeholder="masalan: aziza" className={kirishKlass} />
                 </Maydon>
@@ -95,7 +95,7 @@ export default async function Profil({
               <Maydon nom="Joriy parol">
                 <ParolInput name="joriy_parol" autoComplete="current-password" className="min-h-11! rounded-[9px]! text-[13.5px]!" />
               </Maydon>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Maydon nom="Yangi parol" izoh={faqatTelegram ? 'Kamida 6 belgi. Yodda qoladigan, lekin boshqalar topa olmaydigan so‘z tanlang' : 'Kamida 8 belgi'}>
                   <ParolInput name="yangi_parol" minLength={faqatTelegram ? 6 : 8} autoComplete="new-password" className="min-h-11! rounded-[9px]! text-[13.5px]!" />
                 </Maydon>
@@ -122,7 +122,7 @@ export default async function Profil({
               {tgSoni ? 'Boshqa qurilmani ulash' : 'Telegramga ulash'}
             </Yuborish>
           </form>
-          <p className="lbl">Yoki botda /start bosib, telefon raqamingizni yuboring.</p>
+          <p className="text-[12px] text-ink-3">Yoki botda /start bosib, telefon raqamingizni yuboring.</p>
         </div>
       </Card>
 

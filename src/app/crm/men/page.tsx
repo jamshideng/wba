@@ -204,7 +204,7 @@ export default async function MeningSahifam({
         <Stat label="Guruhlarim" value={yList.length} sub="hozir o‘qiyapman" />
       </div>
 
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Card className="flex flex-col">
           <CardHeader title="Guruhlarim" meta={`${yList.length} ta`} />
           <div className="flex flex-col gap-2.5 px-5 pb-4">
@@ -269,7 +269,7 @@ export default async function MeningSahifam({
         </Card>
       </div>
 
-      <div className="grid gap-3.5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
         <Card className="flex flex-col">
           <CardHeader title="To‘lovlarim" meta="oxirgi 8 ta" />
           <div className="flex flex-col px-5 pb-4">
@@ -311,7 +311,7 @@ export default async function MeningSahifam({
                 </div>
               ))
             )}
-            <p className="lbl pt-1">
+            <p className="pt-1 text-[12px] text-ink-3">
               {DAVOMAT_NOMI.keldi} va {DAVOMAT_NOMI.kechikdi} — kelgan deb sanaladi
             </p>
           </div>

@@ -94,7 +94,7 @@ export default async function Probniylar({
           <summary className="flex min-h-12 cursor-pointer items-center px-5 font-[family-name:var(--font-display)] text-[15px] font-bold">
             + Yangi probniy
           </summary>
-          <form action={probniyQosh} className="grid gap-3 px-5 pb-5 sm:grid-cols-2">
+          <form action={probniyQosh} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-2">
             <input type="hidden" name="qaytish" value={yol} />
             <Maydon nom="Ism familya">
               <input name="ism" required className={kirishKlass} />

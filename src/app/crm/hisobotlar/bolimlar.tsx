@@ -80,7 +80,7 @@ export function MoliyaBolimi({ m }: { m: HisobotMoliya }) {
         )}
       </Card>
 
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <Card className="flex flex-col overflow-hidden">
           <CardHeader title="Oylar bo‘yicha" meta="so‘m" />
           <Jadval>
@@ -168,7 +168,7 @@ export function OquvchilarBolimi({ o }: { o: HisobotOquvchilar }) {
         </div>
       </Card>
 
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <Card className="flex flex-col overflow-hidden">
           <CardHeader title="Oqim: kim keldi, kim ketdi" meta="oyma-oy" />
           <Jadval>
@@ -306,7 +306,7 @@ export function DavomatBolimi({ d }: { d: HisobotDavomat }) {
         )}
       </Card>
 
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <Card className="flex flex-col overflow-hidden">
           <CardHeader title="Guruhlar" meta="to‘lishi va davomati" />
           <Jadval>

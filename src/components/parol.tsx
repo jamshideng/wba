@@ -55,7 +55,7 @@ export function ParolInput({
         tabIndex={-1}
         onClick={() => setOchiq((s) => !s)}
         aria-label={ochiq ? 'Parolni yashirish' : 'Parolni ko‘rsatish'}
-        className="absolute inset-y-0 right-0 grid w-11 place-items-center text-ink-4 transition hover:text-ink-2"
+        className="absolute inset-y-0 right-0 grid grid-cols-1 w-11 place-items-center text-ink-4 transition hover:text-ink-2"
       >
         <Koz ochiq={ochiq} />
       </button>
