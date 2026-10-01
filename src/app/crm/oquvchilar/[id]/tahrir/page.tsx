@@ -10,6 +10,7 @@ import { IconArrowLeft } from '@/components/icons'
 import { bugunToshkent } from '@/lib/format'
 import { oquvchiTahrir } from '../../actions'
 import { TelefonMaydonlari } from '../../bolaklar'
+import { HolatMaydoni } from './holat-maydoni'
 
 export const metadata = { title: 'O‘quvchini tahrirlash' }
 export const dynamic = 'force-dynamic'
@@ -28,7 +29,7 @@ export default async function OquvchiTahrir({
   const supabase = await createClient()
   const { data: o } = await supabase
     .from('students')
-    .select('id, fish, tugilgan_sana, ota_tel, ona_tel, shaxsiy_tel, holat, izoh')
+    .select('id, fish, tugilgan_sana, ota_tel, ona_tel, shaxsiy_tel, holat, izoh, qaytish_sana, tanaffus_sabab')
     .eq('id', id)
     .maybeSingle()
 
@@ -55,18 +56,10 @@ export default async function OquvchiTahrir({
             </Maydon>
           </div>
           <TelefonMaydonlari qiymat={o} />
-          <div className="grid gap-3 sm:grid-cols-[1fr_2fr]">
-            <Maydon nom="Holat" izoh="Ketgan — guruhlaridan alohida chiqariladi">
-              <select name="holat" defaultValue={o.holat} className={kirishKlass}>
-                <option value="faol">Faol</option>
-                <option value="tanaffus">Tanaffus</option>
-                <option value="ketgan">Ketgan</option>
-              </select>
-            </Maydon>
-            <Maydon nom="Izoh">
-              <input name="izoh" defaultValue={o.izoh ?? ''} className={kirishKlass} />
-            </Maydon>
-          </div>
+          <Maydon nom="Izoh">
+            <input name="izoh" defaultValue={o.izoh ?? ''} className={kirishKlass} />
+          </Maydon>
+          <HolatMaydoni holat={o.holat} qaytish={o.qaytish_sana} sabab={o.tanaffus_sabab} bugun={bugunToshkent()} />
         </FormaBolim>
 
         <Yuborish>Saqlash</Yuborish>

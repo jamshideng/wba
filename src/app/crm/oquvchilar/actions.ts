@@ -86,6 +86,9 @@ export async function oquvchiTahrir(fd: FormData) {
       ...tel,
       izoh: matn(fd.get('izoh')),
       holat: holat!,
+      // Tanaffusda bo'lmasa baza o'zi tozalaydi (0046 trigger)
+      qaytish_sana: holat === 'tanaffus' ? sanaOqi(fd.get('qaytish_sana')) : null,
+      tanaffus_sabab: holat === 'tanaffus' ? matn(fd.get('tanaffus_sabab')) : null,
     })
     .eq('id', id!)
 

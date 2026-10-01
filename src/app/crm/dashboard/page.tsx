@@ -9,6 +9,7 @@ import { pul, davrNomi, joriyDavr, sana, bugunToshkent } from '@/lib/format'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Ulanmagan } from '@/components/crm'
 import type { DashboardStats, Qarzdor, TeacherStats, Hisobot } from '@/lib/types'
+import { QaytishKutilmoqda, type Tanaffusdagi } from './qaytish'
 
 export const metadata = { title: 'Boshqaruv paneli' }
 export const dynamic = 'force-dynamic'
@@ -21,7 +22,7 @@ export default async function Dashboard() {
   const bugun = bugunToshkent()
   const xodim = staffmi(profil.rol)
 
-  const [{ data: stats }, { data: qarzdorlar }, { data: ustozlar }, { data: oylik }, { data: kunlik }, { count: probniyBugun }] =
+  const [{ data: stats }, { data: qarzdorlar }, { data: ustozlar }, { data: oylik }, { data: kunlik }, { count: probniyBugun }, { data: tanaffus, count: tanaffusSoni }] =
     await Promise.all([
       supabase.from('v_dashboard').select('*').single(),
       supabase.from('v_qarzdorlar').select('*').limit(6),
@@ -34,6 +35,13 @@ export default async function Dashboard() {
       xodim
         ? supabase.from('leads').select('id', { count: 'exact', head: true }).eq('sinov_sana', bugun).eq('holat', 'yangi')
         : Promise.resolve({ count: 0 }),
+      // Tanaffusdagilar — qaytish sanasi yaqinlari birinchi (0046)
+      supabase
+        .from('students')
+        .select('id, fish, qaytish_sana, tanaffus_sabab, ota_tel, ona_tel, shaxsiy_tel', { count: 'exact' })
+        .eq('holat', 'tanaffus')
+        .order('qaytish_sana', { ascending: true, nullsFirst: false })
+        .limit(6),
     ])
   const k = kunlik as Hisobot | null
 
@@ -116,6 +124,10 @@ export default async function Dashboard() {
             />
           </div>
         </section>
+      )}
+
+      {(tanaffusSoni ?? 0) > 0 && (
+        <QaytishKutilmoqda royxat={(tanaffus ?? []) as Tanaffusdagi[]} jami={tanaffusSoni ?? 0} bugun={bugun} />
       )}
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">

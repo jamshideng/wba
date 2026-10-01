@@ -80,6 +80,9 @@ export type Student = {
   /** Arxivga o'tgan kun va sabab (0030) */
   arxiv_sana: string | null
   arxiv_sabab: string | null
+  /** 0046 — tanaffusdagi o'quvchi qachon qaytadi va nega */
+  qaytish_sana: string | null
+  tanaffus_sabab: string | null
   created_at: string
   updated_at: string
 }

@@ -5,7 +5,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, Badge, Empty, Button } from '@/components/ui'
 import { Sarlavha, Ulanmagan, Sahifalash } from '@/components/crm'
 import { IconSearch } from '@/components/icons'
-import { pul, telefon } from '@/lib/format'
+import { pul, sanaQisqa, telefon } from '@/lib/format'
 import { qidiruvTuri, telefonFiltri } from '@/lib/qidiruv'
 import { JonliForma } from '@/components/jonli-forma'
 import type { StudentStatus } from '@/lib/types'
@@ -30,6 +30,7 @@ type Qator = {
   tel: string | null
   guruhlar: string[]
   qarz: number
+  qaytish: string | null
 }
 
 const HOLAT_NOMI: Record<StudentStatus, string> = {
@@ -71,7 +72,7 @@ export default async function Oquvchilar({
   let soorov = supabase
     .from('students')
     .select(
-      'id, fish, holat, ota_tel, ona_tel, shaxsiy_tel, enrollments(group_id, holat, groups(nom))',
+      'id, fish, holat, qaytish_sana, ota_tel, ona_tel, shaxsiy_tel, enrollments(group_id, holat, groups(nom))',
       { count: 'exact' },
     )
 
@@ -79,7 +80,7 @@ export default async function Oquvchilar({
     soorov = supabase
       .from('students')
       .select(
-        'id, fish, holat, ota_tel, ona_tel, shaxsiy_tel, enrollments!inner(group_id, holat, groups(nom))',
+        'id, fish, holat, qaytish_sana, ota_tel, ona_tel, shaxsiy_tel, enrollments!inner(group_id, holat, groups(nom))',
         { count: 'exact' },
       )
       .eq('enrollments.group_id', s.guruh)
@@ -89,6 +90,20 @@ export default async function Oquvchilar({
   // Manzildan kelgan qiymatga ishonmaymiz — faqat ma'lum holatlar
   const holat = (['faol', 'tanaffus', 'ketgan'] as const).find((h) => h === s.holat)
   if (holat) soorov = soorov.eq('holat', holat)
+
+  /* Telegram — alohida ustun emas, filtrning ichki varianti (Jamshid, 01.10):
+     o'quvchi o'zi yoki ota-onasi botga ulanganmi. */
+  const tg = s.holat === 'tg-ulangan' ? 'ulangan' : s.holat === 'tg-ulanmagan' ? 'ulanmagan' : null
+  if (tg) {
+    const { data: ulanish } = await supabase
+      .from('telegram_ulanish')
+      .select('student_id')
+      .eq('holat', 'faol')
+      .not('student_id', 'is', null)
+    const tgIdlar = [...new Set((ulanish ?? []).map((u) => u.student_id as string))]
+    if (tg === 'ulangan') soorov = soorov.in('id', tgIdlar.length ? tgIdlar : ['-'])
+    else if (tgIdlar.length) soorov = soorov.not('id', 'in', `(${tgIdlar.map((x) => `"${x}"`).join(',')})`)
+  }
 
   const qt = qidiruvTuri(qidiruv)
   if (qt?.turi === 'id') soorov = soorov.ilike('id', qt.naqsh)
@@ -107,6 +122,7 @@ export default async function Oquvchilar({
     ona_tel: string | null
     shaxsiy_tel: string | null
     enrollments: { group_id: string; holat: string; groups: { nom: string } | null }[] | null
+    qaytish_sana: string | null
   }
 
   const xom = (oquvchilar ?? []) as unknown as XomOquvchi[]
@@ -133,6 +149,7 @@ export default async function Oquvchilar({
       .filter((e) => e.holat !== 'tugagan' && e.groups?.nom)
       .map((e) => e.groups!.nom),
     qarz: qarzlar.get(o.id) ?? 0,
+    qaytish: o.qaytish_sana,
   }))
 
   /* "Qarzi borlar" — shu sahifadagilardan ajratiladi. Qarz boshqa
@@ -189,13 +206,17 @@ export default async function Oquvchilar({
           <span className="lbl">Holat</span>
           <select
             name="holat"
-            defaultValue={holat ?? ''}
+            defaultValue={holat ?? (tg ? `tg-${tg}` : '')}
             className="min-h-11 rounded-[9px] border border-line bg-surface px-3 text-[13.5px] text-ink"
           >
             <option value="">Hammasi</option>
             <option value="faol">Faol</option>
             <option value="tanaffus">Tanaffus</option>
             <option value="ketgan">Ketgan</option>
+            <optgroup label="Telegram bot">
+              <option value="tg-ulangan">Botga ulangan</option>
+              <option value="tg-ulanmagan">Botga ulanmagan</option>
+            </optgroup>
           </select>
         </label>
 
@@ -254,10 +275,13 @@ export default async function Oquvchilar({
                       {q.guruhlar.length ? q.guruhlar.join(' · ') : '—'}
                     </span>
 
-                    <span className="max-md:hidden">
+                    <span className="flex flex-col items-start gap-0.5 max-md:hidden">
                       <Badge ton={q.holat === 'faol' ? 'ok' : q.holat === 'tanaffus' ? 'accent' : 'jim'}>
                         {HOLAT_NOMI[q.holat]}
                       </Badge>
+                      {q.holat === 'tanaffus' && q.qaytish && (
+                        <span className="tnum text-[10.5px] text-ink-3">qaytadi {sanaQisqa(q.qaytish).slice(0, 5)}</span>
+                      )}
                     </span>
 
                     {pulKoradi && (

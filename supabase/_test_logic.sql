@@ -1420,4 +1420,19 @@ end $$;
 reset role;
 reset request.jwt.claim.sub;
 
+\echo '--- 0046: tanaffus — qaytish sanasi ---'
+do $$
+begin
+  update students set holat = 'tanaffus', qaytish_sana = '2026-10-05', tanaffus_sabab = 'Kasallik' where id = 'S002';
+  if (select qaytish_sana from students where id = 'S002') is distinct from '2026-10-05'::date then
+    raise exception 'XATO: qaytish sanasi saqlanmadi';
+  end if;
+  update students set holat = 'faol' where id = 'S002';
+  if (select qaytish_sana from students where id = 'S002') is not null
+     or (select tanaffus_sabab from students where id = 'S002') is not null then
+    raise exception 'XATO: faolga qaytganda tanaffus maydonlari tozalanmadi';
+  end if;
+  raise notice 'OK: tanaffus — qaytish sanasi saqlanadi, faolda tozalanadi';
+end $$;
+
 \echo '=== TEST TUGADI ==='
