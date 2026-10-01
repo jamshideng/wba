@@ -12,6 +12,9 @@ import { BOT_NOMI } from '@/lib/telegram'
 
 const YOL = '/crm/profil'
 
+/** O'quvchi ism, login, parolni o'zi o'zgartirmaydi (0032) — faqat admin orqali. */
+const OQUVCHIGA_YOPIQ = 'Ism, login va parolni markaz admini o‘zgartiradi — unga murojaat qiling.'
+
 /**
  * Joriy parolni tekshiradi — foydalanuvchining o'z sessiyasiga tegmasdan,
  * alohida bir martalik klient bilan. Login yoki parol almashtirishdan
@@ -42,6 +45,7 @@ async function iz(profileId: string, amal: string, yangi: Record<string, unknown
 
 export async function ismOzgartir(fd: FormData) {
   const men = await talabProfil()
+  if (men.rol === 'oquvchi') redirect(xabarliYol(YOL, { xato: OQUVCHIGA_YOPIQ }))
   const ism = matn(fd.get('ism'))
   if (!ism || ism.length < 3) redirect(xabarliYol(YOL, { xato: 'Ism kamida 3 harf bo‘lsin.' }))
 
@@ -64,6 +68,7 @@ export async function ismOzgartir(fd: FormData) {
  */
 export async function loginOzgartir(fd: FormData) {
   const men = await talabProfil()
+  if (men.rol === 'oquvchi') redirect(xabarliYol(YOL, { xato: OQUVCHIGA_YOPIQ }))
   const yangi = loginEmail(fd.get('login'))
   const parol = String(fd.get('joriy_parol') ?? '')
 
@@ -92,6 +97,7 @@ export async function loginOzgartir(fd: FormData) {
 
 export async function parolOzgartir(fd: FormData) {
   const men = await talabProfil()
+  if (men.rol === 'oquvchi') redirect(xabarliYol(YOL, { xato: OQUVCHIGA_YOPIQ }))
   const joriy = String(fd.get('joriy_parol') ?? '')
   const yangi = String(fd.get('yangi_parol') ?? '')
   const takror = String(fd.get('takror_parol') ?? '')

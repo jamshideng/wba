@@ -108,33 +108,6 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
             </div>
           ))}
         </nav>
-
-        <div className="mt-auto flex flex-col gap-2">
-          <div className="flex items-center gap-2.5 rounded-[10px] border border-line bg-surface px-3 py-2.5">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand font-[family-name:var(--font-display)] text-xs font-bold">
-              {bosh(profil.ism)}
-            </span>
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate text-[12.5px] font-semibold">{profil.ism}</span>
-              <span className="lbl text-[9px] text-brand">
-                {kim.length ? kim.join(' · ') : ROL_NOMI[profil.rol]}
-              </span>
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <form action={chiqish} className="flex-1">
-              <button
-                type="submit"
-                className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-[13px] text-ink-3 transition hover:bg-surface-2 hover:text-ink"
-              >
-                <IconLogout size={17} />
-                Chiqish
-              </button>
-            </form>
-            <TemaTugma />
-          </div>
-        </div>
       </aside>
 
       {/* Telefon: tepada logotip, pastda asosiy bandlar */}
@@ -142,8 +115,19 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
         <Link href="/crm">
           <Logo size="sm" />
         </Link>
-        <span className="lbl text-[9px] text-brand">
-          {kim.length ? kim[0] : ROL_NOMI[profil.rol]}
+        <span className="flex items-center gap-1">
+          <span className="lbl text-[9px] text-brand">
+            {kim.length ? kim[0] : ROL_NOMI[profil.rol]}
+          </span>
+          <form action={chiqish}>
+            <button
+              type="submit"
+              aria-label="Chiqish"
+              className="flex size-10 items-center justify-center rounded-lg text-ink-3 transition hover:bg-surface-2 hover:text-ink"
+            >
+              <IconLogout size={18} />
+            </button>
+          </form>
         </span>
       </header>
 
@@ -170,7 +154,37 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
         </Link>
       </nav>
 
-      <main className="min-w-0 flex-1 max-lg:pt-14 max-lg:pb-16">{children}</main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Kompyuter: o'ng yuqori burchakda kim kirgani, tema va chiqish */}
+        <header className="sticky top-0 z-10 flex items-center justify-end gap-2 border-b border-line bg-surface/90 px-5 py-2 backdrop-blur max-lg:hidden lg:px-7">
+          <Link
+            href="/crm/profil"
+            className="flex items-center gap-2.5 rounded-[10px] px-2 py-1.5 transition hover:bg-surface-2"
+          >
+            <span className="flex min-w-0 flex-col items-end">
+              <span className="truncate text-[12.5px] font-semibold">{profil.ism}</span>
+              <span className="lbl text-[9px] text-brand">
+                {kim.length ? kim.join(' · ') : ROL_NOMI[profil.rol]}
+              </span>
+            </span>
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand font-[family-name:var(--font-display)] text-xs font-bold">
+              {bosh(profil.ism)}
+            </span>
+          </Link>
+          <TemaTugma />
+          <form action={chiqish}>
+            <button
+              type="submit"
+              className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-[13px] text-ink-3 transition hover:bg-surface-2 hover:text-ink"
+            >
+              <IconLogout size={17} />
+              Chiqish
+            </button>
+          </form>
+        </header>
+
+        <main className="min-w-0 flex-1 max-lg:pt-14 max-lg:pb-16">{children}</main>
+      </div>
     </div>
   )
 }

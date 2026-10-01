@@ -15,9 +15,9 @@ export const dynamic = 'force-dynamic'
 /**
  * Har bir panelda: o'z ismi, logini va paroli.
  *
- * Admin bergan boshlang'ich login-parolni har kim birinchi kirishda
- * almashtiradi — shunda boshqa o'quvchi uni bilib, kirib olmaydi.
- * Esdan chiqsa: admin o'quvchi profilidan yangisini qo'yib beradi.
+ * O'quvchiga faqat "Telegramga ulash" (0032): ism, login, parolni
+ * admin o'quvchi profilidan o'zgartiradi. Xodim, ustoz va ota-ona
+ * o'zinikini o'zi almashtiradi.
  */
 export default async function Profil({
   searchParams,
@@ -50,55 +50,59 @@ export default async function Profil({
       />
       <Xabar ok={xabar.ok} xato={xabar.xato} />
 
-      <Card className="flex flex-col">
-        <CardHeader title="Ism familya" />
-        <form action={ismOzgartir} className="flex flex-col gap-3 px-5 pb-5">
-          <Maydon
-            nom="Ism familya"
-            izoh={
-              oquvchi || ustoz
-                ? 'Tizimda ko‘rinadigan ismingiz. Markaz hujjatlaridagi ism (jurnal, to‘lovlar) admin tomonidan yuritiladi.'
-                : undefined
-            }
-          >
-            <input name="ism" required minLength={3} defaultValue={men.ism} className={kirishKlass} />
-          </Maydon>
-          <Yuborish tur="ikkilamchi">Ismni saqlash</Yuborish>
-        </form>
-      </Card>
+      {men.rol !== 'oquvchi' && (
+        <>
+          <Card className="flex flex-col">
+            <CardHeader title="Ism familya" />
+            <form action={ismOzgartir} className="flex flex-col gap-3 px-5 pb-5">
+              <Maydon
+                nom="Ism familya"
+                izoh={
+                  oquvchi || ustoz
+                    ? 'Tizimda ko‘rinadigan ismingiz. Markaz hujjatlaridagi ism (jurnal, to‘lovlar) admin tomonidan yuritiladi.'
+                    : undefined
+                }
+              >
+                <input name="ism" required minLength={3} defaultValue={men.ism} className={kirishKlass} />
+              </Maydon>
+              <Yuborish tur="ikkilamchi">Ismni saqlash</Yuborish>
+            </form>
+          </Card>
 
-      <Card className="flex flex-col">
-        <CardHeader title="Login" meta={`hozirgi: ${loginNomi(men.email)}`} />
-        <form action={loginOzgartir} className="flex flex-col gap-3 px-5 pb-5">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Maydon nom="Yangi login" izoh={LOGIN_QOIDASI}>
-              <input name="login" required autoComplete="username" placeholder="masalan: aziza" className={kirishKlass} />
-            </Maydon>
-            <Maydon nom="Joriy parol" izoh="Tasdiqlash uchun">
-              <input name="joriy_parol" type="password" required autoComplete="current-password" className={kirishKlass} />
-            </Maydon>
-          </div>
-          <Yuborish tur="ikkilamchi">Loginni almashtirish</Yuborish>
-        </form>
-      </Card>
+          <Card className="flex flex-col">
+            <CardHeader title="Login" meta={`hozirgi: ${loginNomi(men.email)}`} />
+            <form action={loginOzgartir} className="flex flex-col gap-3 px-5 pb-5">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Maydon nom="Yangi login" izoh={LOGIN_QOIDASI}>
+                  <input name="login" required autoComplete="username" placeholder="masalan: aziza" className={kirishKlass} />
+                </Maydon>
+                <Maydon nom="Joriy parol" izoh="Tasdiqlash uchun">
+                  <input name="joriy_parol" type="password" required autoComplete="current-password" className={kirishKlass} />
+                </Maydon>
+              </div>
+              <Yuborish tur="ikkilamchi">Loginni almashtirish</Yuborish>
+            </form>
+          </Card>
 
-      <Card className="flex flex-col">
-        <CardHeader title="Parol" />
-        <form action={parolOzgartir} className="flex flex-col gap-3 px-5 pb-5">
-          <Maydon nom="Joriy parol">
-            <input name="joriy_parol" type="password" required autoComplete="current-password" className={kirishKlass} />
-          </Maydon>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Maydon nom="Yangi parol" izoh="Kamida 8 belgi">
-              <input name="yangi_parol" type="password" required minLength={8} autoComplete="new-password" className={kirishKlass} />
-            </Maydon>
-            <Maydon nom="Yangi parol (takror)">
-              <input name="takror_parol" type="password" required minLength={8} autoComplete="new-password" className={kirishKlass} />
-            </Maydon>
-          </div>
-          <Yuborish>Parolni almashtirish</Yuborish>
-        </form>
-      </Card>
+          <Card className="flex flex-col">
+            <CardHeader title="Parol" />
+            <form action={parolOzgartir} className="flex flex-col gap-3 px-5 pb-5">
+              <Maydon nom="Joriy parol">
+                <input name="joriy_parol" type="password" required autoComplete="current-password" className={kirishKlass} />
+              </Maydon>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Maydon nom="Yangi parol" izoh="Kamida 8 belgi">
+                  <input name="yangi_parol" type="password" required minLength={8} autoComplete="new-password" className={kirishKlass} />
+                </Maydon>
+                <Maydon nom="Yangi parol (takror)">
+                  <input name="takror_parol" type="password" required minLength={8} autoComplete="new-password" className={kirishKlass} />
+                </Maydon>
+              </div>
+              <Yuborish>Parolni almashtirish</Yuborish>
+            </form>
+          </Card>
+        </>
+      )}
 
       <Card className="flex flex-col">
         <CardHeader
@@ -120,7 +124,9 @@ export default async function Profil({
       </Card>
 
       <p className="text-[12px] leading-relaxed text-ink-3">
-        Parolni unutsangiz — markaz adminiga murojaat qiling: u sizga yangi parol qo‘yib beradi.
+        {men.rol === 'oquvchi'
+          ? 'Ism, login yoki parolni o‘zgartirish kerak bo‘lsa — markaz adminiga murojaat qiling.'
+          : 'Parolni unutsangiz — markaz adminiga murojaat qiling: u sizga yangi parol qo‘yib beradi.'}
       </p>
     </div>
   )

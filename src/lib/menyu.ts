@@ -115,10 +115,12 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
     })
   }
 
-  // Har bir panelda: o'z ismi, logini va paroli
+  // Har bir panelda: o'z ismi, logini va paroli. O'quvchiga — faqat Telegram (0032)
   bolimlar.push({
     nom: 'Hisobim',
-    bandlar: [{ href: '/crm/profil', nom: 'Profil va parol', Icon: IconSettings, tayyor: true }],
+    bandlar: [
+      { href: '/crm/profil', nom: rol === 'oquvchi' ? 'Telegramga ulash' : 'Profil va parol', Icon: IconSettings, tayyor: true },
+    ],
   })
 
   return bolimlar
