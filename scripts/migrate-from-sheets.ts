@@ -46,6 +46,10 @@ config({ path: '.env.local' })
 
 const DRY = process.argv.includes('--dry-run')
 const DAVOMAT = process.argv.includes('--davomat')
+/** Prod'ni o'qib reja chiqaradi, yozmaydi */
+const REJA = process.argv.includes('--reja')
+/** Davomat shu kungacha (shu kun kirmaydi) Sheets'dan; undan keyin davomat saytda (01.10 qaror) */
+const DAVOMAT_GACHA = process.argv.find((a) => a.startsWith('--davomat-gacha='))?.split('=')[1] ?? '2026-10-02'
 const SHEETS_ID = process.env.SHEETS_ID
 
 /* ------------------------------------------------------------------ */
@@ -100,6 +104,9 @@ type Oquvchi = {
   izoh: string | null
   /** VIP — pul to'lamaydi, lekin faol o'quvchi hisobida (Sheets Holat = "VIP") */
   vip: boolean
+  /** Arxivga o'tgan kun va sabab (0030) — faqat Arxiv varag'idagilar */
+  arxiv_sana: string | null
+  arxiv_sabab: string | null
 }
 
 type Yozilish = {
@@ -135,7 +142,24 @@ type Yozilish = {
   sheetsXato: string | null
 }
 
-type Hisob = { kalit: string; davr: string; summa: number; chegirma: number; tuzatish: number }
+type Hisob = {
+  kalit: string
+  davr: string
+  /** Yakuniy (Sheets bilan solishtiriladi): narx − chegirma − tuzatish, VIP — 0 */
+  summa: number
+  chegirma: number
+  tuzatish: number
+  /**
+   * Bazaga yoziladigan xom qiymat: narx − chegirma. VIP va tuzatishni bazaning
+   * o'z triggerlari ayiradi (invoices_a_vip, invoices_tuzatish) — shunda
+   * saytdagi "VIP" belgisi va "Tuzatishlar" ro'yxati ham to'g'ri ko'rinadi.
+   */
+  xomSumma: number
+  xomChegirma: number
+}
+
+/** Tuzatishlar varag'idagi bitta qator (bazada `tuzatishlar` jadvali) */
+type TuzatishQator = { sid: string; oy: number; summa: number; sabab: string }
 
 type Tolov = {
   sheets_id: string | null      // Tolovlar ID — T0001
@@ -304,6 +328,8 @@ function oquvchilarniQur(qatorlar: Qator[]): Oquvchi[] {
       holat: oquvchiHolati(matn(q, 'Holat')),
       izoh: matn(q, 'Izoh') || null,
       vip: /^vip$/i.test(matn(q, 'Holat')),
+      arxiv_sana: null,
+      arxiv_sabab: null,
     })
   }
   return natija
@@ -342,8 +368,10 @@ function arxivniQur(
       shaxsiy_tel: telefonga(qiymat(q, 'Shaxsiy telefon')),
       qoshilgan_sana: boshlandi ?? chiqdi ?? '2026-09-01',
       holat: 'ketgan',
-      izoh: [matn(q, 'Sabab'), matn(q, 'Izoh')].filter(Boolean).join(' · ') || null,
+      izoh: matn(q, 'Izoh') || null,
       vip: false,
+      arxiv_sana: chiqdi ?? null,
+      arxiv_sabab: matn(q, 'Sabab') || null,
     })
 
     const guruhNomi = matn(q, 'Guruh')
@@ -452,8 +480,9 @@ function yozilishlarOquvchilardan(
  * Tuzatishlar varag'i — o'quvchining ma'lum OYIDAGI to'lovidan aniq summa
  * ayriladi (Y_Tuzatish.js). Kalit: O'quvchi ID → oy raqami → summa.
  */
-function tuzatishlarniQur(qatorlar: Qator[]): Map<string, Map<number, number>> {
+function tuzatishlarniQur(qatorlar: Qator[]): { jami: Map<string, Map<number, number>>; royxat: TuzatishQator[] } {
   const natija = new Map<string, Map<number, number>>()
+  const royxat: TuzatishQator[] = []
   for (const q of qatorlar) {
     const summa = pulga(qiymat(q, 'Summa (−)', 'Summa (-)', 'Summa'))
     if (summa <= 0) continue
@@ -467,8 +496,9 @@ function tuzatishlarniQur(qatorlar: Qator[]): Map<string, Map<number, number>> {
     const oylar = natija.get(sid) ?? new Map<number, number>()
     oylar.set(oy, (oylar.get(oy) ?? 0) + summa)
     natija.set(sid, oylar)
+    royxat.push({ sid, oy, summa, sabab: `Sheets: ${matn(q, 'Sabab') || 'tuzatish'}` })
   }
-  return natija
+  return { jami: natija, royxat }
 }
 
 /* ------------------------------------------------------------------ */
@@ -628,7 +658,10 @@ function hisoblarniQur(
   for (const y of yozilishlar) {
     if (y.kerakQatiy !== undefined) {
       if (y.kerakQatiy > 0) {
-        natija.push({ kalit: y.kalit, davr: y.boshlandi.slice(0, 7), summa: y.kerakQatiy, chegirma: 0, tuzatish: 0 })
+        natija.push({
+          kalit: y.kalit, davr: y.boshlandi.slice(0, 7), summa: y.kerakQatiy, chegirma: 0, tuzatish: 0,
+          xomSumma: y.kerakQatiy, xomChegirma: 0,
+        })
       }
       continue
     }
@@ -655,7 +688,8 @@ function hisoblarniQur(
       /* VIP — to'lamaydi: hisob 0 (Sheets T = 0). Tuzatish — shu oyning
          summasidan aniq ayriladi; Sheets uni chegaralamaydi, shuning uchun
          bu yerda ham manfiyga tushsa ogohlantiriladi. */
-      const tuz = tuzatishlar.get(y.student_id)?.get(oy) ?? 0
+      // Tuzatish Sheets qatori (= yozilish) ID'si bo'yicha — 2 fanli bolada ham to'g'ri fanga
+      const tuz = tuzatishlar.get(y.sheets_id ?? y.student_id)?.get(oy) ?? 0
       const toza = narx - chegirma - tuz
       if (!y.vip && toza < 0) {
         ogoh(`${y.student_id} · ${davrdan(oy)}: chegirma + tuzatish (${chegirma + tuz}) narxdan (${narx}) katta`)
@@ -666,6 +700,8 @@ function hisoblarniQur(
         summa: y.vip ? 0 : toza,
         chegirma: y.vip ? narx : chegirma,
         tuzatish: y.vip ? 0 : tuz,
+        xomSumma: narx - chegirma,
+        xomChegirma: chegirma,
       })
     }
   }
@@ -830,6 +866,80 @@ function davomatniQur(
 }
 
 /* ------------------------------------------------------------------ */
+/*  3c. 2 fanli bola — bitta o'quvchi                                   */
+/* ------------------------------------------------------------------ */
+
+const ismKalit = (s: string) =>
+  s.toLowerCase().replace(/[‘’ʻʼ`']/g, '').replace(/\s+/g, ' ').trim()
+
+/**
+ * Bir bolaning qatorlari: ism AYNAN bir xil va kamida bitta telefon umumiy
+ * (qaysi ustunda yozilganidan qat'i nazar). Telefoni yo'q yoki umumiy
+ * telefoni yo'q qator birlashmaydi (taxmin qilinmaydi) — alohida o'quvchi.
+ * Asosiy ID — eng kichigi. Qaytadi: qo'shimcha ID → asosiy ID.
+ *
+ * `oquvchilar` va `yozilishlar` JOYIDA o'zgaradi: qo'shimcha o'quvchi
+ * yozuvi olib tashlanadi, uning yozilishi asosiy ID'ga o'tadi.
+ */
+function bolalarniBirlashtir(oquvchilar: Oquvchi[], yozilishlar: Yozilish[]): Map<string, string> {
+  const raqam = (id: string) => Number(id.replace(/\D/g, ''))
+  const tel = (o: Oquvchi) => new Set([o.ota_tel, o.ona_tel, o.shaxsiy_tel].filter((t): t is string => Boolean(t)))
+  const ismBoyicha = new Map<string, Oquvchi[]>()
+  for (const o of oquvchilar) {
+    if (o.holat === 'ketgan') continue
+    const k = ismKalit(o.fish)
+    ismBoyicha.set(k, [...(ismBoyicha.get(k) ?? []), o])
+  }
+  // Bir ism ichida: umumiy telefon bo'yicha bog'langan to'plamlar
+  const guruhlar: Oquvchi[][] = []
+  for (const bir of ismBoyicha.values()) {
+    const qolgan = [...bir]
+    while (qolgan.length) {
+      const toplam = [qolgan.shift()!]
+      const tellar = tel(toplam[0])
+      for (let o = true; o; ) {
+        o = false
+        for (let i = qolgan.length - 1; i >= 0; i--) {
+          if ([...tel(qolgan[i])].some((t) => tellar.has(t))) {
+            tel(qolgan[i]).forEach((t) => tellar.add(t))
+            toplam.push(...qolgan.splice(i, 1))
+            o = true
+          }
+        }
+      }
+      guruhlar.push(toplam)
+    }
+  }
+
+  const xarita = new Map<string, string>()
+  for (const g of guruhlar) {
+    if (g.length < 2) continue
+    const [asosiy, ...qolgan] = [...g].sort((a, b) => raqam(a.id) - raqam(b.id))
+    for (const o of qolgan) xarita.set(o.id, asosiy.id)
+    // VIP — yozilishda (fan bo'yicha); o'quvchi yozuvida emas
+    if (qolgan.some((o) => o.izoh && o.izoh !== asosiy.izoh)) {
+      asosiy.izoh = [asosiy.izoh, ...qolgan.map((o) => o.izoh)].filter(Boolean).join(' · ')
+    }
+  }
+  if (!xarita.size) return xarita
+
+  for (let i = oquvchilar.length - 1; i >= 0; i--) {
+    if (xarita.has(oquvchilar[i].id)) oquvchilar.splice(i, 1)
+  }
+  const band = new Set<string>()
+  for (const y of yozilishlar) {
+    const asosiy = xarita.get(y.student_id)
+    if (asosiy) {
+      y.student_id = asosiy
+      y.kalit = `${asosiy}|${y.group_id}`
+    }
+    if (band.has(y.kalit)) toxtat(`${y.sheets_id}: bitta bola bitta guruhga ikki qatorda — ${y.guruhNomi}`)
+    band.add(y.kalit)
+  }
+  return xarita
+}
+
+/* ------------------------------------------------------------------ */
 /*  4. Hammasini yig'ish                                               */
 /* ------------------------------------------------------------------ */
 
@@ -855,7 +965,13 @@ function malumotniQur(kitob: Map<string, ReturnType<typeof varaq>>) {
   }
 
   const tuzVaraq = yangiTuzilma ? varaqBormi(kitob, 'Tuzatishlar') : null
-  const tuzatishlar = tuzVaraq ? tuzatishlarniQur(tuzVaraq.qatorlar) : new Map<string, Map<number, number>>()
+  const tuz = tuzVaraq ? tuzatishlarniQur(tuzVaraq.qatorlar) : { jami: new Map<string, Map<number, number>>(), royxat: [] as TuzatishQator[] }
+  const tuzatishlar = tuz.jami
+
+  /* 2 fanli bola Sheets'da 2 qator, 2 ID. Saytda — bitta o'quvchi (bitta login),
+     ikkita yozilish (Jamshid, 01.10). Qator ID'si yozilish ID'si bo'lib qoladi. */
+  const birlash = yangiTuzilma ? bolalarniBirlashtir(oquvchilar, yozilishlar) : new Map<string, string>()
+  const asosiyId = (id: string) => birlash.get(id) ?? id
 
   const narxVaraq = varaqBormi(kitob, 'Narxlar')
   const tarix = narxTarixi(
@@ -873,9 +989,9 @@ function malumotniQur(kitob: Map<string, ReturnType<typeof varaq>>) {
   const tolovlar = tolovlarniQur(
     varaq(kitob, 'Tolovlar').qatorlar,
     guruhlar,
-    oquvchilar,
-    yangiTuzilma ? new Map(yozilishlar.map((y) => [y.student_id, y.kalit])) : new Map(),
-  )
+    [...oquvchilar, ...[...birlash.keys()].map((id) => ({ id }) as Oquvchi)],
+    yangiTuzilma ? new Map(yozilishlar.map((y) => [y.sheets_id ?? y.student_id, y.kalit])) : new Map(),
+  ).map((t) => ({ ...t, student_id: asosiyId(t.student_id) }))
 
   /* Arxivga o'tgandan keyingi to'lovlar — alohida jurnalda (_Arxiv_tolovlar) */
   const arxTolVaraq = yangiTuzilma ? varaqBormi(kitob, '_Arxiv_tolovlar') : null
@@ -886,11 +1002,31 @@ function malumotniQur(kitob: Map<string, ReturnType<typeof varaq>>) {
   const probVaraq = varaqBormi(kitob, 'Probniylar')
   const probniylar = probVaraq ? probniylarniQur(probVaraq.qatorlar, guruhlar, oquvchilar) : []
 
-  const davomat = DAVOMAT
-    ? davomatniQur(kitob, guruhlar, oquvchilar)
+  const davomatXom = DAVOMAT
+    ? davomatniQur(kitob, guruhlar, [...oquvchilar, ...[...birlash.keys()].map((id) => ({ id }) as Oquvchi)])
     : { darslar: [] as Dars[], belgilar: [] as Davomat[] }
+  const davomat = {
+    darslar: davomatXom.darslar,
+    belgilar: davomatXom.belgilar.map((b) => ({ ...b, student_id: asosiyId(b.student_id) })),
+  }
 
-  return { ustozlar, guruhlar, oquvchilar, yozilishlar, hisoblar, tolovlar, probniylar, davomat, tuzatishlar, arxivTolovlari, yangiTuzilma }
+  const tuzatishRoyxat = tuz.royxat.map((t) => ({ ...t, kalit: yozilishlar.find((y) => y.sheets_id === t.sid)?.kalit ?? null }))
+  for (const t of tuzatishRoyxat) {
+    if (!t.kalit) toxtat(`Tuzatish: ${t.sid} uchun yozilish topilmadi (${t.summa})`)
+  }
+  const qoldiqlar = yozilishlar.filter((y) => y.qoldiq > 0)
+  for (const y of qoldiqlar) {
+    toxtat(`${y.sheets_id}: "Oldingi qoldiq" ${pul(y.qoldiq)} — bazaga yozish hali qilinmagan`)
+  }
+  if (arxivTolovlari.length) {
+    toxtat(`_Arxiv_tolovlar: ${arxivTolovlari.length} ta to'lov — bazaga yozish hali qilinmagan`)
+  }
+
+  return {
+    ustozlar, guruhlar, oquvchilar, yozilishlar, hisoblar, tolovlar, probniylar, davomat,
+    tuzatishlar, tuzatishRoyxat, arxivTolovlari, yangiTuzilma, birlash,
+    davomatGacha: DAVOMAT_GACHA,
+  }
 }
 
 type Tayyor = ReturnType<typeof malumotniQur>
@@ -950,24 +1086,142 @@ const pul = (n: number) => n.toLocaleString('uz-UZ')
 /*  6. Bazaga yozish                                                   */
 /* ------------------------------------------------------------------ */
 
-async function yoz(d: Tayyor) {
+/**
+ * Sheets — haqiqat (Jamshid, 01.10). Baza Sheets'ga TENGLASHTIRILADI:
+ *
+ *   · bor yozuv yangilanadi, yo'g'i qo'shiladi;
+ *   · Sheets'da yo'q eski yozilish o'chiriladi (hisob-fakturasi bilan);
+ *   · Sheets'da yo'q eski to'lov o'chirilmaydi — `bekor` qilinadi (qoida 3);
+ *   · Sheets'da yo'q o'quvchi (va uning logini) o'chiriladi; o'chirib
+ *     bo'lmasa (to'lovi bor) — arxivga o'tadi;
+ *   · ID'si boshqa bolaga o'tgan o'quvchining profil ismi yangilanadi
+ *     (login raqam — 10001…, ismga bog'liq emas).
+ *
+ * `quruq = true` — prod'dan faqat o'qiydi va REJAni chiqaradi, hech narsa yozmaydi.
+ */
+async function yoz(d: Tayyor, quruq: boolean) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) throw new Error('Supabase kalitlari topilmadi (.env.local)')
 
-  const db = createClient(url, key, { auth: { persistSession: false } })
+  const db = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
   const xato = (nom: string, e: { message: string } | null) => {
     if (e) throw new Error(`${nom}: ${e.message}`)
   }
+  /** 1000 qatordan ko'p bo'lsa ham hammasini o'qiydi */
+  async function hammasi<T>(jadval: string, ustunlar: string): Promise<T[]> {
+    const natija: T[] = []
+    for (let dan = 0; ; dan += 1000) {
+      const { data, error } = await db.from(jadval).select(ustunlar).range(dan, dan + 999)
+      xato(jadval, error)
+      natija.push(...((data ?? []) as T[]))
+      if (!data || data.length < 1000) return natija
+    }
+  }
+  /** Ko'p ID bo'yicha amal — bo'laklab (URL uzun bo'lib ketmasin) */
+  async function bolaklab<T>(royxat: T[], amal: (b: T[]) => Promise<void>, hajm = 200) {
+    for (let i = 0; i < royxat.length; i += hajm) await amal(royxat.slice(i, i + hajm))
+  }
 
+  /* ── 1. Prod holati ── */
+  type PS = { id: string; fish: string; profile_id: string | null; holat: string }
+  type PE = { id: string; sheets_id: string | null; student_id: string; group_id: string; holat: string }
+  type PP = { id: number; sheets_id: string | null; student_id: string; manba: string; bekor: boolean; summa: number }
+  const [pOquvchi, pYozilish, pTolov, pGuruh] = await Promise.all([
+    hammasi<PS>('students', 'id, fish, profile_id, holat'),
+    hammasi<PE>('enrollments', 'id, sheets_id, student_id, group_id, holat'),
+    hammasi<PP>('payments', 'id, sheets_id, student_id, manba, bekor, summa'),
+    hammasi<{ id: string; nom: string }>('groups', 'id, nom'),
+  ])
+
+  /* ── 2. Reja ── */
+  const yangiOquvchi = new Map(d.oquvchilar.map((o) => [o.id, o]))
+  const ismOzgardi = pOquvchi
+    .filter((p) => yangiOquvchi.has(p.id) && ismKalit(p.fish) !== ismKalit(yangiOquvchi.get(p.id)!.fish))
+    .map((p) => ({ id: p.id, profile_id: p.profile_id, eski: p.fish, yangi: yangiOquvchi.get(p.id)!.fish }))
+
+  const yangiTolovId = new Set(d.tolovlar.map((t) => t.sheets_id).filter(Boolean) as string[])
+  const tolovBekor = pTolov.filter((p) => p.manba === 'sheets' && !p.bekor && p.sheets_id && !yangiTolovId.has(p.sheets_id))
+  const idsizTolov = pTolov.filter((p) => p.manba === 'sheets' && !p.sheets_id).length
+  if (idsizTolov > 0) {
+    throw new Error(`Bazada ID'siz ${idsizTolov} ta Sheets to'lovi bor — qaysi biri qaysi ekanini bilib bo'lmaydi.`)
+  }
+
+  // Yozilishlar: avval Sheets qator ID'si bo'yicha, keyin (o'quvchi, guruh) bo'yicha egallanadi
+  const yangiYozId = new Set(d.yozilishlar.map((y) => y.sheets_id).filter(Boolean) as string[])
+  const egallangan = new Set<string>()
+  const pBySid = new Map(pYozilish.filter((e) => e.sheets_id).map((e) => [e.sheets_id!, e]))
+  for (const y of d.yozilishlar) {
+    const e = y.sheets_id ? pBySid.get(y.sheets_id) : undefined
+    if (e) egallangan.add(e.id)
+  }
+  const qaytaKalit: { id: string; eski: string | null; yangi: string }[] = []
+  for (const y of d.yozilishlar) {
+    if (!y.sheets_id || pBySid.has(y.sheets_id)) continue
+    const e = pYozilish.find((p) =>
+      !egallangan.has(p.id) && p.student_id === y.student_id && p.group_id === y.group_id &&
+      !(p.sheets_id && yangiYozId.has(p.sheets_id)))
+    if (e) {
+      egallangan.add(e.id)
+      qaytaKalit.push({ id: e.id, eski: e.sheets_id, yangi: y.sheets_id })
+    }
+  }
+  // Tuzatishi bor yozilish o'chirilmaydi (0029) — avvalgi yurishda yopilgani qayta sanalmasin
+  const tuzliYoz = new Set(
+    (await hammasi<{ enrollment_id: string }>('tuzatishlar', 'enrollment_id')).map((t) => t.enrollment_id),
+  )
+  const yozilishOchir = pYozilish.filter((e) =>
+    !egallangan.has(e.id) && !(tuzliYoz.has(e.id) && !e.sheets_id && e.holat === 'tugagan'))
+
+  // Sheets'da yo'q o'quvchilar: to'lovi qolsa — arxiv, aks holda o'chiriladi
+  const qolganTolov = new Set(
+    pTolov.filter((p) => !(p.sheets_id && yangiTolovId.has(p.sheets_id))).map((p) => p.student_id),
+  )
+  const ortiqcha = pOquvchi.filter((p) => !yangiOquvchi.has(p.id))
+  const oquvchiOchir = ortiqcha.filter((p) => !qolganTolov.has(p.id))
+  const oquvchiArxiv = ortiqcha.filter((p) => qolganTolov.has(p.id))
+
+  const sinovGuruh = pGuruh.filter((g) => /^sinov/i.test(g.nom))
+
+  const davomatGacha = d.davomatGacha
+  let eskiBelgi = 0
+  let eskiDarslar: { id: string }[] = []
+  if (DAVOMAT) {
+    const darslar = await hammasi<{ id: string; sana: string }>('lessons', 'id, sana')
+    eskiDarslar = darslar.filter((l) => l.sana < davomatGacha)
+    const belgilar = await hammasi<{ lesson_id: string }>('attendance', 'lesson_id')
+    const eskiId = new Set(eskiDarslar.map((l) => l.id))
+    eskiBelgi = belgilar.filter((b) => eskiId.has(b.lesson_id)).length
+  }
+
+  console.log('\nREJA — prod baza Sheets\'ga tenglashtiriladi:')
+  console.log(`  o‘quvchi: ${d.oquvchilar.length} yoziladi · ${oquvchiOchir.length} o‘chiriladi (logini bilan) · ${oquvchiArxiv.length} arxivga`)
+  oquvchiOchir.forEach((p) => console.log(`     − ${p.id} ${p.fish}${p.profile_id ? ' [login]' : ''}`))
+  oquvchiArxiv.forEach((p) => console.log(`     ⌂ ${p.id} ${p.fish} (to‘lovi bor — arxivga)`))
+  console.log(`  ismi o‘zgargan (ID boshqa bolaga o‘tgan yoki ism to‘ldirilgan): ${ismOzgardi.length}`)
+  ismOzgardi.forEach((x) => console.log(`     ~ ${x.id}: "${x.eski}" → "${x.yangi}"`))
+  console.log(`  yozilish: ${d.yozilishlar.length} yoziladi · ${qaytaKalit.length} eski yozuv yangi ID oladi · ${yozilishOchir.length} o‘chiriladi (hisob-fakturasi bilan)`)
+  console.log(`  to‘lov: ${d.tolovlar.length} yoziladi · ${tolovBekor.length} eski to‘lov bekor qilinadi (${pul(tolovBekor.reduce((a, p) => a + Number(p.summa), 0))} so‘m)`)
+  tolovBekor.slice(0, 15).forEach((p) => console.log(`     × ${p.sheets_id} ${p.student_id} ${pul(Number(p.summa))}`))
+  console.log(`  tuzatish: ${d.tuzatishRoyxat.length} · hisob-faktura: ${d.hisoblar.length}`)
+  if (sinovGuruh.length) console.log(`  sinov guruh darslari o‘chiriladi: ${sinovGuruh.map((g) => `${g.id} "${g.nom}"`).join(', ')}`)
+  if (DAVOMAT) {
+    console.log(`  davomat (${davomatGacha} gacha): eski ${eskiBelgi} belgi o‘chiriladi → Sheets'dan ${d.davomat.belgilar.filter((b) => b.sana < davomatGacha).length} belgi yoziladi`)
+  }
+
+  if (quruq) return null
+
+  /* ── 3. Yozish ── */
   xato('teachers', (await db.from('teachers').upsert(d.ustozlar)).error)
 
-  // Bosqich (level) — yo'nalish ichidagi nom bo'yicha topiladi
+  if (sinovGuruh.length) {
+    xato('sinov darslari', (await db.from('lessons').delete().in('group_id', sinovGuruh.map((g) => g.id))).error)
+  }
+
   const { data: bosqichlar } = await db.from('levels').select('id, subject_id, nom')
   const bosqichId = new Map(
     (bosqichlar ?? []).map((b) => [`${b.subject_id}|${b.nom.toLowerCase()}`, b.id as number]),
   )
-
   xato('groups', (await db.from('groups').upsert(
     d.guruhlar.map(({ bosqich, ...g }) => ({
       ...g,
@@ -977,9 +1231,17 @@ async function yoz(d: Tayyor) {
     })),
   )).error)
 
-  xato('students', (await db.from('students').upsert(d.oquvchilar.map(({ vip: _vip, ...o }) => o))).error)
+  xato('students', (await db.from('students').upsert(
+    d.oquvchilar.map(({ vip: _vip, ...o }) => o),
+  )).error)
 
-  // Qatnashuv ID (Q001) bo'yicha — qayta yurgizilsa yangilanadi, ikkilanmaydi
+  for (const x of ismOzgardi) {
+    if (x.profile_id) xato('profiles', (await db.from('profiles').update({ ism: x.yangi }).eq('id', x.profile_id)).error)
+  }
+
+  for (const q of qaytaKalit) {
+    xato('enrollments (ID)', (await db.from('enrollments').update({ sheets_id: q.yangi }).eq('id', q.id)).error)
+  }
   xato('enrollments', (await db.from('enrollments').upsert(
     d.yozilishlar.map((y) => ({
       sheets_id: y.sheets_id,
@@ -993,44 +1255,84 @@ async function yoz(d: Tayyor) {
       chegirma2_oy: y.chegirma2_oy,
       chegirma_sabab: y.chegirma_sabab,
       holat: y.holat,
+      vip: y.vip,
     })),
     { onConflict: 'sheets_id' },
   )).error)
+  /* Tuzatishi bor yozilish o'chirilmaydi (0029 himoyasi): u yopiladi —
+     hisob-fakturasi olinadi, tuzatishi bekor bo'ladi, qarz qolmaydi. */
+  const yopiladi = yozilishOchir.filter((e) => tuzliYoz.has(e.id))
+  for (const e of yopiladi) {
+    xato('tuzatishlar (bekor)', (await db.from('tuzatishlar')
+      .update({ bekor: true, bekor_sabab: 'Sheets\'da yo‘q yozilish' }).eq('enrollment_id', e.id).eq('bekor', false)).error)
+    xato('invoices (yopish)', (await db.from('invoices').delete().eq('enrollment_id', e.id)).error)
+    xato('enrollments (yopish)', (await db.from('enrollments')
+      .update({ holat: 'tugagan', tugadi: new Date().toISOString().slice(0, 10), sheets_id: null }).eq('id', e.id)).error)
+    ogoh(`Yozilish ${e.sheets_id ?? e.id} (${e.student_id}) tuzatishi bor — o‘chirilmadi, yopildi`)
+  }
+  await bolaklab(yozilishOchir.filter((e) => !tuzliYoz.has(e.id)).map((e) => e.id), async (b) => {
+    xato('enrollments (o‘chirish)', (await db.from('enrollments').delete().in('id', b)).error)
+  })
 
-  // Yozilish ID'lari — hisob-faktura va to'lov shularga bog'lanadi.
-  // Faqat Sheets'dan kelganlari: CRM'da ochilgan yozilish bu yerga aralashmaydi.
-  const { data: bazada } = await db
-    .from('enrollments')
-    .select('id, student_id, group_id')
-    .not('sheets_id', 'is', null)
-  const yId = new Map((bazada ?? []).map((y) => [`${y.student_id}|${y.group_id}`, y.id as string]))
+  // Yozilish ID'lari — Sheets qator ID'si (kalit) bo'yicha
+  const bazada = await hammasi<{ id: string; sheets_id: string | null }>('enrollments', 'id, sheets_id')
+  const sidDan = new Map(bazada.filter((e) => e.sheets_id).map((e) => [e.sheets_id!, e.id]))
+  const yId = new Map(
+    d.yozilishlar.filter((y) => y.sheets_id && sidDan.has(y.sheets_id)).map((y) => [y.kalit, sidDan.get(y.sheets_id!)!]),
+  )
+  const bizning = [...yId.values()]
 
+  /* Tuzatishlar — hisob-fakturadan OLDIN: invoices_tuzatish triggeri ularni o'zi ayiradi.
+     O'chirilmaydi: farq bo'lsa eskisi bekor qilinadi, yangisi yoziladi. */
+  type PT = { id: number; enrollment_id: string; davr: string; summa: number }
+  const eskiTuz = (await hammasi<PT & { bekor: boolean }>('tuzatishlar', 'id, enrollment_id, davr, summa, bekor'))
+    .filter((t) => !t.bekor)
+  const kerakTuz = new Map<string, { enrollment_id: string; davr: string; summa: number; sabab: string }[]>()
+  for (const t of d.tuzatishRoyxat) {
+    const eid = t.kalit ? yId.get(t.kalit) : undefined
+    if (!eid) continue
+    const k = `${eid}|${davrdan(t.oy)}`
+    kerakTuz.set(k, [...(kerakTuz.get(k) ?? []), { enrollment_id: eid, davr: davrdan(t.oy), summa: t.summa, sabab: t.sabab }])
+  }
+  const eskiBoyicha = new Map<string, PT[]>()
+  for (const t of eskiTuz) eskiBoyicha.set(`${t.enrollment_id}|${t.davr}`, [...(eskiBoyicha.get(`${t.enrollment_id}|${t.davr}`) ?? []), t])
+  const tuzKalitlar = new Set([...kerakTuz.keys(), ...[...eskiBoyicha.keys()].filter((k) => bizning.includes(k.split('|')[0]))])
+  let tuzYangi = 0
+  for (const k of tuzKalitlar) {
+    const kerak = kerakTuz.get(k) ?? []
+    const eski = eskiBoyicha.get(k) ?? []
+    const jami = (r: { summa: number }[]) => r.reduce((a, x) => a + Number(x.summa), 0)
+    if (jami(kerak) === jami(eski) && kerak.length === eski.length) continue
+    if (eski.length) {
+      xato('tuzatishlar (bekor)', (await db.from('tuzatishlar')
+        .update({ bekor: true, bekor_sabab: 'Sheets bilan tenglashtirildi' })
+        .in('id', eski.map((t) => t.id))).error)
+    }
+    if (kerak.length) {
+      xato('tuzatishlar', (await db.from('tuzatishlar').insert(kerak)).error)
+      tuzYangi += kerak.length
+    }
+  }
+
+  /* Hisob-faktura — xom summa; VIP va tuzatishni bazaning triggerlari ayiradi */
   const hisobRows = d.hisoblar
     .map((h) => {
       const id = yId.get(h.kalit)
-      return id ? { enrollment_id: id, davr: h.davr, summa: h.summa, chegirma: h.chegirma } : null
+      return id ? { enrollment_id: id, davr: h.davr, summa: h.xomSumma, chegirma: h.xomChegirma, tuzatish: 0 } : null
     })
     .filter((x): x is NonNullable<typeof x> => x !== null)
+  await bolaklab(hisobRows, async (b) => {
+    xato('invoices', (await db.from('invoices').upsert(b, { onConflict: 'enrollment_id,davr' })).error)
+  })
+  // Sheets'da yo'q oylar (masalan tugash sanasi o'zgargan)
+  const kerakHisob = new Set(hisobRows.map((h) => `${h.enrollment_id}|${h.davr}`))
+  const barchaHisob = await hammasi<{ id: string; enrollment_id: string; davr: string }>('invoices', 'id, enrollment_id, davr')
+  const ortiqHisob = barchaHisob.filter((h) => bizning.includes(h.enrollment_id) && !kerakHisob.has(`${h.enrollment_id}|${h.davr}`))
+  await bolaklab(ortiqHisob.map((h) => h.id), async (b) => {
+    xato('invoices (o‘chirish)', (await db.from('invoices').delete().in('id', b)).error)
+  })
 
-  xato('invoices', (await db.from('invoices').upsert(hisobRows, {
-    onConflict: 'enrollment_id,davr',
-  })).error)
-
-  // To'lovlar o'chirilmaydi, ya'ni ikki marta yozilsa tushum ikkilanadi.
-  // Endi har to'lov Tolovlar ID (T0001) bo'yicha yoziladi. ID'siz eski
-  // ko'chirish qolgan bo'lsa — qaysi biri qaysi ekanini bilib bo'lmaydi.
-  const { count: eski } = await db
-    .from('payments')
-    .select('id', { count: 'exact', head: true })
-    .eq('manba', 'sheets')
-    .is('sheets_id', null)
-  if ((eski ?? 0) > 0) {
-    throw new Error(
-      `Bazada ID'siz ${eski} ta Sheets to'lovi bor (eski ko'chirish) — ` +
-        `qayta yozilsa tushum ikkilanadi. Avval ularni ko'rib chiqing.`,
-    )
-  }
-
+  /* To'lovlar — Tolovlar ID (T0001) bo'yicha */
   const tolovRows = d.tolovlar.map((t) => ({
     sheets_id: t.sheets_id,
     student_id: t.student_id,
@@ -1043,12 +1345,40 @@ async function yoz(d: Tayyor) {
     tasdiqlangan_vaqt: t.tasdiqlangan_vaqt,
     izoh: t.izoh,
     manba: 'sheets',
+    bekor: false,
   }))
   if (tolovRows.length) {
     xato('payments', (await db.from('payments').upsert(tolovRows, { onConflict: 'sheets_id' })).error)
   }
+  await bolaklab(tolovBekor.map((p) => p.id), async (b) => {
+    xato('payments (bekor)', (await db.from('payments')
+      .update({ bekor: true, bekor_sabab: 'Sheets\'da yo‘q — tenglashtirishda bekor qilindi' })
+      .in('id', b)).error)
+  })
 
-  /* ── Probniylar ── */
+  /* Sheets'da yo'q o'quvchilar */
+  let ochirildi = 0
+  const bugun = new Date().toISOString().slice(0, 10)
+  for (const p of oquvchiOchir) {
+    const { error } = await db.from('students').delete().eq('id', p.id)
+    if (error) {
+      ogoh(`${p.id} o‘chirilmadi (${error.message}) — arxivga o‘tkazildi`)
+      oquvchiArxiv.push(p)
+      continue
+    }
+    if (p.profile_id) {
+      const { error: e2 } = await db.auth.admin.deleteUser(p.profile_id)
+      if (e2) ogoh(`${p.id}: logini o‘chmadi — ${e2.message}`)
+    }
+    ochirildi++
+  }
+  for (const p of oquvchiArxiv) {
+    xato('students (arxiv)', (await db.from('students').update({
+      holat: 'ketgan', arxiv_sana: bugun, arxiv_sabab: 'Sheets\'da yo‘q (tenglashtirish)',
+    }).eq('id', p.id)).error)
+  }
+
+  /* Probniylar */
   if (d.probniylar.length) {
     xato('leads', (await db.from('leads').upsert(
       d.probniylar.map(({ created_at, ...p }) => ({
@@ -1060,37 +1390,61 @@ async function yoz(d: Tayyor) {
     )).error)
   }
 
-  /* ── Davomat ── */
+  /* Davomat — faqat chegaragacha (undan keyin davomat saytda qilinadi) */
   let darsSoni = 0, belgiSoni = 0
-  if (DAVOMAT && d.davomat.darslar.length) {
-    xato('lessons', (await db.from('lessons').upsert(
-      d.davomat.darslar.map((l) => ({ group_id: l.group_id, sana: l.sana, otkazildi: true })),
-      { onConflict: 'group_id,sana' },
-    )).error)
-    darsSoni = d.davomat.darslar.length
+  if (DAVOMAT) {
+    await bolaklab(eskiDarslar.map((l) => l.id), async (b) => {
+      xato('attendance (eski)', (await db.from('attendance').delete().in('lesson_id', b)).error)
+    })
+    const darslar = d.davomat.darslar.filter((l) => l.sana < davomatGacha)
+    await bolaklab(darslar, async (b) => {
+      xato('lessons', (await db.from('lessons').upsert(
+        b.map((l) => ({ group_id: l.group_id, sana: l.sana, otkazildi: true })),
+        { onConflict: 'group_id,sana' },
+      )).error)
+    }, 500)
+    darsSoni = darslar.length
 
-    const { data: darsRows } = await db.from('lessons').select('id, group_id, sana')
-    const darsId = new Map((darsRows ?? []).map((l) => [`${l.group_id}|${l.sana}`, l.id as string]))
-
+    const darsRows = await hammasi<{ id: string; group_id: string; sana: string }>('lessons', 'id, group_id, sana')
+    const darsId = new Map(darsRows.map((l) => [`${l.group_id}|${l.sana}`, l.id]))
     const belgiRows = d.davomat.belgilar
+      .filter((b) => b.sana < davomatGacha)
       .map((b) => {
         const id = darsId.get(`${b.group_id}|${b.sana}`)
         return id ? { lesson_id: id, student_id: b.student_id, holat: b.holat } : null
       })
       .filter((x): x is NonNullable<typeof x> => x !== null)
-
-    xato('attendance', (await db.from('attendance').upsert(belgiRows, {
-      onConflict: 'lesson_id,student_id',
-    })).error)
+    await bolaklab(belgiRows, async (b) => {
+      xato('attendance', (await db.from('attendance').upsert(b, { onConflict: 'lesson_id,student_id' })).error)
+    }, 500)
     belgiSoni = belgiRows.length
   }
 
+  /* ── 4. Tekshiruv: bazadagi jami Sheets bilan teng bo'lishi shart ── */
+  const hisobJami = (await hammasi<{ enrollment_id: string; summa: number }>('invoices', 'enrollment_id, summa'))
+    .filter((h) => bizning.includes(h.enrollment_id))
+    .reduce((a, h) => a + Number(h.summa), 0)
+  const tolovJami = (await hammasi<{ summa: number; bekor: boolean; manba: string }>('payments', 'summa, bekor, manba'))
+    .filter((p) => p.manba === 'sheets' && !p.bekor)
+    .reduce((a, p) => a + Number(p.summa), 0)
+  const kutilganHisob = d.hisoblar.reduce((a, h) => a + h.summa, 0)
+  const kutilganTolov = d.tolovlar.reduce((a, t) => a + t.summa, 0)
+
   return {
+    oquvchilar: d.oquvchilar.length,
+    ochirildi,
+    arxivga: oquvchiArxiv.length,
+    yozilishlar: yId.size,
+    tuzatishlar: tuzYangi,
     hisoblar: hisobRows.length,
     tolovlar: tolovRows.length,
-    probniylar: d.probniylar.length,
+    tolovBekor: tolovBekor.length,
     darslar: darsSoni,
     davomat: belgiSoni,
+    tekshiruv: {
+      hisob: `${pul(hisobJami)} / Sheets ${pul(kutilganHisob)} ${hisobJami === kutilganHisob ? '✓' : '✗ FARQ'}`,
+      tolov: `${pul(tolovJami)} / Sheets ${pul(kutilganTolov)} ${tolovJami === kutilganTolov ? '✓' : '✗ FARQ'}`,
+    },
   }
 }
 
@@ -1122,8 +1476,10 @@ async function ishga() {
     const bolalar = new Set(faol.map((o) => `${o.fish.trim().toLowerCase()}|${o.ota_tel ?? ''}${o.ona_tel ?? ''}${o.shaxsiy_tel ?? ''}`))
     const tuzSoni = [...d.tuzatishlar.values()].reduce((a, m) => a + m.size, 0)
     const tuzJami = [...d.tuzatishlar.values()].reduce((a, m) => a + [...m.values()].reduce((x, y) => x + y, 0), 0)
+    const faolYoz = d.yozilishlar.filter((y) => y.holat === 'faol')
     console.log('  — yangi tuzilma (1 qator = 1 bola × 1 fan) —')
-    console.log(`  faol (fan bo‘yicha) ${faol.length} · bolalar ${bolalar.size} · VIP ${d.oquvchilar.filter((o) => o.vip).length}`)
+    console.log(`  faol: fan bo‘yicha ${faolYoz.length} · bolalar ${bolalar.size} · VIP ${faolYoz.filter((y) => y.vip).length}`)
+    console.log(`  2 fanli bola birlashtirildi: ${d.birlash.size}  (${[...d.birlash].map(([a, b]) => `${a}→${b}`).join(', ')})`)
     console.log(`  arxivdagilar    ${d.oquvchilar.filter((o) => o.holat === 'ketgan').length}`)
     console.log(`  tuzatishlar     ${tuzSoni}  (${pul(tuzJami)} so‘m)`)
     console.log(`  arxiv to‘lovlari ${d.arxivTolovlari.length}  (${pul(d.arxivTolovlari.reduce((a, x) => a + x.summa, 0))} so‘m)`)
@@ -1170,7 +1526,13 @@ Yozishni to'xtatadi (${toxtatuvchilar.length}):`)
   }
 
   if (DRY) {
-    console.log('\nQuruq yurish tugadi. Yozish uchun --dry-run siz ishga tushiring.')
+    console.log('\nQuruq yurish tugadi. Prod bilan reja: npm run migrate -- --reja [--davomat]')
+    return
+  }
+
+  if (REJA) {
+    await yoz(d, true)
+    console.log('\nReja tugadi — hech narsa yozilmadi. Yozish: npm run migrate -- --tasdiq [--davomat]')
     return
   }
 
@@ -1196,7 +1558,7 @@ Yozishni to'xtatadi (${toxtatuvchilar.length}):`)
     )
   }
 
-  const natija = await yoz(d)
+  const natija = await yoz(d, false)
   console.log('\nYozildi:', natija)
 
   if (!DAVOMAT) {

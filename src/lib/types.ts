@@ -308,6 +308,8 @@ export type DashboardStats = {
   chegirma: number
   tasdiqlanmagan_soni: number
   tasdiqlanmagan_summa: number
+  /** Faol yozilishlar — 2 fanli bola 2 marta (0041) */
+  fan_boyicha: number
 }
 
 export type TeacherStats = {

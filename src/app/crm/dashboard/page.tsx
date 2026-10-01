@@ -134,7 +134,7 @@ export default async function Dashboard() {
         <Stat
           label="Faol o‘quvchilar"
           value={s?.oquvchilar ?? 0}
-          sub={`${s?.guruhlar ?? 0} guruh · ${s?.ustozlar ?? 0} ustoz`}
+          sub={`fan bo‘yicha ${s?.fan_boyicha ?? 0} · ${s?.guruhlar ?? 0} guruh · ${s?.ustozlar ?? 0} ustoz`}
         />
         <Stat
           label="Berilgan chegirma"
