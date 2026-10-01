@@ -11,12 +11,15 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
 
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
+  /* getClaims() — tokenni JOYIDA tekshiradi (ES256 imzo, kalit JWKS'dan,
+     keshlanadi), Supabase Auth'ga har sahifada tarmoq so'rovi yubormaydi.
+     Muddati o'tgan yoki soxta token — null. Pul kabi nozik amallar o'zi
+     getUser() bilan qayta tekshiradi (masalan tolovlar/actions.ts). */
+  const { data: claims } = await supabase.auth.getClaims()
+  const userId = claims?.claims?.sub
+  if (!userId) return null
 
-  const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
 
   return data ?? null
 })

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { talabProfil, getUstoz, ROL_NOMI } from '@/lib/auth'
 import { menyular } from '@/lib/menyu'
 import { createClient } from '@/lib/supabase/server'
@@ -14,6 +15,8 @@ async function chiqish() {
   'use server'
   const supabase = await createClient()
   await supabase.auth.signOut()
+  // Brauzer xotirasidagi (staleTimes) sahifalar keyingi odamga ko'rinmasin
+  revalidatePath('/', 'layout')
   redirect('/kirish')
 }
 

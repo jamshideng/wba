@@ -43,6 +43,10 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: fileURLToPath(new URL('.', import.meta.url)),
 
   experimental: {
+    /* Brauzer xotirasi: yaqinda ochilgan sahifaga qaytish serverga bormaydi
+       (React Router + TanStack Query'dagi kesh kabi). 30 soniyadan keyin yoki
+       forma saqlanganda (revalidatePath) — yangidan olinadi. */
+    staleTimes: { dynamic: 30, static: 180 },
     // Server action'lar faqat shu domenlardan chaqirilsin
     serverActions: {
       allowedOrigins: ['localhost:3000', 'wbalc.uz', 'www.wbalc.uz'],

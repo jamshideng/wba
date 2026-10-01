@@ -6,6 +6,10 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+  /* Node.js runtime — middleware Vercel'da funksiya hududida (fra1, Frankfurt)
+     ishlaydi, Supabase bilan bir joyda. Edge'da u foydalanuvchiga yaqin
+     tugunda (Toshkentdan — Gonkong) ishlab, Frankfurtga qatnardi. */
+  runtime: 'nodejs',
   matcher: [
     /*
      * Statik fayllar va rasmlardan tashqari hamma so'rov.

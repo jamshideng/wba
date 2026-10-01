@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { talabProfil, getUstoz, ROL_NOMI, staffmi, tasdiqlaydimi } from '@/lib/auth'
 import { menyular, type MenyuBand } from '@/lib/menyu'
@@ -12,11 +14,14 @@ import { IconChevronDown } from '@/components/icons'
 import { TemaTugma } from '@/components/tema'
 import { ProfilMenyu } from '@/components/profil-menyu'
 import { MenyuTugma } from '@/components/menyu-tugma'
+import { YuklanishChizigi, HavolaHolati } from '@/components/yuklanish'
 
 async function chiqish() {
   'use server'
   const supabase = await createClient()
   await supabase.auth.signOut()
+  // Brauzer xotirasidagi (staleTimes) sahifalar keyingi odamga ko'rinmasin
+  revalidatePath('/', 'layout')
   redirect('/kirish')
 }
 
@@ -57,35 +62,33 @@ function Band({ band, nishon }: { band: MenyuBand; nishon?: number }) {
       className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-[13.5px] whitespace-nowrap text-ink-2 transition hover:bg-surface-2 hover:text-ink group-data-[menyu=yopiq]/qobiq:justify-center group-data-[menyu=yopiq]/qobiq:px-0"
     >
       {ichi}
+      <HavolaHolati />
     </Link>
   )
 }
 
 export default async function CrmLayout({ children }: { children: React.ReactNode }) {
   const profil = await talabProfil()
-  const menyuYopiq = (await cookies()).get(MENYU_COOKIE)?.value === 'yopiq'
-  const ustoz = await getUstoz()
-  const bolimlar = menyular(profil.rol, Boolean(ustoz))
+  const xodim = staffmi(profil.rol) && supabaseSozlanganmi()
+  const supabase = xodim ? await createClient() : null
 
-  /* Tasdiqlanmagan to'lovlar soni — pul ko'radiganlarga.
-     Ustozga umuman chiqmaydi (botdagi qoida). */
-  let tasdiqlanmagan = 0
-  let marketKutilmoqda = 0
-  if (staffmi(profil.rol) && supabaseSozlanganmi()) {
-    const supabase = await createClient()
-    const { count } = await supabase
-      .from('payments')
-      .select('id', { count: 'exact', head: true })
-      .eq('bekor', false)
-      .eq('tasdiqlangan', false)
-    tasdiqlanmagan = count ?? 0
-    // Woblar market: olib ketilmagan buyurtmalar (0040)
-    const { count: market } = await supabase
-      .from('woblr_redemptions')
-      .select('id', { count: 'exact', head: true })
-      .eq('holat', 'kutilmoqda')
-    marketKutilmoqda = market ?? 0
-  }
+  /* Bir-biriga bog'liq bo'lmagan so'rovlar — parallel (ketma-ket emas).
+     Tasdiqlanmagan to'lovlar soni — pul ko'radiganlarga; ustozga umuman
+     chiqmaydi (botdagi qoida). Market: olib ketilmagan buyurtmalar (0040). */
+  const [kuki, ustoz, tolovSoni, marketSoni] = await Promise.all([
+    cookies(),
+    getUstoz(),
+    supabase
+      ? supabase.from('payments').select('id', { count: 'exact', head: true }).eq('bekor', false).eq('tasdiqlangan', false)
+      : Promise.resolve({ count: 0 }),
+    supabase
+      ? supabase.from('woblr_redemptions').select('id', { count: 'exact', head: true }).eq('holat', 'kutilmoqda')
+      : Promise.resolve({ count: 0 }),
+  ])
+  const menyuYopiq = kuki.get(MENYU_COOKIE)?.value === 'yopiq'
+  const bolimlar = menyular(profil.rol, Boolean(ustoz))
+  const tasdiqlanmagan = tolovSoni.count ?? 0
+  const marketKutilmoqda = marketSoni.count ?? 0
 
   const nishon = (band: MenyuBand) =>
     band.href.startsWith('/crm/tolovlar')
@@ -110,6 +113,9 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
 
   return (
     <div id="crm-qobiq" data-menyu={menyuYopiq ? 'yopiq' : 'ochiq'} className="group/qobiq flex min-h-dvh">
+      <Suspense fallback={null}>
+        <YuklanishChizigi />
+      </Suspense>
       {/* Menyu sahifa bilan birga surilmaydi: o'z joyida qotgan, kengligi o'zgarmaydi.
           Yig'ilganda faqat ikonkalar (nomi — sichqoncha ustida). */}
       <aside className="sticky top-0 flex h-dvh w-56 shrink-0 flex-col gap-6 overflow-x-hidden overflow-y-auto [scrollbar-width:none] border-r border-line bg-surface px-3.5 py-5 transition-[width] max-lg:hidden group-data-[menyu=yopiq]/qobiq:w-[68px] group-data-[menyu=yopiq]/qobiq:px-2">

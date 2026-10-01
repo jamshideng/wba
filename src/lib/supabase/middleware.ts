@@ -36,11 +36,12 @@ export async function updateSession(request: NextRequest) {
     },
   )
 
-  // MUHIM: getClaims() bilan getUser() orasida hech narsa bo'lmasin —
-  // sessiya shu yerda yangilanadi.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // MUHIM: createServerClient bilan getClaims() orasida hech narsa bo'lmasin —
+  // sessiya (muddati o'tgan token) shu yerda yangilanadi.
+  // getClaims() tokenni joyida tekshiradi — har so'rovda Auth serveriga
+  // tarmoq so'rovi yo'q (getUser() edi: har o'tishda Supabase'ga borardi).
+  const { data: claims } = await supabase.auth.getClaims()
+  const user = claims?.claims?.sub ? { id: claims.claims.sub } : null
 
   const { pathname } = request.nextUrl
 
