@@ -20,7 +20,7 @@ import { adminmi, staffmi, tasdiqlaydimi } from '@/lib/auth'
 import {
   IconDashboard, IconStudents, IconGroups, IconTeacher, IconAttendance,
   IconWoblr, IconPayments, IconDebt, IconLeads, IconReports, IconSettings, IconSend, IconAlert, IconArxiv, IconXarajat, IconAudit,
-  IconJadval,
+  IconJadval, IconMarket,
 } from '@/components/icons'
 
 type IconKomponent = (p: { size?: number; className?: string }) => React.ReactElement
@@ -74,6 +74,7 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
         { href: '/crm/probniylar', nom: 'Probniylar', Icon: IconLeads, tayyor: true },
         { href: '/crm/hisobotlar', nom: 'Hisobotlar', Icon: IconReports, tayyor: true },
         { href: '/crm/xarajatlar', nom: 'Xarajatlar', Icon: IconXarajat, tayyor: true },
+        { href: '/crm/market/boshqaruv', nom: 'Woblar market', Icon: IconMarket, tayyor: true },
         // Keyingi bosqich (Jamshid, 01.10): hozircha joyi band, bosilmaydi — "tez orada"
         { href: '/crm/moliya', nom: 'Moliya', Icon: IconReports, tayyor: false },
         { href: '/crm/eslatmalar', nom: 'Eslatmalar', Icon: IconAlert, tayyor: false },
@@ -113,6 +114,7 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
       bandlar: [
         { href: '/crm/men', nom: 'Bosh sahifa', Icon: IconDashboard, tayyor: true, mobil: true },
         { href: '/crm/woblr', nom: 'Woblar reytingi', Icon: IconWoblr, tayyor: true, mobil: true },
+        { href: '/crm/market', nom: 'Woblar market', Icon: IconMarket, tayyor: true, mobil: true },
       ],
     })
   }

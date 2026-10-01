@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { kodNormal, omborMatni } from './market'
+import { kodNormal, omborMatni, sanaVaqt } from './market'
 
 test('kodNormal — WM- bilan va usiz, kichik harf, bo‘shliq', () => {
   assert.equal(kodNormal('WM-7K4P2X'), 'WM-7K4P2X')
@@ -17,4 +17,9 @@ test('omborMatni — cheksiz, tugagan, kam qolgan', () => {
   assert.deepEqual(omborMatni({ cheksiz: false, qolgan_soni: 0 }), { matn: 'Tugagan', tugagan: true, kam: false })
   assert.deepEqual(omborMatni({ cheksiz: false, qolgan_soni: 2 }), { matn: '2 ta qoldi', tugagan: false, kam: true })
   assert.deepEqual(omborMatni({ cheksiz: false, qolgan_soni: 9 }), { matn: '9 ta qoldi', tugagan: false, kam: false })
+})
+
+test('sanaVaqt — Toshkent vaqtida', () => {
+  assert.equal(sanaVaqt('2026-10-01T14:05:00Z'), '01.10.2026, 19:05')
+  assert.equal(sanaVaqt(null), '—')
 })

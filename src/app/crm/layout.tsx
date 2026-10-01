@@ -70,6 +70,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   /* Tasdiqlanmagan to'lovlar soni — pul ko'radiganlarga.
      Ustozga umuman chiqmaydi (botdagi qoida). */
   let tasdiqlanmagan = 0
+  let marketKutilmoqda = 0
   if (staffmi(profil.rol) && supabaseSozlanganmi()) {
     const supabase = await createClient()
     const { count } = await supabase
@@ -78,10 +79,20 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
       .eq('bekor', false)
       .eq('tasdiqlangan', false)
     tasdiqlanmagan = count ?? 0
+    // Woblar market: olib ketilmagan buyurtmalar (0040)
+    const { count: market } = await supabase
+      .from('woblr_redemptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('holat', 'kutilmoqda')
+    marketKutilmoqda = market ?? 0
   }
 
   const nishon = (band: MenyuBand) =>
-    band.href.startsWith('/crm/tolovlar') ? tasdiqlanmagan : undefined
+    band.href.startsWith('/crm/tolovlar')
+      ? tasdiqlanmagan
+      : band.href === '/crm/market/boshqaruv'
+        ? marketKutilmoqda
+        : undefined
 
   /* Telefon uchun: eng kerakli 4 ta band + "Menyu" (qolgan hammasi).
      Pastki panelga 5 tadan ortig'i sig'maydi, bo'limlar esa ko'p. */

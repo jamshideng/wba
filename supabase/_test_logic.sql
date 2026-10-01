@@ -1184,4 +1184,135 @@ begin
   raise notice 'OK: kunlik hisobot kuniga bir marta';
 end $$;
 
+\echo '--- 0040: Woblar market ---'
+reset role;
+insert into woblr_rewards (id, nom, narx_ball, qolgan_soni, cheksiz, holat) values
+  ('cccccccc-0000-0000-0000-000000000001', 'Daftar',      2, 2, false, 'faol'),
+  ('cccccccc-0000-0000-0000-000000000002', 'Qimmat sovga', 100000, 5, false, 'faol'),
+  ('cccccccc-0000-0000-0000-000000000003', 'Stiker',      1, 0, true,  'faol'),
+  ('cccccccc-0000-0000-0000-000000000004', 'Yopiq',       1, 9, false, 'yopilgan');
+create temp table market_t (kalit text primary key, qiymat text);
+grant all on market_t to authenticated;
+insert into market_t values ('b0', woblar_balansi('S001')::text);
+
+set role authenticated;
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi S001
+do $$
+declare
+  v_kod text;
+  v_b0  int := (select qiymat::int from market_t where kalit = 'b0');
+begin
+  if v_b0 < 5 then raise exception 'XATO: test uchun S001 da kamida 5 woblar bo''lishi kerak (%).', v_b0; end if;
+
+  v_kod := market_buyurtma('cccccccc-0000-0000-0000-000000000001', 1);
+  if v_kod !~ '^WM-[2-9A-HJ-NP-Z]{6}$' then raise exception 'XATO: kod shakli noto''g''ri: %', v_kod; end if;
+  if (select balans from v_woblr_balance where student_id = 'S001') <> v_b0 - 2 then
+    raise exception 'XATO: buyurtmadan keyin balans kamaymadi';
+  end if;
+  if (select qolgan_soni from woblr_rewards where id = 'cccccccc-0000-0000-0000-000000000001') <> 1 then
+    raise exception 'XATO: ombor kamaymadi';
+  end if;
+  insert into market_t values ('kod1', v_kod);
+
+  begin
+    perform market_buyurtma('cccccccc-0000-0000-0000-000000000001', 2);
+    raise exception 'XATO: omborda yo''q narsa sotildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    perform market_buyurtma('cccccccc-0000-0000-0000-000000000002', 1);
+    raise exception 'XATO: woblar yetmasa ham sotildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    perform market_buyurtma('cccccccc-0000-0000-0000-000000000004', 1);
+    raise exception 'XATO: yopilgan mahsulot sotildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    perform market_buyurtma('cccccccc-0000-0000-0000-000000000003', 0);
+    raise exception 'XATO: 0 dona buyurtma o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+
+  -- To'g'ridan-to'g'ri yozish yopiq: faqat funksiyalar orqali
+  begin
+    insert into woblr_redemptions (student_id, reward_id, ball, kod, holat)
+    values ('S001', 'cccccccc-0000-0000-0000-000000000003', 0, 'WM-TEST22', 'kutilmoqda');
+    raise exception 'XATO: o''quvchi buyurtmani to''g''ridan-to''g''ri yozdi (0 woblar)';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  update woblr_redemptions set holat = 'berildi' where kod = v_kod;
+  if (select holat from woblr_redemptions where kod = v_kod) <> 'kutilmoqda' then
+    raise exception 'XATO: o''quvchi o''zi "berildi" qilib qo''ydi';
+  end if;
+  begin
+    perform market_berildi(v_kod);
+    raise exception 'XATO: o''quvchi market_berildi chaqira oldi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    insert into woblr_rewards (nom, narx_ball) values ('Bepul', 0);
+    raise exception 'XATO: o''quvchi mahsulot qo''shdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+
+  -- Bekor: woblar va ombor qaytadi
+  perform market_bekor(v_kod, null);
+  if (select balans from v_woblr_balance where student_id = 'S001') <> v_b0 then
+    raise exception 'XATO: bekor qilinganda woblar qaytmadi';
+  end if;
+  if (select qolgan_soni from woblr_rewards where id = 'cccccccc-0000-0000-0000-000000000001') <> 2 then
+    raise exception 'XATO: bekor qilinganda ombor qaytmadi';
+  end if;
+  begin
+    perform market_bekor(v_kod, null);
+    raise exception 'XATO: bekor qilingan buyurtma qayta bekor bo''ldi (woblar ikki marta qaytadi)';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+
+  -- Cheksiz: ombor sanalmaydi
+  perform market_buyurtma('cccccccc-0000-0000-0000-000000000003', 3);
+  if (select qolgan_soni from woblr_rewards where id = 'cccccccc-0000-0000-0000-000000000003') <> 0 then
+    raise exception 'XATO: cheksiz mahsulot ombori o''zgardi';
+  end if;
+
+  update market_t set qiymat = market_buyurtma('cccccccc-0000-0000-0000-000000000001', 1) where kalit = 'kod1';
+  raise notice 'OK: market — sotib olish, chegaralar, bekor qilish';
+end $$;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  perform market_berildi((select qiymat from market_t where kalit = 'kod1'));
+  raise exception 'XATO: ustoz buyurtmani berildi qildi';
+exception when others then if sqlerrm like 'XATO%' then raise; end if;
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare v_kod text := (select qiymat from market_t where kalit = 'kod1');
+begin
+  perform market_berildi(v_kod);
+  if (select holat from woblr_redemptions where kod = v_kod) <> 'berildi' then
+    raise exception 'XATO: admin berildi qilolmadi';
+  end if;
+  begin
+    perform market_berildi(v_kod);
+    raise exception 'XATO: bitta chek ikki marta berildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: market — admin beradi, chek bir marta';
+end $$;
+
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi
+do $$
+begin
+  perform market_bekor((select qiymat from market_t where kalit = 'kod1'), null);
+  raise exception 'XATO: berilgan narsani o''quvchi bekor qilib woblarni qaytardi';
+exception when others then if sqlerrm like 'XATO%' then raise; end if;
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+
 \echo '=== TEST TUGADI ==='

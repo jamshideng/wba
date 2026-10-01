@@ -30,9 +30,10 @@ export async function buyurtmaBer(fd: FormData) {
   const { data: kod, error } = await supabase.rpc('market_buyurtma', { p_reward: id!, p_soni: soni })
   if (error || !kod) redirect(xabarliYol(qaytish, { xato: xatoMatni(error) }))
 
-  // Adminlar darhol bilsin — xabar javobdan keyin, xato bo'lsa ham buyurtma saqlangan
+  // Adminlar darhol bilsin — xabar javobdan keyin, xato bo'lsa ham buyurtma saqlangan.
+  // Faqat prod'da: lokal sinov buyurtmalari haqiqiy guruhga ketmasin.
   const { data: m } = await supabase.from('woblr_rewards').select('nom, narx_ball').eq('id', id!).maybeSingle()
-  after(async () => {
+  if (process.env.VERCEL_ENV === 'production') after(async () => {
     await xabar(
       Number(HISOBOT_GURUH),
       [
@@ -142,4 +143,12 @@ export async function mahsulotSaqla(fd: FormData) {
 
   revalidatePath('/crm/market', 'layout')
   redirect(xabarliYol('/crm/market/boshqaruv?bolim=mahsulot', { ok: id ? `“${nom}” saqlandi.` : `“${nom}” marketga qo‘shildi.` }))
+}
+
+/** Xodim kodni yozadi → chekni ochadi (berishdan oldin ko'rib oladi) */
+export async function kodniOch(fd: FormData) {
+  await talabRol('admin', 'direktor', 'qabulxona')
+  const kod = kodNormal(String(fd.get('kod') ?? ''))
+  if (!kod) redirect(xabarliYol('/crm/market/boshqaruv', { xato: 'Kod noto‘g‘ri. Masalan: WM-7K4P2X yoki 7K4P2X' }))
+  redirect(`/crm/market/chek/${kod}`)
 }
