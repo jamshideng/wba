@@ -20,7 +20,8 @@ export type JurnalQatori = {
   umumiy: number
 }
 
-export type DarsKuni = { sana: string; kun: number; hafta: string }
+/** dam — kanikul/bayram sababi (0036): bu kun davomat qo'yilmaydi */
+export type DarsKuni = { sana: string; kun: number; hafta: string; dam?: string | null }
 
 /** Kim nimani o'zgartira oladi: admin — o'tgan kunlar ham, ustoz — faqat bugun (Q5). */
 export type Huquq = 'hammasi' | 'bugun' | 'yoq'
@@ -92,7 +93,10 @@ export function Jurnal({
     if (quti && ustun) quti.scrollLeft = Math.max(0, ustun.offsetLeft - quti.clientWidth / 2)
   }, [])
 
+  const damKunlar = new Set(kunlar.filter((k) => k.dam).map((k) => k.sana))
+
   const tahrirmi = (q: JurnalQatori, sana: string) =>
+    !damKunlar.has(sana) &&
     !q.ketgan &&
     sana <= bugun &&
     sana >= q.boshlandi &&
@@ -143,7 +147,7 @@ export function Jurnal({
     saqla(sana, { [q.student_id]: keyingi })
   }
 
-  const bugunUstunmi = kunlar.some((k) => k.sana === bugun)
+  const bugunUstunmi = kunlar.some((k) => k.sana === bugun && !k.dam)
   const bugunTahrir = bugunUstunmi && huquq !== 'yoq'
 
   function hammasiKeldi() {
@@ -232,10 +236,11 @@ export function Jurnal({
                     scope="col"
                     data-bugun={bugunmi ? '1' : undefined}
                     data-otgan={k.sana < bugun ? '1' : undefined}
-                    className={`min-w-[52px] px-1 py-2 text-center font-[family-name:var(--font-mono)] text-[11.5px] font-medium ${bugunmi ? 'bg-accent-soft text-accent' : ''}`}
+                    title={k.dam ? `Dars yo‘q: ${k.dam}` : undefined}
+                    className={`min-w-[52px] px-1 py-2 text-center font-[family-name:var(--font-mono)] text-[11.5px] font-medium ${k.dam ? 'bg-surface-2 text-ink-4' : bugunmi ? 'bg-accent-soft text-accent' : ''}`}
                   >
                     <span className="block">{k.sana.slice(8, 10)}.{k.sana.slice(5, 7)}</span>
-                    <span className="block text-[10px] text-ink-4">{k.hafta}</span>
+                    <span className="block text-[10px] text-ink-4">{k.dam ? 'dam' : k.hafta}</span>
                   </th>
                 )
               })}
@@ -265,8 +270,10 @@ export function Jurnal({
                   const bugunmi = k.sana === bugun
                   const guruhdami = k.sana >= q.boshlandi && (!q.tugadi || k.sana <= q.tugadi)
                   return (
-                    <td key={k.sana} className={`px-1 py-1 text-center ${bugunmi ? 'bg-accent-soft/60' : ''}`}>
-                      {guruhdami || holat ? (
+                    <td key={k.sana} className={`px-1 py-1 text-center ${k.dam ? 'bg-surface-2' : bugunmi ? 'bg-accent-soft/60' : ''}`}>
+                      {k.dam && !holat ? (
+                        <span className="text-[11px] text-ink-4" title={`Dars yo‘q: ${k.dam}`}>—</span>
+                      ) : guruhdami || holat ? (
                         <button
                           type="button"
                           disabled={!ochiq}

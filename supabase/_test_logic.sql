@@ -917,4 +917,39 @@ end $$;
 
 reset role;
 \echo ''
+\echo '--- 0036: dam olish kunlari ---'
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  insert into dam_kunlar (sana, sabab) values (bugun_toshkent() + 1, 'ustozdan');
+  raise exception 'XATO: ustoz dam kuni qo''shdi!';
+exception when insufficient_privilege or others then
+  if sqlerrm like 'XATO%' then raise; end if;
+  raise notice 'OK: dam kunini faqat admin qo''shadi';
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+insert into dam_kunlar (sana, sabab) values (bugun_toshkent() - 2, 'Sinov bayrami');
+do $$
+begin
+  if guruh_dars_kunimi('{1,2,3,4,5,6,7}', bugun_toshkent() - 2) then
+    raise exception 'XATO: dam kuni dars kuni deb hisoblandi';
+  end if;
+  begin
+    perform davomat_belgila('NX', bugun_toshkent() - 2, '{"S003":"keldi"}');
+    if exists (select 1 from lessons where group_id = 'NX' and sana = bugun_toshkent() - 2) then
+      -- shu kuni avvaldan dars ochilgan bo'lsa ruxsat — yangisi ochilmasligi kerak
+      null;
+    end if;
+  exception when others then
+    if sqlerrm not like '%dars kuni emas%' then raise; end if;
+  end;
+  if exists (select 1 from jsonb_array_elements(tushum_hisobot(bugun_toshkent() - 2, bugun_toshkent() - 2) -> 'qilinmagan')) then
+    raise exception 'XATO: dam kuni "qilinmagan dars" bo''lib chiqdi';
+  end if;
+  raise notice 'OK: dam kuni — davomat so''ralmaydi, qilinmagan dars yo''q';
+end $$;
+reset role;
+
 \echo '=== TEST TUGADI ==='

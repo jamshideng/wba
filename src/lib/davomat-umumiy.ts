@@ -46,6 +46,8 @@ export function umumiyDavomat(
   yozilishlar: YozilishKirish[],
   darslar: DarsKirish[],
   belgilar: BelgiKirish[],
+  /** Kanikul/bayram (0036) — bu kunlari dars yo'q, "belgilanmagan" sanalmaydi */
+  damKunlar: Set<string> = new Set(),
 ): GuruhQatori[] {
   const darsBelgilari = new Map<string, Belgi[]>()
   for (const b of belgilar) {
@@ -72,7 +74,7 @@ export function umumiyDavomat(
           }
           continue
         }
-        const darsKuni = (g.kunlar ?? []).includes(haftaKuni(kun))
+        const darsKuni = (g.kunlar ?? []).includes(haftaKuni(kun)) && !damKunlar.has(kun)
         const oquvchiBor = yz.some((y) => y.boshlandi <= kun && (!y.tugadi || y.tugadi >= kun))
         if (darsKuni && oquvchiBor) q.belgilanmagan.push(kun)
       }

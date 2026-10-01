@@ -72,6 +72,7 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
         { href: '/crm/tolovlar', nom: 'To‘lovlar', Icon: IconPayments, tayyor: true },
         { href: '/crm/probniylar', nom: 'Probniylar', Icon: IconLeads, tayyor: true },
         { href: '/crm/hisobotlar', nom: 'Hisobotlar', Icon: IconReports, tayyor: true },
+        { href: '/crm/dam-kunlar', nom: 'Dam olish kunlari', Icon: IconAttendance, tayyor: true },
         ...(adminmi(rol)
           ? [
               { href: '/crm/xabarlar', nom: 'Xabarlar', Icon: IconSend, tayyor: true },

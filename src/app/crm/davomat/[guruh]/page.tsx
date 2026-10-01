@@ -102,11 +102,15 @@ export default async function DavomatJurnali({
   const yList = ((yozilishlar ?? []) as unknown as Yozilish[]).filter((y) => !y.tugadi || y.tugadi >= oyBoshi)
   const dList = (darslar ?? []) as { id: string; sana: string }[]
 
+  /* Kanikul / bayram (0036) — ustun qoladi, lekin "dam": davomat so'ralmaydi */
+  const { data: damlar } = await supabase.from('dam_kunlar').select('sana, sabab').gte('sana', oyBoshi).lte('sana', oyOxiri)
+  const dam = new Map(((damlar ?? []) as { sana: string; sabab: string }[]).map((d) => [d.sana, d.sabab]))
+
   /* Ustunlar: guruh kunlariga tushgan sanalar + shu oyda ochilgan darslar */
   const darsSanalari = new Set(dList.map((d) => d.sana))
   const kunlar: DarsKuni[] = oyKunlari(davr)
     .filter((sana) => guruhi.kunlar.includes(haftaKuni(sana)) || darsSanalari.has(sana))
-    .map((sana) => ({ sana, kun: haftaKuni(sana), hafta: HAFTA_KUNLARI[haftaKuni(sana) - 1].qisqa }))
+    .map((sana) => ({ sana, kun: haftaKuni(sana), hafta: HAFTA_KUNLARI[haftaKuni(sana) - 1].qisqa, dam: dam.get(sana) ?? null }))
 
   const darsIdlar = dList.map((d) => d.id)
   const sanaById = new Map(dList.map((d) => [d.id, d.sana]))
@@ -168,7 +172,7 @@ export default async function DavomatJurnali({
   const oylar: string[] = []
   for (let o = boshOy < oyQosh(joriy, -12) ? oyQosh(joriy, -12) : boshOy; o <= oyQosh(joriy, 3); o = oyQosh(o, 1)) oylar.push(o)
 
-  const bugunDarsKunimi = davr === joriy && kunlar.some((k) => k.sana === bugun)
+  const bugunDarsKunimi = davr === joriy && kunlar.some((k) => k.sana === bugun && !k.dam)
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -194,7 +198,7 @@ export default async function DavomatJurnali({
           </div>
           <div>
             <dt className="lbl">Shu oy darslari</dt>
-            <dd className="font-semibold">{kunlar.length}</dd>
+            <dd className="font-semibold">{kunlar.filter((k) => !k.dam).length}</dd>
           </div>
         </dl>
       </div>

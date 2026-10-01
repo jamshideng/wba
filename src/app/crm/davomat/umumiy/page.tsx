@@ -31,10 +31,11 @@ export default async function UmumiyDavomat({ searchParams }: { searchParams: Pr
   const kunlar = kunlarOraligi(dan, bugun)
 
   const supabase = await createClient()
-  const [{ data: guruhlar }, { data: yozilishlar }, { data: darslar }] = await Promise.all([
+  const [{ data: guruhlar }, { data: yozilishlar }, { data: darslar }, { data: damlar }] = await Promise.all([
     supabase.from('groups').select('id, nom, kunlar').eq('holat', 'faol').order('nom'),
     supabase.from('enrollments').select('group_id, boshlandi, tugadi').lte('boshlandi', bugun),
     supabase.from('lessons').select('id, group_id, sana').gte('sana', dan).lte('sana', bugun),
+    supabase.from('dam_kunlar').select('sana').gte('sana', dan).lte('sana', bugun),
   ])
 
   const dList = (darslar ?? []) as { id: string; group_id: string; sana: string }[]
@@ -63,6 +64,7 @@ export default async function UmumiyDavomat({ searchParams }: { searchParams: Pr
     (yozilishlar ?? []) as { group_id: string; boshlandi: string; tugadi: string | null }[],
     dList,
     belgilar,
+    new Set(((damlar ?? []) as { sana: string }[]).map((d) => d.sana)),
   )
 
   const jamiBelgi = qatorlar.reduce((a, q) => a + q.belgilar, 0)

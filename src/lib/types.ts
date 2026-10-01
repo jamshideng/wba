@@ -485,6 +485,7 @@ export type Database = {
       payments: Table<Payment>
       leads: Table<Lead>
       tuzatishlar: Table<Tuzatish>
+      dam_kunlar: Table<{ sana: string; sabab: string; kiritdi: string | null; created_at: string }>
       settings: Table<Setting>
       audit_log: Table<AuditLog>
     }
@@ -526,6 +527,7 @@ export type Database = {
       }
       dars_kunimi: { Args: { p_kun: DayType; p_sana: string }; Returns: boolean }
       guruh_dars_kunimi: { Args: { p_kunlar: number[]; p_sana: string }; Returns: boolean }
+      dam_kunimi: { Args: { p_sana: string }; Returns: boolean }
       davomat_belgila: {
         Args: { p_group: string; p_sana: string; p_belgilar: Record<string, AttendanceStatus | null> }
         Returns: number
