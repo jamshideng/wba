@@ -250,8 +250,8 @@ export function Jurnal({
                   </th>
                 )
               })}
-              <th scope="col" className="min-w-[60px] px-2 text-center text-[11.5px] font-semibold">Bugun</th>
-              <th scope="col" className="min-w-[68px] px-2 text-center text-[11.5px] font-semibold">Umumiy</th>
+              <th scope="col" className="min-w-[72px] px-2 text-center text-[11.5px] leading-tight font-semibold">Bugungi<br />woblar</th>
+              <th scope="col" className="min-w-[72px] px-2 text-center text-[11.5px] leading-tight font-semibold">Jami<br />woblar</th>
               {ustunKeng && (
                 <th scope="col" className="min-w-[150px] px-2 text-center text-[11.5px] font-semibold">
                   Woblar berish · bugun jami {bugungiJami}

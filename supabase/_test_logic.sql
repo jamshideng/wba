@@ -1373,4 +1373,51 @@ end $$;
 reset role;
 reset request.jwt.claim.sub;
 
+\echo '--- 0043: mahsulotni o''chirish ---'
+reset role;
+insert into woblr_rewards (id, nom, narx_ball, qolgan_soni, cheksiz, holat) values
+  ('cccccccc-0000-0000-0000-000000000006', 'O''chiriladigan', 1, 5, false, 'faol');
+insert into woblr (student_id, lesson_id, teacher_id, bergan_profile, ball, sabab)
+select 'S001', l.id, 'U01', '33333333-3333-3333-3333-333333333333', 3, 'faollik'
+from lessons l where l.group_id = 'N01' order by l.sana desc limit 1;
+
+set role authenticated;
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi
+do $$
+begin
+  update market_t set qiymat = market_buyurtma('cccccccc-0000-0000-0000-000000000006', 1) where kalit = 'kod1';
+  insert into market_t values ('kod3', market_buyurtma('cccccccc-0000-0000-0000-000000000006', 1));
+  begin
+    perform * from market_mahsulot_ochir('cccccccc-0000-0000-0000-000000000006');
+    raise exception 'XATO: o''quvchi mahsulotni o''chirdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare
+  v_berilgan text := (select qiymat from market_t where kalit = 'kod1');
+  v_ochiq    text := (select qiymat from market_t where kalit = 'kod3');
+  v_b0 int; v_soni int;
+begin
+  perform market_berildi(v_berilgan);
+  select balans into v_b0 from v_woblr_balance where student_id = 'S001';
+  select count(*) into v_soni from market_mahsulot_ochir('cccccccc-0000-0000-0000-000000000006');
+  if v_soni <> 1 then raise exception 'XATO: % ta buyurtma bekor bo''ldi (1 kutilgan)', v_soni; end if;
+  if exists (select 1 from woblr_rewards where id = 'cccccccc-0000-0000-0000-000000000006') then
+    raise exception 'XATO: mahsulot o''chmadi';
+  end if;
+  if (select balans from v_woblr_balance where student_id = 'S001') <> v_b0 + 1 then
+    raise exception 'XATO: ochiq buyurtmaning wobli qaytmadi';
+  end if;
+  if (select holat from woblr_redemptions where kod = v_berilgan) <> 'berildi'
+     or (select mahsulot_nomi from woblr_redemptions where kod = v_berilgan) <> 'O''chiriladigan' then
+    raise exception 'XATO: berilgan buyurtma tarixi buzildi';
+  end if;
+  raise notice 'OK: mahsulot o''chirildi — ochiq buyurtma bekor, tarix saqlandi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+
 \echo '=== TEST TUGADI ==='

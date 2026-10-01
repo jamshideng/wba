@@ -308,3 +308,46 @@ export async function kodniOch(fd: FormData) {
   if (!kod) redirect(xabarliYol('/crm/market/boshqaruv', { xato: 'Kod noto‘g‘ri. Masalan: WM-7K4P2X yoki 7K4P2X' }))
   redirect(`/crm/market/chek/${kod}`)
 }
+
+/**
+ * Mahsulotni butunlay o'chirish (0043): ochiq buyurtmalar bekor bo'ladi va
+ * woblar qaytadi (egalariga xabar), berilganlari tarixda nomi bilan qoladi,
+ * rasmlari Storage'dan o'chadi.
+ */
+export async function mahsulotOchir(fd: FormData) {
+  await talabRol('admin', 'direktor')
+  const id = matn(fd.get('id'))
+  if (!id) redirect('/crm/market/boshqaruv?bolim=mahsulot')
+  const forma = `/crm/market/boshqaruv/mahsulot/${id}`
+
+  const supabase = await createClient()
+  const { data: m } = await supabase.from('woblr_rewards').select('nom, rasmlar, rasm_url').eq('id', id!).maybeSingle()
+  if (!m) redirect(xabarliYol('/crm/market/boshqaruv?bolim=mahsulot', { xato: 'Mahsulot topilmadi.' }))
+
+  const { data, error } = await supabase.rpc('market_mahsulot_ochir', { p_reward: id! })
+  if (error) redirect(xabarliYol(forma, { xato: xatoMatni(error) }))
+  const bekor = (data ?? []) as { student_id: string; kod: string }[]
+
+  // Rasmlar — faqat o'zimizning 'market' bucketidagilar
+  const boshi = '/storage/v1/object/public/market/'
+  const fayllar = [...new Set([...(m!.rasmlar ?? []), m!.rasm_url].filter((u): u is string => Boolean(u)))]
+    .map((u) => (u.includes(boshi) ? decodeURIComponent(u.slice(u.indexOf(boshi) + boshi.length)) : null))
+    .filter((x): x is string => Boolean(x))
+  if (fayllar.length) await supabase.storage.from('market').remove(fayllar)
+
+  if (bekor.length) {
+    const kodi = new Map<string, string[]>()
+    bekor.forEach((b) => kodi.set(b.student_id, [...(kodi.get(b.student_id) ?? []), b.kod]))
+    yubor(await chatlar([...kodi.keys()]), (r) => [
+      '<b>WOBLAR MARKET — buyurtma bekor qilindi</b>',
+      '',
+      `<b>${html(m!.nom)}</b> marketdan olib tashlandi, shuning uchun buyurtmangiz (${html((kodi.get(r.student_id ?? '') ?? []).join(', '))}) bekor qilindi.`,
+      'Woblaringiz to‘liq qaytarildi — marketdan boshqa sovg‘a tanlashingiz mumkin.',
+    ].join('\n'))
+  }
+
+  revalidatePath('/crm/market', 'layout')
+  redirect(xabarliYol('/crm/market/boshqaruv?bolim=mahsulot', {
+    ok: `“${m!.nom}” o‘chirildi.${bekor.length ? ` ${bekor.length} ta ochiq buyurtma bekor qilindi, woblar qaytdi.` : ''}`,
+  }))
+}

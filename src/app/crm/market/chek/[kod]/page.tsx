@@ -38,7 +38,9 @@ export default async function Chek({
   const b = data as Buyurtma
 
   const [{ data: m }, { data: oquvchi }] = await Promise.all([
-    supabase.from('woblr_rewards').select('nom, rasm_url, narx_ball').eq('id', b.reward_id).maybeSingle(),
+    b.reward_id
+      ? supabase.from('woblr_rewards').select('nom, rasm_url, narx_ball').eq('id', b.reward_id).maybeSingle()
+      : Promise.resolve({ data: null }),
     supabase.from('students').select('fish').eq('id', b.student_id).maybeSingle(),
   ])
 

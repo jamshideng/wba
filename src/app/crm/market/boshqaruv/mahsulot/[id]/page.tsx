@@ -8,6 +8,7 @@ import { Xabar } from '@/components/forma'
 import { IconArrowLeft } from '@/components/icons'
 import type { Mahsulot } from '@/lib/market'
 import { MahsulotForma } from '../forma'
+import { MahsulotOchirish } from '../ochirish'
 import { bozorKuni } from '../../../bozor'
 
 export const metadata = { title: 'Mahsulot · Market boshqaruvi' }
@@ -29,14 +30,17 @@ export default async function MahsulotSahifasi({
   if (!yangi && !/^[0-9a-f-]{36}$/i.test(id)) notFound()
 
   const supabase = await createClient()
-  const [{ data }, { data: toifaQatorlar }, bozor, { count: zakazlar }] = await Promise.all([
+  const [{ data }, { data: toifaQatorlar }, bozor, { count: zakazlar }, { data: buyurtmalar }] = await Promise.all([
     yangi ? Promise.resolve({ data: null }) : supabase.from('woblr_rewards').select('*').eq('id', id).maybeSingle(),
     supabase.from('woblr_rewards').select('toifa').not('toifa', 'is', null),
     bozorKuni(supabase),
     yangi
       ? Promise.resolve({ count: 0 })
       : supabase.from('woblr_redemptions').select('id', { count: 'exact', head: true }).eq('reward_id', id).eq('holat', 'buyurtma'),
+    yangi ? Promise.resolve({ data: [] }) : supabase.from('woblr_redemptions').select('holat').eq('reward_id', id),
   ])
+  const ochiq = (buyurtmalar ?? []).filter((b) => b.holat === 'buyurtma' || b.holat === 'kutilmoqda').length
+  const berilgan = (buyurtmalar ?? []).filter((b) => b.holat === 'berildi').length
   if (!yangi && !data) notFound()
   const toifalar = [...new Set((toifaQatorlar ?? []).map((t) => t.toifa as string))].sort((a, b) => a.localeCompare(b, 'uz'))
 
@@ -48,6 +52,11 @@ export default async function MahsulotSahifasi({
       <Sarlavha nom={yangi ? 'Yangi mahsulot' : 'Mahsulotni tahrirlash'} izoh="woblar market" />
       <Xabar xato={s.xato} />
       <MahsulotForma key={id} m={(data as Mahsulot | null) ?? null} toifalar={toifalar} bozor={bozor} zakazlar={zakazlar ?? 0} />
+      {!yangi && data && (
+        <div className="mt-4 max-w-3xl">
+          <MahsulotOchirish id={id} nom={(data as Mahsulot).nom} ochiq={ochiq} berilgan={berilgan} />
+        </div>
+      )}
     </div>
   )
 }

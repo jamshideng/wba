@@ -242,7 +242,9 @@ async function MahsulotlarBolimi({ bozor }: { bozor: string | null }) {
   ])
   const ro = (data ?? []) as Mahsulot[]
   const zakaz = new Map<string, number>()
-  for (const z of zakazQator ?? []) zakaz.set(z.reward_id, (zakaz.get(z.reward_id) ?? 0) + (Number(z.soni) || 1))
+  for (const z of zakazQator ?? []) {
+    if (z.reward_id) zakaz.set(z.reward_id, (zakaz.get(z.reward_id) ?? 0) + (Number(z.soni) || 1))
+  }
 
   if (ro.length === 0) {
     return (

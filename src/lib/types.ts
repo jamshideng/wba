@@ -180,7 +180,8 @@ export type WoblrReward = {
 export type WoblrRedemption = {
   id: string
   student_id: string
-  reward_id: string
+  /** 0043: mahsulot o'chirilsa bo'shaydi — nomi mahsulot_nomi'da qoladi */
+  reward_id: string | null
   ball: number
   berdi: string | null
   created_at: string
@@ -587,6 +588,7 @@ export type Database = {
       market_berildi: { Args: { p_kod: string }; Returns: undefined }
       market_bekor: { Args: { p_kod: string; p_sabab?: string | null }; Returns: undefined }
       market_keldi: { Args: { p_kod: string }; Returns: string }
+      market_mahsulot_ochir: { Args: { p_reward: string }; Returns: { student_id: string; kod: string }[] }
       market_mahsulot_keldi: {
         Args: { p_reward: string; p_sotuvga?: boolean }
         Returns: { student_id: string; kod: string }[]

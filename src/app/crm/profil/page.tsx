@@ -7,6 +7,7 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { loginNomi, LOGIN_QOIDASI } from '@/lib/login'
+import { ParolInput } from '@/components/parol'
 import { ismOzgartir, loginOzgartir, parolOzgartir, telegramUlash } from './actions'
 
 export const metadata = { title: 'Profil' }
@@ -78,7 +79,7 @@ export default async function Profil({
                   <input name="login" required autoComplete="username" placeholder="masalan: aziza" className={kirishKlass} />
                 </Maydon>
                 <Maydon nom="Joriy parol" izoh="Tasdiqlash uchun">
-                  <input name="joriy_parol" type="password" required autoComplete="current-password" className={kirishKlass} />
+                  <ParolInput name="joriy_parol" autoComplete="current-password" className="min-h-11! rounded-[9px]! text-[13.5px]!" />
                 </Maydon>
               </div>
               <Yuborish tur="ikkilamchi">Loginni almashtirish</Yuborish>
@@ -92,14 +93,14 @@ export default async function Profil({
             <CardHeader title="Parol" />
             <form action={parolOzgartir} className="flex flex-col gap-3 px-5 pb-5">
               <Maydon nom="Joriy parol">
-                <input name="joriy_parol" type="password" required autoComplete="current-password" className={kirishKlass} />
+                <ParolInput name="joriy_parol" autoComplete="current-password" className="min-h-11! rounded-[9px]! text-[13.5px]!" />
               </Maydon>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Maydon nom="Yangi parol" izoh={faqatTelegram ? 'Kamida 6 belgi. Yodda qoladigan, lekin boshqalar topa olmaydigan so‘z tanlang' : 'Kamida 8 belgi'}>
-                  <input name="yangi_parol" type="password" required minLength={faqatTelegram ? 6 : 8} autoComplete="new-password" className={kirishKlass} />
+                  <ParolInput name="yangi_parol" minLength={faqatTelegram ? 6 : 8} autoComplete="new-password" className="min-h-11! rounded-[9px]! text-[13.5px]!" />
                 </Maydon>
                 <Maydon nom="Yangi parol (takror)">
-                  <input name="takror_parol" type="password" required minLength={faqatTelegram ? 6 : 8} autoComplete="new-password" className={kirishKlass} />
+                  <ParolInput name="takror_parol" minLength={faqatTelegram ? 6 : 8} autoComplete="new-password" className="min-h-11! rounded-[9px]! text-[13.5px]!" />
                 </Maydon>
               </div>
               <Yuborish>Parolni almashtirish</Yuborish>

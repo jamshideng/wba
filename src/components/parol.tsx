@@ -28,12 +28,14 @@ export function ParolInput({
   placeholder,
   autoComplete = 'current-password',
   required = true,
+  minLength,
   className = '',
 }: {
   name?: string
   placeholder?: string
   autoComplete?: string
   required?: boolean
+  minLength?: number
   className?: string
 }) {
   const [ochiq, setOchiq] = useState(false)
@@ -43,6 +45,7 @@ export function ParolInput({
         name={name}
         type={ochiq ? 'text' : 'password'}
         required={required}
+        minLength={minLength}
         autoComplete={autoComplete}
         placeholder={placeholder}
         className={`min-h-12 w-full rounded-[10px] border border-line bg-surface px-3.5 pr-11 text-[14px] text-ink outline-none transition focus:border-brand-line ${className}`}

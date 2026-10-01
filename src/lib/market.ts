@@ -26,7 +26,7 @@ export type Buyurtma = {
   id: string
   kod: string | null
   student_id: string
-  reward_id: string
+  reward_id: string | null
   mahsulot_nomi: string | null
   soni: number
   ball: number
