@@ -36,6 +36,8 @@ export const MARKAZ = {
   manzil: 'Toshkent, N. Ibragimov ko‘chasi, 4-uy',
   moljal:
     'Bahor to‘yxonasidan 91–95 avtobus bilan konechka bekatiga qarab yurasiz — o‘ng qo‘lda.',
+  /** Jamshid bergan haqiqiy nuqta (01.10) */
+  koordinata: { kenglik: 41.376094, uzunlik: 69.305958 },
   guruhMaksimal: 12,
   darsHaftada: 3,
   darsDaqiqa: 90,

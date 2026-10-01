@@ -29,7 +29,7 @@ const CSP = [
   `img-src 'self' data: blob: https://*.supabase.co${supabaseManzil()}`,
   "font-src 'self' data:",
   `connect-src 'self' https://*.supabase.co wss://*.supabase.co${supabaseManzil()}${dev ? ' ws://localhost:*' : ''}`,
-  "frame-src 'none'",
+  "frame-src https://yandex.uz https://yandex.ru https://yandex.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
