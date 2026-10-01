@@ -6,7 +6,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty, Button } from '@/components/ui'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { guruhgaBiriktir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor } from '../actions'
+import { guruhgaBiriktir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor, vipOzgartir, oquvchiArxivla, oquvchiArxivdan } from '../actions'
 import { ChegirmaMaydonlari } from '../bolaklar'
 import { HisobForma } from '@/components/hisob'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
@@ -21,6 +21,17 @@ const HOLAT_NOMI: Record<StudentStatus, string> = {
   faol: 'Faol',
   tanaffus: 'Tanaffus',
   ketgan: 'Ketgan',
+}
+
+/** yozilish_oylari() holati → belgi rangi */
+const HOLAT_TONI: Record<string, 'ok' | 'accent' | 'brand' | 'jim'> = {
+  "To'liq": 'ok',
+  Ortiqcha: 'ok',
+  Oldindan: 'ok',
+  Bepul: 'ok',
+  Qisman: 'accent',
+  "To'lanmagan": 'brand',
+  "Hisob yo'q": 'jim',
 }
 
 const USUL_NOMI: Record<PaymentMethod, string> = {
@@ -55,7 +66,7 @@ export default async function OquvchiProfil({
 
   const { data: oquvchi } = await supabase
     .from('students')
-    .select('id, fish, tugilgan_sana, ota_tel, ona_tel, shaxsiy_tel, qoshilgan_sana, holat, izoh, profile_id')
+    .select('id, fish, tugilgan_sana, ota_tel, ona_tel, shaxsiy_tel, qoshilgan_sana, holat, izoh, profile_id, arxiv_sana, arxiv_sabab')
     .eq('id', id)
     .maybeSingle()
 
@@ -71,11 +82,13 @@ export default async function OquvchiProfil({
     { data: woblr },
     { data: barchaGuruhlar },
     { data: tuzatishlar },
+    { data: oylar },
+    { data: keyingiOylar },
   ] = await Promise.all([
     supabase
       .from('enrollments')
       .select(
-        'id, group_id, boshlandi, tugadi, holat, chegirma_summa, chegirma_oy, chegirma2_summa, chegirma2_oy, chegirma_sabab, groups(nom, boshlanish, tugash, kunlar, oylik_narx, teachers(ism))',
+        'id, group_id, boshlandi, tugadi, holat, chegirma_summa, chegirma_oy, chegirma2_summa, chegirma2_oy, chegirma_sabab, vip, vip_dan, groups(nom, boshlanish, tugash, kunlar, oylik_narx, teachers(ism))',
       )
       .eq('student_id', id)
       .order('boshlandi', { ascending: false }),
@@ -102,6 +115,9 @@ export default async function OquvchiProfil({
           .order('davr', { ascending: false })
           .order('id', { ascending: false })
       : Promise.resolve({ data: [] }),
+    // Oyma-oy to'lov holati (0030): Qisman / To'liq / Ortiqcha / Oldindan
+    pulKoradi ? supabase.rpc('yozilish_oylari', { p_student: id }) : Promise.resolve({ data: [] }),
+    pulKoradi ? supabase.rpc('keyingi_oylar', { p_student: id }) : Promise.resolve({ data: [] }),
   ])
 
   /* Hisobi bormi — email profilda turadi (0012), RLS uni adminga ko'rsatadi */
@@ -125,6 +141,8 @@ export default async function OquvchiProfil({
     chegirma2_summa: number
     chegirma2_oy: number | null
     chegirma_sabab: string | null
+    vip: boolean
+    vip_dan: string | null
     groups: {
       nom: string
       boshlanish: string
@@ -145,6 +163,17 @@ export default async function OquvchiProfil({
   type TuzatishQatori = { id: number; enrollment_id: string; davr: string; summa: number; sabab: string; bekor: boolean; bekor_sabab: string | null }
   const tuzList = (tuzatishlar ?? []) as unknown as TuzatishQatori[]
   const tuzatishAdmin = adminmi(profil.rol)
+
+  type OyQatori = { enrollment_id: string; davr: string; kerak: number; tolangan: number; holat: string }
+  const oyList = (oylar ?? []) as unknown as OyQatori[]
+
+  /* Keyingi oy qancha to'laydi — faol yozilishlar uchun (0030, bitta so'rov) */
+  const keyingi = new Map(
+    ((keyingiOylar ?? []) as { enrollment_id: string; summa: number | null }[])
+      .filter((k) => k.summa !== null)
+      .map((k) => [k.enrollment_id, Number(k.summa)]),
+  )
+  const arxivda = oquvchi.holat === 'ketgan'
 
   const jamiQarz = [...bMap.values()].reduce((a, b) => a + (Number(b.qarz) || 0), 0)
   const jamiTolangan = [...bMap.values()].reduce((a, b) => a + (Number(b.tolangan) || 0), 0)
@@ -210,6 +239,22 @@ export default async function OquvchiProfil({
 
       <Xabar ok={xabar.ok} xato={xabar.xato} />
 
+      {arxivda && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[11px] border border-line bg-surface-2 px-4 py-3">
+          <span className="text-[13px]">
+            <b>Arxivda</b>
+            {oquvchi.arxiv_sana ? ` · ${sana(oquvchi.arxiv_sana)} dan` : ''}
+            {oquvchi.arxiv_sabab ? ` · ${oquvchi.arxiv_sabab}` : ''} — qarzi saqlanadi.
+          </span>
+          {pulKoradi && (
+            <form action={oquvchiArxivdan}>
+              <input type="hidden" name="student_id" value={oquvchi.id} />
+              <Yuborish kutish="…">Arxivdan qaytarish</Yuborish>
+            </form>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
         {pulKoradi && (
           <>
@@ -247,7 +292,10 @@ export default async function OquvchiProfil({
                     className="flex flex-wrap items-start justify-between gap-3 rounded-[10px] border border-line px-4 py-3"
                   >
                     <div className="flex min-w-0 flex-col gap-1">
-                      <span className="text-[13.5px] font-semibold">{y.groups?.nom ?? '—'}</span>
+                      <span className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold">
+                        {y.groups?.nom ?? '—'}
+                        {y.vip && <Badge ton="accent">VIP</Badge>}
+                      </span>
                       <span className="text-[12px] text-ink-3">
                         {y.groups?.teachers?.ism ?? '[ANIQLANMAGAN]'} ·{' '}
                         {jadval(y.groups?.boshlanish ?? null, y.groups?.tugash ?? null, y.groups?.kunlar ?? null)}
@@ -290,6 +338,51 @@ export default async function OquvchiProfil({
                             Saqlanganda hamma oylar yangi chegirma bilan qayta hisoblanadi (Sheets’dagi kabi).
                           </p>
                           <Yuborish kutish="…">Chegirmani saqlash</Yuborish>
+                        </form>
+                      </details>
+                    )}
+
+                    {pulKoradi && (oyList.some((o) => o.enrollment_id === y.id) || keyingi.has(y.id)) && (
+                      <div className="flex w-full flex-col gap-1 rounded-[9px] border border-line-soft px-3 py-2.5">
+                        <span className="lbl">To‘lov holati (oyma-oy)</span>
+                        {oyList
+                          .filter((o) => o.enrollment_id === y.id)
+                          .slice(0, 4)
+                          .map((o) => (
+                            <div key={o.davr} className="flex flex-wrap items-center justify-between gap-2 text-[12.5px]">
+                              <span>{davrNomi(o.davr)}</span>
+                              <span className="flex items-center gap-2">
+                                <span className="tnum font-[family-name:var(--font-mono)] text-[12px] text-ink-3">
+                                  {pul(o.tolangan)} / {pul(o.kerak)}
+                                </span>
+                                <Badge ton={HOLAT_TONI[o.holat] ?? 'jim'}>{o.holat.replace("'", '‘')}</Badge>
+                              </span>
+                            </div>
+                          ))}
+                        {keyingi.has(y.id) && (
+                          <div className="flex items-center justify-between gap-2 border-t border-line-soft pt-1.5 text-[12.5px]">
+                            <span>Keyingi oy to‘laydi</span>
+                            <span className="tnum font-[family-name:var(--font-mono)] font-semibold">{pul(keyingi.get(y.id))} so‘m</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {tuzatishAdmin && y.holat !== 'tugagan' && (
+                      <details className="w-full">
+                        <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">
+                          {y.vip ? `VIP${y.vip_dan ? ` (${y.vip_dan} dan)` : ''} — o‘zgartirish` : 'VIP qilish (to‘lamaydi)'}
+                        </summary>
+                        <form action={vipOzgartir} className="mt-2 flex flex-wrap items-end gap-2">
+                          <input type="hidden" name="student_id" value={oquvchi.id} />
+                          <input type="hidden" name="enrollment_id" value={y.id} />
+                          <input type="hidden" name="vip" value={y.vip ? '0' : '1'} />
+                          {!y.vip && (
+                            <Maydon nom="Qaysi oydan" izoh="Bo‘sh — boshidan">
+                              <input type="month" name="dan" defaultValue={davr} className={kirishKlass} />
+                            </Maydon>
+                          )}
+                          <Yuborish kutish="…">{y.vip ? 'VIP ni olib tashlash' : 'VIP qilish'}</Yuborish>
                         </form>
                       </details>
                     )}
@@ -387,6 +480,25 @@ export default async function OquvchiProfil({
                   </div>
                   <ChegirmaMaydonlari />
                   <Yuborish>Biriktirish</Yuborish>
+                </form>
+              </details>
+            )}
+
+            {pulKoradi && !arxivda && (
+              <details className="rounded-[10px] border border-dashed border-line px-4 py-3">
+                <summary className="cursor-pointer text-[13px] text-ink-3 hover:text-ink">Arxivga o‘tkazish</summary>
+                <form action={oquvchiArxivla} className="mt-3 flex flex-wrap items-end gap-2">
+                  <input type="hidden" name="student_id" value={oquvchi.id} />
+                  <Maydon nom="Oxirgi kuni">
+                    <input type="date" name="sana" required defaultValue={bugunToshkent()} className={kirishKlass} />
+                  </Maydon>
+                  <Maydon nom="Sabab">
+                    <input name="sabab" placeholder="Masalan: ko‘chib ketdi" className={kirishKlass} />
+                  </Maydon>
+                  <Yuborish tur="xavfli" kutish="…">Arxivga</Yuborish>
+                  <p className="w-full text-[11.5px] text-ink-3">
+                    Hamma guruhdan shu kuni chiqariladi, keyingi oylar hisoblanmaydi. Qarzi saqlanadi; shu ID bilan qaytarish mumkin.
+                  </p>
                 </form>
               </details>
             )}

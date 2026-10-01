@@ -117,7 +117,7 @@ export default async function DavomatJurnali({
   const bugungiDars = dList.find((d) => d.sana === bugun)
   const talabalar = yList.map((y) => y.student_id)
 
-  const [{ data: belgilar }, { data: bugungiWoblar }, { data: balanslar }] = await Promise.all([
+  const [{ data: belgilar }, { data: bugungiWoblar }, { data: balanslar }, { data: probniylar }] = await Promise.all([
     darsIdlar.length
       ? supabase.from('attendance').select('lesson_id, student_id, holat').in('lesson_id', darsIdlar)
       : Promise.resolve({ data: [] }),
@@ -127,6 +127,8 @@ export default async function DavomatJurnali({
     talabalar.length
       ? supabase.from('v_woblr_balance').select('student_id, balans').in('student_id', talabalar)
       : Promise.resolve({ data: [] }),
+    // Probniylar (0030) — ustozga ham faqat ism va belgilar, telefon yo'q
+    supabase.rpc('jurnal_probniylar', { p_group: guruh, p_dan: oyBoshi, p_gacha: oyOxiri }),
   ])
 
   const belgiXaritasi = new Map<string, Record<string, AttendanceStatus>>()
@@ -143,6 +145,18 @@ export default async function DavomatJurnali({
     ((balanslar ?? []) as { student_id: string; balans: number }[]).map((b) => [b.student_id, Number(b.balans) || 0]),
   )
 
+  const probniyQatorlar: JurnalQatori[] = ((probniylar ?? []) as { lead_id: string; ism: string; dan: string; belgilar: Record<string, AttendanceStatus> }[]).map((p) => ({
+    student_id: p.lead_id,
+    probniy: true,
+    fish: p.ism,
+    boshlandi: p.dan,
+    tugadi: null,
+    ketgan: false,
+    belgilar: p.belgilar ?? {},
+    bugun: 0,
+    umumiy: 0,
+  }))
+
   const qatorlar: JurnalQatori[] = yList
     .map((y) => ({
       student_id: y.student_id,
@@ -155,6 +169,7 @@ export default async function DavomatJurnali({
       umumiy: balans.get(y.student_id) ?? 0,
     }))
     .sort((a, b) => Number(a.ketgan) - Number(b.ketgan) || a.fish.localeCompare(b.fish, 'uz'))
+    .concat(probniyQatorlar)
 
   /* Huquq: admin/direktor — o'tgan kunlar ham; guruh ustozi — faqat bugun;
      qabulxona — faqat ko'radi. Bazada ham xuddi shunday (davomat_belgila). */

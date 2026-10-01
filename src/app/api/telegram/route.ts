@@ -5,6 +5,7 @@ import { tg, html, xabar, HISOBOT_GURUH, type Tugma } from '@/lib/telegram'
 import { pul, sana, vaqt, davrNomi, bugunToshkent } from '@/lib/format'
 import { saytManzil } from '@/lib/markaz'
 import { kunlikHisobotMatn } from '@/lib/kunlik-hisobot'
+import { bazaBuyrugimi, bazaBuyrugiMatn } from '@/lib/baza-buyruqlar'
 import type { TelegramKim } from '@/lib/types'
 
 /**
@@ -46,9 +47,24 @@ export async function POST(req: NextRequest) {
   let update: TgUpdate | null = null
   try { update = JSON.parse(xom) as TgUpdate } catch { update = null }
 
-  /* "WBA Hisobot" guruhidagi /buyruqlar — Apps Script'ga (hisobot Sheets'da) */
+  /* "WBA Hisobot" guruhidagi buyruqlar:
+       /baza_*  — sayt bazasidan, shu yerda (lib/baza-buyruqlar.ts)
+       qolgani  — Apps Script'ga (haqiqiy ish hozircha Sheets'da) */
   if (update?.message && guruhBuyrugimi(update.message)) {
-    after(() => guruhgaUzat(xom))
+    const m = update.message
+    // /baza_* hozircha o'chiq (Jamshid, 01.10: "keyinroq") — Vercel'da BAZA_BUYRUQLARI=1 qo'yilsa yoqiladi
+    if (process.env.BAZA_BUYRUQLARI === '1' && bazaBuyrugimi(m.text ?? '')) {
+      after(async () => {
+        try {
+          await xabar(m.chat.id, await bazaBuyrugiMatn(m.text ?? ''))
+        } catch (e) {
+          console.error('[telegram] baza buyrug‘i', e)
+          await xabar(m.chat.id, '<b>[BAZA · sayt]</b> hisobotni tuzib bo‘lmadi — sayt jurnalini tekshiring.')
+        }
+      })
+    } else {
+      after(() => guruhgaUzat(xom))
+    }
     return NextResponse.json({ ok: true })
   }
   const boshi = Date.now()

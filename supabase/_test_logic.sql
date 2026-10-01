@@ -916,6 +916,209 @@ begin
 end $$;
 
 reset role;
+
+\echo '--- 0030: probniy davomati, VIP, arxiv, to''lov holati ---'
+reset request.jwt.claim.sub;
+insert into leads (id, ism, telefon, group_id, holat)
+values ('bbbbbbbb-0000-0000-0000-000000000030', 'Probniy Sinov 0030', '+998901112233', 'NX', 'yangi');
+
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana (NX)
+do $$
+begin
+  perform probniy_belgila('NX', bugun_toshkent(), 'bbbbbbbb-0000-0000-0000-000000000030', 'keldi');
+  if not exists (select 1 from jurnal_probniylar('NX', bugun_toshkent(), bugun_toshkent())
+                 where belgilar ? bugun_toshkent()::text) then
+    raise exception 'XATO: probniy belgisi jurnalda ko''rinmadi';
+  end if;
+  if exists (select 1 from jurnal_probniylar('N02', bugun_toshkent() - 30, bugun_toshkent())) then
+    raise exception 'XATO: ustoz boshqa guruh probniylarini ko''rdi';
+  end if;
+  raise notice 'OK: ustoz probniyni o''z guruhida belgilaydi';
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare
+  v_id text;
+  v_e  uuid;
+begin
+  v_id := probniy_doimiy('bbbbbbbb-0000-0000-0000-000000000030');
+  if not exists (select 1 from attendance a join lessons l on l.id = a.lesson_id
+                 where a.student_id = v_id and l.group_id = 'NX' and l.sana = bugun_toshkent()) then
+    raise exception 'XATO: probniy davomati o''quvchiga ko''chmadi';
+  end if;
+  raise notice 'OK: doimiy bo''lganda davomat tarixi saqlandi (%)', v_id;
+
+  -- VIP: to'lamaydi, VIP olinsa narx qaytadi
+  v_e := (select id from enrollments where student_id = 'S003' and group_id = 'NX');
+  perform yozilish_hisoblari(v_e);
+  perform vip_ozgartir(v_e, true, null);
+  if exists (select 1 from invoices where enrollment_id = v_e and summa <> 0) then
+    raise exception 'XATO: VIP oyda hisob 0 emas';
+  end if;
+  perform vip_ozgartir(v_e, false, null);
+  if exists (select 1 from invoices where enrollment_id = v_e and summa <> 650000) then
+    raise exception 'XATO: VIP olinganda narx qaytmadi';
+  end if;
+  raise notice 'OK: VIP — hisob 0, olinsa narx qaytadi';
+
+  -- Arxiv: yozilishlar yopiladi, qarz qoladi, qaytariladi
+  perform oquvchi_arxivla('S003', bugun_toshkent(), 'sinov');
+  if (select holat from students where id = 'S003') <> 'ketgan'
+     or exists (select 1 from enrollments where student_id = 'S003' and holat <> 'tugagan') then
+    raise exception 'XATO: arxivlash yozilishlarni yopmadi';
+  end if;
+  if not exists (select 1 from v_arxiv_oquvchilar where student_id = 'S003') then
+    raise exception 'XATO: arxiv ro''yxatida yo''q';
+  end if;
+  perform oquvchi_arxivdan('S003');
+  if (select holat from students where id = 'S003') <> 'faol' then
+    raise exception 'XATO: arxivdan qaytmadi';
+  end if;
+  raise notice 'OK: arxivga o''tkazish va qaytarish';
+end $$;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  perform vip_ozgartir((select id from enrollments where student_id = 'S003' limit 1), true, null);
+  raise exception 'XATO: ustoz VIP belgiladi!';
+exception when others then
+  if sqlerrm not like '%admin yoki direktor%' then raise; end if;
+  raise notice 'OK: VIP faqat admin/direktorga';
+end $$;
+
+-- ============================================================
+--  DAVOMAT QULFI (0031): ustoz o'tgan kunni REST orqali ham o'zgartira olmaydi
+-- ============================================================
+reset role;
+reset request.jwt.claim.sub;
+insert into lessons (group_id, sana, otkazildi) values ('N01', bugun_toshkent() - 2, true)
+  on conflict (group_id, sana) do nothing;
+insert into attendance (lesson_id, student_id, holat)
+  select id, 'S001', 'keldi' from lessons where group_id = 'N01' and sana = bugun_toshkent() - 2
+  on conflict do nothing;
+
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana (N01)
+\echo '--- 0031: ustoz o''tgan kun belgisini to''g''ridan o''zgartira olmaydi ---'
+do $$
+declare n int;
+begin
+  update attendance set holat = 'kelmadi'
+   where student_id = 'S001'
+     and lesson_id = (select id from lessons where group_id = 'N01' and sana = bugun_toshkent() - 2);
+  get diagnostics n = row_count;
+  if n > 0 then raise exception 'XATO: ustoz o''tgan kun davomatini REST orqali o''zgartirdi!'; end if;
+  raise notice 'OK: o''tgan kun belgisi ustozga yopiq (0 qator)';
+
+  begin
+    insert into lessons (group_id, sana, otkazildi) values ('N01', bugun_toshkent() - 3, true);
+    raise exception 'XATO: ustoz o''tgan kunga dars ochdi!';
+  exception when insufficient_privilege then
+    raise notice 'OK: o''tgan kunga dars ochish ustozga yopiq';
+  end;
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare n int;
+begin
+  update attendance set holat = 'kechikdi'
+   where student_id = 'S001'
+     and lesson_id = (select id from lessons where group_id = 'N01' and sana = bugun_toshkent() - 2);
+  get diagnostics n = row_count;
+  if n = 0 then raise exception 'XATO: admin o''tgan kunni tuzata olmadi'; end if;
+  raise notice 'OK: admin o''tgan kunni tuzatdi';
+end $$;
+
+-- ============================================================
+--  O'QUVCHI PROFILI QULFI (0032)
+-- ============================================================
+reset role;
+reset request.jwt.claim.sub;
+\echo '--- 0032: o''quvchi ismi/loginini o''zi o''zgartira olmaydi, admin o''zgartiradi ---'
+do $$
+declare v_id uuid;
+begin
+  select id into v_id from profiles where rol = 'oquvchi' limit 1;
+  if v_id is null then raise notice 'SKIP: o''quvchi profili yo''q'; return; end if;
+  perform set_config('request.jwt.claim.sub', v_id::text, true);
+  begin
+    update profiles set ism = 'Boshqa ism' where id = v_id;
+    raise exception 'XATO: o''quvchi ismini o''zgartirdi!';
+  exception when others then
+    if sqlerrm not like '%adminiga murojaat%' then raise; end if;
+    raise notice 'OK: o''quvchi ismi qulflangan';
+  end;
+  perform set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', true);
+  update profiles set ism = 'Admin tuzatdi' where id = v_id;
+  if (select ism from profiles where id = v_id) <> 'Admin tuzatdi' then
+    raise exception 'XATO: admin o''quvchi ismini o''zgartira olmadi';
+  end if;
+  raise notice 'OK: admin o''quvchi profilini o''zgartira oladi';
+end $$;
+
+-- ============================================================
+--  XARAJATLAR (0033): huquq, o'zgarmaslik, oylik moliya
+-- ============================================================
+reset role;
+reset request.jwt.claim.sub;
+set role authenticated;
+\echo '--- 0033: xarajatlar ---'
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare v_id bigint; v jsonb;
+begin
+  insert into xarajatlar (toifa, summa, sana, izoh) values ('ijara', 3000000, bugun_toshkent(), 'sinov')
+    returning id into v_id;
+  v := oylik_moliya(to_char(bugun_toshkent(), 'YYYY-MM'));
+  if (v ->> 'xarajat')::numeric < 3000000 then raise exception 'XATO: oylik_moliya xarajatni sanamadi: %', v; end if;
+  if (v ->> 'foyda')::numeric <> (v ->> 'tushum')::numeric - (v ->> 'xarajat')::numeric then
+    raise exception 'XATO: foyda noto''g''ri: %', v;
+  end if;
+  begin
+    update xarajatlar set summa = 1 where id = v_id;
+    raise exception 'XATO: xarajat summasi o''zgardi!';
+  exception when others then
+    if sqlerrm not like '%bekor qilib%' then raise; end if;
+  end;
+  update xarajatlar set bekor = true, bekor_sabab = 'sinov' where id = v_id;
+  if (oylik_moliya(to_char(bugun_toshkent(), 'YYYY-MM')) ->> 'xarajat')::numeric >= (v ->> 'xarajat')::numeric then
+    raise exception 'XATO: bekor xarajat hisobda qoldi';
+  end if;
+  raise notice 'OK: admin yozadi, summa o''zgarmaydi, bekor hisobdan chiqadi';
+end $$;
+
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';   -- qabulxona
+do $$
+begin
+  perform count(*) from xarajatlar;
+  begin
+    insert into xarajatlar (toifa, summa) values ('ofis', 1000);
+    raise exception 'XATO: qabulxona xarajat yozdi!';
+  exception when insufficient_privilege then
+    raise notice 'OK: qabulxona faqat ko''radi';
+  end;
+end $$;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+declare n int;
+begin
+  select count(*) into n from xarajatlar;
+  if n > 0 then raise exception 'XATO: ustoz xarajatlarni ko''rdi!'; end if;
+  begin
+    perform oylik_moliya(to_char(bugun_toshkent(), 'YYYY-MM'));
+    raise exception 'XATO: ustoz moliyani ko''rdi!';
+  exception when others then
+    if sqlerrm not like '%faqat xodimlarga%' then raise; end if;
+  end;
+  raise notice 'OK: ustozga xarajat va moliya yopiq';
+end $$;
+
+reset role;
 \echo ''
 \echo '--- 0036: dam olish kunlari ---'
 set role authenticated;

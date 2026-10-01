@@ -44,6 +44,27 @@ export async function davomatBelgila(
   return { ok: true, natija: Number(data) || 0 }
 }
 
+/** Probniy katagi — pulsiz davomat (0030). Doimiy bo'lganda o'quvchiga ko'chadi. */
+export async function probniyBelgila(
+  guruhId: string,
+  sana: string,
+  leadId: string,
+  holat: AttendanceStatus | null,
+): Promise<AmalNatijasi<null>> {
+  const xato = await ruxsat()
+  if (xato) return { ok: false, xato }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('probniy_belgila', {
+    p_group: guruhId,
+    p_sana: sana,
+    p_lead: leadId,
+    p_holat: holat,
+  })
+  if (error) return { ok: false, xato: error.message }
+  return { ok: true, natija: null }
+}
+
 /** Bugungi darsga woblar. Qaytaradi — o'quvchining bugungi jami woblari. */
 export async function woblarBer(guruhId: string, studentId: string, ball: number): Promise<AmalNatijasi<number>> {
   const xato = await ruxsat()

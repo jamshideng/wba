@@ -206,3 +206,54 @@ export async function tuzatishBekor(fd: FormData) {
   revalidatePath('/crm', 'layout')
   redirect(xabarliYol(yol, { ok: 'Tuzatish bekor qilindi — o‘sha oy qayta hisoblandi.' }))
 }
+
+/** VIP — to'lamaydi, lekin faol hisobda (0030). Faqat admin va direktor. */
+export async function vipOzgartir(fd: FormData) {
+  await talabRol('admin', 'direktor')
+  const studentId = matn(fd.get('student_id'))
+  const enrollmentId = matn(fd.get('enrollment_id'))
+  const yol = `/crm/oquvchilar/${studentId}`
+  if (!studentId || !enrollmentId) redirect('/crm/oquvchilar')
+
+  const vip = fd.get('vip') === '1'
+  const dan = matn(fd.get('dan'))
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('vip_ozgartir', { p_enrollment: enrollmentId!, p_vip: vip, p_dan: vip ? dan : null })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(yol, { ok: vip ? `VIP qilindi${dan ? ` (${dan} dan)` : ''} — o‘sha oylardan hisob 0.` : 'VIP olib tashlandi — oylar qayta hisoblandi.' }))
+}
+
+/** Arxivga — hamma guruhdan chiqariladi, qarzi saqlanadi, shu ID bilan qaytariladi. */
+export async function oquvchiArxivla(fd: FormData) {
+  await talabRol('admin', 'direktor', 'qabulxona')
+  const studentId = matn(fd.get('student_id'))
+  const yol = `/crm/oquvchilar/${studentId}`
+  if (!studentId) redirect('/crm/oquvchilar')
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('oquvchi_arxivla', {
+    p_student: studentId!,
+    p_sana: sanaOqi(fd.get('sana')),
+    p_sabab: matn(fd.get('sabab')),
+  })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(yol, { ok: 'Arxivga o‘tkazildi. Qarzi saqlanadi; qaytarish — shu sahifadan.' }))
+}
+
+export async function oquvchiArxivdan(fd: FormData) {
+  await talabRol('admin', 'direktor', 'qabulxona')
+  const studentId = matn(fd.get('student_id'))
+  const yol = `/crm/oquvchilar/${studentId}`
+  if (!studentId) redirect('/crm/oquvchilar')
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('oquvchi_arxivdan', { p_student: studentId! })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(yol, { ok: 'Arxivdan qaytarildi (shu ID bilan). Endi guruhga biriktiring.' }))
+}

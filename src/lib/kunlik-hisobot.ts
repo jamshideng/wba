@@ -1,7 +1,7 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { html } from '@/lib/telegram'
-import { pul, sana, vaqt, bugunToshkent } from '@/lib/format'
+import { pul, sana, vaqt, bugunToshkent, haftaKuni } from '@/lib/format'
 import type { Hisobot } from '@/lib/types'
 
 /**
@@ -16,13 +16,14 @@ import type { Hisobot } from '@/lib/types'
  * hisobot" tugmasida yuboriladi. service_role — sessiyasiz ishlaydi,
  * faqat umumiy raqamlar chiqadi (telefon, ism-sharif yo'q).
  */
-export async function kunlikHisobotMatn(): Promise<string> {
+export async function kunlikHisobotMatn(kun: string = bugunToshkent()): Promise<string> {
   const db = createAdminClient()
-  const kun = bugunToshkent()
 
-  const [{ data: bugungi }, { data: belgilar }, { data: probniy }, { data: tushum }, { data: qarzlar }, { data: ustozlar }] =
+  const [{ data: guruhlar }, { data: darsQatorlari }, { data: yozilishlar }, { data: belgilar }, { data: probniy }, { data: tushum }, { data: qarzlar }, { data: ustozlar }] =
     await Promise.all([
-      db.from('v_bugungi_darslar').select('nom, boshlanish, belgilangan, teacher_id, oquvchilar'),
+      db.from('groups').select('id, nom, boshlanish, teacher_id, kunlar').eq('holat', 'faol'),
+      db.from('lessons').select('group_id, otkazildi').eq('sana', kun),
+      db.from('enrollments').select('group_id').neq('holat', 'tugagan').lte('boshlandi', kun),
       db.from('attendance').select('holat, lessons!inner(sana)').eq('lessons.sana', kun),
       db.from('leads').select('holat').eq('sinov_sana', kun),
       db.rpc('tushum_hisobot', { p_dan: kun, p_gacha: kun }),
@@ -30,7 +31,14 @@ export async function kunlikHisobotMatn(): Promise<string> {
       db.from('teachers').select('id, ism'),
     ])
 
-  const darslar = (bugungi ?? []).filter((d) => Number(d.oquvchilar) > 0)
+  /* O'sha kuni darsi bo'lgan guruhlar (groups.kunlar, 0028) — istalgan kun uchun */
+  const hk = haftaKuni(kun)
+  const otkazildi = new Map((darsQatorlari ?? []).map((l) => [l.group_id, Boolean(l.otkazildi)]))
+  const soni = new Map<string, number>()
+  for (const e of yozilishlar ?? []) soni.set(e.group_id, (soni.get(e.group_id) ?? 0) + 1)
+  const darslar = ((guruhlar ?? []) as { id: string; nom: string; boshlanish: string; teacher_id: string | null; kunlar: number[] }[])
+    .filter((g) => (g.kunlar ?? []).includes(hk) && (soni.get(g.id) ?? 0) > 0)
+    .map((g) => ({ nom: g.nom, boshlanish: g.boshlanish, teacher_id: g.teacher_id, belgilangan: otkazildi.get(g.id) ?? false }))
   const b = (belgilar ?? []) as { holat: string }[]
   const keldi = b.filter((x) => x.holat === 'keldi' || x.holat === 'kechikdi').length
   const kelmadi = b.filter((x) => x.holat === 'kelmadi').length
