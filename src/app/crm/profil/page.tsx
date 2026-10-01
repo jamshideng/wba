@@ -85,25 +85,26 @@ export default async function Profil({
             </form>
           </Card>
 
-          <Card className="flex flex-col">
+        </>
+      )}
+
+      <Card className="flex flex-col">
             <CardHeader title="Parol" />
             <form action={parolOzgartir} className="flex flex-col gap-3 px-5 pb-5">
               <Maydon nom="Joriy parol">
                 <input name="joriy_parol" type="password" required autoComplete="current-password" className={kirishKlass} />
               </Maydon>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Maydon nom="Yangi parol" izoh="Kamida 8 belgi">
-                  <input name="yangi_parol" type="password" required minLength={8} autoComplete="new-password" className={kirishKlass} />
+                <Maydon nom="Yangi parol" izoh={faqatTelegram ? 'Kamida 6 belgi. Yodda qoladigan, lekin boshqalar topa olmaydigan so‘z tanlang' : 'Kamida 8 belgi'}>
+                  <input name="yangi_parol" type="password" required minLength={faqatTelegram ? 6 : 8} autoComplete="new-password" className={kirishKlass} />
                 </Maydon>
                 <Maydon nom="Yangi parol (takror)">
-                  <input name="takror_parol" type="password" required minLength={8} autoComplete="new-password" className={kirishKlass} />
+                  <input name="takror_parol" type="password" required minLength={faqatTelegram ? 6 : 8} autoComplete="new-password" className={kirishKlass} />
                 </Maydon>
               </div>
               <Yuborish>Parolni almashtirish</Yuborish>
             </form>
           </Card>
-        </>
-      )}
 
       <Card className="flex flex-col">
         <CardHeader
@@ -126,7 +127,7 @@ export default async function Profil({
 
       <p className="text-[12px] leading-relaxed text-ink-3">
         {faqatTelegram
-          ? 'Ism, login yoki parolni o‘zgartirish kerak bo‘lsa — markaz adminiga murojaat qiling.'
+          ? 'Ism yoki loginni o‘zgartirish kerak bo‘lsa, yoki parolni unutsangiz — markaz adminiga murojaat qiling.'
           : 'Parolni unutsangiz — markaz adminiga murojaat qiling: u sizga yangi parol qo‘yib beradi.'}
       </p>
     </div>

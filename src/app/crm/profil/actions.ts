@@ -14,7 +14,7 @@ const YOL = '/crm/profil'
 
 /** O'quvchi va ota-ona ism, login, parolni o'zi o'zgartirmaydi (0032) — faqat admin orqali. */
 const YOPIQ_ROLLAR = ['oquvchi', 'ota_ona']
-const OQUVCHIGA_YOPIQ = 'Ism, login va parolni markaz admini o‘zgartiradi — unga murojaat qiling.'
+const OQUVCHIGA_YOPIQ = 'Ism va loginni markaz admini o‘zgartiradi — unga murojaat qiling.'
 
 /**
  * Joriy parolni tekshiradi — foydalanuvchining o'z sessiyasiga tegmasdan,
@@ -96,14 +96,20 @@ export async function loginOzgartir(fd: FormData) {
   redirect(xabarliYol(YOL, { ok: `Login o‘zgardi. Endi “${loginNomi(yangi)}” bilan kirasiz.` }))
 }
 
+/**
+ * Parol — hamma o'zi almashtiradi (o'quvchi va ota-ona ham, Jamshid 01.10:
+ * berilgan tasodifiy parolni yodlash qiyin). Ism va login esa ularga yopiq (0032).
+ * Joriy parol so'raladi — telefonni olgan begona odam almashtira olmaydi.
+ */
 export async function parolOzgartir(fd: FormData) {
   const men = await talabProfil()
-  if (YOPIQ_ROLLAR.includes(men.rol)) redirect(xabarliYol(YOL, { xato: OQUVCHIGA_YOPIQ }))
   const joriy = String(fd.get('joriy_parol') ?? '')
   const yangi = String(fd.get('yangi_parol') ?? '')
   const takror = String(fd.get('takror_parol') ?? '')
+  // O'quvchiga yodlash oson bo'lsin — 6 belgi; xodimda pul bor — 8
+  const eng = YOPIQ_ROLLAR.includes(men.rol) ? 6 : 8
 
-  if (yangi.length < 8) redirect(xabarliYol(YOL, { xato: 'Yangi parol kamida 8 belgidan bo‘lsin.' }))
+  if (yangi.length < eng) redirect(xabarliYol(YOL, { xato: `Yangi parol kamida ${eng} belgidan bo‘lsin.` }))
   if (yangi !== takror) redirect(xabarliYol(YOL, { xato: 'Yangi parol va takrori bir xil emas.' }))
   if (yangi === joriy) redirect(xabarliYol(YOL, { xato: 'Yangi parol eskisidan farq qilsin.' }))
   if (!men.email || !(await parolTogri(men.email, joriy))) {
