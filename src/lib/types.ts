@@ -488,6 +488,15 @@ export type DavomatNatija = {
   ball: number
 }
 
+/** 0045 · hisobot_grafik() — kunlik qatorlar va trend */
+export type HisobotGrafik = {
+  kunlar: { sana: string; tushum: number; belgi: number; kelgan: number; yangi: number }[]
+  joriy: { tushum: number; tolov: number; belgi: number; kelgan: number; yangi: number }
+  oldingi: { tushum: number; belgi: number; kelgan: number; yangi: number }
+  guruhlar: { id: string; nom: string; tushum: number }[]
+  qarzdorlar: number
+}
+
 /** 0044 · Hisobotlar bo'limlari */
 export type HisobotMoliya = {
   oylar: { davr: string; hisoblangan: number; chegirma: number; vip: number; tuzatish: number; yigilgan: number; yozilish: number }[]
@@ -669,6 +678,7 @@ export type Database = {
       yozilish_hisoblari: { Args: { p_enrollment: string }; Returns: number }
       probniy_doimiy: { Args: { p_lead: string; p_boshlandi?: string | null }; Returns: string }
       tushum_hisobot: { Args: { p_dan: string; p_gacha: string }; Returns: Hisobot }
+      hisobot_grafik: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotGrafik }
       hisobot_moliya: { Args: { p_oylar?: number }; Returns: HisobotMoliya }
       hisobot_oquvchilar: { Args: { p_oylar?: number }; Returns: HisobotOquvchilar }
       hisobot_ustozlar: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotUstoz[] }

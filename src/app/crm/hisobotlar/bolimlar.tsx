@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { Card, CardHeader, Stat, BarRow, Empty } from '@/components/ui'
+import { ChiziqGrafik, UstunGrafik as Ustunlar } from '@/components/grafiklar'
+import { RANG } from '@/lib/grafik-rang'
 import { pul, davrNomi, davrQisqa, sanaQisqa } from '@/lib/format'
 import type { HisobotDavomat, HisobotMoliya, HisobotOquvchilar, HisobotUstoz } from '@/lib/types'
 
@@ -8,66 +10,11 @@ const SIGIM = 12
 const sigim = (nom: string) => (/\bIND\b/i.test(nom) ? 1 : SIGIM)
 
 const foiz = (a: number, b: number) => (b > 0 ? Math.round((a * 100) / b) : null)
-/** Grafik ustidagi qisqa raqam: 42 725 000 → "42.7" (birlik — sarlavhada "mln so'm") */
-const mln = (n: number) => (n / 1_000_000).toFixed(1).replace(/\.0$/, '')
 
 function FoizBelgi({ f, yaxshi = 90, orta = 70 }: { f: number | null; yaxshi?: number; orta?: number }) {
   if (f === null) return <span className="text-ink-4">—</span>
   const ton = f >= yaxshi ? 'bg-ok-soft text-ok' : f >= orta ? 'bg-accent-soft text-accent' : 'bg-brand-soft text-brand'
   return <span className={`tnum inline-block rounded-md px-1.5 py-0.5 text-[12px] font-bold ${ton}`}>{f}%</span>
-}
-
-/**
- * Ustunli grafik: har nuqtada 1–2 ta ustun (masalan "hisoblangan" va "yig'ildi").
- * Kutubxonasiz — oddiy CSS, telefonda ham sig'adi.
- */
-function UstunGrafik({
-  nuqtalar,
-  nomlar,
-  format = String,
-}: {
-  nuqtalar: { yorliq: string; qiymatlar: number[]; ostida?: React.ReactNode }[]
-  nomlar: string[]
-  format?: (n: number) => string
-}) {
-  const max = Math.max(1, ...nuqtalar.flatMap((n) => n.qiymatlar))
-  const RANG = ['bg-ink-4/40', 'bg-brand']
-  return (
-    <div className="flex flex-col gap-3 px-5 pb-5">
-      <div className="flex gap-4 text-[11.5px] text-ink-3">
-        {nomlar.map((n, i) => (
-          <span key={n} className="flex items-center gap-1.5">
-            <span className={`size-2.5 rounded-sm ${RANG[nomlar.length === 1 ? 1 : i]}`} />
-            {n}
-          </span>
-        ))}
-      </div>
-      <div className="flex h-48 items-end gap-2 overflow-x-auto border-b border-line pb-px sm:gap-4">
-        {nuqtalar.map((n) => (
-          <div key={n.yorliq} className="flex h-full min-w-14 flex-1 items-end justify-center gap-1.5">
-            {n.qiymatlar.map((q, i) => (
-              <div key={i} className="flex h-full w-full max-w-8 flex-col items-center justify-end gap-1">
-                <span className="tnum text-[10.5px] whitespace-nowrap text-ink-3">{q ? format(q) : ''}</span>
-                <span
-                  className={`w-full rounded-t-[4px] ${RANG[n.qiymatlar.length === 1 ? 1 : i]}`}
-                  style={{ height: `${Math.max(q ? 2 : 0, (q / max) * 100)}%` }}
-                  title={`${n.yorliq}: ${pul(q)}`}
-                />
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-      <div className="flex gap-2 overflow-x-auto sm:gap-4">
-        {nuqtalar.map((n) => (
-          <div key={n.yorliq} className="flex min-w-11 flex-1 flex-col items-center gap-0.5 text-center">
-            <span className="text-[11.5px] font-semibold text-ink-2">{n.yorliq}</span>
-            {n.ostida}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
 }
 
 /** Jadval qobig'i — telefonda gorizontal suriladi */
@@ -113,19 +60,23 @@ export function MoliyaBolimi({ m }: { m: HisobotMoliya }) {
       </div>
 
       <Card className="flex flex-col">
-        <CardHeader title="To‘lashi kerak va yig‘ilgan" meta="mln so‘m · to‘lov qaysi oy uchun qilingan bo‘yicha" />
+        <CardHeader title="To‘lashi kerak va yig‘ilgan" meta="to‘lov qaysi oy uchun qilingan bo‘yicha" />
         {oylar.length === 0 ? (
           <div className="px-5 pb-5"><Empty>Bu oraliqda hisob yo‘q.</Empty></div>
         ) : (
-          <UstunGrafik
-            nomlar={['To‘lashi kerak', 'Yig‘ildi']}
-            format={mln}
-            nuqtalar={oylar.map((o) => ({
-              yorliq: davrQisqa(o.davr),
-              qiymatlar: [Number(o.hisoblangan), Number(o.yigilgan)],
-              ostida: <FoizBelgi f={foiz(Number(o.yigilgan), Number(o.hisoblangan))} />,
-            }))}
-          />
+          <div className="flex flex-col gap-2 px-3 pb-4">
+            <Ustunlar
+              data={oylar.map((o) => ({ x: davrQisqa(o.davr), kerak: Number(o.hisoblangan), yigildi: Number(o.yigilgan) }))}
+              seriyalar={[{ kalit: 'kerak', nom: 'To‘lashi kerak', rang: RANG.ink3 }, { kalit: 'yigildi', nom: 'Yig‘ildi', rang: RANG.brand }]}
+            />
+            <div className="flex flex-wrap gap-x-5 gap-y-1 px-2 text-[12px] text-ink-3">
+              {oylar.map((o) => (
+                <span key={o.davr} className="flex items-center gap-1.5">
+                  {davrQisqa(o.davr)}: <FoizBelgi f={foiz(Number(o.yigilgan), Number(o.hisoblangan))} /> yig‘ildi
+                </span>
+              ))}
+            </div>
+          </div>
         )}
       </Card>
 
@@ -208,10 +159,13 @@ export function OquvchilarBolimi({ o }: { o: HisobotOquvchilar }) {
 
       <Card className="flex flex-col">
         <CardHeader title="Oy oxirida faol bolalar" meta="bola · fan bo‘yicha" />
-        <UstunGrafik
-          nomlar={['Fan bo‘yicha', 'Bolalar']}
-          nuqtalar={oylar.map((m) => ({ yorliq: davrQisqa(m.davr), qiymatlar: [m.faol_fan, m.faol_bola] }))}
-        />
+        <div className="px-3 pb-4">
+          <Ustunlar
+            format="son"
+            data={oylar.map((m) => ({ x: davrQisqa(m.davr), fan: m.faol_fan, bola: m.faol_bola }))}
+            seriyalar={[{ kalit: 'fan', nom: 'Fan bo‘yicha', rang: RANG.ink3 }, { kalit: 'bola', nom: 'Bolalar', rang: RANG.brand }]}
+          />
+        </div>
       </Card>
 
       <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
@@ -338,18 +292,17 @@ export function DavomatBolimi({ d }: { d: HisobotDavomat }) {
       </div>
 
       <Card className="flex flex-col">
-        <CardHeader title="Haftalik davomat" meta="kelgan / jami belgi" />
+        <CardHeader title="Haftalik davomat" meta="hafta boshi (dushanba) bo‘yicha, %" />
         {d.haftalar.length === 0 ? (
           <div className="px-5 pb-5"><Empty>Bu oraliqda davomat yo‘q.</Empty></div>
         ) : (
-          <UstunGrafik
-            nomlar={['Belgi', 'Kelgan']}
-              nuqtalar={d.haftalar.map((h) => ({
-              yorliq: sanaQisqa(h.hafta).slice(0, 5),
-              qiymatlar: [h.belgi, h.kelgan],
-              ostida: <FoizBelgi f={foiz(h.kelgan, h.belgi)} yaxshi={85} />,
-            }))}
-          />
+          <div className="px-3 pb-4">
+            <ChiziqGrafik
+              format="foiz"
+              data={d.haftalar.map((h) => ({ x: sanaQisqa(h.hafta).slice(0, 5), davomat: Math.round(foiz(h.kelgan, h.belgi) ?? 0) }))}
+              seriyalar={[{ kalit: 'davomat', nom: 'Davomat', rang: RANG.ok }]}
+            />
+          </div>
         )}
       </Card>
 

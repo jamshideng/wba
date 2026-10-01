@@ -2,12 +2,13 @@ import Link from 'next/link'
 import { talabRol } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
-import { Card, CardHeader, Stat, BarRow, Empty } from '@/components/ui'
+import { Card, CardHeader, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, kirishKlass } from '@/components/forma'
-import { pul, sana, davrNomi, bugunToshkent } from '@/lib/format'
-import type { Hisobot, HisobotDavomat, HisobotMoliya, HisobotOquvchilar, HisobotUstoz, MonthlyIncome } from '@/lib/types'
+import { sana, bugunToshkent } from '@/lib/format'
+import type { Hisobot, HisobotGrafik, HisobotDavomat, HisobotMoliya, HisobotOquvchilar, HisobotUstoz, MonthlyIncome } from '@/lib/types'
 import { DavomatBolimi, MoliyaBolimi, OquvchilarBolimi, UstozlarBolimi } from './bolimlar'
+import { UmumiyBolim } from './umumiy'
 
 export const metadata = { title: 'Hisobotlar' }
 export const dynamic = 'force-dynamic'
@@ -31,14 +32,6 @@ function yol(q: Record<string, string>): string {
   return p ? `/crm/hisobotlar?${p}` : '/crm/hisobotlar'
 }
 
-const USUL_NOMI: Record<string, string> = {
-  naqd: 'Naqd',
-  karta: 'Karta',
-  click: 'Click',
-  payme: 'Payme',
-  aniqlanmagan: '[ANIQLANMAGAN]',
-}
-
 /** "2026-09-17" dan n kun oldin/keyin. */
 function kunQosh(iso: string, n: number): string {
   const d = new Date(`${iso}T00:00:00Z`)
@@ -57,7 +50,9 @@ function oraliq(tur: string, dan?: string, gacha?: string): { tur: string; dan: 
     const haftaKuni = (new Date(`${bugun}T00:00:00Z`).getUTCDay() + 6) % 7 // dushanba = 0
     return { tur, dan: kunQosh(bugun, -haftaKuni), gacha: bugun }
   }
+  if (tur === '7kun') return { tur, dan: kunQosh(bugun, -6), gacha: bugun }
   if (tur === '30kun') return { tur, dan: kunQosh(bugun, -29), gacha: bugun }
+  if (tur === '90kun') return { tur, dan: kunQosh(bugun, -89), gacha: bugun }
   if (tur === 'otgan') {
     const boshi = `${bugun.slice(0, 7)}-01`
     const oxiri = kunQosh(boshi, -1)
@@ -79,8 +74,8 @@ export default async function Hisobotlar({
 
   const s = await searchParams
   const bolim: Bolim = (Object.keys(BOLIMLAR) as Bolim[]).find((b) => b === s.bolim) ?? 'umumiy'
-  // Tahlil bo'limlarida standart — oxirgi 30 kun (oy boshida "Shu oy" bo'sh bo'ladi)
-  const standartTur = bolim === 'umumiy' ? 'oy' : '30kun'
+  // Standart — oxirgi 30 kun (LevelUp kabi; oy boshida "Shu oy" bo'sh bo'ladi)
+  const standartTur = '30kun'
   const o = oraliq(s.tur ?? standartTur, s.dan, s.gacha)
   const oyNechta = OY_TANLOV.find((n) => String(n) === s.oy) ?? 6
   const oylikmi = OYLIK.includes(bolim)
@@ -93,7 +88,7 @@ export default async function Hisobotlar({
     yol({ ...(b === 'umumiy' ? {} : { bolim: b }), ...(OYLIK.includes(b) ? (s.oy ? { oy: s.oy } : {}) : oraliqQs) })
 
   const supabase = await createClient()
-  const [{ data: hisobot, error }, { data: oylik }, bolimData] = await Promise.all([
+  const [{ data: hisobot, error }, { data: oylik }, bolimData, { data: grafik }] = await Promise.all([
     bolim === 'umumiy'
       ? supabase.rpc('tushum_hisobot', { p_dan: o.dan, p_gacha: o.gacha })
       : Promise.resolve({ data: null, error: null }),
@@ -109,9 +104,13 @@ export default async function Hisobotlar({
           : bolim === 'davomat'
             ? supabase.rpc('hisobot_davomat', { p_dan: o.dan, p_gacha: o.gacha })
             : Promise.resolve({ data: null, error: null }),
+    bolim === 'umumiy'
+      ? supabase.rpc('hisobot_grafik', { p_dan: o.dan, p_gacha: o.gacha })
+      : Promise.resolve({ data: null }),
   ])
 
   const h = hisobot as Hisobot | null
+  const g = grafik as HisobotGrafik | null
   const oylar = ((oylik ?? []) as MonthlyIncome[]).slice().reverse()
 
   const tugma = (tur: string, nom: string) => (
@@ -125,8 +124,6 @@ export default async function Hisobotlar({
     </Link>
   )
 
-  const davomatFoiz =
-    h && h.davomat.belgilar > 0 ? Math.round((h.davomat.kelgan * 100) / h.davomat.belgilar) : null
 
   /* Qilinmagan darslar — ustoz bo'yicha guruhlab (botdagi kabi) */
   const qilinmagan = new Map<string, { nom: string; sana: string }[]>()
@@ -136,7 +133,6 @@ export default async function Hisobotlar({
     qilinmagan.set(q.ustoz, r)
   }
 
-  const maxOf = (r: { summa: number }[]) => Math.max(1, ...r.map((x) => Number(x.summa)))
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -177,9 +173,10 @@ export default async function Hisobotlar({
       ) : (
       <div className="flex flex-wrap items-end gap-2">
         {tugma('bugun', 'Bugun')}
-        {tugma('hafta', 'Shu hafta')}
+        {tugma('7kun', '7 kun')}
+        {tugma('30kun', '30 kun')}
+        {tugma('90kun', '90 kun')}
         {tugma('oy', 'Shu oy')}
-        {tugma('30kun', 'Oxirgi 30 kun')}
         {tugma('otgan', 'O‘tgan oy')}
         <form className="flex flex-wrap items-end gap-2">
           {bolim !== 'umumiy' && <input type="hidden" name="bolim" value={bolim} />}
@@ -211,57 +208,14 @@ export default async function Hisobotlar({
         ) : (
           <DavomatBolimi d={bolimData.data as HisobotDavomat} />
         )
-      ) : error || !h ? (
+      ) : error || !h || !g ? (
         <Card className="p-5">
           <Empty>Hisobotni olib bo‘lmadi{error ? `: ${error.message}` : ''}.</Empty>
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-            <Stat label="Tushum" value={Number(h.tushum)} sub={`${h.soni} ta to‘lov · ${h.odam} kishi`} />
-            <Stat
-              label="Tasdiq kutmoqda"
-              value={Number(h.tasdiqlanmagan)}
-              sub="shu oraliqda"
-              ton={Number(h.tasdiqlanmagan) > 0 ? 'accent' : 'ok'}
-            />
-            <Stat
-              label="Davomat"
-              value={davomatFoiz === null ? '—' : `${davomatFoiz}%`}
-              sub={`${h.davomat.kelgan} keldi · ${h.davomat.kelmadi} kelmadi · ${h.davomat.sababli} sababli`}
-              ton={davomatFoiz !== null && davomatFoiz >= 80 ? 'ok' : 'neytral'}
-            />
-            <Stat
-              label="Davomat qilinmagan"
-              value={h.darslar.qilinmagan}
-              sub={`${h.darslar.kutilgan} ta darsdan`}
-              ton={h.darslar.qilinmagan > 0 ? 'brand' : 'ok'}
-              border={h.darslar.qilinmagan > 0 ? 'brand' : undefined}
-            />
-          </div>
-
-          <div className="grid gap-3.5 lg:grid-cols-3">
-            {(
-              [
-                ['Usul bo‘yicha', h.usul.map((x) => ({ ...x, nom: USUL_NOMI[x.nom] ?? x.nom }))],
-                ['Ustoz bo‘yicha', h.ustoz],
-                ['Yo‘nalish bo‘yicha', h.yonalish],
-              ] as const
-            ).map(([sarlavha, qatorlar]) => (
-              <Card key={sarlavha} className="flex flex-col">
-                <CardHeader title={sarlavha} meta="so‘m" />
-                <div className="flex flex-col px-5 pb-4">
-                  {qatorlar.length === 0 ? (
-                    <Empty>Bu oraliqda to‘lov yo‘q.</Empty>
-                  ) : (
-                    qatorlar.map((q) => <BarRow key={q.nom} label={q.nom} value={Number(q.summa)} max={maxOf(qatorlar)} />)
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          <div className="grid gap-3.5 lg:grid-cols-2">
+          <UmumiyBolim h={h} g={g} oylar={oylar} />
+          {qilinmagan.size > 0 && (
             <Card className="flex flex-col">
               <CardHeader title="Davomat qilinmagan darslar" meta="jadval bo‘yicha dars bor, belgi yo‘q" />
               <div className="flex flex-col gap-3 px-5 pb-4">
@@ -283,59 +237,7 @@ export default async function Hisobotlar({
               </div>
             </Card>
 
-            <Card className="flex flex-col">
-              <CardHeader title="Probniylar" meta="shu oraliqda yozilgan" />
-              <div className="grid grid-cols-2 gap-3 px-5 pb-4 sm:grid-cols-4">
-                {(
-                  [
-                    ['Jami', h.probniy.jami],
-                    ['Doimiy', h.probniy.yozildi],
-                    ['Kelmadi', h.probniy.kelmadi],
-                    ['Rad etdi', h.probniy.rad],
-                  ] as const
-                ).map(([nom, son]) => (
-                  <span key={nom} className="flex flex-col gap-1">
-                    <span className="lbl">{nom}</span>
-                    <span className="tnum font-[family-name:var(--font-display)] text-[22px] font-bold">{son}</span>
-                  </span>
-                ))}
-              </div>
-              <p className="px-5 pb-4 text-[12px] text-ink-3">{h.probniy.kutilmoqda} tasi hali kutilmoqda.</p>
-            </Card>
-          </div>
-
-          <div className="grid gap-3.5 lg:grid-cols-2">
-            <Card className="flex flex-col">
-              <CardHeader title="Kunlar bo‘yicha tushum" meta="so‘m" />
-              <div className="flex flex-col px-5 pb-4">
-                {h.kunlar.length === 0 ? (
-                  <Empty>Bu oraliqda to‘lov yo‘q.</Empty>
-                ) : (
-                  h.kunlar.map((k) => (
-                    <BarRow key={k.sana} label={`${k.sana.slice(8, 10)}.${k.sana.slice(5, 7)} · ${k.soni} ta`} value={Number(k.summa)} max={maxOf(h.kunlar)} />
-                  ))
-                )}
-              </div>
-            </Card>
-
-            <Card className="flex flex-col">
-              <CardHeader title="Oylar bo‘yicha tushum" meta="oxirgi 12 oy" />
-              <div className="flex flex-col px-5 pb-4">
-                {oylar.length === 0 ? (
-                  <Empty>Hali to‘lov yo‘q.</Empty>
-                ) : (
-                  oylar.map((m) => (
-                    <BarRow key={m.davr} label={davrNomi(m.davr)} value={Number(m.tushum)} max={Math.max(1, ...oylar.map((x) => Number(x.tushum)))} />
-                  ))
-                )}
-                {oylar.length > 0 && (
-                  <p className="mt-2 text-[11.5px] text-ink-3">
-                    Oy — to‘lov qaysi oy uchun qilingan (davr), sana emas. Jami: {pul(oylar.reduce((a, m) => a + Number(m.tushum), 0))} so‘m
-                  </p>
-                )}
-              </div>
-            </Card>
-          </div>
+          )}
         </>
       )}
     </div>
