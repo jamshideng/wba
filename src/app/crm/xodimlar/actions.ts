@@ -131,3 +131,25 @@ export async function xodimHolat(fd: FormData) {
   revalidatePath(YOL)
   redirect(xabarliYol(YOL, { ok: holat === 'bloklangan' ? `${p!.ism} bloklandi — kira olmaydi.` : `${p!.ism} qayta ochildi.` }))
 }
+
+/**
+ * Xodimni ustoz yozuviga bog'lash (ustoz panelini ham ko'radi) yoki uzish.
+ * Bitta ustoz yozuvi — bitta hisob: eski bog'lanish avval uziladi.
+ */
+export async function xodimUstoz(fd: FormData) {
+  await talabRol('admin', 'direktor')
+  const id = matn(fd.get('id'))
+  const ustoz = matn(fd.get('teacher_id'))
+  if (!id) redirect(YOL)
+
+  const supabase = await createClient()
+  const { error: e1 } = await supabase.from('teachers').update({ profile_id: null }).eq('profile_id', id!)
+  if (e1) redirect(xabarliYol(YOL, { xato: xatoMatni(e1) }))
+  if (ustoz) {
+    const { error: e2 } = await supabase.from('teachers').update({ profile_id: id! }).eq('id', ustoz)
+    if (e2) redirect(xabarliYol(YOL, { xato: xatoMatni(e2) }))
+  }
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(YOL, { ok: ustoz ? `Ustoz yozuviga bog'landi (${ustoz}) — ustoz panelini ham ko'radi.` : 'Ustoz bog‘lanishi olib tashlandi.' }))
+}

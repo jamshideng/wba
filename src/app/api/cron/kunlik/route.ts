@@ -20,7 +20,9 @@ import { kunlikHisobotMatn } from '@/lib/kunlik-hisobot'
 
 export const dynamic = 'force-dynamic'
 
-const BELGI = 'kunlik_hisobot.oxirgi'
+/* Apps Script ham 19:40 da Sheets hisobotini yuboradi — sarlavha bir xil
+   bo'lib adashtirmasin: bu xabar saytdagi bazadan ekani boshida yoziladi. */
+const SAYT_BELGISI = '<b>[BAZA · sayt]</b> — saytdagi baza, Sheets emas\n\n'
 
 export async function POST(req: NextRequest) {
   const sir = process.env.CRON_SIR
@@ -39,16 +41,15 @@ export async function POST(req: NextRequest) {
 
   const db = createAdminClient()
   const guruhga = chat === Number(process.env.TELEGRAM_GROUP_ID)
+  // Bugungi hisobot YUBORISHDAN OLDIN atomik band qilinadi (0038) —
+  // ikki chaqiruv bir vaqtda kelsa ham guruhga faqat bittasi ketadi.
   if (guruhga && !qolda) {
-    const { data } = await db.from('settings').select('qiymat').eq('kalit', BELGI).maybeSingle()
-    if (data?.qiymat === kun) return NextResponse.json({ ok: true, sabab: 'bugun yuborilgan' })
+    const { data: band, error } = await db.rpc('kunlik_band', { p_kun: kun })
+    if (error) return NextResponse.json({ ok: false, sabab: error.message }, { status: 500 })
+    if (!band) return NextResponse.json({ ok: true, sabab: 'bugun yuborilgan' })
   }
 
-  const r = await xabar(chat, await kunlikHisobotMatn())
+  const r = await xabar(chat, SAYT_BELGISI + (await kunlikHisobotMatn()))
   if (!r.ok) return NextResponse.json({ ok: false, sabab: r.description }, { status: 502 })
-
-  if (guruhga) {
-    await db.from('settings').upsert({ kalit: BELGI, qiymat: kun, tavsif: 'Kunlik hisobot guruhga oxirgi yuborilgan kun (/api/cron/kunlik)' })
-  }
   return NextResponse.json({ ok: true, chat, kun })
 }

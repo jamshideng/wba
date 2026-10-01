@@ -550,6 +550,7 @@ export type Database = {
       dars_kunimi: { Args: { p_kun: DayType; p_sana: string }; Returns: boolean }
       guruh_dars_kunimi: { Args: { p_kunlar: number[]; p_sana: string }; Returns: boolean }
       dam_kunimi: { Args: { p_sana: string }; Returns: boolean }
+      kunlik_band: { Args: { p_kun: string }; Returns: boolean }
       davomat_belgila: {
         Args: { p_group: string; p_sana: string; p_belgilar: Record<string, AttendanceStatus | null> }
         Returns: number

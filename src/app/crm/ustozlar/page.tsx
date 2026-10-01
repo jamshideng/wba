@@ -49,6 +49,7 @@ export default async function Ustozlar({
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha nom="Ustozlar" izoh={`${uList.filter((u) => u.holat === 'faol').length} ta faol`} />
       <Xabar ok={xabar.ok} xato={xabar.xato} />
+      <p className="lbl">Har ustozning alohida sahifasi (guruhlari, davomat foizi, tushum) — tez orada.</p>
 
       {maoshQoidasi === null && (
         <p className="rounded-[10px] border border-dashed border-accent-line px-4 py-3 text-[12.5px] text-ink-2">

@@ -89,6 +89,8 @@ export default async function Farzand() {
         amal={oquvchi.holat === 'faol' ? <Badge ton="ok">Faol</Badge> : <Badge ton="accent">{oquvchi.holat}</Badge>}
       />
 
+      <p className="lbl">To‘lovlar tarixi, oylik davomat jadvali va bildirishnomalar — tez orada.</p>
+
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
         <Stat label="Qarz" value={jamiQarz} sub="so‘m" ton={jamiQarz > 0 ? 'brand' : 'ok'} border={jamiQarz > 0 ? 'brand' : undefined} />
         <Stat label="Woblar" value={w ? Number(w.balans) : 0} sub={w ? `jami ${Number(w.jami_ball)} olingan` : 'hali yo‘q'} ton="accent" />

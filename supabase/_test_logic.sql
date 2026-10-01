@@ -1155,4 +1155,33 @@ begin
 end $$;
 reset role;
 
+\echo '--- 0037/0038: woblar chegarasi, kunlik hisobot bir marta ---'
+reset role;
+update settings set qiymat = '6'::jsonb where kalit = 'woblr.max_ball_dars';
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana (NX)
+do $$
+begin
+  -- S002 (NX, 0029 bloki): 5 + 1 = 6 — mumkin, yana +1 — chegaradan oshadi
+  perform woblar_ber('NX', 'S002', 5);
+  perform woblar_ber('NX', 'S002', 1);
+  begin
+    perform woblar_ber('NX', 'S002', 1);
+    raise exception 'XATO: woblar chegarasidan oshdi!';
+  exception when others then
+    if sqlerrm not like '%eng ko''pi%' then raise; end if;
+  end;
+  raise notice 'OK: bir darsda woblar Sozlamalardagi chegaradan oshmaydi';
+end $$;
+reset role;
+update settings set qiymat = 'null'::jsonb where kalit = 'woblr.max_ball_dars';
+
+do $$
+begin
+  if not kunlik_band('2026-10-01') then raise exception 'XATO: birinchi chaqiruv band qilolmadi'; end if;
+  if kunlik_band('2026-10-01') then raise exception 'XATO: ikkinchi chaqiruv ham band qildi — hisobot ikki marta ketadi'; end if;
+  if not kunlik_band('2026-10-02') then raise exception 'XATO: ertasi kuni band qilinmadi'; end if;
+  raise notice 'OK: kunlik hisobot kuniga bir marta';
+end $$;
+
 \echo '=== TEST TUGADI ==='

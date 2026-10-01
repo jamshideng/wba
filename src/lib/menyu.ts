@@ -19,7 +19,7 @@ import type { UserRole } from '@/lib/types'
 import { adminmi, staffmi, tasdiqlaydimi } from '@/lib/auth'
 import {
   IconDashboard, IconStudents, IconGroups, IconTeacher, IconAttendance,
-  IconWoblr, IconPayments, IconDebt, IconLeads, IconReports, IconSettings, IconSend, IconArxiv, IconXarajat, IconAudit,
+  IconWoblr, IconPayments, IconDebt, IconLeads, IconReports, IconSettings, IconSend, IconAlert, IconArxiv, IconXarajat, IconAudit,
   IconJadval,
 } from '@/components/icons'
 
@@ -74,6 +74,9 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
         { href: '/crm/probniylar', nom: 'Probniylar', Icon: IconLeads, tayyor: true },
         { href: '/crm/hisobotlar', nom: 'Hisobotlar', Icon: IconReports, tayyor: true },
         { href: '/crm/xarajatlar', nom: 'Xarajatlar', Icon: IconXarajat, tayyor: true },
+        // Keyingi bosqich (Jamshid, 01.10): hozircha joyi band, bosilmaydi — "tez orada"
+        { href: '/crm/moliya', nom: 'Moliya', Icon: IconReports, tayyor: false },
+        { href: '/crm/eslatmalar', nom: 'Eslatmalar', Icon: IconAlert, tayyor: false },
         { href: '/crm/arxiv', nom: 'Arxiv', Icon: IconArxiv, tayyor: true },
         { href: '/crm/dam-kunlar', nom: 'Dam olish kunlari', Icon: IconAttendance, tayyor: true },
         ...(adminmi(rol)

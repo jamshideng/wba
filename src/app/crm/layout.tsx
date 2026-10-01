@@ -33,7 +33,7 @@ function Band({ band, nishon }: { band: MenyuBand; nishon?: number }) {
           </span>
         ) : null
       ) : (
-        <span className="lbl text-[8.5px]">tez orada</span>
+        <span className="lbl text-[8.5px] group-data-[menyu=yopiq]/qobiq:hidden">tez orada</span>
       )}
     </>
   )
@@ -42,8 +42,8 @@ function Band({ band, nishon }: { band: MenyuBand; nishon?: number }) {
     return (
       <span
         aria-disabled="true"
-        title="Bu sahifa prototipda hali yo‘q"
-        className="flex min-h-11 cursor-not-allowed items-center gap-3 rounded-lg px-3 text-[13.5px] text-ink-4"
+        title={`${band.nom} — tez orada`}
+        className="flex min-h-11 cursor-not-allowed items-center gap-3 rounded-lg px-3 text-[13.5px] whitespace-nowrap text-ink-4 group-data-[menyu=yopiq]/qobiq:justify-center group-data-[menyu=yopiq]/qobiq:px-0"
       >
         {ichi}
       </span>

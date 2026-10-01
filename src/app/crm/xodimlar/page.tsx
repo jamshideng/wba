@@ -6,7 +6,7 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, FormaBolim, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { loginNomi, LOGIN_QOIDASI } from '@/lib/login'
-import { xodimQosh, xodimParol, xodimRol, xodimHolat } from './actions'
+import { xodimQosh, xodimParol, xodimRol, xodimHolat, xodimUstoz } from './actions'
 import type { UserRole } from '@/lib/types'
 
 export const metadata = { title: 'Xodimlar' }
@@ -31,9 +31,10 @@ export default async function Xodimlar({ searchParams }: { searchParams: Promise
   const supabase = await createClient()
   const [{ data: xodimlar }, { data: ustozlar }] = await Promise.all([
     supabase.from('profiles').select('id, ism, rol, email, holat').in('rol', ['qabulxona', 'admin', 'direktor']).order('rol').order('ism'),
-    supabase.from('teachers').select('profile_id').not('profile_id', 'is', null),
+    supabase.from('teachers').select('id, ism, profile_id').eq('holat', 'faol').order('ism'),
   ])
-  const ustozHisob = new Set((ustozlar ?? []).map((u) => u.profile_id))
+  const uList = (ustozlar ?? []) as { id: string; ism: string; profile_id: string | null }[]
+  const ustozHisob = new Map(uList.filter((u) => u.profile_id).map((u) => [u.profile_id!, u]))
   const xList = (xodimlar ?? []) as { id: string; ism: string; rol: UserRole; email: string | null; holat: string }[]
   const direktorman = tasdiqlaydimi(men.rol)
   // Direktor lavozimini faqat direktor beradi/oladi
@@ -64,7 +65,7 @@ export default async function Xodimlar({ searchParams }: { searchParams: Promise
                       </span>
                       <span className="font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3">
                         login: {loginNomi(x.email)}
-                        {ustozHisob.has(x.id) ? ' · ustoz ham' : ''}
+                        {ustozHisob.has(x.id) ? ` · ustoz ham (${ustozHisob.get(x.id)!.id})` : ''}
                       </span>
                     </span>
                     <span className="flex items-center gap-2">
@@ -91,6 +92,20 @@ export default async function Xodimlar({ searchParams }: { searchParams: Promise
                               {beraOladi.map((l) => (
                                 <option key={l.rol} value={l.rol}>{ROL_NOMI[l.rol]}</option>
                               ))}
+                            </select>
+                          </Maydon>
+                          <Yuborish kutish="…">Saqlash</Yuborish>
+                        </form>
+                        <form action={xodimUstoz} className="flex flex-wrap items-end gap-2">
+                          <input type="hidden" name="id" value={x.id} />
+                          <Maydon nom="Ustoz sifatida" izoh="ustoz panelini ham ko‘radi">
+                            <select name="teacher_id" defaultValue={ustozHisob.get(x.id)?.id ?? ''} className={kirishKlass}>
+                              <option value="">Ustoz emas</option>
+                              {uList
+                                .filter((u) => !u.profile_id || u.profile_id === x.id)
+                                .map((u) => (
+                                  <option key={u.id} value={u.id}>{u.ism} ({u.id})</option>
+                                ))}
                             </select>
                           </Maydon>
                           <Yuborish kutish="…">Saqlash</Yuborish>
