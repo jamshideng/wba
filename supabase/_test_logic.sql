@@ -1515,7 +1515,7 @@ reset role;
 reset request.jwt.claim.sub;
 
 -- ============================================================
---  OTA-ONA QARZI (0050): ota-ona farzandining qarzini o'quvchining o'zi bilan bir xil ko'radi
+--  OTA-ONA QARZI (0051): ota-ona farzandining qarzini o'quvchining o'zi bilan bir xil ko'radi
 -- ============================================================
 reset role;
 reset request.jwt.claim.sub;
@@ -1523,7 +1523,7 @@ insert into auth.users (id, email) values ('88888888-8888-8888-8888-888888888888
   on conflict do nothing;
 update profiles set rol = 'ota_ona', ism = 'Sinov Ota', oquvchi_id = 'S001'
   where id = '88888888-8888-8888-8888-888888888888';
-\echo '--- 0050: ota-ona qarzi = o''quvchi qarzi ---'
+\echo '--- 0051: ota-ona qarzi = o''quvchi qarzi ---'
 set role authenticated;
 do $$
 declare v_oquvchi numeric; v_ota numeric;

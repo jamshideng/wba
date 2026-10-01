@@ -1,5 +1,5 @@
 -- ============================================================
---  0050 — OTA-ONA QARZNI TO'G'RI KO'RADI (telefon diagnostikasi, 02.10)
+--  0051 — OTA-ONA QARZNI TO'G'RI KO'RADI (telefon diagnostikasi, 02.10)
 --
 --  0019 ota-onaga to'lovlarni (payments) ochgan, lekin hisob-fakturalarni
 --  (invoices) emas. v_enrollment_balance security_invoker — ota-onada
