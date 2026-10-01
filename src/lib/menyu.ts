@@ -19,7 +19,7 @@ import type { UserRole } from '@/lib/types'
 import { adminmi, staffmi, tasdiqlaydimi } from '@/lib/auth'
 import {
   IconDashboard, IconStudents, IconGroups, IconTeacher, IconAttendance,
-  IconWoblr, IconPayments, IconDebt, IconLeads, IconReports, IconSettings, IconSend, IconAudit,
+  IconWoblr, IconPayments, IconDebt, IconLeads, IconReports, IconSettings, IconSend, IconAudit, IconJadval,
 } from '@/components/icons'
 
 type IconKomponent = (p: { size?: number; className?: string }) => React.ReactElement
@@ -47,6 +47,7 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
       bandlar: [
         { href: '/crm/davomat', nom: 'Davomat', Icon: IconAttendance, tayyor: true, mobil: true },
         { href: '/crm/guruhlar', nom: 'Guruhlarim', Icon: IconGroups, tayyor: true, mobil: true },
+        { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true },
         { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true },
       ],
     })
@@ -64,6 +65,7 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
           : [
               { href: '/crm/guruhlar', nom: 'Guruhlar', Icon: IconGroups, tayyor: true, mobil: true },
               { href: '/crm/davomat', nom: 'Davomat', Icon: IconAttendance, tayyor: true },
+              { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true },
               { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true },
             ]),
         { href: '/crm/qarzdorlar', nom: 'Qarzdorlar', Icon: IconDebt, tayyor: true },
