@@ -187,3 +187,14 @@
 html {
   scrollbar-gutter: stable;
 }
+
+/* Menyudagi havola bosilganda bo'lim aynan sarlavha (sticky menyu) ostiga tushsin.
+   --sarlavha-h ni SarlavhaBalandligi menyuning haqiqiy balandligidan yozadi. */
+html {
+  scroll-padding-top: calc(var(--sarlavha-h, 73px) + 16px);
+}
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}

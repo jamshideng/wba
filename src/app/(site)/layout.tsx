@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Logo } from '@/components/ui'
 import { MARKAZ } from '@/lib/markaz'
+import { SarlavhaBalandligi } from '@/components/sarlavha-balandligi'
 
 const MENYU = [
   { href: '/#kurslar', nom: 'Kurslar' },
@@ -12,7 +13,7 @@ const MENYU = [
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <header className="sticky top-0 z-20 border-b border-line-soft bg-bg/90 backdrop-blur">
+      <header id="sarlavha" className="sticky top-0 z-20 border-b border-line-soft bg-bg/90 backdrop-blur">
         <div
           className="mx-auto flex max-w-[1260px] flex-wrap items-center justify-between gap-4 px-5 py-3.5 lg:px-8"
           style={{ paddingTop: 'max(0.875rem, env(safe-area-inset-top, 0px))' }}
@@ -22,17 +23,12 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           </Link>
 
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            {/* Oddiy <a>: bosh sahifada brauzer o'zi bo'limga silliq tushadi (scroll-padding-top) */}
             {MENYU.map((m) => (
-              <Link key={m.href} href={m.href} className="text-[14.5px] text-ink-2 hover:text-ink">
+              <a key={m.href} href={m.href} className="text-[14.5px] text-ink-2 hover:text-ink">
                 {m.nom}
-              </Link>
+              </a>
             ))}
-            <a
-              href={`tel:${MARKAZ.telefonRaw}`}
-              className="font-[family-name:var(--font-mono)] text-[14px] hover:text-accent max-sm:hidden"
-            >
-              {MARKAZ.telefon}
-            </a>
             <Link
               href="/ariza"
               className="inline-flex min-h-11 items-center rounded-[9px] bg-brand text-white px-5 text-[14px] font-bold transition hover:brightness-110"
@@ -42,6 +38,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           </nav>
         </div>
       </header>
+      <SarlavhaBalandligi />
 
       {children}
 

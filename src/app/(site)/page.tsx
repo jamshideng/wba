@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { MARKAZ, NARX, YONALISHLAR } from '@/lib/markaz'
 import { pul } from '@/lib/format'
 import { IconAlert, IconPin } from '@/components/icons'
+import { Kitoblar } from '@/components/kitoblar'
+import { RaqamSanagich } from '@/components/raqam-sanagich'
 
 export const metadata = { alternates: { canonical: '/' } }
 
@@ -11,28 +13,14 @@ export default function Bosh() {
   return (
     <main className="mx-auto max-w-[1260px] px-5 lg:px-8">
       {/* ---------------- Hero ---------------- */}
-      <section className="relative overflow-hidden pt-16 pb-14 lg:pt-20">
-        <svg
-          viewBox="0 0 1440 420"
-          className="pointer-events-none absolute -top-6 left-1/2 h-[420px] w-[1440px] -translate-x-1/2"
-          aria-hidden="true"
-        >
-          <path d="M-80 400C340 60 1100 60 1520 400" fill="none" stroke="#FF0000" strokeWidth="2.5" opacity=".2" />
-          <path d="M-80 420C340 100 1100 100 1520 420" fill="none" stroke="#FF0000" strokeWidth="1.5" opacity=".1" />
-          <path d="M-80 440C340 140 1100 140 1520 440" fill="none" stroke="#FF0000" strokeWidth="1" opacity=".06" />
-        </svg>
-
-        <div className="relative flex max-w-[860px] flex-col gap-6">
+      <section className="grid items-center gap-10 pt-12 pb-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-14 lg:pt-16">
+        <div className="flex flex-col gap-7 text-left">
           <p className="lbl text-brand">
             Toshkent · {MARKAZ.tashkilYili} yildan beri
           </p>
-          <h1 className="h-display text-[38px] leading-[1.03] text-pretty sm:text-[52px] lg:text-[62px]">
-            Bir guruhda {MARKAZ.guruhMaksimal} kishidan ortiq bo‘lmaydi.
+          <h1 className="h-display text-[40px] leading-[1.02] text-pretty sm:text-[56px] lg:text-[68px]">
+            Biz shunchaki bilim bermaymiz, balki <span className="text-brand">hayotlarni o‘zgartiramiz</span>
           </h1>
-          <p className="max-w-[660px] text-[17px] leading-relaxed text-ink-2 text-pretty sm:text-[19px]">
-            Sakkiz yo‘nalish, haftada {MARKAZ.darsHaftada} marta, bir yarim soatdan.
-            Birinchi dars ham, daraja aniqlash ham bepul — oldindan to‘lov so‘ralmaydi.
-          </p>
           <div className="flex flex-wrap items-center gap-3.5 pt-1">
             <Link
               href="/ariza"
@@ -47,14 +35,13 @@ export default function Bosh() {
               Kurslarni ko‘rish
             </Link>
           </div>
-          <p className="text-[13.5px] text-ink-3">
-            Yozilganingizdan keyin bir ish kuni ichida qo‘ng‘iroq qilamiz va qulay vaqtni kelishamiz.
-          </p>
         </div>
+
+        <Kitoblar className="mx-auto w-full max-w-[480px] lg:max-w-none" />
       </section>
 
       {/* ---------------- Faktlar ---------------- */}
-      <section className="grid border-y border-line sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mb-16 grid border-y border-line sm:grid-cols-2 lg:grid-cols-4">
         {[
           { n: yil, t: 'yildan ortiq tajriba' },
           { n: YONALISHLAR.length, t: 'o‘quv yo‘nalishi' },
@@ -68,7 +55,7 @@ export default function Bosh() {
             <span
               className={`h-display text-[34px] leading-none ${f.brand ? 'text-brand' : ''}`}
             >
-              {f.n}
+              <RaqamSanagich qiymat={f.n} />
             </span>
             <span className="text-[14px] text-ink-2">{f.t}</span>
           </div>
@@ -76,7 +63,7 @@ export default function Bosh() {
       </section>
 
       {/* ---------------- Kurslar ---------------- */}
-      <section id="kurslar" className="flex scroll-mt-24 flex-col gap-7 py-16">
+      <section id="kurslar" className="flex flex-col gap-7 pb-16">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="flex flex-col gap-3">
             <p className="lbl">Yo‘nalishlar</p>
@@ -84,32 +71,29 @@ export default function Bosh() {
               Sakkiz yo‘nalish — hammasi noldan
             </h2>
           </div>
-          <p className="max-w-[380px] text-[14.5px] text-ink-2 text-pretty lg:text-right">
-            Yosh chegarasi yo‘q yo‘nalishlar ham, faqat bolalar uchun mo‘ljallangani ham bor.
-          </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {YONALISHLAR.map((y) => (
             <article
               key={y.id}
-              className="flex flex-col gap-2.5 rounded-[14px] border border-line bg-surface p-6"
+              className="group relative flex min-h-[132px] flex-col justify-between gap-6 overflow-hidden rounded-[14px] border border-line bg-surface p-6 transition duration-300 hover:-translate-y-1 hover:border-brand hover:shadow-[0_18px_40px_-18px_var(--color-brand)]"
             >
+              <span
+                aria-hidden="true"
+                className="absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 bg-brand transition-transform duration-300 group-hover:scale-x-100"
+              />
               <p className="lbl text-[10px] text-brand">{y.yorliq}</p>
-              <h3 className="font-[family-name:var(--font-display)] text-[19px] font-bold">
+              <h3 className="font-[family-name:var(--font-display)] text-[21px] font-bold transition-colors group-hover:text-brand">
                 {y.nom}
               </h3>
-              <p className="text-[13.5px] leading-relaxed text-ink-2">{y.qisqa_tavsif}</p>
-              <p className="mt-auto pt-2 font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3">
-                {y.yosh_chegarasi}
-              </p>
             </article>
           ))}
         </div>
       </section>
 
       {/* ---------------- Dars qanday o'tadi ---------------- */}
-      <section id="dars" className="flex scroll-mt-24 flex-col gap-7 pb-16">
+      <section id="dars" className="flex flex-col gap-7 pb-16">
         <div className="flex flex-col gap-3">
           <p className="lbl">Dars qanday o‘tadi</p>
           <h2 className="h-display text-[30px] sm:text-[34px]">
@@ -143,21 +127,27 @@ export default function Bosh() {
 
           <div className="flex flex-col gap-6 rounded-[14px] border border-line bg-surface p-7">
             <p className="lbl text-ink">Natija qanday kuzatiladi</p>
-            <ol className="flex flex-col gap-5">
+            <ol className="flex flex-col">
               {[
                 ['Daraja aniqlash', 'Birinchi kelganda bepul o‘tkaziladi — qaysi guruh mos kelishini shu aniqlaydi.'],
                 ['Davomat va baholash', 'Har dars belgilanadi. Qatnashuv va faollik shaxsiy sahifada ko‘rinib turadi.'],
                 ['Sertifikat', 'Kursni tugatganga markaz sertifikati beriladi.'],
-              ].map(([nom, t], i) => (
-                <li key={nom} className="flex gap-4">
+              ].map(([nom, t], i, hammasi) => (
+                <li key={nom} className="relative flex gap-4 pb-6 last:pb-0">
+                  {i < hammasi.length - 1 && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute top-8 bottom-0 left-[15px] w-0.5 bg-gradient-to-b from-brand to-line"
+                    />
+                  )}
                   <span
-                    className={`flex size-8 shrink-0 items-center justify-center rounded-full border font-[family-name:var(--font-display)] text-[13px] font-bold ${
-                      i === 0 ? 'border-brand text-brand' : 'border-line text-ink-2'
+                    className={`relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border-2 font-[family-name:var(--font-display)] text-[13px] font-bold ${
+                      i === 0 ? 'border-brand bg-brand text-white' : 'border-brand bg-surface text-brand'
                     }`}
                   >
                     {i + 1}
                   </span>
-                  <span className="flex flex-col gap-1">
+                  <span className="flex flex-col gap-1 pt-1">
                     <span className="text-[15px] font-bold">{nom}</span>
                     <span className="text-[13.5px] leading-relaxed text-ink-2">{t}</span>
                   </span>
@@ -169,7 +159,7 @@ export default function Bosh() {
       </section>
 
       {/* ---------------- Narxlar ---------------- */}
-      <section id="narxlar" className="flex scroll-mt-24 flex-col gap-7 pb-16">
+      <section id="narxlar" className="flex flex-col gap-7 pb-16">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="flex flex-col gap-3">
             <p className="lbl">Narxlar</p>
@@ -238,7 +228,7 @@ export default function Bosh() {
       </section>
 
       {/* ---------------- Aloqa ---------------- */}
-      <section id="aloqa" className="scroll-mt-24 pb-16">
+      <section id="aloqa" className="pb-16">
         <div className="grid overflow-hidden rounded-[14px] border border-line bg-surface lg:grid-cols-2">
           <div className="flex flex-col gap-6 p-8 lg:p-10">
             <div className="flex flex-col gap-3">
@@ -259,8 +249,8 @@ export default function Bosh() {
             </p>
 
             <dl className="flex flex-col gap-3 border-t border-line pt-5">
-              <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-[14px] text-ink-3">Telefon</dt>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="lbl inline-flex min-w-[92px] justify-center rounded-full border border-brand-line bg-brand-soft px-3 py-1.5 text-[10px] text-brand">Telefon</dt>
                 <dd>
                   <a
                     href={`tel:${MARKAZ.telefonRaw}`}
@@ -270,8 +260,8 @@ export default function Bosh() {
                   </a>
                 </dd>
               </div>
-              <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-[14px] text-ink-3">Telegram</dt>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="lbl inline-flex min-w-[92px] justify-center rounded-full border border-brand-line bg-brand-soft px-3 py-1.5 text-[10px] text-brand">Telegram</dt>
                 <dd>
                   <a
                     href={MARKAZ.telegram}
@@ -281,8 +271,8 @@ export default function Bosh() {
                   </a>
                 </dd>
               </div>
-              <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-[14px] text-ink-3">Instagram</dt>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="lbl inline-flex min-w-[92px] justify-center rounded-full border border-brand-line bg-brand-soft px-3 py-1.5 text-[10px] text-brand">Instagram</dt>
                 <dd>
                   <a
                     href={MARKAZ.instagram}
@@ -295,29 +285,14 @@ export default function Bosh() {
             </dl>
           </div>
 
-          <div className="relative flex min-h-[300px] items-center justify-center border-line bg-[#120e0d] max-lg:border-t lg:border-l">
-            <svg
-              viewBox="0 0 400 340"
-              preserveAspectRatio="xMidYMid slice"
-              className="absolute inset-0 size-full"
-              aria-hidden="true"
-            >
-              <path d="M0 120H400" stroke="#1F1614" strokeWidth="16" />
-              <path d="M0 250H400" stroke="#1F1614" strokeWidth="10" />
-              <path d="M150 0V340" stroke="#1F1614" strokeWidth="12" />
-              <path d="M300 0V340" stroke="#1F1614" strokeWidth="8" />
-              <rect x="30" y="150" width="70" height="60" fill="#171110" />
-              <rect x="190" y="30" width="60" height="55" fill="#171110" />
-              <rect x="330" y="160" width="55" height="70" fill="#171110" />
-            </svg>
-            <p className="relative flex flex-col items-center gap-2.5">
-              <span className="text-brand">
-                <IconPin size={34} />
-              </span>
-              <span className="rounded-md bg-bg px-2.5 py-1.5 font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3">
-                xarita shu yerda bo‘ladi
-              </span>
-            </p>
+          <div className="relative min-h-[340px] border-line max-lg:border-t lg:border-l">
+            <iframe
+              src={`https://yandex.uz/map-widget/v1/?ll=${MARKAZ.koordinata.uzunlik}%2C${MARKAZ.koordinata.kenglik}&z=17&pt=${MARKAZ.koordinata.uzunlik}%2C${MARKAZ.koordinata.kenglik}%2Cpm2rdl&lang=uz_UZ`}
+              title={`Xarita: ${MARKAZ.manzil}`}
+              loading="lazy"
+              allowFullScreen
+              className="absolute inset-0 size-full border-0"
+            />
           </div>
         </div>
       </section>
