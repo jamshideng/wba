@@ -68,16 +68,17 @@ export function ProfilMenyu({
           role="menu"
           className="absolute right-0 top-[calc(100%+6px)] z-40 flex w-56 flex-col overflow-hidden rounded-[12px] border border-line bg-surface shadow-lg"
         >
-          {ixcham && (
-            <span className="truncate border-b border-line-soft px-4 py-2.5 text-[12.5px] font-semibold">{ism}</span>
-          )}
+          <span className="flex flex-col gap-0.5 bg-brand px-4 py-3 text-white">
+            <span className="truncate text-[13.5px] font-semibold">{ism}</span>
+            <span className="truncate text-[10.5px] uppercase tracking-[0.08em] opacity-85">{rolMatn}</span>
+          </span>
           <Link
             role="menuitem"
             href="/crm/profil"
             className="flex min-h-11 items-center gap-3 px-4 text-[13.5px] text-ink-2 transition hover:bg-surface-2 hover:text-ink"
           >
             <IconSettings size={16} />
-            Profil
+            Profil sozlamalari
           </Link>
           <form action={chiqish} className="border-t border-line-soft">
             <button
