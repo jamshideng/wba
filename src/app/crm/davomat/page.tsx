@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { talabRol, getUstoz, staffmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
-import { Card, CardHeader, Badge, Empty } from '@/components/ui'
+import { Card, CardHeader, Badge, Empty, Button } from '@/components/ui'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { IconAttendance } from '@/components/icons'
@@ -47,6 +47,13 @@ export default async function Davomat({
       <Sarlavha
         nom="Bugungi darslar"
         izoh={`${sana(bugun)}${ustoz ? ` · ${ustoz.ism}` : ''}`}
+        amal={
+          staffmi(profil.rol) ? (
+            <Button href="/crm/davomat/umumiy" variant="ikkilamchi">
+              Umumiy davomat
+            </Button>
+          ) : undefined
+        }
       />
 
       <Xabar ok={xabar.ok} xato={xabar.xato === 'huquq' ? 'Bu bo‘lim sizga ochiq emas.' : xabar.xato} />
