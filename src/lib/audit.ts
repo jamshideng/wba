@@ -39,6 +39,7 @@ export const AMAL_NOMI: Record<string, string> = {
   LOGIN_OZGARDI: 'Login o‘zgardi',
   PAROL_OZGARDI: 'Parol o‘zgardi',
   HISOB_OCHILDI: 'Hisob ochildi',
+  HISOB_PAROL: 'Admin parol qo‘ydi',
 }
 
 export const JADVAL_NOMI: Record<string, string> = {
