@@ -1,11 +1,14 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { davomatBelgila, woblarBer } from './actions'
+import { davomatBelgila, probniyBelgila, woblarBer } from './actions'
 import type { AttendanceStatus } from '@/lib/types'
 
 export type JurnalQatori = {
+  /** O'quvchi ID si yoki probniy uchun lead uuid */
   student_id: string
+  /** Probniy — hali o'quvchi emas, pul hisoblanmaydi (0030) */
+  probniy?: boolean
   fish: string
   /** Guruhga qo'shilgan kun — undan oldingi kataklar yopiq */
   boshlandi: string
@@ -111,7 +114,7 @@ export function Jurnal({
     )
 
   /** Bir kun uchun bir nechta o'zgarish — optimistik, xato bo'lsa qaytadi. */
-  function saqla(sana: string, ozgarish: Record<string, AttendanceStatus | null>) {
+  function saqla(sana: string, ozgarish: Record<string, AttendanceStatus | null>, probniy = false) {
     const oldingi = Object.fromEntries(
       Object.keys(ozgarish).map((sid) => [sid, qatorlar.find((q) => q.student_id === sid)?.belgilar[sana] ?? null]),
     )
@@ -122,7 +125,10 @@ export function Jurnal({
     setXato(null)
 
     boshla(async () => {
-      const javob = await davomatBelgila(guruhId, sana, ozgarish)
+      const [[lead, holat]] = Object.entries(ozgarish)
+      const javob = probniy
+        ? await probniyBelgila(guruhId, sana, lead, holat)
+        : await davomatBelgila(guruhId, sana, ozgarish)
       setKutilayotgan((s) => {
         const n = new Set(s)
         kalitlar.forEach((k) => n.delete(k))
@@ -140,7 +146,7 @@ export function Jurnal({
   function katakBos(q: JurnalQatori, sana: string) {
     const hozir = ikkiga(q.belgilar[sana])
     const keyingi = NAVBAT[(NAVBAT.indexOf(hozir) + 1) % NAVBAT.length]
-    saqla(sana, { [q.student_id]: keyingi })
+    saqla(sana, { [q.student_id]: keyingi }, q.probniy)
   }
 
   const bugunUstunmi = kunlar.some((k) => k.sana === bugun)
@@ -148,7 +154,7 @@ export function Jurnal({
 
   function hammasiKeldi() {
     const ozgarish: Record<string, AttendanceStatus> = {}
-    for (const q of qatorlar) if (tahrirmi(q, bugun) && !q.belgilar[bugun]) ozgarish[q.student_id] = 'keldi'
+    for (const q of qatorlar) if (!q.probniy && tahrirmi(q, bugun) && !q.belgilar[bugun]) ozgarish[q.student_id] = 'keldi'
     if (Object.keys(ozgarish).length) saqla(bugun, ozgarish)
   }
 
@@ -256,6 +262,7 @@ export function Jurnal({
                     <span className="tnum w-5 shrink-0 text-right text-[11.5px] text-ink-4">{i + 1}.</span>
                     <span className="max-w-[110px] truncate font-semibold sm:max-w-none">{q.fish}</span>
                     {q.ketgan && <span className="shrink-0 text-[11px] text-ink-4">chiqqan</span>}
+                    {q.probniy && <span className="shrink-0 rounded-[5px] bg-accent-soft px-1.5 text-[10.5px] font-semibold text-accent">probniy</span>}
                   </span>
                 </th>
                 {kunlar.map((k) => {
@@ -285,12 +292,12 @@ export function Jurnal({
                   )
                 })}
                 <td className="tnum px-2 text-center font-[family-name:var(--font-mono)] text-[13px] text-accent">
-                  {q.bugun ? (q.bugun > 0 ? `+${q.bugun}` : q.bugun) : <span className="text-ink-4">0</span>}
+                  {q.probniy ? <span className="text-ink-4">—</span> : q.bugun ? (q.bugun > 0 ? `+${q.bugun}` : q.bugun) : <span className="text-ink-4">0</span>}
                 </td>
-                <td className="tnum px-2 text-center font-[family-name:var(--font-mono)] text-[13px] font-semibold">{q.umumiy}</td>
+                <td className="tnum px-2 text-center font-[family-name:var(--font-mono)] text-[13px] font-semibold">{q.probniy ? <span className="text-ink-4">—</span> : q.umumiy}</td>
                 {ustunKeng && (
                   <td className="px-2 py-1">
-                    {!q.ketgan && (
+                    {!q.ketgan && !q.probniy && (
                       <span className="flex items-center justify-center gap-1.5">
                         <input
                           type="number"

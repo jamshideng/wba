@@ -77,6 +77,9 @@ export type Student = {
   qoshilgan_sana: string
   holat: StudentStatus
   izoh: string | null
+  /** Arxivga o'tgan kun va sabab (0030) */
+  arxiv_sana: string | null
+  arxiv_sabab: string | null
   created_at: string
   updated_at: string
 }
@@ -113,6 +116,9 @@ export type Enrollment = {
   chegirma2_summa: number
   chegirma2_oy: number | null
   chegirma_sabab: string | null
+  /** VIP — to'lamaydi (0030) */
+  vip: boolean
+  vip_dan: string | null
   holat: EnrollmentStatus
   created_at: string
   updated_at: string
@@ -499,6 +505,7 @@ export type Database = {
       v_woblr_balance: View<WoblrBalance>
       v_monthly_income: View<MonthlyIncome>
       v_bugungi_darslar: View<BugungiDars>
+      v_arxiv_oquvchilar: View<{ student_id: string; fish: string; arxiv_sana: string | null; arxiv_sabab: string | null; qarz: number; guruhlar: string | null }>
     }
     Functions: {
       woblr_leaderboard: {
@@ -530,6 +537,23 @@ export type Database = {
         Args: { p_group: string; p_sana: string; p_belgilar: Record<string, AttendanceStatus | null> }
         Returns: number
       }
+      jurnal_probniylar: {
+        Args: { p_group: string; p_dan: string; p_gacha: string }
+        Returns: { lead_id: string; ism: string; dan: string; belgilar: Record<string, AttendanceStatus> }[]
+      }
+      probniy_belgila: {
+        Args: { p_group: string; p_sana: string; p_lead: string; p_holat: AttendanceStatus | null }
+        Returns: undefined
+      }
+      vip_ozgartir: { Args: { p_enrollment: string; p_vip: boolean; p_dan?: string | null }; Returns: number }
+      oquvchi_arxivla: { Args: { p_student: string; p_sana?: string | null; p_sabab?: string | null }; Returns: number }
+      oquvchi_arxivdan: { Args: { p_student: string }; Returns: undefined }
+      yozilish_oylari: {
+        Args: { p_student: string }
+        Returns: { enrollment_id: string; davr: string; narx: number; chegirma: number; tuzatish: number; kerak: number; tolangan: number; holat: string }[]
+      }
+      keyingi_oylar: { Args: { p_student: string }; Returns: { enrollment_id: string; summa: number | null }[] }
+      keyingi_oy_summasi: { Args: { p_enrollment: string; p_davr?: string | null }; Returns: number }
       tuzatish_qosh: {
         Args: { p_enrollment: string; p_davr: string; p_summa: number; p_sabab: string }
         Returns: number

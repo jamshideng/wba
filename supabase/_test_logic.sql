@@ -916,5 +916,79 @@ begin
 end $$;
 
 reset role;
+
+\echo '--- 0030: probniy davomati, VIP, arxiv, to''lov holati ---'
+reset request.jwt.claim.sub;
+insert into leads (id, ism, telefon, group_id, holat)
+values ('bbbbbbbb-0000-0000-0000-000000000030', 'Probniy Sinov 0030', '+998901112233', 'NX', 'yangi');
+
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana (NX)
+do $$
+begin
+  perform probniy_belgila('NX', bugun_toshkent(), 'bbbbbbbb-0000-0000-0000-000000000030', 'keldi');
+  if not exists (select 1 from jurnal_probniylar('NX', bugun_toshkent(), bugun_toshkent())
+                 where belgilar ? bugun_toshkent()::text) then
+    raise exception 'XATO: probniy belgisi jurnalda ko''rinmadi';
+  end if;
+  if exists (select 1 from jurnal_probniylar('N02', bugun_toshkent() - 30, bugun_toshkent())) then
+    raise exception 'XATO: ustoz boshqa guruh probniylarini ko''rdi';
+  end if;
+  raise notice 'OK: ustoz probniyni o''z guruhida belgilaydi';
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare
+  v_id text;
+  v_e  uuid;
+begin
+  v_id := probniy_doimiy('bbbbbbbb-0000-0000-0000-000000000030');
+  if not exists (select 1 from attendance a join lessons l on l.id = a.lesson_id
+                 where a.student_id = v_id and l.group_id = 'NX' and l.sana = bugun_toshkent()) then
+    raise exception 'XATO: probniy davomati o''quvchiga ko''chmadi';
+  end if;
+  raise notice 'OK: doimiy bo''lganda davomat tarixi saqlandi (%)', v_id;
+
+  -- VIP: to'lamaydi, VIP olinsa narx qaytadi
+  v_e := (select id from enrollments where student_id = 'S003' and group_id = 'NX');
+  perform yozilish_hisoblari(v_e);
+  perform vip_ozgartir(v_e, true, null);
+  if exists (select 1 from invoices where enrollment_id = v_e and summa <> 0) then
+    raise exception 'XATO: VIP oyda hisob 0 emas';
+  end if;
+  perform vip_ozgartir(v_e, false, null);
+  if exists (select 1 from invoices where enrollment_id = v_e and summa <> 650000) then
+    raise exception 'XATO: VIP olinganda narx qaytmadi';
+  end if;
+  raise notice 'OK: VIP — hisob 0, olinsa narx qaytadi';
+
+  -- Arxiv: yozilishlar yopiladi, qarz qoladi, qaytariladi
+  perform oquvchi_arxivla('S003', bugun_toshkent(), 'sinov');
+  if (select holat from students where id = 'S003') <> 'ketgan'
+     or exists (select 1 from enrollments where student_id = 'S003' and holat <> 'tugagan') then
+    raise exception 'XATO: arxivlash yozilishlarni yopmadi';
+  end if;
+  if not exists (select 1 from v_arxiv_oquvchilar where student_id = 'S003') then
+    raise exception 'XATO: arxiv ro''yxatida yo''q';
+  end if;
+  perform oquvchi_arxivdan('S003');
+  if (select holat from students where id = 'S003') <> 'faol' then
+    raise exception 'XATO: arxivdan qaytmadi';
+  end if;
+  raise notice 'OK: arxivga o''tkazish va qaytarish';
+end $$;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  perform vip_ozgartir((select id from enrollments where student_id = 'S003' limit 1), true, null);
+  raise exception 'XATO: ustoz VIP belgiladi!';
+exception when others then
+  if sqlerrm not like '%admin yoki direktor%' then raise; end if;
+  raise notice 'OK: VIP faqat admin/direktorga';
+end $$;
+
+reset role;
 \echo ''
 \echo '=== TEST TUGADI ==='

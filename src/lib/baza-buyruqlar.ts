@@ -167,7 +167,11 @@ async function tushumMatn(bugun: string): Promise<string> {
 }
 
 async function qarzdorlarMatn(bugun: string): Promise<string> {
-  const { data } = await createAdminClient().from('v_qarzdorlar').select('fish, qarz, guruhlar')
+  const db = createAdminClient()
+  const [{ data }, { data: arxiv }] = await Promise.all([
+    db.from('v_qarzdorlar').select('fish, qarz, guruhlar'),
+    db.from('v_arxiv_oquvchilar').select('fish, qarz').gt('qarz', 0),
+  ])
   const gur = new Map<string, { ism: string; q: number }[]>()
   let jami = 0
   for (const r of (data ?? []) as { fish: string; qarz: number; guruhlar: string | null }[]) {
@@ -187,6 +191,11 @@ async function qarzdorlarMatn(bugun: string): Promise<string> {
   }
   t.push('')
   t.push(`Jami faol qarz — <b>${pul(jami)}</b> so‘m (${soni} ta)`)
+  const ar = (arxiv ?? []) as { fish: string; qarz: number }[]
+  if (ar.length) {
+    const arJami = ar.reduce((a, o) => a + Number(o.qarz), 0)
+    t.push(`Arxivdagilar qarzi — <b>${pul(arJami)}</b> so‘m (${ar.length} ta): ${ar.map((o) => `${html(o.fish)} ${pul(o.qarz)}`).join(' · ')}`)
+  }
   return t.join('\n')
 }
 

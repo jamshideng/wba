@@ -182,3 +182,11 @@ export const IconGlobe = (p: P) => (
     <path d="M2 9h14M9 2c2 2.4 2 11.6 0 14M9 2c-2 2.4-2 11.6 0 14" />
   </Svg>
 )
+
+export const IconArxiv = (p: P) => (
+  <Svg {...p}>
+    <rect x="2" y="3" width="14" height="4" rx="1" />
+    <path d="M3.5 7v7a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V7" />
+    <path d="M7.5 10h3" />
+  </Svg>
+)
