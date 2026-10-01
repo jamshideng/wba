@@ -118,11 +118,11 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
     })
   }
 
-  // Har bir panelda: o'z ismi, logini va paroli. O'quvchiga — faqat Telegram (0032)
+  // Har bir panelda: o'z ismi, logini va paroli. O'quvchi va ota-onaga — faqat Telegram (0032)
   bolimlar.push({
     nom: 'Hisobim',
     bandlar: [
-      { href: '/crm/profil', nom: rol === 'oquvchi' ? 'Telegramga ulash' : 'Profil va parol', Icon: IconSettings, tayyor: true },
+      { href: '/crm/profil', nom: rol === 'oquvchi' || rol === 'ota_ona' ? 'Telegramga ulash' : 'Profil va parol', Icon: IconSettings, tayyor: true },
     ],
   })
 

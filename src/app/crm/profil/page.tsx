@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
 /**
  * Har bir panelda: o'z ismi, logini va paroli.
  *
- * O'quvchiga faqat "Telegramga ulash" (0032): ism, login, parolni
+ * O'quvchi va ota-onaga faqat "Telegramga ulash" (0032): ism, login, parolni
  * admin o'quvchi profilidan o'zgartiradi. Xodim, ustoz va ota-ona
  * o'zinikini o'zi almashtiradi.
  */
@@ -28,6 +28,7 @@ export default async function Profil({
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Profil" />
 
   const xabar = await searchParams
+  const faqatTelegram = men.rol === 'oquvchi' || men.rol === 'ota_ona'
   const ustoz = await getUstoz()
   const supabase = await createClient()
   const { data: oquvchi } =
@@ -50,7 +51,7 @@ export default async function Profil({
       />
       <Xabar ok={xabar.ok} xato={xabar.xato} />
 
-      {men.rol !== 'oquvchi' && (
+      {!faqatTelegram && (
         <>
           <Card className="flex flex-col">
             <CardHeader title="Ism familya" />
@@ -124,7 +125,7 @@ export default async function Profil({
       </Card>
 
       <p className="text-[12px] leading-relaxed text-ink-3">
-        {men.rol === 'oquvchi'
+        {faqatTelegram
           ? 'Ism, login yoki parolni o‘zgartirish kerak bo‘lsa — markaz adminiga murojaat qiling.'
           : 'Parolni unutsangiz — markaz adminiga murojaat qiling: u sizga yangi parol qo‘yib beradi.'}
       </p>
