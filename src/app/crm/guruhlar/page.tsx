@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, Badge, Empty, Button } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
-import { pul, jadval } from '@/lib/format'
+import { pul, jadval, guruhQisqa } from '@/lib/format'
 
 export const metadata = { title: 'Guruhlar' }
 export const dynamic = 'force-dynamic'
@@ -81,7 +81,7 @@ export default async function Guruhlar() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span className="flex min-w-0 flex-col gap-1">
-                      <span className="truncate text-[14px] font-semibold">{g.nom}</span>
+                      <span className="truncate text-[14px] font-semibold">{guruhQisqa(g.nom)}</span>
                       <span className="text-[12px] text-ink-3">
                         {g.teachers?.ism ?? '[ANIQLANMAGAN]'}
                       </span>

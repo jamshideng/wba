@@ -7,7 +7,7 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { woblrBer } from './actions'
-import { davrNomi, joriyDavr } from '@/lib/format'
+import { davrNomi, joriyDavr, guruhUstozsiz } from '@/lib/format'
 import { xatoMatni } from '@/lib/kiritish'
 import type { LeaderboardRow } from '@/lib/types'
 
@@ -55,7 +55,10 @@ export default async function Woblr({
     .sort((a, b) => a[1].localeCompare(b[1], 'uz'))
     .map(([id, nom]) => ({ k: `fan:${id}`, nom, guruh: null, fan: id }))
   // O'quvchiga guruh bo'yicha tanlov berilmaydi — reyting markaz va fan bo'yicha (Q6)
-  const guruhKorinish: Korinish[] = oquvchimi ? [] : gList.map((g) => ({ k: `guruh:${g.id}`, nom: g.nom, guruh: g.id, fan: null }))
+  // Ustozga o'z ismisiz nom ("Beginner · 15:00-16:30, Toq kun") — telefonda tanlov qutisiga sig'sin
+  const guruhKorinish: Korinish[] = oquvchimi
+    ? []
+    : gList.map((g) => ({ k: `guruh:${g.id}`, nom: staffmi(profil.rol) ? g.nom : guruhUstozsiz(g.nom), guruh: g.id, fan: null }))
   const hammasi = [markaz, ...fanKorinish, ...guruhKorinish]
 
   // Eski havolalar (?guruh=G05) ham ishlasin. Ustoz odatda o'z guruhida

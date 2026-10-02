@@ -48,8 +48,10 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
       bandlar: [
         { href: '/crm/davomat', nom: 'Davomat', Icon: IconAttendance, tayyor: true, mobil: true },
         { href: '/crm/guruhlar', nom: 'Guruhlarim', Icon: IconGroups, tayyor: true, mobil: true },
-        { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true },
-        { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true },
+        // Faqat ustoz bo'lsa — telefonning pastki panelida ham (xodim-ustozda
+        // u yerni "Bugun" va "O'quvchilar" egallaydi)
+        { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true, mobil: !staffmi(rol) },
+        { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true, mobil: !staffmi(rol) },
       ],
     })
   }
@@ -70,7 +72,8 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
               { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true },
             ]),
         { href: '/crm/qarzdorlar', nom: 'Qarzdorlar', Icon: IconDebt, tayyor: true },
-        { href: '/crm/tolovlar', nom: 'To‘lovlar', Icon: IconPayments, tayyor: true },
+        // Qabulxonada eng ko'p ishlatiladigan bo'lim — telefonning pastki panelida ham
+        { href: '/crm/tolovlar', nom: 'To‘lovlar', Icon: IconPayments, tayyor: true, mobil: true },
         { href: '/crm/probniylar', nom: 'Probniylar', Icon: IconLeads, tayyor: true },
         { href: '/crm/hisobotlar', nom: 'Hisobotlar', Icon: IconReports, tayyor: true },
         { href: '/crm/xarajatlar', nom: 'Xarajatlar', Icon: IconXarajat, tayyor: true },

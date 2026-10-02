@@ -6,7 +6,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { IconArrowLeft } from '@/components/icons'
-import { vaqt, bugunToshkent, kunlarNomi, haftaKuni, davrQisqa, HAFTA_KUNLARI } from '@/lib/format'
+import { vaqt, bugunToshkent, kunlarNomi, haftaKuni, davrQisqa, HAFTA_KUNLARI, guruhQisqa } from '@/lib/format'
 import { Jurnal, type JurnalQatori, type DarsKuni, type Huquq } from './jurnal'
 import type { AttendanceStatus } from '@/lib/types'
 
@@ -197,7 +197,7 @@ export default async function DavomatJurnali({
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <Sarlavha nom={guruhi.nom} izoh={`${guruhi.teachers?.ism ?? '[ANIQLANMAGAN]'} · ${guruhi.id}`} />
+        <Sarlavha nom={guruhQisqa(guruhi.nom)} izoh={`${guruhi.teachers?.ism ?? '[ANIQLANMAGAN]'} · ${guruhi.id}`} />
         <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-[12.5px] sm:grid-cols-4">
           <div>
             <dt className="lbl">Yo‘nalish</dt>

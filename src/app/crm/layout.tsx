@@ -17,6 +17,7 @@ import { ProfilMenyu } from '@/components/profil-menyu'
 import { MenyuTugma } from '@/components/menyu-tugma'
 import { YuklanishChizigi, HavolaHolati } from '@/components/yuklanish'
 import { BildirishnomaJoyi } from '@/components/bildirishnomalar'
+import { PastkiHavola } from '@/components/pastki-havola'
 import type { MeningBildirishnomam } from '@/lib/bildirishnoma'
 
 async function chiqish() {
@@ -155,7 +156,8 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
         <ProfilMenyu
           ixcham
           ism={profil.ism}
-          rolMatn={kim.length ? kim[0] : ROL_NOMI[profil.rol]}
+          /* Telefonda qisqa: "ustoz — Komila Bozorova" emas, "ustoz" (ism menyuning o'zida) */
+          rolMatn={(kim.length ? kim[0] : ROL_NOMI[profil.rol]).split(' — ')[0]}
           boshHarf={bosh(profil.ism)}
           chiqish={chiqish}
         />
@@ -166,22 +168,15 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
         className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-surface pb-[env(safe-area-inset-bottom,0px)] lg:hidden"
       >
         {mobilBandlar.map((band) => (
-          <Link
-            key={band.href}
-            href={band.href}
-            className="flex min-h-14 flex-1 flex-col items-center justify-center gap-1 px-1 text-ink-3 transition hover:text-ink"
-          >
+          <PastkiHavola key={band.href} href={band.href}>
             <band.Icon size={18} />
             <span className="truncate text-[10.5px]">{band.nom}</span>
-          </Link>
+          </PastkiHavola>
         ))}
-        <Link
-          href="/crm/menyu"
-          className="flex min-h-14 flex-1 flex-col items-center justify-center gap-1 px-1 text-ink-3 transition hover:text-ink"
-        >
+        <PastkiHavola href="/crm/menyu">
           <IconChevronDown size={18} />
           <span className="truncate text-[10.5px]">Menyu</span>
-        </Link>
+        </PastkiHavola>
       </nav>
 
       <div className="flex min-w-0 flex-1 flex-col">

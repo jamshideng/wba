@@ -6,7 +6,7 @@ import { Card, CardHeader, Badge, Empty, Button } from '@/components/ui'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { IconAttendance } from '@/components/icons'
-import { sana, vaqt, jadval, bugunToshkent, joriyDavr } from '@/lib/format'
+import { sana, vaqt, jadval, bugunToshkent, joriyDavr, guruhQisqa, guruhUstozsiz } from '@/lib/format'
 import type { BugungiDars } from '@/lib/types'
 
 export const metadata = { title: 'Davomat' }
@@ -41,6 +41,10 @@ export default async function Davomat({
     .eq('holat', 'faol')
     .order('nom')
   const gList = (guruhlar ?? []) as { id: string; nom: string; boshlanish: string; tugash: string; kunlar: number[] }[]
+
+  /* Ustoz faqat o'z guruhlarini ko'radi — nomdagi o'z ismi va vaqt ortiqcha,
+     telefonda "Beginner · Komila Bo…" bo'lib kesilardi. Xodimga to'liq nom. */
+  const ozimniki = !staffmi(profil.rol)
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -80,7 +84,7 @@ export default async function Davomat({
                 </span>
 
                 <span className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="truncate text-[14px] font-semibold">{d.nom}</span>
+                  <span className="truncate text-[14px] font-semibold">{ozimniki ? guruhQisqa(d.nom) : d.nom}</span>
                   <span className="font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3">
                     {vaqt(d.boshlanish)}–{vaqt(d.tugash)} · {d.oquvchilar} o‘quvchi
                   </span>
@@ -105,7 +109,7 @@ export default async function Davomat({
                   href={`/crm/davomat/${g.id}`}
                   className="flex min-h-11 items-center justify-between gap-3 rounded-[9px] px-3 py-2 transition hover:bg-surface-2"
                 >
-                  <span className="min-w-0 truncate text-[13.5px] font-semibold">{g.nom}</span>
+                  <span className="min-w-0 truncate text-[13.5px] font-semibold">{ozimniki ? guruhQisqa(g.nom) : g.nom}</span>
                   <span className="shrink-0 font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3">
                     {jadval(g.boshlanish, g.tugash, g.kunlar)}
                   </span>
@@ -123,7 +127,7 @@ export default async function Davomat({
             <Maydon nom="Guruh">
               <select name="guruh" required className={kirishKlass}>
                 {gList.map((g) => (
-                  <option key={g.id} value={g.id}>{g.nom}</option>
+                  <option key={g.id} value={g.id}>{ozimniki ? guruhUstozsiz(g.nom) : g.nom}</option>
                 ))}
               </select>
             </Maydon>

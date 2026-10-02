@@ -6,7 +6,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Xabar } from '@/components/forma'
-import { pul, sana, jadval, davrNomi, joriyDavr, bugunToshkent, vaqt } from '@/lib/format'
+import { pul, sana, jadval, davrNomi, joriyDavr, bugunToshkent, vaqt, guruhQisqa } from '@/lib/format'
 import type { PaymentMethod, AttendanceStatus, KeyingiDars } from '@/lib/types'
 
 export const metadata = { title: 'Mening sahifam' }
@@ -119,7 +119,8 @@ export default async function MeningSahifam({
     } | null
   }
   const yList = (yozilishlar ?? []) as unknown as Yozilish[]
-  const guruhNomi = new Map(yList.map((y) => [y.group_id, y.groups?.nom ?? y.group_id]))
+  // Qisqa nom ("Beginner") — ustoz va vaqt yonida alohida ko'rsatiladi
+  const guruhNomi = new Map(yList.map((y) => [y.group_id, y.groups?.nom ? guruhQisqa(y.groups.nom) : y.group_id]))
 
   /* Keyingi darslar — guruh JADVALIDAN (kun turi + vaqt), bazada
      hisoblanadi (0020: keyingi_darslar). Avval lessons jadvalidan
@@ -217,7 +218,7 @@ export default async function MeningSahifam({
                 return (
                   <div key={y.id} className="flex flex-wrap items-start justify-between gap-3 rounded-[10px] border border-line px-4 py-3">
                     <span className="flex min-w-0 flex-col gap-1">
-                      <span className="text-[13.5px] font-semibold">{y.groups?.nom ?? '—'}</span>
+                      <span className="text-[13.5px] font-semibold">{guruhQisqa(y.groups?.nom)}</span>
                       <span className="text-[12px] text-ink-3">
                         {y.groups?.teachers?.ism ?? '[ANIQLANMAGAN]'} ·{' '}
                         {jadval(y.groups?.boshlanish ?? null, y.groups?.tugash ?? null, y.groups?.kunlar ?? null)}
@@ -253,7 +254,7 @@ export default async function MeningSahifam({
               darsList.map((d) => (
                 <div key={`${d.group_id}-${d.sana}`} className="flex items-center justify-between gap-3 border-b border-line-soft py-2.5 last:border-0">
                   <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="truncate text-[12.5px]">{guruhNomi.get(d.group_id) ?? d.nom}</span>
+                    <span className="truncate text-[12.5px]">{guruhNomi.get(d.group_id) ?? guruhQisqa(d.nom)}</span>
                     <span className="text-[11.5px] text-ink-3">{vaqt(d.boshlanish)}–{vaqt(d.tugash)}</span>
                   </span>
                   <span className={`shrink-0 font-[family-name:var(--font-mono)] text-[12px] ${d.sana === bugun ? 'text-brand' : 'text-ink-3'}`}>
