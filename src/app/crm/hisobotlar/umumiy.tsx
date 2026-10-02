@@ -161,7 +161,7 @@ export function UmumiyBolim({ h, g, oylar }: { h: Hisobot; g: HisobotGrafik; oyl
           </div>
         </Card>
         <Card className="flex flex-col">
-          <CardHeader title="Ustozlar bo‘yicha tushum" meta={<Link href="/crm/hisobotlar?bolim=ustozlar" className="text-accent hover:text-brand">Batafsil →</Link>} />
+          <CardHeader title="Ustozlar bo‘yicha tushum" meta={<Link href="/crm/hisobotlar?bolim=ustozlar" className="inline-flex min-h-11 items-center text-accent hover:text-brand">Batafsil →</Link>} />
           <div className="px-3 pb-4">
             {h.ustoz.length === 0 ? (
               <div className="px-2"><Empty>Bu oraliqda to‘lov yo‘q.</Empty></div>

@@ -131,7 +131,7 @@ export default async function Kirish({
                   required
                   autoFocus
                   placeholder="masalan: aziza yoki 10001"
-                  className="min-h-12 rounded-[10px] border border-line bg-surface px-3.5 text-[14px] text-ink outline-none transition placeholder:text-ink-4 focus:border-brand-line"
+                  className="min-h-12 rounded-[10px] border border-line bg-surface px-3.5 text-[16px] sm:text-[14px] text-ink outline-none transition placeholder:text-ink-4 focus:border-brand-line"
                 />
               </label>
 

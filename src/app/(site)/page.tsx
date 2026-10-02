@@ -256,7 +256,7 @@ export default function Bosh() {
                 <dd>
                   <a
                     href={`tel:${MARKAZ.telefonRaw}`}
-                    className="font-[family-name:var(--font-mono)] text-[15px] hover:text-accent"
+                    className="inline-flex min-h-11 items-center font-[family-name:var(--font-mono)] text-[15px] hover:text-accent"
                   >
                     {MARKAZ.telefon}
                   </a>
@@ -267,7 +267,7 @@ export default function Bosh() {
                 <dd>
                   <a
                     href={MARKAZ.telegram}
-                    className="font-[family-name:var(--font-mono)] text-[15px] text-accent hover:text-brand"
+                    className="inline-flex min-h-11 items-center font-[family-name:var(--font-mono)] text-[15px] text-accent hover:text-brand"
                   >
                     {MARKAZ.telegramNom}
                   </a>
@@ -278,7 +278,7 @@ export default function Bosh() {
                 <dd>
                   <a
                     href={MARKAZ.instagram}
-                    className="font-[family-name:var(--font-mono)] text-[15px] text-accent hover:text-brand"
+                    className="inline-flex min-h-11 items-center font-[family-name:var(--font-mono)] text-[15px] text-accent hover:text-brand"
                   >
                     {MARKAZ.instagramNom}
                   </a>

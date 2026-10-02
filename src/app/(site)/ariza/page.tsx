@@ -198,7 +198,7 @@ export default async function ArizaSahifasi({
             maxLength={80}
             autoComplete="name"
             placeholder="Ismingiz"
-            className="min-h-12 rounded-[9px] border border-line bg-bg px-3.5 text-[14.5px] placeholder:text-ink-4"
+            className="min-h-12 rounded-[9px] border border-line bg-bg px-3.5 text-[16px] sm:text-[14.5px] placeholder:text-ink-4"
           />
         </label>
 
@@ -210,7 +210,7 @@ export default async function ArizaSahifasi({
             required
             autoComplete="tel"
             placeholder="99 009 90 05"
-            className="min-h-12 rounded-[9px] border border-line bg-bg px-3.5 font-[family-name:var(--font-mono)] text-[14.5px] placeholder:text-ink-4"
+            className="min-h-12 rounded-[9px] border border-line bg-bg px-3.5 font-[family-name:var(--font-mono)] text-[16px] sm:text-[14.5px] placeholder:text-ink-4"
           />
         </label>
 
@@ -219,7 +219,7 @@ export default async function ArizaSahifasi({
           <select
             name="yonalish"
             defaultValue=""
-            className="min-h-12 rounded-[9px] border border-line bg-bg px-3 text-[14.5px]"
+            className="min-h-12 rounded-[9px] border border-line bg-bg px-3 text-[16px] sm:text-[14.5px]"
           >
             <option value="">Hali tanlamaganman</option>
             {YONALISHLAR.map((y) => (
@@ -237,7 +237,7 @@ export default async function ArizaSahifasi({
             rows={3}
             maxLength={500}
             placeholder="Masalan: kechqurungi guruh qulay"
-            className="resize-y rounded-[9px] border border-line bg-bg p-3.5 text-[14.5px] placeholder:text-ink-4"
+            className="resize-y rounded-[9px] border border-line bg-bg p-3.5 text-[16px] sm:text-[14.5px] placeholder:text-ink-4"
           />
         </label>
 

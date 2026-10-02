@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Logo } from '@/components/ui'
 import { MARKAZ } from '@/lib/markaz'
 import { SarlavhaBalandligi } from '@/components/sarlavha-balandligi'
+import { SaytMenyu } from '@/components/sayt-menyu'
 
 const MENYU = [
   { href: '/#kurslar', nom: 'Kurslar' },
@@ -15,17 +16,17 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
     <>
       <header id="sarlavha" className="sayt-sarlavha sticky top-0 z-20 border-b border-line-soft bg-bg/90 backdrop-blur">
         <div
-          className="mx-auto flex max-w-[1260px] flex-wrap items-center justify-between gap-4 px-5 py-3.5 lg:px-8"
-          style={{ paddingTop: 'max(0.875rem, env(safe-area-inset-top, 0px))' }}
+          className="mx-auto flex max-w-[1260px] items-center justify-between gap-3 px-4 py-2.5 sm:gap-4 sm:px-5 sm:py-3.5 lg:px-8"
+          style={{ paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))' }}
         >
           <Link href="/" aria-label={MARKAZ.nom}>
             <Logo />
           </Link>
 
-          <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <nav className="flex items-center gap-2 sm:gap-x-6">
             {/* Oddiy <a>: bosh sahifada brauzer o'zi bo'limga silliq tushadi (scroll-padding-top) */}
             {MENYU.map((m) => (
-              <a key={m.href} href={m.href} className="text-[14.5px] text-ink-2 hover:text-ink">
+              <a key={m.href} href={m.href} className="hidden min-h-11 items-center text-[14.5px] text-ink-2 hover:text-ink sm:inline-flex">
                 {m.nom}
               </a>
             ))}
@@ -33,16 +34,17 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
               {/* O'quvchi va ustozlar tizimga kirishni darhol topsin */}
               <Link
                 href="/kirish"
-                className="inline-flex min-h-11 items-center rounded-[9px] border-2 border-ink px-6 text-[14px] font-bold text-ink transition hover:bg-ink hover:text-bg"
+                className="inline-flex min-h-11 items-center rounded-[9px] border-2 border-ink px-4 text-[14px] sm:px-6 font-bold text-ink transition hover:bg-ink hover:text-bg"
               >
                 Kirish
               </Link>
               <Link
                 href="/ariza"
-                className="sayt-tugma inline-flex min-h-11 items-center rounded-[9px] bg-brand text-white px-5 text-[14px] font-bold transition hover:brightness-110"
+                className="sayt-tugma hidden min-h-11 items-center rounded-[9px] bg-brand text-white px-5 text-[14px] font-bold transition hover:brightness-110 sm:inline-flex"
               >
                 Bepul sinov darsi
               </Link>
+              <SaytMenyu menyu={MENYU} />
             </span>
           </nav>
         </div>
@@ -56,17 +58,17 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
           <span className="lbl">
             {MARKAZ.nom} · Toshkent · {MARKAZ.tashkilYili}
           </span>
-          <nav className="flex flex-wrap gap-5">
-            <Link href="/#kurslar" className="text-[13px] text-ink-3 hover:text-ink">
+          <nav className="flex flex-wrap gap-x-5">
+            <Link href="/#kurslar" className="inline-flex min-h-11 items-center text-[13px] text-ink-3 hover:text-ink">
               Kurslar
             </Link>
-            <Link href="/#narxlar" className="text-[13px] text-ink-3 hover:text-ink">
+            <Link href="/#narxlar" className="inline-flex min-h-11 items-center text-[13px] text-ink-3 hover:text-ink">
               Narxlar
             </Link>
-            <Link href="/#aloqa" className="text-[13px] text-ink-3 hover:text-ink">
+            <Link href="/#aloqa" className="inline-flex min-h-11 items-center text-[13px] text-ink-3 hover:text-ink">
               Aloqa
             </Link>
-            <Link href="/kirish" className="text-[13px] text-ink-3 hover:text-ink">
+            <Link href="/kirish" className="inline-flex min-h-11 items-center text-[13px] text-ink-3 hover:text-ink">
               Tizimga kirish
             </Link>
           </nav>
