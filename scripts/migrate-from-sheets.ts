@@ -1214,6 +1214,15 @@ async function yoz(d: Tayyor, quruq: boolean) {
   /* ── 3. Yozish ── */
   xato('teachers', (await db.from('teachers').upsert(d.ustozlar)).error)
 
+  // Ustoz hisobi: kabinetdagi ism Sheets'dagidek; ishdan ketgan — kira olmaydi.
+  // Admin/direktor/qabulxona hisobiga tegilmaydi (ular ham ustoz bo'lishi mumkin).
+  const { data: ustozProfil } = await db.from('teachers').select('ism, holat, profile_id').not('profile_id', 'is', null)
+  for (const u of ustozProfil ?? []) {
+    const ozgar: { ism: string; holat?: string } = { ism: u.ism as string }
+    if (u.holat === 'bloklangan') ozgar.holat = 'bloklangan'
+    xato('profiles (ustoz)', (await db.from('profiles').update(ozgar).eq('id', u.profile_id as string).eq('rol', 'ustoz')).error)
+  }
+
   if (sinovGuruh.length) {
     xato('sinov darslari', (await db.from('lessons').delete().in('group_id', sinovGuruh.map((g) => g.id))).error)
   }
