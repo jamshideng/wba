@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
-import { pul, sana, jadval, davrNomi, joriyDavr, bugunToshkent } from '@/lib/format'
+import { pul, sana, jadval, davrNomi, joriyDavr, bugunToshkent, guruhQisqa } from '@/lib/format'
 import type { PaymentMethod } from '@/lib/types'
 
 export const metadata = { title: 'Farzandim' }
@@ -124,7 +124,7 @@ export default async function Farzand() {
             ) : (
               yList.map((y) => (
                 <div key={y.id} className="flex flex-col gap-1 rounded-[10px] border border-line px-4 py-3">
-                  <span className="text-[13.5px] font-semibold">{y.groups?.nom ?? '—'}</span>
+                  <span className="text-[13.5px] font-semibold">{guruhQisqa(y.groups?.nom)}</span>
                   <span className="text-[12px] text-ink-3">
                     {y.groups?.teachers?.ism ?? '[ANIQLANMAGAN]'} ·{' '}
                     {jadval(y.groups?.boshlanish ?? null, y.groups?.tugash ?? null, y.groups?.kunlar ?? null)}

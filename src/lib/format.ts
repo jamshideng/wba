@@ -107,6 +107,26 @@ export function jadval(
   return `${vaqt(boshlanish)}–${vaqt(tugash)}, ${kun}`
 }
 
+/**
+ * Guruh nomi Sheets formulasidan keladi: "Yo'nalish · O'qituvchi · Dars vaqti"
+ * ("Beginner · Komila Bozorova · 15:00-16:30, Toq kun"). Telefonda u kesilib
+ * "Beginner · Komila Bo…" bo'lib qoladi. Ustoz va vaqt yonida alohida
+ * ko'rsatilgan joyda faqat yo'nalish yetarli: "Beginner". Boshqa shakldagi
+ * nom o'zgarmaydi.
+ */
+export function guruhQisqa(nom: string | null | undefined): string {
+  if (!nom) return '—'
+  const q = nom.split('·').map((s) => s.trim()).filter(Boolean)
+  return q.length >= 3 && /^\d{1,2}:\d{2}/.test(q[q.length - 1]) ? q[0] : nom
+}
+
+/** Ustozsiz nom: "Beginner · 15:00-16:30, Toq kun" — ustoz o'z guruhlarini tanlaydigan ro'yxatlar uchun. */
+export function guruhUstozsiz(nom: string | null | undefined): string {
+  if (!nom) return '—'
+  const q = nom.split('·').map((s) => s.trim()).filter(Boolean)
+  return q.length >= 3 && /^\d{1,2}:\d{2}/.test(q[q.length - 1]) ? `${q[0]} · ${q[q.length - 1]}` : nom
+}
+
 /** Hafta kunlari — ISO tartibida (1 = dushanba … 7 = yakshanba), bazadagi groups.kunlar bilan bir xil. */
 export const HAFTA_KUNLARI = [
   { raqam: 1, qisqa: 'Du', nom: 'Dushanba' },

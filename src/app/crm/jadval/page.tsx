@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
-import { vaqt, HAFTA_KUNLARI, haftaKuni, bugunToshkent } from '@/lib/format'
+import { vaqt, HAFTA_KUNLARI, haftaKuni, bugunToshkent, guruhQisqa } from '@/lib/format'
 import { haftalikJadval, type JadvalGuruh } from '@/lib/jadval'
 
 export const metadata = { title: 'Dars jadvali' }
@@ -85,10 +85,10 @@ export default async function DarsJadvali() {
                           <span className="font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3">
                             {vaqt(d.boshlanish)}–{vaqt(d.tugash)} · {d.oquvchilar} o‘quvchi
                           </span>
-                          <span className="truncate text-[13px] font-semibold">{d.nom}</span>
+                          <span className="truncate text-[13px] font-semibold">{guruhQisqa(d.nom)}</span>
                           {xodim && <span className="truncate text-[12px] text-ink-2">{d.ustoz ?? '[ustoz yo‘q]'}</span>}
                           {d.toqnash.length > 0 && (
-                            <span className="text-[11.5px] text-brand">Ustoz bir vaqtda: {d.toqnash.join(', ')}</span>
+                            <span className="text-[11.5px] text-brand">Ustoz bir vaqtda: {d.toqnash.map(guruhQisqa).join(', ')}</span>
                           )}
                         </Link>
                       </li>

@@ -7,7 +7,7 @@ import { Card, CardHeader, Stat, Badge, Empty, Button } from '@/components/ui'
 import { Xabar } from '@/components/forma'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { IconArrowLeft } from '@/components/icons'
-import { pul, jadval, sana, davrNomi, joriyDavr, bosh, bugunToshkent } from '@/lib/format'
+import { pul, jadval, sana, davrNomi, joriyDavr, bosh, bugunToshkent, guruhQisqa } from '@/lib/format'
 
 export const metadata = { title: 'Guruh' }
 
@@ -124,7 +124,7 @@ export default async function GuruhProfil({
       </Link>
 
       <Sarlavha
-        nom={g.nom}
+        nom={guruhQisqa(g.nom)}
         izoh={
           <>
             {g.teachers?.ism ?? '[ANIQLANMAGAN]'} · {jadval(g.boshlanish, g.tugash, g.kunlar)}
