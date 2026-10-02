@@ -21,8 +21,8 @@
   /* Matn */
   --color-ink: #f8f4f2;
   --color-ink-2: #b9aca7;
-  --color-ink-3: #7d716d;
-  --color-ink-4: #6e625e;
+  --color-ink-3: #8a7e79;
+  --color-ink-4: #7d716d;
 
   /* Brend — qizil, lekin ko'zga yumshoq (sof #ff0000 emas) */
   --color-brand: #ff4d4a;
@@ -63,17 +63,17 @@
       --color-line-soft: #f0e9e6;
       --color-ink: #1a1210;
       --color-ink-2: #5c514d;
-      --color-ink-3: #8a7d78;
-      --color-ink-4: #a89b96;
-      --color-brand: #dc2626;
+      --color-ink-3: #786c67;
+      --color-ink-4: #857975;
+      --color-brand: #d12121;
       --color-brand-soft: #ffe9e6;
       --color-brand-line: #f3c6c0;
-      --color-accent: #b9791a;
+      --color-accent: #9e6412;
       --color-accent-soft: #fdf3d9;
       --color-accent-line: #ecd9a0;
       --color-ok: #2f9e68;
       --color-ok-soft: #dff2e6;
-      --color-warn: #b9791a;
+      --color-warn: #9e6412;
       --color-crit: #d92c1c;
     }
   }
@@ -87,17 +87,17 @@
     --color-line-soft: #f0e9e6;
     --color-ink: #1a1210;
     --color-ink-2: #5c514d;
-    --color-ink-3: #8a7d78;
-    --color-ink-4: #a89b96;
-    --color-brand: #dc2626;
+    --color-ink-3: #786c67;
+    --color-ink-4: #857975;
+    --color-brand: #d12121;
     --color-brand-soft: #ffe9e6;
     --color-brand-line: #f3c6c0;
-    --color-accent: #b9791a;
+    --color-accent: #9e6412;
     --color-accent-soft: #fdf3d9;
     --color-accent-line: #ecd9a0;
     --color-ok: #2f9e68;
     --color-ok-soft: #dff2e6;
-    --color-warn: #b9791a;
+    --color-warn: #9e6412;
     --color-crit: #d92c1c;
   }
 
@@ -112,8 +112,8 @@
     --color-line-soft: #1a1312;
     --color-ink: #f8f4f2;
     --color-ink-2: #b9aca7;
-    --color-ink-3: #7d716d;
-    --color-ink-4: #6e625e;
+    --color-ink-3: #8a7e79;
+    --color-ink-4: #7d716d;
     --color-brand: #ff4d4a;
     --color-brand-soft: #351613;
     --color-brand-line: #5a2b28;

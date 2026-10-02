@@ -21,6 +21,19 @@ export default function Bosh() {
           <h1 className="h-display sayt-kirish text-[40px] leading-[1.02] text-pretty sm:text-[56px] lg:text-[68px]" style={{ '--k': '90ms' } as React.CSSProperties}>
             Biz shunchaki bilim bermaymiz, balki <span className="text-brand">hayotlarni o‘zgartiramiz</span>
           </h1>
+
+          {/* Shiordan keyin DARHOL aniq fakt: guruh kichik, dars qancha,
+              birinchisi bepul. Sotuv qoidasi — avval ehtiyoj, keyin narx. */}
+          <p
+            className="sayt-kirish max-w-[620px] text-[17px] leading-relaxed text-ink-2 text-pretty sm:text-[19px]"
+            style={{ '--k': '140ms' } as React.CSSProperties}
+          >
+            {YONALISHLAR.length} ta yo‘nalish, haftada {MARKAZ.darsHaftada} marta,{' '}
+            {MARKAZ.darsDaqiqa} daqiqadan. Bir guruhda{' '}
+            <b className="font-semibold text-ink">{MARKAZ.guruhMaksimal} kishidan ortiq bo‘lmaydi</b> —
+            ustoz har bolaga yetadi. Birinchi dars va daraja aniqlash bepul.
+          </p>
+
           <div className="sayt-kirish flex flex-wrap items-center gap-3.5 pt-1" style={{ '--k': '180ms' } as React.CSSProperties}>
             <Link
               href="/ariza"
@@ -35,6 +48,12 @@ export default function Bosh() {
               Kurslarni ko‘rish
             </Link>
           </div>
+
+          {/* Yozilgandan keyin nima bo'lishini aytib qo'yish — odam
+              "endi nima bo'ladi?" deb o'ylab qolmasin. */}
+          <p className="sayt-kirish text-[13.5px] text-ink-3" style={{ '--k': '220ms' } as React.CSSProperties}>
+            Yozilganingizdan keyin bir ish kuni ichida qo‘ng‘iroq qilamiz va qulay vaqtni kelishamiz.
+          </p>
         </div>
 
         <div className="sayt-kirish w-full" style={{ '--k': '120ms' } as React.CSSProperties}>
@@ -85,7 +104,7 @@ export default function Bosh() {
                 aria-hidden="true"
                 className="absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 bg-brand transition-transform duration-300 group-hover:scale-x-100"
               />
-              <p className="lbl text-[10px] text-brand">{y.yorliq}</p>
+              <p className="lbl text-[11.5px] text-brand">{y.yorliq}</p>
               <h3 className="font-[family-name:var(--font-display)] text-[21px] font-bold transition-colors group-hover:text-brand">
                 {y.nom}
               </h3>
@@ -227,6 +246,20 @@ export default function Bosh() {
             Miqdorini qo‘ng‘iroq paytida aytamiz.
           </span>
         </p>
+
+        {/* Narxni ko'rgan odam shu yerda qaror qiladi — tugma shu yerda
+            turishi kerak. Oldin butun bo'limda birorta amal yo'q edi. */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+          <Link
+            href="/ariza"
+            className="sayt-tugma inline-flex min-h-13 items-center rounded-[10px] bg-brand text-white px-7 text-[15px] font-bold transition hover:brightness-110"
+          >
+            Bepul sinov darsiga yozilish
+          </Link>
+          <span className="text-[13.5px] text-ink-3">
+            Hozir to‘lov so‘ralmaydi — avval dars, keyin qaror.
+          </span>
+        </div>
       </section>
 
       {/* ---------------- Aloqa ---------------- */}
@@ -252,7 +285,7 @@ export default function Bosh() {
 
             <dl className="flex flex-col gap-3 border-t border-line pt-5">
               <div className="flex items-center justify-between gap-3">
-                <dt className="lbl inline-flex min-w-[92px] justify-center rounded-full border border-brand-line bg-brand-soft px-3 py-1.5 text-[10px] text-brand">Telefon</dt>
+                <dt className="lbl inline-flex min-w-[92px] justify-center rounded-full border border-brand-line bg-brand-soft px-3 py-1.5 text-[11px] text-brand">Telefon</dt>
                 <dd>
                   <a
                     href={`tel:${MARKAZ.telefonRaw}`}
@@ -263,7 +296,7 @@ export default function Bosh() {
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="lbl inline-flex min-w-[92px] justify-center rounded-full border border-brand-line bg-brand-soft px-3 py-1.5 text-[10px] text-brand">Telegram</dt>
+                <dt className="lbl inline-flex min-w-[92px] justify-center rounded-full border border-brand-line bg-brand-soft px-3 py-1.5 text-[11px] text-brand">Telegram</dt>
                 <dd>
                   <a
                     href={MARKAZ.telegram}
@@ -274,7 +307,7 @@ export default function Bosh() {
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="lbl inline-flex min-w-[92px] justify-center rounded-full border border-brand-line bg-brand-soft px-3 py-1.5 text-[10px] text-brand">Instagram</dt>
+                <dt className="lbl inline-flex min-w-[92px] justify-center rounded-full border border-brand-line bg-brand-soft px-3 py-1.5 text-[11px] text-brand">Instagram</dt>
                 <dd>
                   <a
                     href={MARKAZ.instagram}

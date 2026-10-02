@@ -14,12 +14,24 @@ const MENYU = [
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
+      {/* Klaviatura bilan yuradigan odam har sahifada shapkadagi 7 ta
+          havolani bosib o'tmasin. Odatda ko'rinmaydi — faqat fokus
+          tushganda chiqadi. */}
+      <a
+        href="#asosiy"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-[9px] focus:bg-brand focus:px-5 focus:text-[14px] focus:font-bold focus:text-white"
+      >
+        Asosiy mazmunga o‘tish
+      </a>
+
       <header id="sarlavha" className="sayt-sarlavha sticky top-0 z-20 border-b border-line-soft bg-bg/90 backdrop-blur">
         <div
           className="mx-auto flex max-w-[1260px] items-center justify-between gap-3 px-4 py-2.5 sm:gap-4 sm:px-5 sm:py-3.5 lg:px-8"
           style={{ paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))' }}
         >
-          <Link href="/" aria-label={MARKAZ.nom}>
+          {/* Bosiladigan joy 44px dan kam bo'lmasin (CLAUDE.md qoidasi):
+              logotipning o'zi 34px balandlikda edi. */}
+          <Link href="/" aria-label={MARKAZ.nom} className="inline-flex min-h-11 items-center">
             <Logo />
           </Link>
 
@@ -51,7 +63,11 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       </header>
       <SarlavhaBalandligi />
 
-      {children}
+      {/* tabIndex={-1} — fokus shu yerga haqiqatan ko'chsin (aks holda
+          ba'zi brauzerlar faqat skroll qiladi, fokus shapkada qoladi). */}
+      <div id="asosiy" tabIndex={-1}>
+        {children}
+      </div>
 
       <footer className="border-t border-line-soft">
         <div className="mx-auto flex max-w-[1260px] flex-wrap items-center justify-between gap-5 px-5 py-6 lg:px-8">
