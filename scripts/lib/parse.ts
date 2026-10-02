@@ -167,9 +167,10 @@ export function davrdan(raqam: number): string {
 }
 
 /**
- * Qatnashuv necha oy davom etgan (Qatnashuv.Oylar bilan bir xil):
- *   DATEDIF(boshlandi, tugadi yoki bugun, "M") + 1
- * DATEDIF TO'LIQ oylarni sanaydi — 15.09 dan 01.10 gacha 0 oy.
+ * Qatnashuv necha oy davom etgan — KALENDAR oy (O'quvchilar.Oylar, 02.10 dan):
+ *   DATEDIF(EOMONTH(boshlandi, -1) + 1, tugadi yoki bugun, "M") + 1
+ * Oy boshlangan kundan emas, oyning 1-sanasidan sanaladi: 25.09 da kelgan
+ * bola uchun 1-oktabrdan 2-oy. Bazadagi create_monthly_invoices ham shunday.
  */
 export function oylarSoni(boshlandi: string, tugadi?: string | null, bugun = new Date()): number {
   if (!boshlandi) return 0
@@ -177,8 +178,7 @@ export function oylarSoni(boshlandi: string, tugadi?: string | null, bugun = new
   const o = tugadi ? new Date(`${tugadi}T00:00:00Z`) : new Date(bugun.toISOString().slice(0, 10) + 'T00:00:00Z')
   if (Number.isNaN(b.getTime()) || Number.isNaN(o.getTime()) || o < b) return 0
 
-  let oylar = (o.getUTCFullYear() - b.getUTCFullYear()) * 12 + (o.getUTCMonth() - b.getUTCMonth())
-  if (o.getUTCDate() < b.getUTCDate()) oylar -= 1
+  const oylar = (o.getUTCFullYear() - b.getUTCFullYear()) * 12 + (o.getUTCMonth() - b.getUTCMonth())
   return Math.max(oylar + 1, 0)
 }
 

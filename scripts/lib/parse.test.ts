@@ -96,12 +96,13 @@ test('oyRaqami va davrdan — bir-birining teskarisi', () => {
   assert.equal(davrdan(2027 * 12 + 1), '2027-01')
 })
 
-test('oylarSoni — DATEDIF "M" + 1 (to‘liq oylar)', () => {
+test('oylarSoni — kalendar oy (oyning 1-sanasidan)', () => {
   const bugun = new Date('2026-09-17T00:00:00Z')
   assert.equal(oylarSoni('2026-09-01', null, bugun), 1)
   assert.equal(oylarSoni('2026-07-01', null, bugun), 3)
-  // 20-avgustdan 17-sentabrgacha hali to'liq oy emas
-  assert.equal(oylarSoni('2026-08-20', null, bugun), 1)
+  // 20-avgustda kelgan — sentabr ham to'liq oy
+  assert.equal(oylarSoni('2026-08-20', null, bugun), 2)
+  assert.equal(oylarSoni('2026-09-25', null, new Date('2026-10-02T00:00:00Z')), 2)
   assert.equal(oylarSoni('2026-09-01', '2026-11-01', bugun), 3)
   assert.equal(oylarSoni('', null, bugun), 0)
 })
