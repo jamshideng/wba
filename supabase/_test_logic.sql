@@ -1442,7 +1442,8 @@ insert into bildirishnomalar (id, turi, sarlavha, kimga, filtr, yaratdi) values
   (9002, 'sorovnoma', 'Hammaga savol',       array['oquvchi','ustoz'], '{}',   '11111111-1111-1111-1111-111111111111'),
   (9003, 'elon',      'Faqat ustozlarga',    array['ustoz'], '{}',              '11111111-1111-1111-1111-111111111111');
 insert into bildirishnomalar (id, turi, sarlavha, kimga, holat) values (9004, 'elon', 'Yopilgan', array['oquvchi'], 'yopilgan');
-insert into bildirishnoma_variantlar (id, bildirishnoma_id, matn, tartib) values (9101, 9002, 'Ha', 0), (9102, 9002, 'Yo''q', 1);
+insert into bildirishnoma_savollar (id, bildirishnoma_id, matn) values (9201, 9002, 'Hammaga savol');
+insert into bildirishnoma_variantlar (id, bildirishnoma_id, savol_id, matn, tartib) values (9101, 9002, 9201, 'Ha', 0), (9102, 9002, 9201, 'Yo''q', 1);
 
 set role authenticated;
 set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi S001 (N01)
@@ -1536,6 +1537,56 @@ begin
     raise exception 'XATO: ota-ona qarzi % , o''quvchiniki %', v_ota, v_oquvchi;
   end if;
   raise notice 'OK: ota-ona qarzni to''g''ri ko''radi (%)', v_ota;
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+
+\echo '--- 0052: bir nechta savolli so''rovnoma ---'
+reset role;
+insert into bildirishnomalar (id, turi, sarlavha, kimga) values (9005, 'sorovnoma', 'Ikki savolli', array['oquvchi']);
+insert into bildirishnoma_savollar (id, bildirishnoma_id, matn, kop_tanlov, tartib) values
+  (9211, 9005, 'Dars vaqti qulaymi?', false, 0),
+  (9212, 9005, 'Qaysi fanlar qiziq?', true, 1);
+insert into bildirishnoma_variantlar (id, bildirishnoma_id, savol_id, matn, tartib) values
+  (9111, 9005, 9211, 'Ha', 0), (9112, 9005, 9211, 'Yo''q', 1),
+  (9113, 9005, 9212, 'Ingliz', 0), (9114, 9005, 9212, 'Matematika', 1), (9115, 9005, 9212, 'Rus', 2);
+do $$
+begin
+  begin
+    insert into bildirishnoma_variantlar (bildirishnoma_id, savol_id, matn) values (9002, 9211, 'Begona');
+    raise exception 'XATO: variant boshqa so''rovnoma savoliga bog''landi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: variant faqat o''z so''rovnomasi savoliga';
+end $$;
+
+set role authenticated;
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi S001
+do $$
+declare v jsonb := mening_bildirishnomalarim();
+begin
+  if jsonb_array_length((select x -> 'savollar' from jsonb_array_elements(v) x where (x ->> 'id')::int = 9005)) <> 2 then
+    raise exception 'XATO: savollar ro''yxatda kelmadi';
+  end if;
+  begin
+    perform sorovnomaga_javob(9005, array[9111]::bigint[]);
+    raise exception 'XATO: 2-savolga javobsiz o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    perform sorovnomaga_javob(9005, array[9111, 9112, 9113]::bigint[]);
+    raise exception 'XATO: bitta tanlovli savolga 2 ta javob o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  perform sorovnomaga_javob(9005, array[9112, 9113, 9114]::bigint[]);   -- 2-savol — bir nechta
+  if (select count(*) from bildirishnoma_javoblar where bildirishnoma_id = 9005 and profile_id = auth.uid()) <> 3 then
+    raise exception 'XATO: javoblar to''liq yozilmadi';
+  end if;
+  if (select count(distinct savol_id) from sorovnoma_natija(9005)) <> 2
+     or (select ovoz from sorovnoma_natija(9005) where variant_id = 9114) <> 1 then
+    raise exception 'XATO: natija savollar bo''yicha noto''g''ri';
+  end if;
+  raise notice 'OK: so''rovnoma — bir nechta savol, har biriga javob, natija';
 end $$;
 reset role;
 reset request.jwt.claim.sub;

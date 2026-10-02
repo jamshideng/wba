@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from 'react'
 import Link from 'next/link'
 import { createPortal } from 'react-dom'
-import { BTUR_NOMI, type BildirishnomaTuri, type MeningBildirishnomam, type SorovnomaNatija } from '@/lib/bildirishnoma'
+import { BTUR_NOMI, natijaSavollarga, type BildirishnomaTuri, type MeningBildirishnomam, type SorovnomaNatija } from '@/lib/bildirishnoma'
 import { bildirishnomaBelgila, sorovnomagaJavob } from '@/app/crm/bildirishnomalar/actions'
 
 /**
@@ -56,8 +56,20 @@ export function BildirishnomaKarta({
   const [xato, setXato] = useState<string | null>(null)
   const [band, boshla] = useTransition()
 
+  const savollar = b.savollar ?? []
+  const birNechta = savollar.length > 1
+  const tayyor = savollar.length > 0 && savollar.every((q) => q.variantlar.some((v) => tanlov.includes(v.id)))
+  const javoblanganSoni = savollar.filter((q) => q.variantlar.some((v) => tanlov.includes(v.id))).length
+
+  const tanla = (q: (typeof savollar)[number], id: number) =>
+    setTanlov((t) => {
+      if (q.kop_tanlov) return t.includes(id) ? t.filter((x) => x !== id) : [...t, id]
+      const boshqa = new Set(q.variantlar.map((v) => v.id))
+      return [...t.filter((x) => !boshqa.has(x)), id]
+    })
+
   const ovoz = () => {
-    if (namuna || !tanlov.length) return
+    if (namuna || !tayyor) return
     setXato(null)
     boshla(async () => {
       const r = await sorovnomagaJavob(b.id, tanlov)
@@ -84,56 +96,75 @@ export function BildirishnomaKarta({
         </div>
         {b.matn && <p className="text-[13px] leading-relaxed whitespace-pre-line text-ink-2">{b.matn}</p>}
 
-        {b.turi === 'sorovnoma' && b.variantlar.length > 0 && (
+        {b.turi === 'sorovnoma' && savollar.length > 0 && (
           natija ? (
             natija.length ? (
-              <ul className="flex flex-col gap-1.5">
-                {natija.map((n) => {
-                  const f = n.jami ? Math.round((n.ovoz * 100) / n.jami) : 0
-                  const meniki = tanlov.includes(n.variant_id)
-                  return (
-                    <li key={n.variant_id} className="relative overflow-hidden rounded-[8px] border border-line px-3 py-2 text-[12.5px]">
-                      <span className="absolute inset-y-0 left-0 bg-[#6d7cff22] transition-[width] duration-700" style={{ width: `${f}%` }} />
-                      <span className="relative flex justify-between gap-2">
-                        <span className={meniki ? 'font-bold text-ink' : 'text-ink-2'}>{n.matn}{meniki ? ' ✓' : ''}</span>
-                        <b className="tnum text-ink">{f}%</b>
-                      </span>
-                    </li>
-                  )
-                })}
-                <li className="text-[11.5px] text-ink-3">{natija[0]?.jami ?? 0} kishi ovoz berdi · rahmat!</li>
-              </ul>
+              <div className="flex flex-col gap-3">
+                {natijaSavollarga(natija).map((q) => (
+                  <div key={q.savol_id} className="flex flex-col gap-1.5">
+                    {birNechta && <span className="text-[12.5px] font-semibold text-ink">{q.savol_matn}</span>}
+                    <ul className="flex flex-col gap-1.5">
+                      {q.variantlar.map((n) => {
+                        const f = n.jami ? Math.round((n.ovoz * 100) / n.jami) : 0
+                        const meniki = tanlov.includes(n.variant_id)
+                        return (
+                          <li key={n.variant_id} className="relative overflow-hidden rounded-[8px] border border-line px-3 py-2 text-[12.5px]">
+                            <span className="absolute inset-y-0 left-0 bg-[#6d7cff22] transition-[width] duration-700" style={{ width: `${f}%` }} />
+                            <span className="relative flex justify-between gap-2">
+                              <span className={meniki ? 'font-bold text-ink' : 'text-ink-2'}>{n.matn}{meniki ? ' ✓' : ''}</span>
+                              <b className="tnum text-ink">{f}%</b>
+                            </span>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                ))}
+                <p className="text-[11.5px] text-ink-3">{natija[0]?.jami ?? 0} kishi javob berdi · rahmat!</p>
+              </div>
             ) : <p className="text-[12.5px] font-semibold text-ok">Javobingiz qabul qilindi — rahmat!</p>
           ) : b.javob_berdim && !namuna ? (
-            <p className="text-[12.5px] font-semibold text-ok">Siz ovoz bergansiz — rahmat!</p>
+            <p className="text-[12.5px] font-semibold text-ok">Siz javob bergansiz — rahmat!</p>
           ) : (
-            <div className="flex flex-col gap-1.5">
-              {b.variantlar.map((v) => {
-                const tanlangan = tanlov.includes(v.id)
-                return (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => setTanlov((t) => (b.kop_tanlov ? (tanlangan ? t.filter((x) => x !== v.id) : [...t, v.id]) : [v.id]))}
-                    className={`flex min-h-10 items-center gap-2.5 rounded-[9px] border px-3 text-left text-[13px] transition ${
-                      tanlangan ? 'border-brand bg-brand-soft text-ink' : 'border-line bg-surface text-ink-2 hover:border-ink-3'
-                    }`}
-                  >
-                    <span className={`grid size-4 shrink-0 place-items-center border-2 ${b.kop_tanlov ? 'rounded-[4px]' : 'rounded-full'} ${tanlangan ? 'border-brand bg-brand' : 'border-ink-4'}`}>
-                      {tanlangan && <span className="size-1.5 rounded-full bg-white" />}
-                    </span>
-                    {v.matn}
-                  </button>
-                )
-              })}
+            <div className="flex flex-col gap-3">
+              {savollar.map((q, i) => (
+                <fieldset key={q.id} className="flex flex-col gap-1.5">
+                  {(birNechta || q.matn !== b.sarlavha) && (
+                    <legend className="mb-1.5 text-[13px] leading-snug font-semibold text-ink">
+                      {birNechta && <span className="tnum mr-1 text-ink-3">{i + 1}.</span>}
+                      {q.matn}
+                      {q.kop_tanlov && <span className="ml-1 text-[11.5px] font-normal text-ink-3">(bir nechtasini tanlasa bo‘ladi)</span>}
+                    </legend>
+                  )}
+                  {q.variantlar.map((v) => {
+                    const tanlangan = tanlov.includes(v.id)
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        aria-pressed={tanlangan}
+                        onClick={() => tanla(q, v.id)}
+                        className={`flex min-h-11 items-center gap-2.5 rounded-[9px] border px-3 text-left text-[13px] transition ${
+                          tanlangan ? 'border-brand bg-brand-soft text-ink' : 'border-line bg-surface text-ink-2 hover:border-ink-3'
+                        }`}
+                      >
+                        <span className={`grid size-4 shrink-0 place-items-center border-2 ${q.kop_tanlov ? 'rounded-[4px]' : 'rounded-full'} ${tanlangan ? 'border-brand bg-brand' : 'border-ink-4'}`}>
+                          {tanlangan && <span className="size-1.5 rounded-full bg-white" />}
+                        </span>
+                        {v.matn}
+                      </button>
+                    )
+                  })}
+                </fieldset>
+              ))}
               {xato && <p role="alert" className="text-[12px] text-brand">{xato}</p>}
               <button
                 type="button"
-                disabled={!tanlov.length || band || namuna}
+                disabled={!tayyor || band || namuna}
                 onClick={ovoz}
-                className="mt-0.5 min-h-10 rounded-[9px] bg-brand px-4 text-[13px] font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+                className="mt-0.5 min-h-11 rounded-[9px] bg-brand px-4 text-[13px] font-bold text-white transition hover:brightness-110 disabled:opacity-50"
               >
-                {band ? 'Yuborilmoqda…' : 'Ovoz berish'}
+                {band ? 'Yuborilmoqda…' : birNechta && !tayyor ? `Javob berish · ${javoblanganSoni}/${savollar.length}` : birNechta ? 'Javob berish' : 'Ovoz berish'}
               </button>
             </div>
           )
@@ -264,7 +295,7 @@ export function Bildirishnomalar({ royxat }: { royxat: MeningBildirishnomam[] })
       {toastlar.length > 0 && !muhim && (
         <div className="pointer-events-none fixed inset-x-0 top-3 z-[70] flex flex-col items-center gap-2.5 px-3" aria-live="polite">
           {toastlar.map((b) => (
-            <div key={b.id} className="bn-tushish pointer-events-auto w-full max-w-[440px] rounded-[16px] border border-line bg-surface/95 p-4 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.35)] backdrop-blur">
+            <div key={b.id} className="bn-tushish pointer-events-auto max-h-[80dvh] w-full max-w-[440px] overflow-y-auto overscroll-contain rounded-[16px] border border-line bg-surface/95 p-4 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.35)] backdrop-blur">
               <BildirishnomaKarta b={b} onYop={() => yop(b.id)} onJavob={() => javobBerdi(b.id)} />
             </div>
           ))}
@@ -274,7 +305,7 @@ export function Bildirishnomalar({ royxat }: { royxat: MeningBildirishnomam[] })
       {/* Muhim — ekran o'rtasida */}
       {muhim && (
         <div className="fixed inset-0 z-[80] grid grid-cols-1 place-items-center bg-black/40 p-4 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-label={muhim.sarlavha}>
-          <div className="bn-tushish w-full max-w-[460px] rounded-[18px] border border-line bg-surface p-5 shadow-2xl">
+          <div className="bn-tushish max-h-[90dvh] w-full max-w-[460px] overflow-y-auto overscroll-contain rounded-[18px] border border-line bg-surface p-5 shadow-2xl">
             <BildirishnomaKarta
               b={muhim}
               onYop={muhim.turi === 'sorovnoma' && !muhim.javob_berdim ? undefined : () => yop(muhim.id)}

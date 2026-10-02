@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { BTURLAR, variantlarniOqi, type BildirishnomaTuri } from '@/lib/bildirishnoma'
+import { BTURLAR, SAVOL_MAX, variantlarniOqi, type BildirishnomaTuri } from '@/lib/bildirishnoma'
 import { KIMLAR } from '@/lib/elon'
 import { bildirishnomaYarat } from './actions'
 import { BildirishnomaKarta } from '@/components/bildirishnomalar'
@@ -25,16 +25,27 @@ export function BildirishnomaForma({
   const [turi, setTuri] = useState<BildirishnomaTuri>('eslatma')
   const [sarlavha, setSarlavha] = useState('')
   const [matn, setMatn] = useState('')
-  const [variantlar, setVariantlar] = useState('Ha\nYo‘q')
+  // So'rovnoma savollari: matn bo'sh bo'lsa — sarlavha (bitta savolli so'rovnoma)
+  const [savollar, setSavollar] = useState<{ matn: string; variantlar: string; kop: boolean }[]>([
+    { matn: '', variantlar: 'Ha\nYo‘q', kop: false },
+  ])
+  const ozgartir = (i: number, q: Partial<{ matn: string; variantlar: string; kop: boolean }>) =>
+    setSavollar((s) => s.map((x, j) => (j === i ? { ...x, ...q } : x)))
   const [havolaMatn, setHavolaMatn] = useState('')
   const [muhim, setMuhim] = useState(false)
-  const [kop, setKop] = useState(false)
 
   const sorov = turi === 'sorovnoma'
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
       <form action={bildirishnomaYarat} className="flex flex-col gap-4">
         <input type="hidden" name="turi" value={turi} />
+        {sorov && (
+          <input
+            type="hidden"
+            name="savollar"
+            value={JSON.stringify(savollar.map((q) => ({ matn: q.matn, kop_tanlov: q.kop, variantlar: variantlarniOqi(q.variantlar) })))}
+          />
+        )}
         <fieldset className="flex flex-col gap-2">
           <legend className="lbl mb-1.5">Turi</legend>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -55,26 +66,61 @@ export function BildirishnomaForma({
           <span className="text-[11.5px] text-ink-3">{BTURLAR.find((t) => t.qiymat === turi)?.izoh}</span>
         </fieldset>
 
-        <Maydon nom={sorov ? 'Savol' : 'Sarlavha'}>
+        <Maydon nom={sorov ? 'So‘rovnoma nomi' : 'Sarlavha'} izoh={sorov && savollar.length === 1 ? 'Savol yozilmasa — shu nomning o‘zi savol bo‘ladi' : undefined}>
           <input name="sarlavha" required maxLength={120} value={sarlavha} onChange={(e) => setSarlavha(e.target.value)}
-            placeholder={sorov ? 'Masalan: Shanba kuni qo‘shimcha dars kerakmi?' : 'Masalan: 5-oktabr — dam olish kuni'} className={kirishKlass} />
+            placeholder={sorov ? 'Masalan: Darslar haqida fikringiz' : 'Masalan: 5-oktabr — dam olish kuni'} className={kirishKlass} />
         </Maydon>
         <Maydon nom="Matn" izoh="Ixtiyoriy, 2000 belgigacha">
           <textarea name="matn" rows={3} maxLength={2000} value={matn} onChange={(e) => setMatn(e.target.value)} className={`${kirishKlass} py-2.5`} />
         </Maydon>
 
         {sorov && (
-          <div className="flex flex-col gap-3 rounded-[12px] border border-accent-line bg-accent-soft p-3.5">
-            <Maydon nom="Variantlar" izoh="Har qatorga bittadan, 2–10 ta">
-              <textarea name="variantlar" rows={4} value={variantlar} onChange={(e) => setVariantlar(e.target.value)} className={`${kirishKlass} py-2.5`} />
-            </Maydon>
-            <label className="flex items-center gap-2.5 text-[13px] text-ink-2">
-              <input type="checkbox" name="kop_tanlov" value="1" checked={kop} onChange={(e) => setKop(e.target.checked)} className="size-5 accent-brand" />
-              Bir nechta variant tanlasa bo‘ladi
-            </label>
-            <label className="flex items-center gap-2.5 text-[13px] text-ink-2">
+          <div className="flex flex-col gap-3">
+            {savollar.map((q, i) => (
+              <div key={i} className="flex flex-col gap-3 rounded-[12px] border border-accent-line bg-accent-soft p-3.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="lbl">{i + 1}-savol</span>
+                  {savollar.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setSavollar((s) => s.filter((_, j) => j !== i))}
+                      className="min-h-11 rounded-[9px] px-3 text-[12.5px] text-ink-3 hover:text-brand"
+                    >
+                      Savolni olib tashlash
+                    </button>
+                  )}
+                </div>
+                <Maydon nom="Savol" izoh={savollar.length === 1 ? 'Bo‘sh qolsa — so‘rovnoma nomi savol bo‘ladi' : undefined}>
+                  <input
+                    maxLength={200}
+                    required={savollar.length > 1}
+                    value={q.matn}
+                    onChange={(e) => ozgartir(i, { matn: e.target.value })}
+                    placeholder="Masalan: Shanba kuni qo‘shimcha dars kerakmi?"
+                    className={kirishKlass}
+                  />
+                </Maydon>
+                <Maydon nom="Variantlar" izoh="Har qatorga bittadan, 2–10 ta">
+                  <textarea rows={3} value={q.variantlar} onChange={(e) => ozgartir(i, { variantlar: e.target.value })} className={`${kirishKlass} py-2.5`} />
+                </Maydon>
+                <label className="flex min-h-11 items-center gap-2.5 text-[13px] text-ink-2">
+                  <input type="checkbox" checked={q.kop} onChange={(e) => ozgartir(i, { kop: e.target.checked })} className="size-5 accent-brand" />
+                  Bir nechta variant tanlasa bo‘ladi
+                </label>
+              </div>
+            ))}
+            {savollar.length < SAVOL_MAX && (
+              <button
+                type="button"
+                onClick={() => setSavollar((s) => [...s, { matn: '', variantlar: '', kop: false }])}
+                className="min-h-11 rounded-[10px] border border-dashed border-accent-line px-4 text-[13px] font-semibold text-accent hover:bg-accent-soft"
+              >
+                + Yana savol qo‘shish
+              </button>
+            )}
+            <label className="flex min-h-11 items-center gap-2.5 text-[13px] text-ink-2">
               <input type="checkbox" name="natija_ochiq" value="1" defaultChecked className="size-5 accent-brand" />
-              Ovoz bergan odam natijani ko‘rsin
+              Javob bergan odam natijani ko‘rsin
             </label>
           </div>
         )}
@@ -140,9 +186,16 @@ export function BildirishnomaForma({
             namuna
             b={{
               id: 0, turi, sarlavha: sarlavha || (sorov ? 'Savol' : 'Sarlavha'), matn: matn || null,
-              havola: havolaMatn ? '#' : null, havola_matn: havolaMatn || null, muhim, kop_tanlov: kop, natija_ochiq: true,
+              havola: havolaMatn ? '#' : null, havola_matn: havolaMatn || null, muhim, kop_tanlov: false, natija_ochiq: true,
               created_at: new Date().toISOString(), korilgan: false, yopilgan: false, javob_berdim: false,
-              variantlar: sorov ? variantlarniOqi(variantlar).map((m, i) => ({ id: -(i + 1), matn: m })) : [],
+              savollar: sorov
+                ? savollar.map((q, i) => ({
+                    id: -(i + 1),
+                    matn: q.matn.trim() || sarlavha || 'Savol',
+                    kop_tanlov: q.kop,
+                    variantlar: variantlarniOqi(q.variantlar).map((m, j) => ({ id: -((i + 1) * 100 + j), matn: m })),
+                  }))
+                : [],
             }}
           />
         </div>

@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { talabProfil, talabRol } from '@/lib/auth'
 import { matn, xabarliYol, xatoMatni } from '@/lib/kiritish'
 import { filtrOqi, KIMLAR } from '@/lib/elon'
-import { BTURLAR, havolaToza, variantlarniOqi, type BildirishnomaTuri, type SorovnomaNatija } from '@/lib/bildirishnoma'
+import { BTURLAR, havolaToza, savollarniOqi, type BildirishnomaTuri, type SorovnomaNatija } from '@/lib/bildirishnoma'
 import type { TelegramKim } from '@/lib/types'
 
 /**
@@ -32,13 +32,13 @@ export async function bildirishnomaYarat(fd: FormData) {
   const turi = (BTURLAR.find((t) => t.qiymat === fd.get('turi'))?.qiymat ?? 'eslatma') as BildirishnomaTuri
   const sarlavha = matn(fd.get('sarlavha'))?.slice(0, 120)
   const kimga = fd.getAll('k').map(String).filter((k): k is TelegramKim => KIMLAR.some((x) => x.qiymat === k))
-  const variantlar = turi === 'sorovnoma' ? variantlarniOqi(String(fd.get('variantlar') ?? '')) : []
+  const savollar = turi === 'sorovnoma' ? savollarniOqi(String(fd.get('savollar') ?? '[]'), sarlavha ?? '') : []
   const tugash = toshkentVaqt(fd.get('tugash'))
   const boshlanish = toshkentVaqt(fd.get('boshlanish'))
 
   if (!sarlavha) redirect(xabarliYol(YOL, { xato: 'Sarlavhani yozing.' }))
   if (!kimga.length) redirect(xabarliYol(YOL, { xato: 'Kimga ko‘rinishini tanlang.' }))
-  if (turi === 'sorovnoma' && variantlar.length < 2) redirect(xabarliYol(YOL, { xato: 'So‘rovnomaga kamida 2 ta variant yozing (har qatorga bittadan).' }))
+  if (turi === 'sorovnoma' && !savollar.length) redirect(xabarliYol(YOL, { xato: 'So‘rovnomaga kamida bitta savol va unga 2 ta variant yozing (har qatorga bittadan).' }))
 
   const supabase = await createClient()
   const { data: b, error } = await supabase
@@ -52,7 +52,7 @@ export async function bildirishnomaYarat(fd: FormData) {
       kimga,
       filtr: filtrOqi(String(fd.get('f') ?? 'hammasi')),
       muhim: fd.get('muhim') === '1',
-      kop_tanlov: fd.get('kop_tanlov') === '1',
+      kop_tanlov: savollar.some((q) => q.kop_tanlov),
       natija_ochiq: fd.get('natija_ochiq') === '1',
       ...(boshlanish ? { boshlanish } : {}),
       tugash,
@@ -61,14 +61,22 @@ export async function bildirishnomaYarat(fd: FormData) {
     .single()
   if (error || !b) redirect(xabarliYol(YOL, { xato: xatoMatni(error) }))
 
-  if (variantlar.length) {
-    const { error: e2 } = await supabase
-      .from('bildirishnoma_variantlar')
-      .insert(variantlar.map((v, i) => ({ bildirishnoma_id: b!.id, matn: v, tartib: i })))
-    if (e2) {
+  if (savollar.length) {
+    // Savollar → variantlar; biror qadam o'xshamasa — bildirishnoma butunlay o'chiriladi
+    const bekor = async (e: { message?: string; code?: string } | null) => {
       await supabase.from('bildirishnomalar').delete().eq('id', b!.id)
-      redirect(xabarliYol(YOL, { xato: xatoMatni(e2) }))
+      redirect(xabarliYol(YOL, { xato: xatoMatni(e) }))
     }
+    const { data: sq, error: e2 } = await supabase
+      .from('bildirishnoma_savollar')
+      .insert(savollar.map((q, i) => ({ bildirishnoma_id: b!.id, matn: q.matn, kop_tanlov: q.kop_tanlov, tartib: i })))
+      .select('id, tartib')
+    if (e2 || !sq) return bekor(e2)
+    const idlar = new Map(sq.map((x) => [x.tartib as number, x.id as number]))
+    const { error: e3 } = await supabase.from('bildirishnoma_variantlar').insert(
+      savollar.flatMap((q, i) => q.variantlar.map((v, j) => ({ bildirishnoma_id: b!.id, savol_id: idlar.get(i)!, matn: v, tartib: j }))),
+    )
+    if (e3) return bekor(e3)
   }
 
   revalidatePath('/crm', 'layout')
@@ -112,7 +120,7 @@ export async function sorovnomagaJavob(
   variantlar: number[],
 ): Promise<{ xato?: string; natija?: SorovnomaNatija[] }> {
   await talabProfil()
-  const toza = [...new Set(variantlar.filter((v) => Number.isInteger(v) && v > 0))].slice(0, 10)
+  const toza = [...new Set(variantlar.filter((v) => Number.isInteger(v) && v > 0))].slice(0, 100)
   const supabase = await createClient()
   const { error } = await supabase.rpc('sorovnomaga_javob', { p_id: id, p_variantlar: toza })
   if (error) return { xato: xatoMatni(error) }

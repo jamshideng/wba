@@ -6,7 +6,7 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Xabar } from '@/components/forma'
 import { sana } from '@/lib/format'
 import { KIMLAR } from '@/lib/elon'
-import { BTUR_NOMI } from '@/lib/bildirishnoma'
+import { BTUR_NOMI, natijaSavollarga, type SorovnomaNatija } from '@/lib/bildirishnoma'
 import type { Bildirishnoma, TelegramKim } from '@/lib/types'
 import { BildirishnomaForma } from './forma'
 import { bildirishnomaHolat, bildirishnomaOchir } from './actions'
@@ -41,10 +41,10 @@ export default async function Bildirishnomalar({
 
   // So'rovnoma natijalari (admin har doim ko'radi)
   const sorovlar = bList.filter((b) => b.turi === 'sorovnoma')
-  const natijalar = new Map<number, { variant_id: number; matn: string; ovoz: number; jami: number }[]>()
+  const natijalar = new Map<number, SorovnomaNatija[]>()
   await Promise.all(sorovlar.map(async (b) => {
     const { data } = await supabase.rpc('sorovnoma_natija', { p_id: b.id })
-    natijalar.set(b.id, (data ?? []) as { variant_id: number; matn: string; ovoz: number; jami: number }[])
+    natijalar.set(b.id, (data ?? []) as SorovnomaNatija[])
   }))
 
   type G = { id: string; nom: string; subject_id: string | null; subjects: { nom: string } | null }
@@ -122,22 +122,34 @@ export default async function Bildirishnomalar({
                     </div>
                   </div>
                   {b.matn && <p className="max-w-3xl text-[12.5px] leading-relaxed whitespace-pre-line text-ink-2">{b.matn}</p>}
-                  {nat && nat.length > 0 && (
-                    <ul className="flex max-w-xl flex-col gap-1.5">
-                      {nat.map((n) => {
-                        const f = n.jami ? Math.round((n.ovoz * 100) / n.jami) : 0
-                        return (
-                          <li key={n.variant_id} className="relative overflow-hidden rounded-[8px] border border-line px-3 py-1.5 text-[12.5px]">
-                            <span className="absolute inset-y-0 left-0 bg-brand-soft" style={{ width: `${f}%` }} />
-                            <span className="relative flex justify-between gap-2">
-                              <span>{n.matn}</span>
-                              <b className="tnum">{n.ovoz} · {f}%</b>
-                            </span>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
+                  {nat && nat.length > 0 && (() => {
+                    const guruh = natijaSavollarga(nat)
+                    return (
+                      <div className="flex max-w-xl flex-col gap-3">
+                        {guruh.map((q, i) => (
+                          <div key={q.savol_id} className="flex flex-col gap-1.5">
+                            {(guruh.length > 1 || q.savol_matn !== b.sarlavha) && (
+                              <span className="text-[12.5px] font-semibold">{guruh.length > 1 ? `${i + 1}. ` : ''}{q.savol_matn}</span>
+                            )}
+                            <ul className="flex flex-col gap-1.5">
+                              {q.variantlar.map((n) => {
+                                const f = n.jami ? Math.round((n.ovoz * 100) / n.jami) : 0
+                                return (
+                                  <li key={n.variant_id} className="relative overflow-hidden rounded-[8px] border border-line px-3 py-1.5 text-[12.5px]">
+                                    <span className="absolute inset-y-0 left-0 bg-brand-soft" style={{ width: `${f}%` }} />
+                                    <span className="relative flex justify-between gap-2">
+                                      <span>{n.matn}</span>
+                                      <b className="tnum">{n.ovoz} · {f}%</b>
+                                    </span>
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })()}
                 </li>
               )
             })}

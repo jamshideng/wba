@@ -590,7 +590,8 @@ export type Database = {
       telegram_ulanish: Table<TelegramUlanish>
       elonlar: Table<Elon>
       bildirishnomalar: Table<Bildirishnoma>
-      bildirishnoma_variantlar: Table<{ id: number; bildirishnoma_id: number; matn: string; tartib: number }>
+      bildirishnoma_variantlar: Table<{ id: number; bildirishnoma_id: number; savol_id: number; matn: string; tartib: number }>
+      bildirishnoma_savollar: Table<{ id: number; bildirishnoma_id: number; matn: string; kop_tanlov: boolean; tartib: number }>
       elon_yetkazish: Table<ElonYetkazish>
       subjects: Table<Subject>
       levels: Table<Level>

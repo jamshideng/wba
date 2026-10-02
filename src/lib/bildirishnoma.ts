@@ -31,10 +31,48 @@ export type MeningBildirishnomam = {
   korilgan: boolean
   yopilgan: boolean
   javob_berdim: boolean
-  variantlar: { id: number; matn: string }[]
+  savollar: SorovnomaSavol[]
 }
 
-export type SorovnomaNatija = { variant_id: number; matn: string; ovoz: number; jami: number }
+/** So'rovnomaning bitta savoli (0052): har birining o'z variantlari */
+export type SorovnomaSavol = { id: number; matn: string; kop_tanlov: boolean; variantlar: { id: number; matn: string }[] }
+
+export type SorovnomaNatija = { savol_id: number; savol_matn: string; variant_id: number; matn: string; ovoz: number; jami: number }
+
+/** Admin formasidan kelgan savol (hali bazada id yo'q) */
+export type YangiSavol = { matn: string; kop_tanlov: boolean; variantlar: string[] }
+
+export const SAVOL_MAX = 10
+
+/**
+ * Formadagi savollar (JSON) → toza ro'yxat. Bo'sh savol matni o'rniga
+ * so'rovnoma sarlavhasi (bitta savolli so'rovnoma — eskicha). Kamida
+ * 2 variantli savollargina qoladi.
+ */
+export function savollarniOqi(xom: string, sarlavha: string): YangiSavol[] {
+  let arr: unknown
+  try { arr = JSON.parse(xom) } catch { return [] }
+  if (!Array.isArray(arr)) return []
+  return arr
+    .slice(0, SAVOL_MAX)
+    .map((x) => {
+      const o = (x ?? {}) as { matn?: unknown; kop_tanlov?: unknown; variantlar?: unknown }
+      const variantlar = variantlarniOqi(Array.isArray(o.variantlar) ? o.variantlar.map(String).join('\n') : String(o.variantlar ?? ''))
+      const matn = String(o.matn ?? '').trim().slice(0, 200) || sarlavha.slice(0, 200)
+      return { matn, kop_tanlov: o.kop_tanlov === true, variantlar }
+    })
+    .filter((q) => q.matn && q.variantlar.length >= 2)
+}
+
+/** Natijani savollar bo'yicha guruhlash (tartib saqlanadi) */
+export function natijaSavollarga(natija: SorovnomaNatija[]): { savol_id: number; savol_matn: string; variantlar: SorovnomaNatija[] }[] {
+  const m = new Map<number, { savol_id: number; savol_matn: string; variantlar: SorovnomaNatija[] }>()
+  for (const n of natija) {
+    if (!m.has(n.savol_id)) m.set(n.savol_id, { savol_id: n.savol_id, savol_matn: n.savol_matn, variantlar: [] })
+    m.get(n.savol_id)!.variantlar.push(n)
+  }
+  return [...m.values()]
+}
 
 /** So'rovnoma variantlari — har qatorda bittasi, bo'shlari tashlanadi */
 export function variantlarniOqi(xom: string): string[] {
