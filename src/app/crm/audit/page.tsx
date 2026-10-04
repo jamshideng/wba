@@ -6,7 +6,7 @@ import { Card, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan, Sahifalash } from '@/components/crm'
 import { kirishKlass } from '@/components/forma'
 import { JonliForma } from '@/components/jonli-forma'
-import { auditFarqi, qiymatMatni, AMAL_NOMI, JADVAL_NOMI } from '@/lib/audit'
+import { auditFarqi, qiymatMatni, AMAL_NOMI, JADVAL_NOMI, WOBLR_SABAB } from '@/lib/audit'
 
 export const metadata = { title: 'Audit' }
 export const dynamic = 'force-dynamic'
@@ -31,7 +31,7 @@ function havola(jadval: string, id: string | null, yangi: unknown, eski: unknown
   if (jadval === 'students') return `/crm/oquvchilar/${id}`
   if (jadval === 'groups') return `/crm/guruhlar/${id}`
   const sid = q?.student_id
-  if (typeof sid === 'string' && ['payments', 'enrollments'].includes(jadval)) return `/crm/oquvchilar/${sid}`
+  if (typeof sid === 'string' && ['payments', 'enrollments', 'woblr'].includes(jadval)) return `/crm/oquvchilar/${sid}`
   return null
 }
 
@@ -85,6 +85,29 @@ export default async function Audit({
     .range(boshi, boshi + SAHIFA_SONI - 1)
 
   const yozuvlar = (data ?? []) as unknown as Yozuv[]
+
+  // Woblar yozuvlari uchun ustoz va o'quvchi ismlari — "U02 → S004" emas, odam o'qiydigan qilib
+  const woblrQator = (y: Yozuv) => ((y.yangi ?? y.eski) as Record<string, unknown> | null) ?? {}
+  const woblarlar = yozuvlar.filter((y) => y.jadval === 'woblr').map(woblrQator)
+  const idlar = (k: string) => [...new Set(woblarlar.map((q) => q[k]).filter((v): v is string => typeof v === 'string'))]
+  const [ustozlar, oquvchilar] = woblarlar.length
+    ? await Promise.all([
+        supabase.from('teachers').select('id, ism').in('id', idlar('teacher_id')),
+        supabase.from('students').select('id, fish').in('id', idlar('student_id')),
+      ])
+    : [{ data: [] }, { data: [] }]
+  const ustozIsm = new Map((ustozlar.data ?? []).map((u) => [u.id as string, u.ism as string]))
+  const oquvchiIsm = new Map((oquvchilar.data ?? []).map((o) => [o.id as string, o.fish as string]))
+  const woblrMatn = (y: Yozuv): string => {
+    const q = woblrQator(y)
+    const ball = Number(q.ball ?? 0)
+    const ustoz = typeof q.teacher_id === 'string' ? (ustozIsm.get(q.teacher_id) ?? q.teacher_id) : (y.profiles?.ism ?? 'admin')
+    const oquvchi = typeof q.student_id === 'string' ? `${oquvchiIsm.get(q.student_id) ?? ''} (${q.student_id})`.trim() : '—'
+    const sabab = WOBLR_SABAB[String(q.sabab)] ?? String(q.sabab ?? '')
+    const izoh = q.izoh ? ` · ${q.izoh}` : ''
+    const fel = y.amal === 'DELETE' ? 'yozuvi o‘chirildi' : ball > 0 ? 'berdi' : 'ayirdi'
+    return `${ustoz} → ${oquvchi}: ${ball > 0 ? '+' : ''}${ball} woblar ${fel} · ${sabab}${izoh}`
+  }
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -154,6 +177,7 @@ export default async function Audit({
                       {vaqtFmt.format(new Date(y.created_at))} · {y.profiles?.ism ?? 'tizim'}
                     </span>
                   </div>
+                  {y.jadval === 'woblr' && <p className="text-[13px]">{woblrMatn(y)}</p>}
                   {farq.length > 0 && y.amal === 'UPDATE' && (
                     <ul className="flex flex-col gap-0.5 text-[12px]">
                       {farq.map((f) => (
@@ -165,7 +189,7 @@ export default async function Audit({
                       ))}
                     </ul>
                   )}
-                  {farq.length > 0 && y.amal !== 'UPDATE' && (
+                  {farq.length > 0 && y.amal !== 'UPDATE' && y.jadval !== 'woblr' && (
                     <p className="text-[12px] text-ink-3">
                       {farq
                         .filter((f) => f.maydon !== 'id')

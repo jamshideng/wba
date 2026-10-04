@@ -51,4 +51,15 @@ export const JADVAL_NOMI: Record<string, string> = {
   tuzatishlar: 'Tuzatish',
   xarajatlar: 'Xarajat',
   profiles: 'Hisob (login)',
+  woblr: 'Woblar',
+  woblr_redemptions: 'Market buyurtmasi',
+  woblr_rewards: 'Market mahsuloti',
+}
+
+export const WOBLR_SABAB: Record<string, string> = {
+  faollik: 'faollik',
+  uy_vazifasi: 'uy vazifasi',
+  yordam: 'yordam',
+  qoida: 'qoida buzish',
+  boshqa: 'boshqa',
 }
