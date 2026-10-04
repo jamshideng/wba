@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/server'
 import { talabRol } from '@/lib/auth'
 import { matn, telefonOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
 
-const YOL = '/crm/ustozlar'
+const USTOZLAR = '/crm/ustozlar'
+const YOL = USTOZLAR
 
 export async function ustozQosh(fd: FormData) {
   await talabRol('admin', 'direktor')
@@ -39,6 +40,8 @@ export async function ustozTahrir(fd: FormData) {
   const ism = matn(fd.get('ism'))
   const telefon = telefonOqi(fd.get('telefon'))
   const holat = fd.get('holat') === 'bloklangan' ? 'bloklangan' : 'faol'
+  // Ustoz sahifasidan saqlansa - o'sha sahifaga qaytadi
+  const YOL = fd.get('qayt') === 'sahifa' && id ? `/crm/ustozlar/${encodeURIComponent(id)}` : USTOZLAR
 
   if (!id || !ism) redirect(xabarliYol(YOL, { xato: 'Ustoz ismini yozing.' }))
   if (telefon === undefined) redirect(xabarliYol(YOL, { xato: 'Telefon noto‘g‘ri. Masalan: 90 123 45 67' }))

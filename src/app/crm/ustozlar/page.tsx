@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { talabRol } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
@@ -49,7 +50,6 @@ export default async function Ustozlar({
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha nom="Ustozlar" izoh={`${uList.filter((u) => u.holat === 'faol').length} ta faol`} />
       <Xabar ok={xabar.ok} xato={xabar.xato} />
-      <p className="lbl">Har ustozning alohida sahifasi (guruhlari, davomat foizi, tushum) — tez orada.</p>
 
       {maoshQoidasi === null && (
         <p className="rounded-[10px] border border-dashed border-accent-line px-4 py-3 text-[12.5px] text-ink-2">
@@ -73,7 +73,9 @@ export default async function Ustozlar({
                 <li key={u.id} className="flex flex-col gap-2 border-t border-line-soft px-5 py-3.5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="text-[13.5px] font-semibold">{u.ism}</span>
+                      <Link href={`/crm/ustozlar/${u.id}`} className="text-[13.5px] font-semibold hover:text-brand hover:underline">
+                        {u.ism}
+                      </Link>
                       <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3">
                         {u.id} · {telefon(u.telefon)}
                       </span>
