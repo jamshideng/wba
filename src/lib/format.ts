@@ -20,12 +20,25 @@ const OYLAR = [
 
 const OYLAR_QISQA = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek']
 
+/**
+ * Sana qismlari doim Toshkent vaqtida. Server (Vercel) UTC'da, brauzer +5 da —
+ * mahalliy getDate() kechki yozuvlarda turli kun berib, React #418 (hydration) chiqarardi.
+ */
+const TOSHKENT_KUN = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Tashkent', day: 'numeric', month: 'numeric', year: 'numeric',
+})
+function toshkentQismlari(dt: Date): { kun: number; oy: number; yil: number } {
+  const q = Object.fromEntries(TOSHKENT_KUN.formatToParts(dt).map((x) => [x.type, x.value]))
+  return { kun: Number(q.day), oy: Number(q.month), yil: Number(q.year) }
+}
+
 /** "2026-09-15" → "15 sentabr 2026" */
 export function sana(d: string | Date | null | undefined): string {
   if (!d) return '—'
   const dt = typeof d === 'string' ? new Date(d) : d
   if (Number.isNaN(dt.getTime())) return '—'
-  return `${dt.getDate()} ${OYLAR[dt.getMonth()]} ${dt.getFullYear()}`
+  const q = toshkentQismlari(dt)
+  return `${q.kun} ${OYLAR[q.oy - 1]} ${q.yil}`
 }
 
 /** "2026-09-15" → "15.09.2026" */
@@ -34,7 +47,8 @@ export function sanaQisqa(d: string | Date | null | undefined): string {
   const dt = typeof d === 'string' ? new Date(d) : d
   if (Number.isNaN(dt.getTime())) return '—'
   const p = (n: number) => String(n).padStart(2, '0')
-  return `${p(dt.getDate())}.${p(dt.getMonth() + 1)}.${dt.getFullYear()}`
+  const q = toshkentQismlari(dt)
+  return `${p(q.kun)}.${p(q.oy)}.${q.yil}`
 }
 
 /** "2026-09" → "Sentabr 2026" */
