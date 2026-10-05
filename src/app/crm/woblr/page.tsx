@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { talabProfil, getUstoz, adminmi, staffmi } from '@/lib/auth'
 import { woblarChegara } from '@/lib/woblar-chegara'
+import { JonliForma } from '@/components/jonli-forma'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Badge, Empty } from '@/components/ui'
@@ -106,7 +107,8 @@ export default async function Woblr({
 
       <Xabar ok={s.ok} xato={s.xato ?? (reytingXato ? xatoMatni(reytingXato) : undefined)} />
 
-      <form className="flex flex-wrap items-end gap-2.5">
+      {/* Tanlov o'zgarishi bilan natija chiqadi — "Ko'rsatish" tugmasi kerak emas */}
+      <JonliForma className="flex flex-wrap items-end gap-2.5">
         <Maydon nom="Reyting">
           <select name="k" defaultValue={tanlov.k} className={kirishKlass}>
             <option value={markaz.k}>{markaz.nom}</option>
@@ -133,10 +135,7 @@ export default async function Woblr({
             <option value="hammasi">Hamma vaqt</option>
           </select>
         </Maydon>
-        <button type="submit" className="min-h-11 rounded-[9px] border border-line px-5 text-[13.5px] text-ink-2 hover:text-ink">
-          Ko‘rsatish
-        </button>
-      </form>
+      </JonliForma>
 
       <Card className="flex flex-col">
         <CardHeader title="Reyting" meta={`${reyting.length} o‘quvchi`} />
