@@ -1,5 +1,5 @@
 import { filtrOqi } from '@/lib/elon'
-import type { ElonFiltr } from '@/lib/types'
+import type { ElonFiltr, TelegramKim } from '@/lib/types'
 
 /**
  * Sayt ichidagi bildirishnomalar (0047) — umumiy turlar va matnlar.
@@ -92,14 +92,30 @@ export function havolaToza(xom: string | null): string | null {
 }
 
 /**
- * Bildirishnoma filtri: e'londagi (guruh/fan/qarzdor) + BITTA o'quvchi (0056).
+ * Bildirishnoma filtri: e'londagi (guruh/fan/qarzdor) + BITTA o'quvchi (0056)
+ * yoki BITTA ustoz (0058).
  * "oquvchi:S016" faqat shu yerda o'qiladi — Telegram e'loni (filtrOqi /
  * elon_oluvchilar) uni bilmaydi va hammaga yuborib yubormasin.
  */
-export type BildirishnomaFiltr = ElonFiltr & { oquvchi?: string }
+export type BildirishnomaFiltr = ElonFiltr & { oquvchi?: string; ustoz?: string }
 
 export function bildirishnomaFiltri(f: string): BildirishnomaFiltr {
   const [tur, qiymat] = f.split(':')
   if (tur === 'oquvchi') return /^S\d{1,5}$/.test(qiymat ?? '') ? { oquvchi: qiymat } : {}
+  if (tur === 'ustoz') return /^U\d{1,5}$/.test(qiymat ?? '') ? { ustoz: qiymat } : {}
   return filtrOqi(f)
+}
+
+/**
+ * Shaxsiy filtrda "Kimga" mos bo'lsin (admin belgilashni unutsa ham):
+ * bitta ustoz — faqat ustozga; bitta o'quvchi — o'quvchi va/yoki ota-ona
+ * (hech biri belgilanmagan bo'lsa — o'quvchining o'zi).
+ */
+export function kimgaMoslash(kimga: TelegramKim[], filtr: BildirishnomaFiltr): TelegramKim[] {
+  if (filtr.ustoz) return ['ustoz']
+  if (filtr.oquvchi) {
+    const k = kimga.filter((x) => x === 'oquvchi' || x === 'ota_ona')
+    return k.length ? k : ['oquvchi']
+  }
+  return kimga
 }

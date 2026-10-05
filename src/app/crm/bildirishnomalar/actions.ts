@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { talabProfil, talabRol } from '@/lib/auth'
 import { matn, xabarliYol, xatoMatni } from '@/lib/kiritish'
 import { KIMLAR } from '@/lib/elon'
-import { BTURLAR, bildirishnomaFiltri, havolaToza, savollarniOqi, type BildirishnomaTuri, type SorovnomaNatija } from '@/lib/bildirishnoma'
+import { BTURLAR, bildirishnomaFiltri, havolaToza, kimgaMoslash, savollarniOqi, type BildirishnomaTuri, type SorovnomaNatija } from '@/lib/bildirishnoma'
 import type { TelegramKim } from '@/lib/types'
 import { pushYoqilganmi, pushYubor } from '@/lib/push'
 
@@ -33,7 +33,8 @@ export async function bildirishnomaYarat(fd: FormData) {
 
   const turi = (BTURLAR.find((t) => t.qiymat === fd.get('turi'))?.qiymat ?? 'eslatma') as BildirishnomaTuri
   const sarlavha = matn(fd.get('sarlavha'))?.slice(0, 120)
-  const kimga = fd.getAll('k').map(String).filter((k): k is TelegramKim => KIMLAR.some((x) => x.qiymat === k))
+  const filtr = bildirishnomaFiltri(String(fd.get('f') ?? 'hammasi'))
+  const kimga = kimgaMoslash(fd.getAll('k').map(String).filter((k): k is TelegramKim => KIMLAR.some((x) => x.qiymat === k)), filtr)
   const savollar = turi === 'sorovnoma' ? savollarniOqi(String(fd.get('savollar') ?? '[]'), sarlavha ?? '') : []
   const tugash = toshkentVaqt(fd.get('tugash'))
   const boshlanish = toshkentVaqt(fd.get('boshlanish'))
@@ -52,7 +53,7 @@ export async function bildirishnomaYarat(fd: FormData) {
       havola: havolaToza(matn(fd.get('havola'))),
       havola_matn: matn(fd.get('havola_matn'))?.slice(0, 40) ?? null,
       kimga,
-      filtr: bildirishnomaFiltri(String(fd.get('f') ?? 'hammasi')),
+      filtr,
       muhim: fd.get('muhim') === '1',
       kop_tanlov: savollar.some((q) => q.kop_tanlov),
       natija_ochiq: fd.get('natija_ochiq') === '1',

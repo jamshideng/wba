@@ -20,8 +20,13 @@ function Maydon({ nom, izoh, children }: { nom: string; izoh?: string; children:
 
 /** Yangi bildirishnoma: turini tanlash, kimga, muddat; o'ngda — foydalanuvchi ko'radigan ko'rinish */
 export function BildirishnomaForma({
-  guruhlar, fanlar, oquvchilar,
-}: { guruhlar: { id: string; nom: string }[]; fanlar: [string, string][]; oquvchilar: { id: string; nom: string }[] }) {
+  guruhlar, fanlar, oquvchilar, ustozlar,
+}: {
+  guruhlar: { id: string; nom: string }[]
+  fanlar: [string, string][]
+  oquvchilar: { id: string; nom: string }[]
+  ustozlar: { id: string; nom: string }[]
+}) {
   const [turi, setTuri] = useState<BildirishnomaTuri>('eslatma')
   const [sarlavha, setSarlavha] = useState('')
   const [matn, setMatn] = useState('')
@@ -137,7 +142,7 @@ export function BildirishnomaForma({
           </div>
         </fieldset>
 
-        <Maydon nom="Kimlar orasidan" izoh="O‘quvchi va ota-onaga — guruh/fan/qarz yoki bitta o‘quvchi; ustozga — guruh/fan bo‘yicha. Bitta o‘quvchi tanlansa — xodim va ustozga chiqmaydi">
+        <Maydon nom="Kimlar orasidan" izoh="O‘quvchi va ota-onaga — guruh/fan/qarz yoki bitta o‘quvchi; ustozga — guruh/fan bo‘yicha. Bitta o‘quvchi yoki ustoz tanlansa — faqat o‘sha odamga boradi (Kimga o‘zi moslanadi)">
           <select name="f" defaultValue="hammasi" className={kirishKlass}>
             <option value="hammasi">Hammasi</option>
             <option value="qarzdor">Faqat qarzdorlar</option>
@@ -149,6 +154,9 @@ export function BildirishnomaForma({
             </optgroup>
             <optgroup label="Bitta o‘quvchi (faqat o‘zi / ota-onasi)">
               {oquvchilar.map((o) => <option key={o.id} value={`oquvchi:${o.id}`}>{o.id} · {o.nom}</option>)}
+            </optgroup>
+            <optgroup label="Bitta ustoz (faqat o‘zi)">
+              {ustozlar.map((u) => <option key={u.id} value={`ustoz:${u.id}`}>{u.id} · {u.nom}</option>)}
             </optgroup>
           </select>
         </Maydon>

@@ -500,7 +500,7 @@ export type Bildirishnoma = {
   havola: string | null
   havola_matn: string | null
   kimga: TelegramKim[]
-  filtr: ElonFiltr & { oquvchi?: string } // oquvchi — 0056, faqat bildirishnomada
+  filtr: ElonFiltr & { oquvchi?: string; ustoz?: string } // oquvchi — 0056, ustoz — 0058, faqat bildirishnomada
   muhim: boolean
   kop_tanlov: boolean
   natija_ochiq: boolean
