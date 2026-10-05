@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { IconOrnatish, IconUlashish } from '@/components/icons'
+import { useRouter } from 'next/navigation'
+import { IconOrnatish, IconUlashish, IconYangilash } from '@/components/icons'
 
 /*
  * Telefon ilovasi (PWA).
@@ -151,5 +152,48 @@ export function IlovaOrnatish({ joy }: { joy: 'banner' | 'menyu' }) {
         )}
       </div>
     </div>
+  )
+}
+
+/**
+ * Ilova ichida "Yangilash" (ekrandagi ikonkadan ochilganda brauzer tugmasi
+ * yo'q). Bosilsa — sahifa butunlay qayta yuklanadi: yangi ma'lumot ham,
+ * saytning yangi versiyasi ham keladi. Brauzerda ko'rinmaydi (u yerda
+ * o'z tugmasi bor).
+ * Qo'shimcha: ilovaga boshqa dasturdan qaytilganda (1 daqiqadan keyin) —
+ * ma'lumot o'zi yangilanadi (router.refresh, sahifa sakramaydi).
+ */
+export function YangilashTugma() {
+  const router = useRouter()
+  const [ichida, setIchida] = useState(false)
+  const [aylanmoqda, setAylanmoqda] = useState(false)
+
+  useEffect(() => {
+    if (!ilovaIchidami()) return
+    setIchida(true)
+    let ketdi = 0
+    const korinish = () => {
+      if (document.visibilityState === 'hidden') ketdi = Date.now()
+      else if (ketdi && Date.now() - ketdi > 60_000) router.refresh()
+    }
+    document.addEventListener('visibilitychange', korinish)
+    return () => document.removeEventListener('visibilitychange', korinish)
+  }, [router])
+
+  if (!ichida) return null
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setAylanmoqda(true)
+        window.location.reload()
+      }}
+      aria-label="Yangilash"
+      title="Yangilash"
+      className="flex size-11 shrink-0 items-center justify-center rounded-[10px] text-ink-2 transition hover:bg-surface-2 hover:text-ink"
+    >
+      <IconYangilash size={19} className={aylanmoqda ? 'animate-spin' : ''} />
+    </button>
   )
 }

@@ -261,3 +261,11 @@ export const IconQongiroq = (p: P) => (
     <path d="M7.5 16a1.5 1.5 0 0 0 3 0" />
   </Svg>
 )
+
+/** Yangilash — aylana strelka (ilova ichida sahifani qayta yuklash) */
+export const IconYangilash = (p: P) => (
+  <Svg {...p}>
+    <path d="M15 9a6 6 0 1 1-1.76-4.24" />
+    <path d="M15 2.5v3.5h-3.5" />
+  </Svg>
+)

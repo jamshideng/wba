@@ -19,7 +19,7 @@ import { MenyuTugma } from '@/components/menyu-tugma'
 import { YuklanishChizigi, HavolaHolati } from '@/components/yuklanish'
 import { BildirishnomaJoyi } from '@/components/bildirishnomalar'
 import { PastkiHavola } from '@/components/pastki-havola'
-import { IlovaOrnatish } from '@/components/ilova'
+import { IlovaOrnatish, YangilashTugma } from '@/components/ilova'
 import { XabarnomaYoqish } from '@/components/xabarnoma'
 import type { MeningBildirishnomam } from '@/lib/bildirishnoma'
 
@@ -154,6 +154,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
           <Logo size="sm" />
         </Link>
         <span className="flex-1" />
+        <YangilashTugma />
         <span className="mr-2">
           <BildirishnomaJoyi joy="mobil" royxat={bildirishnomalar} />
         </span>
@@ -188,6 +189,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
         <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface/90 px-5 py-2 backdrop-blur max-lg:hidden lg:px-7">
           <MenyuTugma />
           <span className="flex-1" />
+          <YangilashTugma />
           <TemaTugma />
           <BildirishnomaJoyi joy="kompyuter" royxat={bildirishnomalar} />
           <ProfilMenyu
