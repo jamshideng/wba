@@ -31,14 +31,17 @@ function obunaJson(o: PushSubscription) {
   return { endpoint: j.endpoint ?? '', p256dh: j.keys?.p256dh ?? '', auth: j.keys?.auth ?? '' }
 }
 
-function saqla(k: string, q: string, joy: Storage | undefined) {
+/* Maxfiy rejim / bloklangan sayt ma'lumotida `localStorage` ga murojaatning
+   o'zi xato beradi — shuning uchun ombor nomi bilan, try ichida olinadi. */
+type Ombor = 'localStorage' | 'sessionStorage'
+function saqla(k: string, q: string, joy: Ombor) {
   try {
-    joy?.setItem(k, q)
+    window[joy].setItem(k, q)
   } catch {}
 }
-function oqi(k: string, joy: Storage | undefined) {
+function oqi(k: string, joy: Ombor) {
   try {
-    return joy?.getItem(k) ?? null
+    return window[joy].getItem(k)
   } catch {
     return null
   }
@@ -64,14 +67,14 @@ export function XabarnomaYoqish({ joy }: { joy: 'banner' | 'menyu' }) {
       const ichida = ilovaIchidami()
       const iphone = iphonemi()
       const qollaydi = Boolean(VAPID) && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
-      const yopiq = Date.now() - Number(oqi(YOPILDI, localStorage) ?? 0) < 7 * 86_400_000
+      const yopiq = Date.now() - Number(oqi(YOPILDI, 'localStorage') ?? 0) < 7 * 86_400_000
       let obuna = false
       if (qollaydi) {
         const reg = await navigator.serviceWorker.getRegistration()
         const o = reg ? await reg.pushManager.getSubscription() : null
         obuna = Boolean(o)
-        if (o && Notification.permission === 'granted' && oqi(SINX, sessionStorage) !== '1') {
-          if (await pushObunaSaqla(obunaJson(o), navigator.userAgent)) saqla(SINX, '1', sessionStorage)
+        if (o && Notification.permission === 'granted' && oqi(SINX, 'sessionStorage') !== '1') {
+          if (await pushObunaSaqla(obunaJson(o), navigator.userAgent)) saqla(SINX, '1', 'sessionStorage')
         }
       }
       if (!bekor)
@@ -108,7 +111,7 @@ export function XabarnomaYoqish({ joy }: { joy: 'banner' | 'menyu' }) {
         (await reg.pushManager.getSubscription()) ??
         (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: kalitBaytlar(VAPID) }))
       const ok = await pushObunaSaqla(obunaJson(o), navigator.userAgent)
-      if (ok) saqla(SINX, '1', sessionStorage)
+      if (ok) saqla(SINX, '1', 'sessionStorage')
       else setXato('Saqlanmadi. Qayta urinib ko‘ring.')
       setH((x) => (x ? { ...x, ruxsat, obuna: ok } : x))
     } catch {
@@ -134,7 +137,7 @@ export function XabarnomaYoqish({ joy }: { joy: 'banner' | 'menyu' }) {
   }
 
   function keyinroq() {
-    saqla(YOPILDI, String(Date.now()), localStorage)
+    saqla(YOPILDI, String(Date.now()), 'localStorage')
     setH((x) => (x ? { ...x, yopiq: true } : x))
   }
 
