@@ -5,6 +5,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, kirishKlass } from '@/components/forma'
+import { JonliForma } from '@/components/jonli-forma'
 import { sana, bugunToshkent } from '@/lib/format'
 import type { Hisobot, HisobotGrafik, HisobotDavomat, HisobotMoliya, HisobotOquvchilar, HisobotUstoz, MonthlyIncome } from '@/lib/types'
 import { DavomatBolimi, MoliyaBolimi, OquvchilarBolimi, UstozlarBolimi } from './bolimlar'
@@ -178,7 +179,8 @@ export default async function Hisobotlar({
         {tugma('90kun', '90 kun')}
         {tugma('oy', 'Shu oy')}
         {tugma('otgan', 'O‘tgan oy')}
-        <form className="flex flex-wrap items-end gap-2">
+        {/* Sana tanlanishi bilan hisobot chiqadi — "Ko'rsatish" tugmasi kerak emas */}
+        <JonliForma className="flex flex-wrap items-end gap-2">
           {bolim !== 'umumiy' && <input type="hidden" name="bolim" value={bolim} />}
           <input type="hidden" name="tur" value="oraliq" />
           <Maydon nom="Dan">
@@ -187,10 +189,7 @@ export default async function Hisobotlar({
           <Maydon nom="Gacha">
             <input type="date" name="gacha" defaultValue={o.gacha} className={kirishKlass} />
           </Maydon>
-          <button type="submit" className="min-h-11 rounded-[9px] border border-line px-4 text-[13px] text-ink-2 hover:text-ink">
-            Ko‘rsatish
-          </button>
-        </form>
+        </JonliForma>
       </div>
       )}
 

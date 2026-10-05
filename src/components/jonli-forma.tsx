@@ -41,11 +41,12 @@ export function JonliForma({
       if (el instanceof HTMLInputElement && el.type === 'checkbox') {
         el.checked = manzil.getAll(el.name).includes(el.value)
       } else {
-        // Manzilda yo'q bo'lsa — tanlovda server qo'ygan standart variant qoladi
-        // (bo'sh qiymat qo'yilsa <select> hech narsani ko'rsatmay qolardi)
+        // Manzilda yo'q bo'lsa — server qo'ygan standart qiymat qoladi
+        // (bo'sh qiymat qo'yilsa <select> hech narsani ko'rsatmay qolardi,
+        // hisobotdagi sana maydonlari esa "7 kun" kabi tugmadan keyin bo'shardi)
         const standart = el instanceof HTMLSelectElement
           ? (Array.from(el.options).find((o) => o.defaultSelected)?.value ?? '')
-          : ''
+          : el.defaultValue
         const v = manzil.get(el.name) ?? standart
         if (el.value !== v) el.value = v
       }
