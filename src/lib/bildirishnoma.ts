@@ -1,3 +1,6 @@
+import { filtrOqi } from '@/lib/elon'
+import type { ElonFiltr } from '@/lib/types'
+
 /**
  * Sayt ichidagi bildirishnomalar (0047) — umumiy turlar va matnlar.
  * Kimga va filtr qoidasi Telegram e'loni (src/lib/elon.ts) bilan bir xil.
@@ -86,4 +89,17 @@ export function havolaToza(xom: string | null): string | null {
   if (s.startsWith('/') && !s.startsWith('//')) return s.slice(0, 300)
   if (/^https:\/\/[^\s]+$/.test(s)) return s.slice(0, 300)
   return null
+}
+
+/**
+ * Bildirishnoma filtri: e'londagi (guruh/fan/qarzdor) + BITTA o'quvchi (0056).
+ * "oquvchi:S016" faqat shu yerda o'qiladi — Telegram e'loni (filtrOqi /
+ * elon_oluvchilar) uni bilmaydi va hammaga yuborib yubormasin.
+ */
+export type BildirishnomaFiltr = ElonFiltr & { oquvchi?: string }
+
+export function bildirishnomaFiltri(f: string): BildirishnomaFiltr {
+  const [tur, qiymat] = f.split(':')
+  if (tur === 'oquvchi') return /^S\d{1,5}$/.test(qiymat ?? '') ? { oquvchi: qiymat } : {}
+  return filtrOqi(f)
 }

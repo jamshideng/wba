@@ -31,10 +31,12 @@ export default async function Bildirishnomalar({
   const s = await searchParams
 
   const supabase = await createClient()
-  const [{ data: royxat }, { data: stat }, { data: guruhlar }] = await Promise.all([
+  const [{ data: royxat }, { data: stat }, { data: guruhlar }, { data: oquvchilar }] = await Promise.all([
     supabase.from('bildirishnomalar').select('*').order('created_at', { ascending: false }).limit(50),
     supabase.rpc('bildirishnoma_statistika'),
     supabase.from('groups').select('id, nom, subject_id, subjects(nom)').eq('holat', 'faol').order('nom'),
+    // Bitta o'quvchiga yuborish uchun (0056) — ketganlardan tashqari
+    supabase.from('students').select('id, fish').neq('holat', 'ketgan').order('id'),
   ])
   const bList = (royxat ?? []) as Bildirishnoma[]
   const statMap = new Map(((stat ?? []) as { bildirishnoma_id: number; korgan: number; yopgan: number; javob_bergan: number }[]).map((x) => [x.bildirishnoma_id, x]))
@@ -53,10 +55,13 @@ export default async function Bildirishnomalar({
     .sort((a, b) => a[1].localeCompare(b[1], 'uz')) as [string, string][]
   const guruhNomi = new Map(gList.map((g) => [g.id, g.nom]))
   const fanNomi = new Map(fanlar)
+  const oList = ((oquvchilar ?? []) as { id: string; fish: string }[]).map((o) => ({ id: o.id, nom: o.fish }))
+  const oquvchiNomi = new Map(oList.map((o) => [o.id, o.nom]))
   const kimlar = (b: Bildirishnoma) => {
-    const f = b.filtr as { guruh?: string; fan?: string; qarzdor?: boolean }
+    const f = b.filtr
     const qism = b.kimga.map((k) => KIM_NOMI[k]).join(', ')
-    const filtr = f.guruh ? ` · ${guruhNomi.get(f.guruh) ?? f.guruh}` : f.fan ? ` · ${fanNomi.get(f.fan) ?? f.fan}` : f.qarzdor ? ' · qarzdorlar' : ''
+    const filtr = f.oquvchi ? ` · ${oquvchiNomi.get(f.oquvchi) ?? ''} (${f.oquvchi})`
+      : f.guruh ? ` · ${guruhNomi.get(f.guruh) ?? f.guruh}` : f.fan ? ` · ${fanNomi.get(f.fan) ?? f.fan}` : f.qarzdor ? ' · qarzdorlar' : ''
     return qism + filtr
   }
   const hozir = Date.now()
@@ -73,7 +78,7 @@ export default async function Bildirishnomalar({
 
       <Card className="flex flex-col gap-4 p-5">
         <h2 className="h-display text-[18px]">Yangi bildirishnoma</h2>
-        <BildirishnomaForma guruhlar={gList.map((g) => ({ id: g.id, nom: g.nom }))} fanlar={fanlar} />
+        <BildirishnomaForma guruhlar={gList.map((g) => ({ id: g.id, nom: g.nom }))} fanlar={fanlar} oquvchilar={oList} />
       </Card>
 
       <Card className="flex flex-col">

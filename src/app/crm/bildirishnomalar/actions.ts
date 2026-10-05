@@ -6,8 +6,8 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabProfil, talabRol } from '@/lib/auth'
 import { matn, xabarliYol, xatoMatni } from '@/lib/kiritish'
-import { filtrOqi, KIMLAR } from '@/lib/elon'
-import { BTURLAR, havolaToza, savollarniOqi, type BildirishnomaTuri, type SorovnomaNatija } from '@/lib/bildirishnoma'
+import { KIMLAR } from '@/lib/elon'
+import { BTURLAR, bildirishnomaFiltri, havolaToza, savollarniOqi, type BildirishnomaTuri, type SorovnomaNatija } from '@/lib/bildirishnoma'
 import type { TelegramKim } from '@/lib/types'
 import { pushYoqilganmi, pushYubor } from '@/lib/push'
 
@@ -52,7 +52,7 @@ export async function bildirishnomaYarat(fd: FormData) {
       havola: havolaToza(matn(fd.get('havola'))),
       havola_matn: matn(fd.get('havola_matn'))?.slice(0, 40) ?? null,
       kimga,
-      filtr: filtrOqi(String(fd.get('f') ?? 'hammasi')),
+      filtr: bildirishnomaFiltri(String(fd.get('f') ?? 'hammasi')),
       muhim: fd.get('muhim') === '1',
       kop_tanlov: savollar.some((q) => q.kop_tanlov),
       natija_ochiq: fd.get('natija_ochiq') === '1',
