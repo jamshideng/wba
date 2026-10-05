@@ -253,3 +253,11 @@ export const IconUlashish = (p: P) => (
     <path d="M6.5 4L9 1.5 11.5 4" />
   </Svg>
 )
+
+/** Qo'ng'iroqcha — telefon xabarnomalari (0055) */
+export const IconQongiroq = (p: P) => (
+  <Svg {...p}>
+    <path d="M4.5 12.5V8a4.5 4.5 0 0 1 9 0v4.5l1.5 1.5H3l1.5-1.5z" />
+    <path d="M7.5 16a1.5 1.5 0 0 0 3 0" />
+  </Svg>
+)

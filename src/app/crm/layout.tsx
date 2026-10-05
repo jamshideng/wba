@@ -8,6 +8,7 @@ import { talabProfil, getUstoz, ROL_NOMI, staffmi, tasdiqlaydimi } from '@/lib/a
 import { menyular, type MenyuBand } from '@/lib/menyu'
 import { MENYU_COOKIE } from '@/lib/menyu-holat'
 import { createClient } from '@/lib/supabase/server'
+import { chiqishdaPushniUz } from '@/lib/push'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Logo } from '@/components/ui'
 import { bosh } from '@/lib/format'
@@ -19,11 +20,13 @@ import { YuklanishChizigi, HavolaHolati } from '@/components/yuklanish'
 import { BildirishnomaJoyi } from '@/components/bildirishnomalar'
 import { PastkiHavola } from '@/components/pastki-havola'
 import { IlovaOrnatish } from '@/components/ilova'
+import { XabarnomaYoqish } from '@/components/xabarnoma'
 import type { MeningBildirishnomam } from '@/lib/bildirishnoma'
 
 async function chiqish() {
   'use server'
   const supabase = await createClient()
+  await chiqishdaPushniUz(supabase)
   await supabase.auth.signOut()
   // Brauzer xotirasidagi (staleTimes) sahifalar keyingi odamga ko'rinmasin
   revalidatePath('/', 'layout')
@@ -197,6 +200,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
 
         <main className="min-w-0 flex-1 max-lg:pt-14 max-lg:pb-16">
           <IlovaOrnatish joy="banner" />
+          <XabarnomaYoqish joy="banner" />
           {children}
         </main>
       </div>

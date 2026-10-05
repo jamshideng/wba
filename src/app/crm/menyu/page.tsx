@@ -4,10 +4,12 @@ import { revalidatePath } from 'next/cache'
 import { talabProfil, getUstoz, ROL_NOMI } from '@/lib/auth'
 import { menyular } from '@/lib/menyu'
 import { createClient } from '@/lib/supabase/server'
+import { chiqishdaPushniUz } from '@/lib/push'
 import { Sarlavha } from '@/components/crm'
 import { TemaTugma } from '@/components/tema'
 import { IconLogout } from '@/components/icons'
 import { IlovaOrnatish } from '@/components/ilova'
+import { XabarnomaYoqish } from '@/components/xabarnoma'
 
 export const metadata = { title: 'Menyu' }
 export const dynamic = 'force-dynamic'
@@ -15,6 +17,7 @@ export const dynamic = 'force-dynamic'
 async function chiqish() {
   'use server'
   const supabase = await createClient()
+  await chiqishdaPushniUz(supabase)
   await supabase.auth.signOut()
   // Brauzer xotirasidagi (staleTimes) sahifalar keyingi odamga ko'rinmasin
   revalidatePath('/', 'layout')
@@ -50,6 +53,7 @@ export default async function Menyu() {
       ))}
 
       <IlovaOrnatish joy="menyu" />
+      <XabarnomaYoqish joy="menyu" />
 
       <div className="flex items-center gap-2">
         <form action={chiqish} className="flex-1">

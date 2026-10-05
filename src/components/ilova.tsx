@@ -49,14 +49,14 @@ export function IlovaSW() {
 const YOPILDI_KALIT = 'wba-ilova-yopildi'
 const YOPIQ_KUN = 14
 
-function ilovaIchidami() {
+export function ilovaIchidami() {
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true
   )
 }
 
-function iphonemi() {
+export function iphonemi() {
   const ua = navigator.userAgent
   return /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 }

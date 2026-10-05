@@ -8,9 +8,12 @@
  *   2) /_next/static/* — nomida xesh bor, o'zgarmaydi (tezlik uchun).
  * Sahifa ochilmasa (internet yo'q) — /offline.html ko'rsatiladi.
  *
+ * Telefon xabarnomalari (0055): server web-push bilan yuboradi — bu yerda
+ * ko'rsatiladi; bosilsa ilova (yoki ochiq oynasi) kerakli sahifada ochiladi.
+ *
  * Yangilansa VERSIYA ni oshiring: eski kesh o'chadi.
  */
-const VERSIYA = 'wba-v1'
+const VERSIYA = 'wba-v2'
 const OLDINDAN = ['/offline.html', '/ikonka-192.png', '/logo-qizil.png']
 
 self.addEventListener('install', (e) => {
@@ -56,4 +59,39 @@ self.addEventListener('fetch', (e) => {
     )
   }
   // Qolgan hammasi — brauzerning o'zi (keshsiz, aralashmaymiz)
+})
+
+self.addEventListener('push', (e) => {
+  let x = {}
+  try {
+    x = e.data ? e.data.json() : {}
+  } catch {
+    x = { sarlavha: 'World Bridge Academy', matn: e.data ? e.data.text() : '' }
+  }
+  e.waitUntil(
+    self.registration.showNotification(x.sarlavha || 'World Bridge Academy', {
+      body: x.matn || '',
+      icon: '/ikonka-192.png',
+      badge: '/ikonka-maskable-192.png',
+      tag: x.teg || undefined,
+      lang: 'uz',
+      data: { havola: x.havola || '/crm' },
+    }),
+  )
+})
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close()
+  const manzil = new URL(e.notification.data?.havola || '/crm', self.location.origin).href
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((oynalar) => {
+      for (const o of oynalar) {
+        if (new URL(o.url).origin === self.location.origin && 'focus' in o) {
+          o.navigate(manzil).catch(() => {})
+          return o.focus()
+        }
+      }
+      return self.clients.openWindow(manzil)
+    }),
+  )
 })

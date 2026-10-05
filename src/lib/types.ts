@@ -723,6 +723,11 @@ export type Database = {
       telegram_bloklagan: { Args: { p_chat: number }; Returns: undefined }
       elon_oluvchilar: { Args: { p_kimga: TelegramKim[]; p_filtr?: ElonFiltr }; Returns: ElonOluvchi[] }
       bildirishnoma_belgila: { Args: { p_id: number; p_yopildi?: boolean }; Returns: undefined }
+      // Web Push (0055)
+      push_obuna: { Args: { p_endpoint: string; p_p256dh: string; p_auth: string; p_qurilma: string | null }; Returns: undefined }
+      push_ochir: { Args: { p_endpoint: string }; Returns: undefined }
+      push_oluvchilar: { Args: { p_bildirishnoma: number }; Returns: { endpoint: string; p256dh: string; auth: string }[] }
+      push_eskirgan: { Args: { p_endpoint: string }; Returns: undefined }
       sorovnomaga_javob: { Args: { p_id: number; p_variantlar: number[] }; Returns: undefined }
       sorovnoma_natija: { Args: { p_id: number }; Returns: { variant_id: number; matn: string; ovoz: number; jami: number }[] }
       bildirishnoma_statistika: { Args: Record<string, never>; Returns: { bildirishnoma_id: number; korgan: number; yopgan: number; javob_bergan: number }[] }

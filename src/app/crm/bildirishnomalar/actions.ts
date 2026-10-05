@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabProfil, talabRol } from '@/lib/auth'
@@ -8,6 +9,7 @@ import { matn, xabarliYol, xatoMatni } from '@/lib/kiritish'
 import { filtrOqi, KIMLAR } from '@/lib/elon'
 import { BTURLAR, havolaToza, savollarniOqi, type BildirishnomaTuri, type SorovnomaNatija } from '@/lib/bildirishnoma'
 import type { TelegramKim } from '@/lib/types'
+import { pushYoqilganmi, pushYubor } from '@/lib/push'
 
 /**
  * Sayt ichidagi bildirishnomalar (0047).
@@ -79,8 +81,30 @@ export async function bildirishnomaYarat(fd: FormData) {
     if (e3) return bekor(e3)
   }
 
+  /* Telefon xabarnomasi (0055) — hozir boshlanadiganlarga darhol. Kelajakka
+     rejalashtirilgani push'siz: u vaqtida saytda chiqadi. Oluvchilar ro'yxati
+     admin nomidan (RLS/definer), yuborish javobdan keyin — admin kutmaydi. */
+  let pushSoni = 0
+  if (pushYoqilganmi() && (!boshlanish || new Date(boshlanish) <= new Date())) {
+    const { data: oluvchilar } = await supabase.rpc('push_oluvchilar', { p_bildirishnoma: b!.id })
+    pushSoni = oluvchilar?.length ?? 0
+    if (pushSoni) {
+      const id = b!.id
+      const matnQism = matn(fd.get('matn'))
+      after(async () => {
+        const { eskirgan } = await pushYubor(oluvchilar!, {
+          sarlavha: sarlavha!,
+          matn: matnQism,
+          havola: havolaToza(matn(fd.get('havola'))) ?? '/crm',
+          teg: `b${id}`,
+        })
+        for (const e of eskirgan) await supabase.rpc('push_eskirgan', { p_endpoint: e })
+      })
+    }
+  }
+
   revalidatePath('/crm', 'layout')
-  redirect(xabarliYol(YOL, { ok: `“${sarlavha}” e’lon qilindi — kirganlarga tepada chiqadi.` }))
+  redirect(xabarliYol(YOL, { ok: `“${sarlavha}” e’lon qilindi — kirganlarga tepada chiqadi${pushSoni ? `, ${pushSoni} ta telefonga xabarnoma ketdi` : ''}.` }))
 }
 
 export async function bildirishnomaHolat(fd: FormData) {
