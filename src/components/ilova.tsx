@@ -42,7 +42,8 @@ if (typeof window !== 'undefined') {
 export function IlovaSW() {
   useEffect(() => {
     if (!('serviceWorker' in navigator) || process.env.NODE_ENV !== 'production') return
-    navigator.serviceWorker.register('/sw.js').catch(() => {})
+    // Har ochilishda yangi versiya bormi — tekshiriladi (iPhone ilovasi uzoq "uxlab" turadi)
+    navigator.serviceWorker.register('/sw.js').then((r) => r.update()).catch(() => {})
   }, [])
   return null
 }
@@ -195,5 +196,63 @@ export function YangilashTugma() {
     >
       <IconYangilash size={19} className={aylanmoqda ? 'animate-spin' : ''} />
     </button>
+  )
+}
+
+/**
+ * "Ilova holati" — telefonda nima ishlayotganini ko'rish uchun (Menyu'da).
+ * Versiya (service worker keshi), ikonka raqami funksiyasi, xabarnoma ruxsati
+ * va "Raqamni sinash": ikonkaga 5 qo'yadi — chiqib ko'rsa, raqam ishlaydi.
+ */
+export function IlovaHolati() {
+  const [h, setH] = useState<{ versiya: string; belgi: boolean; ruxsat: string } | null>(null)
+  const [natija, setNatija] = useState('')
+
+  useEffect(() => {
+    ;(async () => {
+      let versiya = 'yo‘q'
+      try {
+        const nomlar = 'caches' in window ? await caches.keys() : []
+        versiya = nomlar.filter((n) => n.startsWith('wba-v')).join(', ') || 'yo‘q'
+      } catch {}
+      setH({
+        versiya,
+        belgi: 'setAppBadge' in navigator,
+        ruxsat: 'Notification' in window ? Notification.permission : 'yo‘q',
+      })
+    })()
+  }, [])
+
+  if (!h) return null
+  const n = navigator as Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> }
+
+  async function sina(son: number) {
+    try {
+      if (!n.setAppBadge) throw new Error('bu telefonda raqam funksiyasi yo‘q')
+      if (son) await n.setAppBadge(son)
+      else await n.clearAppBadge?.()
+      setNatija(son ? 'Qo‘yildi — ilovadan chiqib ikonkani ko‘ring.' : 'Tozalandi.')
+    } catch (e) {
+      setNatija('Xato: ' + (e instanceof Error ? e.message : String(e)))
+    }
+  }
+
+  return (
+    <div className="rounded-[12px] border border-line bg-surface p-3.5 text-[12.5px] text-ink-2">
+      <p className="lbl mb-1.5">Ilova holati</p>
+      <p>
+        Versiya: <b className="text-ink">{h.versiya}</b> · Ikonka raqami: <b className="text-ink">{h.belgi ? 'bor' : 'yo‘q'}</b> · Ruxsat:{' '}
+        <b className="text-ink">{h.ruxsat}</b>
+      </p>
+      <div className="mt-2.5 flex gap-2">
+        <button type="button" onClick={() => sina(5)} className="min-h-11 flex-1 rounded-[10px] border border-line px-3 text-[13px] text-ink hover:bg-surface-2">
+          Raqamni sinash (5)
+        </button>
+        <button type="button" onClick={() => sina(0)} className="min-h-11 rounded-[10px] border border-line px-3 text-[13px] text-ink-3 hover:text-ink">
+          Tozalash
+        </button>
+      </div>
+      {natija && <p className="mt-2 text-ink">{natija}</p>}
+    </div>
   )
 }

@@ -8,7 +8,7 @@ import { chiqishdaPushniUz } from '@/lib/push'
 import { Sarlavha } from '@/components/crm'
 import { TemaTugma } from '@/components/tema'
 import { IconLogout } from '@/components/icons'
-import { IlovaOrnatish } from '@/components/ilova'
+import { IlovaOrnatish, IlovaHolati } from '@/components/ilova'
 import { XabarnomaYoqish } from '@/components/xabarnoma'
 
 export const metadata = { title: 'Menyu' }
@@ -54,6 +54,7 @@ export default async function Menyu() {
 
       <IlovaOrnatish joy="menyu" />
       <XabarnomaYoqish joy="menyu" />
+      <IlovaHolati />
 
       <div className="flex items-center gap-2">
         <form action={chiqish} className="flex-1">
