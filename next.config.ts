@@ -77,6 +77,14 @@ const nextConfig: NextConfig = {
           { key: 'Content-Security-Policy', value: CSP },
         ],
       },
+      {
+        // Service worker har safar tekshirilsin — yangilanish darhol yetib borsin
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+        ],
+      },
     ]
   },
 }

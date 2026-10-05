@@ -18,6 +18,7 @@ import { MenyuTugma } from '@/components/menyu-tugma'
 import { YuklanishChizigi, HavolaHolati } from '@/components/yuklanish'
 import { BildirishnomaJoyi } from '@/components/bildirishnomalar'
 import { PastkiHavola } from '@/components/pastki-havola'
+import { IlovaOrnatish } from '@/components/ilova'
 import type { MeningBildirishnomam } from '@/lib/bildirishnoma'
 
 async function chiqish() {
@@ -194,7 +195,10 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
           />
         </header>
 
-        <main className="min-w-0 flex-1 max-lg:pt-14 max-lg:pb-16">{children}</main>
+        <main className="min-w-0 flex-1 max-lg:pt-14 max-lg:pb-16">
+          <IlovaOrnatish joy="banner" />
+          {children}
+        </main>
       </div>
     </div>
   )

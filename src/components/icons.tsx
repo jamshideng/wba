@@ -235,3 +235,21 @@ export const IconTanga = (p: P) => (
     <path d="M6.5 7l1.2 4.5L9 8l1.3 3.5L11.5 7" />
   </Svg>
 )
+
+/** Ilovani o'rnatish — telefon + pastga strelka (PWA) */
+export const IconOrnatish = (p: P) => (
+  <Svg {...p}>
+    <rect x="4.5" y="1.5" width="9" height="15" rx="2" />
+    <path d="M9 5v6" />
+    <path d="M6.75 8.75L9 11l2.25-2.25" />
+  </Svg>
+)
+
+/** iOS "Ulashish" belgisi — quti va yuqoriga strelka */
+export const IconUlashish = (p: P) => (
+  <Svg {...p}>
+    <path d="M6 6.5H4.5v9h9v-9H12" />
+    <path d="M9 1.5v9" />
+    <path d="M6.5 4L9 1.5 11.5 4" />
+  </Svg>
+)

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Sarlavha } from '@/components/crm'
 import { TemaTugma } from '@/components/tema'
 import { IconLogout } from '@/components/icons'
+import { IlovaOrnatish } from '@/components/ilova'
 
 export const metadata = { title: 'Menyu' }
 export const dynamic = 'force-dynamic'
@@ -47,6 +48,8 @@ export default async function Menyu() {
           </div>
         </section>
       ))}
+
+      <IlovaOrnatish joy="menyu" />
 
       <div className="flex items-center gap-2">
         <form action={chiqish} className="flex-1">

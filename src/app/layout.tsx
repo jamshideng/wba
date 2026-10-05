@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Archivo, Manrope, IBM_Plex_Mono } from 'next/font/google'
 import { saytManzil } from '@/lib/markaz'
+import { IlovaSW } from '@/components/ilova'
 import './globals.css'
 
 const archivo = Archivo({
@@ -38,6 +39,9 @@ export const metadata: Metadata = {
     locale: 'uz_UZ',
     siteName: 'World Bridge Academy',
   },
+  // iPhone: ekranga qo'shilganda ilova kabi (brauzer panelisiz) ochilsin.
+  // Status bar 'black' — 'black-translucent' bo'lsa CRM sarlavhasi uning ostiga kirib qolardi.
+  appleWebApp: { capable: true, title: 'WBA', statusBarStyle: 'black' },
 }
 
 export const viewport: Viewport = {
@@ -61,7 +65,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: TEMA_SKRIPT }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <IlovaSW />
+      </body>
     </html>
   )
 }
