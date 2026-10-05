@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { talabProfil, getUstoz, adminmi, staffmi } from '@/lib/auth'
+import { woblarChegara } from '@/lib/woblar-chegara'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Badge, Empty } from '@/components/ui'
@@ -184,8 +185,8 @@ export default async function Woblr({
                 ))}
               </select>
             </Maydon>
-            <Maydon nom="Woblar" izoh="−10…+10">
-              <input name="ball" type="number" min={-10} max={10} step={1} defaultValue={1} required className={kirishKlass} />
+            <Maydon nom="Woblar" izoh={adminmi(profil.rol) ? 'Chegara yo‘q (admin)' : '−10…+10'}>
+              <input name="ball" type="number" min={-woblarChegara(adminmi(profil.rol))} max={woblarChegara(adminmi(profil.rol))} step={1} defaultValue={1} required className={kirishKlass} />
             </Maydon>
             <Maydon nom="Sabab">
               <select name="sabab" defaultValue="faollik" className={kirishKlass}>

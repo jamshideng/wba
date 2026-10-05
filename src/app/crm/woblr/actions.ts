@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { talabProfil, getUstoz, adminmi } from '@/lib/auth'
 import { matn, sonOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
 import type { WoblrReason } from '@/lib/types'
+import { woblarXato } from '@/lib/woblar-chegara'
 
 const SABABLAR: WoblrReason[] = ['faollik', 'uy_vazifasi', 'yordam', 'qoida', 'boshqa']
 
@@ -28,9 +29,9 @@ export async function woblrBer(fd: FormData) {
   const sabab = SABABLAR.find((s) => s === fd.get('sabab')) ?? 'faollik'
 
   if (!studentId) redirect(xabarliYol(yol, { xato: 'O‘quvchini tanlang.' }))
-  if (ball === null || ball === 0 || ball < -10 || ball > 10) {
-    redirect(xabarliYol(yol, { xato: 'Woblar −10 dan +10 gacha bo‘lsin, 0 emas.' }))
-  }
+  // Ustozga −10…+10, admin/direktorga chegara yo'q (0057)
+  const chegaraXato = ball === null ? 'Woblar sonini yozing.' : woblarXato(ball, adminmi(profil.rol))
+  if (chegaraXato) redirect(xabarliYol(yol, { xato: chegaraXato }))
 
   const supabase = await createClient()
   const { error } = await supabase.from('woblr').insert({

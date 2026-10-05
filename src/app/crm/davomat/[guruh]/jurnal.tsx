@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { davomatBelgila, probniyBelgila, woblarBer } from './actions'
 import type { AttendanceStatus } from '@/lib/types'
+import { woblarChegara, woblarXato } from '@/lib/woblar-chegara'
 
 export type JurnalQatori = {
   /** O'quvchi ID si yoki probniy uchun lead uuid */
@@ -164,8 +165,9 @@ export function Jurnal({
 
   function woblarBerish(q: JurnalQatori) {
     const ball = Number(woblarKirish[q.student_id] ?? '')
-    if (!Number.isInteger(ball) || ball === 0 || ball < -10 || ball > 10) {
-      setXato('Woblar −10 dan +10 gacha butun son bo‘lsin, 0 emas.')
+    const chegaraXato = woblarXato(ball, huquq === 'hammasi')
+    if (chegaraXato) {
+      setXato(chegaraXato)
       return
     }
     setXato(null)
@@ -309,8 +311,8 @@ export function Jurnal({
                         <input
                           type="number"
                           inputMode="numeric"
-                          min={-10}
-                          max={10}
+                          min={-woblarChegara(huquq === 'hammasi')}
+                          max={woblarChegara(huquq === 'hammasi')}
                           value={woblarKirish[q.student_id] ?? ''}
                           onChange={(e) => setWoblarKirish((w) => ({ ...w, [q.student_id]: e.target.value }))}
                           onKeyDown={(e) => e.key === 'Enter' && woblarBerish(q)}

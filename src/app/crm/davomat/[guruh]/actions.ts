@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { getProfile } from '@/lib/auth'
+import { getProfile, adminmi } from '@/lib/auth'
+import { woblarXato } from '@/lib/woblar-chegara'
 import type { AttendanceStatus } from '@/lib/types'
 
 export type AmalNatijasi<T> = { ok: true; natija: T } | { ok: false; xato: string }
@@ -69,9 +70,9 @@ export async function probniyBelgila(
 export async function woblarBer(guruhId: string, studentId: string, ball: number): Promise<AmalNatijasi<number>> {
   const xato = await ruxsat()
   if (xato) return { ok: false, xato }
-  if (!Number.isInteger(ball) || ball === 0 || ball < -10 || ball > 10) {
-    return { ok: false, xato: 'Woblar −10 dan +10 gacha bo‘lsin, 0 emas.' }
-  }
+  const profil = await getProfile()
+  const chegaraXato = woblarXato(ball, Boolean(profil && adminmi(profil.rol)))
+  if (chegaraXato) return { ok: false, xato: chegaraXato }
 
   const supabase = await createClient()
   const { data, error } = await supabase.rpc('woblar_ber', {
