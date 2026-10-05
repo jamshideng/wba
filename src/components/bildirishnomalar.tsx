@@ -199,6 +199,12 @@ export function Bildirishnomalar({ royxat }: { royxat: MeningBildirishnomam[] })
   const korinayotgan = (muhim ? [muhim] : toastlar).map((b) => b.id).join(',')
   const toastKalit = toastlar.map((b) => b.id).join(',')
 
+  // Ilova ikonkasidagi raqam = yopilmagan xabarlar (qo'ng'iroqchadagi bilan bir xil).
+  // Service worker push kelganda shu sondan davom ettiradi (public/sw.js, BELGI).
+  useEffect(() => {
+    void ikonkaRaqami(oqilmagan)
+  }, [oqilmagan])
+
   // Ko'rsatilganlarni "ko'rdi" deb belgilash (bir marta)
   useEffect(() => {
     for (const id of korinayotgan.split(',').filter(Boolean).map(Number)) {
@@ -324,6 +330,16 @@ export function Bildirishnomalar({ royxat }: { royxat: MeningBildirishnomam[] })
       )}
     </>
   )
+}
+
+/** Ekrandagi ilova ikonkasidagi qizil raqam (Badging API; iPhone — iOS 16.4+, o'rnatilgan ilovada). */
+async function ikonkaRaqami(son: number) {
+  try {
+    const n = navigator as Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> }
+    if (son > 0) await n.setAppBadge?.(son)
+    else await n.clearAppBadge?.()
+    if ('caches' in window) await (await caches.open('wba-belgi')).put('/belgi', new Response(String(son)))
+  } catch {}
 }
 
 /**

@@ -11,9 +11,15 @@
  * Telefon xabarnomalari (0055): server web-push bilan yuboradi — bu yerda
  * ko'rsatiladi; bosilsa ilova (yoki ochiq oynasi) kerakli sahifada ochiladi.
  *
+ * Ikonkadagi raqam (badge): push kelganda +1 (ilova yopiq bo'lsa ham),
+ * ilova ochilganda — yopilmagan bildirishnomalar soniga tenglashadi
+ * (components/bildirishnomalar.tsx). Son BELGI keshida saqlanadi — u
+ * versiya almashganda o'chirilmaydi.
+ *
  * Yangilansa VERSIYA ni oshiring: eski kesh o'chadi.
  */
-const VERSIYA = 'wba-v2'
+const VERSIYA = 'wba-v3'
+const BELGI = 'wba-belgi'
 const OLDINDAN = ['/offline.html', '/ikonka-192.png', '/logo-qizil.png']
 
 self.addEventListener('install', (e) => {
@@ -25,7 +31,7 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches
       .keys()
-      .then((nomlar) => Promise.all(nomlar.filter((n) => n !== VERSIYA).map((n) => caches.delete(n))))
+      .then((nomlar) => Promise.all(nomlar.filter((n) => n !== VERSIYA && n !== BELGI).map((n) => caches.delete(n))))
       .then(() => self.clients.claim()),
   )
 })
@@ -69,16 +75,29 @@ self.addEventListener('push', (e) => {
     x = { sarlavha: 'World Bridge Academy', matn: e.data ? e.data.text() : '' }
   }
   e.waitUntil(
-    self.registration.showNotification(x.sarlavha || 'World Bridge Academy', {
-      body: x.matn || '',
-      icon: '/ikonka-192.png',
-      badge: '/ikonka-maskable-192.png',
-      tag: x.teg || undefined,
-      lang: 'uz',
-      data: { havola: x.havola || '/crm' },
-    }),
+    Promise.all([
+      belgiOshir(),
+      self.registration.showNotification(x.sarlavha || 'World Bridge Academy', {
+        body: x.matn || '',
+        icon: '/ikonka-192.png',
+        badge: '/ikonka-maskable-192.png',
+        tag: x.teg || undefined,
+        lang: 'uz',
+        data: { havola: x.havola || '/crm' },
+      }),
+    ]),
   )
 })
+
+async function belgiOshir() {
+  try {
+    const kesh = await caches.open(BELGI)
+    const eski = await kesh.match('/belgi')
+    const son = (eski ? Number(await eski.text()) || 0 : 0) + 1
+    await kesh.put('/belgi', new Response(String(son)))
+    if (self.navigator.setAppBadge) await self.navigator.setAppBadge(son)
+  } catch {}
+}
 
 self.addEventListener('notificationclick', (e) => {
   e.notification.close()
