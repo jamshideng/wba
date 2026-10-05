@@ -127,6 +127,8 @@ type Yozilish = {
   vip: boolean
   /** Arxivdan qaytganning eski qarzi (O'quvchilar "Oldingi qoldiq") */
   qoldiq: number
+  /** Arxiv qatori: "Arxivga o'tgan" (seriya) — _Arxiv_tolovlar shu sessiya bo'yicha sanaladi */
+  arxivVaqt?: number
   /**
    * Arxivdagi yozilish — hisob qayta hisoblanmaydi: Arxiv varag'idagi
    * "To'lashi kerak" chiqib ketgan kundagi yakuniy summa (admin uni qo'lda
@@ -222,7 +224,8 @@ function chegirmaOylari(q: Qator, ...nomlar: string[]): number | null {
   const xom = matn(q, ...nomlar)
   if (!xom) return null
   const n = pulga(xom)
-  return n > 0 ? n : null
+  // "0" — Sheets'da chegirma yo'q (_oqD1); muddatsiz EMAS (05.10: S061, S069, S070)
+  return n > 0 ? n : 0
 }
 
 /* ------------------------------------------------------------------ */
@@ -399,6 +402,7 @@ function arxivniQur(
       vip: false,
       qoldiq: 0,
       kerakQatiy: pulga(qiymat(q, "To'lashi kerak")),
+      arxivVaqt: Number(qiymat(q, "Arxivga o'tgan")) || undefined,
       sheetKerak: pulga(qiymat(q, "To'lashi kerak")),
       sheetTolangan: pulga(qiymat(q, "To'langan")) + pulga(qiymat(q, "Arxivda to'langan")),
       sheetQarz: pulga(qiymat(q, 'Qarz')),
@@ -658,9 +662,12 @@ function hisoblarniQur(
   for (const y of yozilishlar) {
     if (y.kerakQatiy !== undefined) {
       if (y.kerakQatiy > 0) {
+        /* Arxiv "To'lashi kerak" tuzatishi AYIRILGAN summa; bazada invoices_tuzatish
+           shu oy tuzatishini yana ayiradi — xom summaga qaytarib qo'shiladi (05.10) */
+        const tuz = tuzatishlar.get(y.sheets_id ?? y.student_id)?.get(oyRaqami(y.boshlandi.slice(0, 7))) ?? 0
         natija.push({
-          kalit: y.kalit, davr: y.boshlandi.slice(0, 7), summa: y.kerakQatiy, chegirma: 0, tuzatish: 0,
-          xomSumma: y.kerakQatiy, xomChegirma: 0,
+          kalit: y.kalit, davr: y.boshlandi.slice(0, 7), summa: y.kerakQatiy, chegirma: 0, tuzatish: tuz,
+          xomSumma: y.kerakQatiy + tuz, xomChegirma: 0,
         })
       }
       continue
@@ -703,6 +710,26 @@ function hisoblarniQur(
         xomSumma: narx - chegirma,
         xomChegirma: chegirma,
       })
+    }
+
+    /* Arxivdan qaytgan: eski davr "Oldingi qoldiq" — yangi davrdan oldingi oyga
+       bitta hisob-faktura. Qoldiq TUZATISHSIZ (Y_Arxiv.js); eski oylar tuzatishini
+       Sheets ayiradi — bazada esa invoices_tuzatish faqat shu oynikini ayiradi. */
+    if (y.qoldiq !== 0) {
+      const oy = boshOy - 1
+      const eskiTuz = [...(tuzatishlar.get(y.sheets_id ?? y.student_id) ?? new Map<number, number>())]
+        .filter(([m]) => m < boshOy)
+      if (y.qoldiq < 0) {
+        toxtat(`${y.sheets_id}: "Oldingi qoldiq" manfiy (${pul(y.qoldiq)}) — ortiqcha to'lov, bazaga yozish qilinmagan`)
+      } else if (eskiTuz.some(([m]) => m !== oy)) {
+        toxtat(`${y.sheets_id}: eski davr tuzatishi ${davrdan(oy)} dan boshqa oyda — "Oldingi qoldiq" bilan mos kelmaydi`)
+      } else {
+        const tuz = eskiTuz.reduce((a, [, v]) => a + v, 0)
+        natija.push({
+          kalit: y.kalit, davr: davrdan(oy), summa: y.qoldiq - tuz, chegirma: 0, tuzatish: tuz,
+          xomSumma: y.qoldiq, xomChegirma: 0,
+        })
+      }
     }
   }
   return natija
@@ -996,7 +1023,15 @@ function malumotniQur(kitob: Map<string, ReturnType<typeof varaq>>) {
   /* Arxivga o'tgandan keyingi to'lovlar — alohida jurnalda (_Arxiv_tolovlar) */
   const arxTolVaraq = yangiTuzilma ? varaqBormi(kitob, '_Arxiv_tolovlar') : null
   const arxivTolovlari = (arxTolVaraq?.qatorlar ?? [])
-    .map((q) => ({ id: matn(q, 'ID').toUpperCase(), summa: pulga(qiymat(q, 'Summa')), sana: sanaga(qiymat(q, 'Sana')) }))
+    .map((q) => ({
+      qator: q._qator,
+      id: matn(q, 'ID').toUpperCase(),
+      summa: pulga(qiymat(q, 'Summa')),
+      sana: sanaga(qiymat(q, 'Sana')),
+      davr: davrga(qiymat(q, 'Davr')),
+      usul: usulga(qiymat(q, 'Usul')),
+      vaqt: Number(qiymat(q, "Arxivga o'tgan")) || 0,
+    }))
     .filter((x) => x.id && x.summa > 0)
 
   const probVaraq = varaqBormi(kitob, 'Probniylar')
@@ -1014,12 +1049,32 @@ function malumotniQur(kitob: Map<string, ReturnType<typeof varaq>>) {
   for (const t of tuzatishRoyxat) {
     if (!t.kalit) toxtat(`Tuzatish: ${t.sid} uchun yozilish topilmadi (${t.summa})`)
   }
-  const qoldiqlar = yozilishlar.filter((y) => y.qoldiq > 0)
-  for (const y of qoldiqlar) {
-    toxtat(`${y.sheets_id}: "Oldingi qoldiq" ${pul(y.qoldiq)} — bazaga yozish hali qilinmagan`)
-  }
-  if (arxivTolovlari.length) {
-    toxtat(`_Arxiv_tolovlar: ${arxivTolovlari.length} ta to'lov — bazaga yozish hali qilinmagan`)
+
+  /* Arxiv to'lovlari: faqat HOZIR arxivdagi qatorning sessiyasiga tegishlisi
+     (Arxiv O ustuni: SUMIFS ... F = W). Qaytganniki "Oldingi qoldiq" ichida. */
+  const vaqtKalit = (v: number) => Math.round(v * 86400)
+  for (const x of arxivTolovlari) {
+    const y = yozilishlar.find((z) => z.sheets_id === x.id && z.kerakQatiy !== undefined)
+    if (!y || !y.arxivVaqt || !x.vaqt || vaqtKalit(y.arxivVaqt) !== vaqtKalit(x.vaqt)) {
+      ogoh(`_Arxiv_tolovlar ${x.qator}-qator: ${x.id} ${pul(x.summa)} — hozirgi arxiv sessiyasiga tegishli emas (qaytgan bo'lsa "Oldingi qoldiq" ichida)`)
+      continue
+    }
+    if (!x.sana) {
+      toxtat(`_Arxiv_tolovlar ${x.qator}-qator: sana yo'q — ${x.id} (${x.summa})`)
+      continue
+    }
+    tolovlar.push({
+      sheets_id: `AT${String(x.qator).padStart(4, '0')}`,
+      student_id: y.student_id,
+      kalit: y.kalit,
+      sana: x.sana,
+      davr: x.davr ?? x.sana.slice(0, 7),
+      summa: x.summa,
+      usul: x.usul,
+      izoh: "Arxivdagi qarz to'lovi (Sheets _Arxiv_tolovlar)",
+      tasdiqlangan: false,
+      tasdiqlangan_vaqt: null,
+    })
   }
 
   return {
@@ -1053,7 +1108,7 @@ function solishtir(d: Tayyor) {
   let jamiTolangan = 0, jamiTolanganSheets = 0
 
   for (const y of d.yozilishlar) {
-    const kerak = (hisobJami.get(y.kalit) ?? 0) + y.qoldiq
+    const kerak = hisobJami.get(y.kalit) ?? 0   // "Oldingi qoldiq" — hisob-faktura ichida
     const tolangan = tolovJami.get(y.kalit) ?? 0
 
     jamiKerak += kerak
