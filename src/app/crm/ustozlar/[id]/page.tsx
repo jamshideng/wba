@@ -13,6 +13,7 @@ import { pul, telefon, jadval, davrNomi, joriyDavr, bugunToshkent, guruhQisqa } 
 import { AMAL_NOMI, JADVAL_NOMI, WOBLR_SABAB } from '@/lib/audit'
 import type { TeacherStats } from '@/lib/types'
 import { ustozTahrir } from '../actions'
+import { KECHIKISH_USTUNLAR, KechikishJadval, type KechikishYozuv } from '@/components/kechikish'
 
 export const metadata = { title: 'Ustoz' }
 export const dynamic = 'force-dynamic'
@@ -59,7 +60,7 @@ export default async function UstozProfil({
     holat: 'faol' | 'bloklangan'
   }
 
-  const [{ data: guruhlar }, { data: stats }, { data: woblar }, { data: amallar }, { data: hisob }] = await Promise.all([
+  const [{ data: guruhlar }, { data: stats }, { data: woblar }, { data: amallar }, { data: hisob }, { data: kechikish }] = await Promise.all([
     supabase.from('groups').select('id, nom, boshlanish, tugash, kunlar, holat').eq('teacher_id', id).order('holat').order('nom'),
     supabase.from('v_teacher_stats').select('*').eq('teacher_id', id).maybeSingle(),
     supabase
@@ -79,6 +80,8 @@ export default async function UstozProfil({
     u.profile_id
       ? supabase.from('profiles').select('email').eq('id', u.profile_id).maybeSingle()
       : Promise.resolve({ data: null }),
+    // 0060 — kechikishlar (faqat kechikkan kunlar yoziladi)
+    supabase.from('ustoz_kechikish').select(KECHIKISH_USTUNLAR).eq('teacher_id', id).order('sana', { ascending: false }).limit(60),
   ])
 
   type Guruh = { id: string; nom: string; boshlanish: string; tugash: string; kunlar: number[]; holat: string }
@@ -129,6 +132,9 @@ export default async function UstozProfil({
   type Amal = { id: number; amal: string; jadval: string; obyekt_id: string | null; created_at: string }
   const aList = (amallar ?? []) as Amal[]
   const qarz = Number(s?.qarz ?? 0)
+  const kList = (kechikish ?? []) as unknown as KechikishYozuv[]
+  const oyKech = kList.filter((k) => k.sana.startsWith(davr))
+  const oyKechDaq = oyKech.reduce((a, k) => a + k.daqiqa, 0)
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -168,7 +174,20 @@ export default async function UstozProfil({
           ton={qarz > 0 ? 'brand' : 'ok'}
           border={qarz > 0 ? 'brand' : undefined}
         />
+        <Stat
+          label={`Kechikish · ${davrNomi(davr)}`}
+          value={oyKech.length ? `${oyKech.length} marta` : '0'}
+          sub={oyKech.length ? `jami ${oyKechDaq} daqiqa` : 'o‘z vaqtida keldi'}
+          ton={oyKech.length ? 'brand' : 'ok'}
+        />
       </div>
+
+      <Card className="flex flex-col">
+        <CardHeader title="Kechikishlari" meta={kList.length ? `so‘nggi ${kList.length} ta` : undefined} />
+        <div className="px-3 pb-3">
+          <KechikishJadval royxat={kList} ustozsiz bosh="Kechikish yozilmagan — hamma darsga o‘z vaqtida kelgan." />
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <Card className="flex flex-col">

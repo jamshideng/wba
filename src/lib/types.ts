@@ -603,6 +603,30 @@ export type Vazifa = {
   updated_at: string
 }
 
+/* ---------- 0060 · Ustozlar kechikishi ---------- */
+
+export type UstozKechikish = {
+  id: string
+  sheets_id: string | null
+  sana: string
+  group_id: string | null
+  teacher_id: string
+  daqiqa: number
+  sabab: string | null
+  kiritilgan: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type UstozKechikishOylik = {
+  teacher_id: string
+  ism: string
+  davr: string
+  soni: number
+  daqiqa: number
+  eng_kop: number
+}
+
 /* ---------- Supabase klient uchun sxema ---------- */
 
 type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
@@ -639,6 +663,7 @@ export type Database = {
       payments: Table<Payment>
       leads: Table<Lead>
       vazifalar: Table<Vazifa>
+      ustoz_kechikish: Table<UstozKechikish>
       tuzatishlar: Table<Tuzatish>
       xarajatlar: Table<Xarajat>
       dam_kunlar: Table<{ sana: string; sabab: string; kiritdi: string | null; created_at: string }>
@@ -656,6 +681,7 @@ export type Database = {
       v_woblr_balance: View<WoblrBalance>
       v_monthly_income: View<MonthlyIncome>
       v_bugungi_darslar: View<BugungiDars>
+      v_ustoz_kechikish_oylik: View<UstozKechikishOylik>
       v_arxiv_oquvchilar: View<{ student_id: string; fish: string; arxiv_sana: string | null; arxiv_sabab: string | null; qarz: number; guruhlar: string | null }>
     }
     Functions: {

@@ -10,6 +10,7 @@ import { sana, bugunToshkent } from '@/lib/format'
 import type { Hisobot, HisobotGrafik, HisobotDavomat, HisobotMoliya, HisobotOquvchilar, HisobotUstoz, MonthlyIncome } from '@/lib/types'
 import { DavomatBolimi, MoliyaBolimi, OquvchilarBolimi, UstozlarBolimi } from './bolimlar'
 import { UmumiyBolim } from './umumiy'
+import { KECHIKISH_USTUNLAR, KechikishJadval, KechikishJamlanma, type KechikishYozuv } from '@/components/kechikish'
 
 export const metadata = { title: 'Hisobotlar' }
 export const dynamic = 'force-dynamic'
@@ -89,7 +90,7 @@ export default async function Hisobotlar({
     yol({ ...(b === 'umumiy' ? {} : { bolim: b }), ...(OYLIK.includes(b) ? (s.oy ? { oy: s.oy } : {}) : oraliqQs) })
 
   const supabase = await createClient()
-  const [{ data: hisobot, error }, { data: oylik }, bolimData, { data: grafik }] = await Promise.all([
+  const [{ data: hisobot, error }, { data: oylik }, bolimData, { data: grafik }, { data: kechikish }] = await Promise.all([
     bolim === 'umumiy'
       ? supabase.rpc('tushum_hisobot', { p_dan: o.dan, p_gacha: o.gacha })
       : Promise.resolve({ data: null, error: null }),
@@ -108,6 +109,10 @@ export default async function Hisobotlar({
     bolim === 'umumiy'
       ? supabase.rpc('hisobot_grafik', { p_dan: o.dan, p_gacha: o.gacha })
       : Promise.resolve({ data: null }),
+    // 0060 — ustozlar kechikishi tanlangan oraliqda (kunlik / oylik)
+    bolim === 'ustozlar'
+      ? supabase.from('ustoz_kechikish').select(KECHIKISH_USTUNLAR).gte('sana', o.dan).lte('sana', o.gacha).order('sana', { ascending: false }).limit(500)
+      : Promise.resolve({ data: [] }),
   ])
 
   const h = hisobot as Hisobot | null
@@ -203,7 +208,23 @@ export default async function Hisobotlar({
         ) : bolim === 'oquvchilar' ? (
           <OquvchilarBolimi o={bolimData.data as HisobotOquvchilar} />
         ) : bolim === 'ustozlar' ? (
-          <UstozlarBolimi u={bolimData.data as HisobotUstoz[]} />
+          <>
+            <UstozlarBolimi u={bolimData.data as HisobotUstoz[]} />
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+              <Card className="flex flex-col">
+                <CardHeader title="Kechikishlar — ustozlar bo‘yicha" meta={`${(kechikish ?? []).length} ta`} />
+                <div className="px-5 pb-4">
+                  <KechikishJamlanma royxat={(kechikish ?? []) as unknown as KechikishYozuv[]} />
+                </div>
+              </Card>
+              <Card className="flex flex-col">
+                <CardHeader title="Kechikishlar ro‘yxati" meta="faqat kechikkanlar yoziladi" />
+                <div className="px-3 pb-3">
+                  <KechikishJadval royxat={(kechikish ?? []) as unknown as KechikishYozuv[]} />
+                </div>
+              </Card>
+            </div>
+          </>
         ) : (
           <DavomatBolimi d={bolimData.data as HisobotDavomat} />
         )

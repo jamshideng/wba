@@ -19,7 +19,7 @@ import type { Hisobot } from '@/lib/types'
 export async function kunlikHisobotMatn(kun: string = bugunToshkent()): Promise<string> {
   const db = createAdminClient()
 
-  const [{ data: guruhlar }, { data: darsQatorlari }, { data: yozilishlar }, { data: belgilar }, { data: probniy }, { data: tushum }, { data: qarzlar }, { data: ustozlar }] =
+  const [{ data: guruhlar }, { data: darsQatorlari }, { data: yozilishlar }, { data: belgilar }, { data: probniy }, { data: tushum }, { data: qarzlar }, { data: ustozlar }, { data: kechikish }, { data: oyKechikish }] =
     await Promise.all([
       db.from('groups').select('id, nom, boshlanish, teacher_id, kunlar').eq('holat', 'faol'),
       db.from('lessons').select('group_id, otkazildi').eq('sana', kun),
@@ -29,6 +29,9 @@ export async function kunlikHisobotMatn(kun: string = bugunToshkent()): Promise<
       db.rpc('tushum_hisobot', { p_dan: kun, p_gacha: kun }),
       db.from('v_qarzdorlar').select('qarz'),
       db.from('teachers').select('id, ism'),
+      // 0060 — ustozlar kechikishi: bugungi yozuvlar va shu oy jamlanmasi
+      db.from('ustoz_kechikish').select('daqiqa, sabab, teachers(ism), groups(nom)').eq('sana', kun).order('daqiqa', { ascending: false }),
+      db.from('v_ustoz_kechikish_oylik').select('ism, soni, daqiqa').eq('davr', kun.slice(0, 7)).order('daqiqa', { ascending: false }),
     ])
 
   /* O'sha kuni darsi bo'lgan guruhlar (groups.kunlar, 0028) — istalgan kun uchun */
@@ -88,6 +91,17 @@ export async function kunlikHisobotMatn(kun: string = bugunToshkent()): Promise<
 
   t.push('<b>QARZ</b> (bugungi holat)')
   t.push(`Qarzdor: <b>${q.length}</b> ta · <b>${pul(q.reduce((a, x) => a + x, 0))} so‘m</b>`)
+
+  /* 0060 — ustozlar kechikishi (faqat kechikkanlar yoziladi) */
+  const kech = (kechikish ?? []) as unknown as { daqiqa: number; sabab: string | null; teachers: { ism: string } | null; groups: { nom: string } | null }[]
+  const oyK = (oyKechikish ?? []) as { ism: string; soni: number; daqiqa: number }[]
+  t.push('')
+  t.push('<b>USTOZLAR KECHIKISHI</b>')
+  if (!kech.length) t.push('Bugun kechikkan ustoz yo‘q')
+  for (const k of kech) {
+    t.push(`  · ${html(k.teachers?.ism ?? '—')} — <b>${k.daqiqa} daqiqa</b>${k.groups ? ` · ${html(k.groups.nom)}` : ''}${k.sabab ? ` · ${html(k.sabab)}` : ''}`)
+  }
+  if (oyK.length) t.push(`Shu oy: ${oyK.map((x) => `${html(x.ism)} ${x.soni} marta / ${x.daqiqa} daq`).join(' · ')}`)
 
   return t.join('\n')
 }

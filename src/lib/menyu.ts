@@ -52,6 +52,8 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
         // u yerni "Bugun" va "O'quvchilar" egallaydi)
         { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true, mobil: !staffmi(rol) },
         { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true, mobil: !staffmi(rol) },
+        // 0060 — o'z kechikishlari (faqat ko'rish)
+        { href: '/crm/kechikishlarim', nom: 'Kechikishlarim', Icon: IconAttendance, tayyor: true },
       ],
     })
   }
@@ -76,6 +78,7 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
         { href: '/crm/tolovlar', nom: 'To‘lovlar', Icon: IconPayments, tayyor: true, mobil: true },
         { href: '/crm/lidlar', nom: 'Lidlar', Icon: IconLeads, tayyor: true },
         { href: '/crm/vazifalar', nom: 'Vazifalar', Icon: IconAlert, tayyor: true },
+        { href: '/crm/ustoz-davomati', nom: 'Ustozlar davomati', Icon: IconTeacher, tayyor: true },
         { href: '/crm/hisobotlar', nom: 'Hisobotlar', Icon: IconReports, tayyor: true },
         { href: '/crm/xarajatlar', nom: 'Xarajatlar', Icon: IconXarajat, tayyor: true },
         { href: '/crm/market/boshqaruv', nom: 'Woblar market', Icon: IconMarket, tayyor: true },
