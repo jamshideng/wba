@@ -88,9 +88,9 @@ export default async function Vazifalar({
 
   const supabase = await createClient()
   const ustunlar =
-    'id, nom, turi, muddat, holat, muhimlik, izoh, avto, lead_id, student_id, bajarildi_at, leads(ism, telefon), students(fish, ota_tel, ona_tel, shaxsiy_tel), masul_p:profiles!vazifalar_masul_fkey(ism), bajardi_p:profiles!vazifalar_bajardi_fkey(ism)'
+    'id, nom, turi, muddat, holat, muhimlik, izoh, avto, lead_id, student_id, bajarildi_at, leads(ism, telefon), students(fish, ota_tel, ona_tel, shaxsiy_tel), masul_p:profiles!crm_vazifalar_masul_fkey(ism), bajardi_p:profiles!crm_vazifalar_bajardi_fkey(ism)'
 
-  let royxatSorov = supabase.from('vazifalar').select(ustunlar)
+  let royxatSorov = supabase.from('crm_vazifalar').select(ustunlar)
   if (bolim === 'bugun') royxatSorov = royxatSorov.in('holat', ['yangi', 'jarayonda']).lt('muddat', kunOxiri).order('muddat')
   else if (bolim === 'kelgusi') royxatSorov = royxatSorov.in('holat', ['yangi', 'jarayonda']).gte('muddat', kunOxiri).order('muddat')
   else royxatSorov = royxatSorov.eq('holat', 'bajarildi').order('bajarildi_at', { ascending: false })
@@ -99,8 +99,8 @@ export default async function Vazifalar({
   const [{ data }, { data: ochiqlar }, { count: bugunBajarildi }, { data: lidlar }, { data: qarzdorlar }, { data: oquvchilar }, { data: xodimlar }] =
     await Promise.all([
       royxatSorov.limit(200),
-      supabase.from('vazifalar').select('muddat').in('holat', ['yangi', 'jarayonda']),
-      supabase.from('vazifalar').select('id', { count: 'exact', head: true }).eq('holat', 'bajarildi').gte('bajarildi_at', kunBoshi),
+      supabase.from('crm_vazifalar').select('muddat').in('holat', ['yangi', 'jarayonda']),
+      supabase.from('crm_vazifalar').select('id', { count: 'exact', head: true }).eq('holat', 'bajarildi').gte('bajarildi_at', kunBoshi),
       supabase.from('leads').select('id, ism').is('student_id', null).in('holat', ['yangi', 'qongiroq', 'keldi']).order('ism').limit(300),
       supabase.from('v_qarzdorlar').select('student_id, fish, qarz').order('qarz', { ascending: false }).limit(100),
       supabase.from('students').select('id, fish').eq('holat', 'faol').order('fish').limit(500),

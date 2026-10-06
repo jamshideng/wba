@@ -37,6 +37,21 @@ export const MANBA_NOMI: Record<LeadSource, string> = {
 
 export const MANBALAR = Object.keys(MANBA_NOMI) as LeadSource[]
 
+/**
+ * leads.keyingi_aloqa — timestamptz (prod'da shunday edi). Kanban sana bilan
+ * ishlaydi: sana tanlansa o'sha kuni 09:00 (Toshkent), o'qilganda Toshkent sanasi.
+ */
+export function aloqaVaqtga(sana: string | null): string | null {
+  return sana ? `${sana}T09:00:00+05:00` : null
+}
+
+export function aloqaSanasi(vaqt: string | null): string | null {
+  if (!vaqt) return null
+  if (/^\d{4}-\d{2}-\d{2}$/.test(vaqt)) return vaqt
+  const ms = Date.parse(vaqt)
+  return Number.isNaN(ms) ? null : new Date(ms + 5 * 3600_000).toISOString().slice(0, 10)
+}
+
 /** Toshkent sanasiga n kun qo'shadi (YYYY-MM-DD). */
 export function kunQosh(isoSana: string, n: number): string {
   const d = new Date(`${isoSana}T00:00:00Z`)
@@ -58,6 +73,7 @@ export type LidKarta = {
   group_id: string | null
   guruh: string | null
   sinov_sana: string | null
+  /** Toshkent sanasi (YYYY-MM-DD) — bazadagi timestamptz dan */
   keyingi_aloqa: string | null
   aloqa_soni: number
   oxirgi_aloqa: string | null

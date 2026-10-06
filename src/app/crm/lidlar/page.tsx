@@ -9,7 +9,7 @@ import { Yuborish } from '@/components/yuborish'
 import { JonliForma } from '@/components/jonli-forma'
 import { IconSearch, IconLeads, IconPhone, IconAlert, IconStudents } from '@/components/icons'
 import { bugunToshkent } from '@/lib/format'
-import { BOSQICHLAR, MANBALAR, MANBA_NOMI, bosqichi, kunQosh, type LidKarta } from '@/lib/lidlar'
+import { BOSQICHLAR, MANBALAR, MANBA_NOMI, aloqaSanasi, bosqichi, kunQosh, type LidKarta } from '@/lib/lidlar'
 import type { LeadSource } from '@/lib/types'
 import { lidQosh } from './actions'
 import { Kanban } from './kanban'
@@ -61,7 +61,7 @@ export default async function Lidlar({
   ])
 
   const hammasi = [...((ochiq ?? []) as unknown as Qator[]), ...((yopiq ?? []) as unknown as Qator[])].map(
-    ({ groups, ...l }) => ({ ...l, teglar: l.teglar ?? [], guruh: groups?.nom ?? null }) as LidKarta,
+    ({ groups, ...l }) => ({ ...l, teglar: l.teglar ?? [], keyingi_aloqa: aloqaSanasi(l.keyingi_aloqa), guruh: groups?.nom ?? null }) as LidKarta,
   )
 
   const ochiqlar = hammasi.filter((l) => ['yangi', 'boglanildi', 'sinov'].includes(bosqichi(l)))

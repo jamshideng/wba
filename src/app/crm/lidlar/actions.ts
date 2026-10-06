@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabRol } from '@/lib/auth'
 import { matn, sanaOqi, telefonOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
-import { MANBALAR, type Bosqich } from '@/lib/lidlar'
+import { MANBALAR, aloqaVaqtga, type Bosqich } from '@/lib/lidlar'
 import type { Lead, LeadSource } from '@/lib/types'
 
 const XODIM = ['admin', 'direktor', 'qabulxona'] as const
@@ -49,7 +49,7 @@ export async function lidQosh(fd: FormData) {
     manba: manbaOqi(fd.get('manba')),
     izoh: matn(fd.get('izoh')),
     teglar: teglarOqi(fd.get('teglar')),
-    keyingi_aloqa: sanaOqi(fd.get('keyingi_aloqa')),
+    keyingi_aloqa: aloqaVaqtga(sanaOqi(fd.get('keyingi_aloqa'))),
     holat: 'yangi',
   })
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
@@ -75,7 +75,7 @@ export async function lidSaqla(fd: FormData) {
       manba: manbaOqi(fd.get('manba')),
       izoh: matn(fd.get('izoh')),
       teglar: teglarOqi(fd.get('teglar')),
-      keyingi_aloqa: sanaOqi(fd.get('keyingi_aloqa')),
+      keyingi_aloqa: aloqaVaqtga(sanaOqi(fd.get('keyingi_aloqa'))),
     })
     .eq('id', id!)
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
@@ -111,7 +111,7 @@ export async function lidBosqich(fd: FormData) {
         sinov_sana: sinov,
         group_id: matn(fd.get('group_id')),
         // Sinov kuni — shu kuni eslatma ham
-        keyingi_aloqa: sinov,
+        keyingi_aloqa: aloqaVaqtga(sinov),
       }
       break
     }

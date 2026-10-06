@@ -45,7 +45,7 @@ export default async function Dashboard() {
       // 0059 — bugungi va kechikkan vazifalar (eng eskisi birinchi)
       xodim
         ? supabase
-            .from('vazifalar')
+            .from('crm_vazifalar')
             .select('id, nom, muddat, turi, leads(ism, telefon), students(fish, shaxsiy_tel, ota_tel)', { count: 'exact' })
             .in('holat', ['yangi', 'jarayonda'])
             .lt('muddat', ertagaBoshi)
@@ -53,7 +53,7 @@ export default async function Dashboard() {
             .limit(6)
         : Promise.resolve({ data: [], count: 0 }),
       xodim
-        ? supabase.from('leads').select('id', { count: 'exact', head: true }).is('student_id', null).in('holat', ['yangi', 'qongiroq', 'keldi']).lt('keyingi_aloqa', bugun)
+        ? supabase.from('leads').select('id', { count: 'exact', head: true }).is('student_id', null).in('holat', ['yangi', 'qongiroq', 'keldi']).lt('keyingi_aloqa', `${bugun}T00:00:00+05:00`)
         : Promise.resolve({ count: 0 }),
     ])
   const k = kunlik as Hisobot | null

@@ -663,7 +663,7 @@ export type Database = {
       invoices: Table<Invoice>
       payments: Table<Payment>
       leads: Table<Lead>
-      vazifalar: Table<Vazifa>
+      crm_vazifalar: Table<Vazifa>
       ustoz_kechikish: Table<UstozKechikish>
       tuzatishlar: Table<Tuzatish>
       xarajatlar: Table<Xarajat>

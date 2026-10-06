@@ -104,7 +104,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
     // Bugungi va kechikkan ochiq vazifalar (0059)
     supabase
       ? supabase
-          .from('vazifalar')
+          .from('crm_vazifalar')
           .select('id', { count: 'exact', head: true })
           .in('holat', ['yangi', 'jarayonda'])
           .lt('muddat', ertagaBoshi())

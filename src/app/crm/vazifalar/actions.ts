@@ -39,7 +39,7 @@ export async function vazifaQosh(fd: FormData) {
   const student_id = bog?.startsWith('student:') ? bog.slice(8) : null
 
   const supabase = await createClient()
-  const { error } = await supabase.from('vazifalar').insert({
+  const { error } = await supabase.from('crm_vazifalar').insert({
     nom: nom!.slice(0, 200),
     turi: TURLAR.find((t) => t === fd.get('turi')) ?? 'qongiroq',
     muhimlik: MUHIM.find((m) => m === fd.get('muhimlik')) ?? 'orta',
@@ -64,7 +64,7 @@ export async function vazifaHolat(fd: FormData) {
   if (!id || !holat) redirect(xabarliYol(yol, { xato: 'Holat noto‘g‘ri.' }))
 
   const supabase = await createClient()
-  const { error } = await supabase.from('vazifalar').update({ holat: holat! }).eq('id', id!)
+  const { error } = await supabase.from('crm_vazifalar').update({ holat: holat! }).eq('id', id!)
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
 
   revalidatePath('/crm/vazifalar')
@@ -85,7 +85,7 @@ export async function vazifaSur(fd: FormData) {
   if (!id || !muddat) redirect(xabarliYol(yol, { xato: 'Yangi muddatni tanlang.' }))
 
   const supabase = await createClient()
-  const { error } = await supabase.from('vazifalar').update({ muddat: muddat! }).eq('id', id!)
+  const { error } = await supabase.from('crm_vazifalar').update({ muddat: muddat! }).eq('id', id!)
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
 
   revalidatePath('/crm/vazifalar')
