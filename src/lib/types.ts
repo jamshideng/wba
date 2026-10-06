@@ -248,6 +248,12 @@ export type Lead = {
   group_id: string | null
   tugilgan_sana: string | null
   sinov_sana: string | null
+  /** 0059 · keyingi aloqa sanasi (Toshkent), teglar, bosqich sababi */
+  keyingi_aloqa: string | null
+  teglar: string[]
+  sabab: string | null
+  aloqa_soni: number
+  oxirgi_aloqa: string | null
   created_at: string
   updated_at: string
 }
@@ -572,6 +578,31 @@ export type Hisobot = {
   probniy: { jami: number; kutilmoqda: number; yozildi: number; kelmadi: number; rad: number }
 }
 
+/* ---------- 0059 · Vazifalar ---------- */
+
+export type VazifaTuri = 'qongiroq' | 'tolov_eslatish' | 'sinov_chaqirish' | 'boshqa'
+export type VazifaHolat = 'yangi' | 'jarayonda' | 'bajarildi' | 'bekor'
+export type VazifaMuhimlik = 'past' | 'orta' | 'yuqori'
+
+export type Vazifa = {
+  id: string
+  nom: string
+  turi: VazifaTuri
+  muddat: string
+  holat: VazifaHolat
+  muhimlik: VazifaMuhimlik
+  lead_id: string | null
+  student_id: string | null
+  masul: string | null
+  izoh: string | null
+  avto: boolean
+  yaratdi: string | null
+  bajardi: string | null
+  bajarildi_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 /* ---------- Supabase klient uchun sxema ---------- */
 
 type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
@@ -607,6 +638,7 @@ export type Database = {
       invoices: Table<Invoice>
       payments: Table<Payment>
       leads: Table<Lead>
+      vazifalar: Table<Vazifa>
       tuzatishlar: Table<Tuzatish>
       xarajatlar: Table<Xarajat>
       dam_kunlar: Table<{ sana: string; sabab: string; kiritdi: string | null; created_at: string }>
@@ -732,6 +764,10 @@ export type Database = {
       sorovnoma_natija: { Args: { p_id: number }; Returns: { variant_id: number; matn: string; ovoz: number; jami: number }[] }
       bildirishnoma_statistika: { Args: Record<string, never>; Returns: { bildirishnoma_id: number; korgan: number; yopgan: number; javob_bergan: number }[] }
       mening_bildirishnomalarim: { Args: Record<string, never>; Returns: unknown }
+      lid_boglanildi: {
+        Args: { p_lead: string; p_keyingi?: string | null; p_izoh?: string | null }
+        Returns: undefined
+      }
       rate_limit_hit: {
         Args: { p_bucket: string; p_kalit: string; p_limit: number; p_oyna_sek: number }
         Returns: boolean
@@ -751,6 +787,9 @@ export type Database = {
       lead_source: LeadSource
       woblr_reason: WoblrReason
       salary_type: SalaryType
+      vazifa_turi: VazifaTuri
+      vazifa_holat: VazifaHolat
+      vazifa_muhimlik: VazifaMuhimlik
     }
     CompositeTypes: Record<string, never>
   }

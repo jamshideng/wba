@@ -33,6 +33,12 @@ async function chiqish() {
   redirect('/kirish')
 }
 
+/** Ertangi kun boshi (Toshkent) — bugungi vazifalar chegarasi. */
+function ertagaBoshi(): string {
+  const d = new Date(Date.now() + 5 * 3600_000 + 24 * 3600_000).toISOString().slice(0, 10)
+  return `${d}T00:00:00+05:00`
+}
+
 /** Menyu bandi. Tayyor bo'lmasa — havola emas: bosib 404 ga tushmasin. */
 function Band({ band, nishon }: { band: MenyuBand; nishon?: number }) {
   const ichi = (
@@ -83,7 +89,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   /* Bir-biriga bog'liq bo'lmagan so'rovlar — parallel (ketma-ket emas).
      Tasdiqlanmagan to'lovlar soni — pul ko'radiganlarga; ustozga umuman
      chiqmaydi (botdagi qoida). Market: olib ketilmagan buyurtmalar (0040). */
-  const [kuki, ustoz, tolovSoni, marketSoni, bildirish] = await Promise.all([
+  const [kuki, ustoz, tolovSoni, marketSoni, bildirish, vazifaSoni] = await Promise.all([
     cookies(),
     getUstoz(),
     supabase
@@ -96,6 +102,14 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
     supabaseSozlanganmi()
       ? createClient().then((c) => c.rpc('mening_bildirishnomalarim'))
       : Promise.resolve({ data: [] }),
+    // Bugungi va kechikkan ochiq vazifalar (0059)
+    supabase
+      ? supabase
+          .from('vazifalar')
+          .select('id', { count: 'exact', head: true })
+          .in('holat', ['yangi', 'jarayonda'])
+          .lt('muddat', ertagaBoshi())
+      : Promise.resolve({ count: 0 }),
   ])
   const bildirishnomalar = (Array.isArray(bildirish.data) ? bildirish.data : []) as MeningBildirishnomam[]
   const menyuYopiq = kuki.get(MENYU_COOKIE)?.value === 'yopiq'
@@ -108,7 +122,9 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
       ? tasdiqlanmagan
       : band.href === '/crm/market/boshqaruv'
         ? marketKutilmoqda
-        : undefined
+        : band.href === '/crm/vazifalar'
+          ? (vazifaSoni.count ?? 0)
+          : undefined
 
   /* Telefon uchun: eng kerakli 4 ta band + "Menyu" (qolgan hammasi).
      Pastki panelga 5 tadan ortig'i sig'maydi, bo'limlar esa ko'p. */

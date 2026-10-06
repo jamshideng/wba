@@ -74,13 +74,13 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
         { href: '/crm/qarzdorlar', nom: 'Qarzdorlar', Icon: IconDebt, tayyor: true },
         // Qabulxonada eng ko'p ishlatiladigan bo'lim — telefonning pastki panelida ham
         { href: '/crm/tolovlar', nom: 'To‘lovlar', Icon: IconPayments, tayyor: true, mobil: true },
-        { href: '/crm/probniylar', nom: 'Probniylar', Icon: IconLeads, tayyor: true },
+        { href: '/crm/lidlar', nom: 'Lidlar', Icon: IconLeads, tayyor: true },
+        { href: '/crm/vazifalar', nom: 'Vazifalar', Icon: IconAlert, tayyor: true },
         { href: '/crm/hisobotlar', nom: 'Hisobotlar', Icon: IconReports, tayyor: true },
         { href: '/crm/xarajatlar', nom: 'Xarajatlar', Icon: IconXarajat, tayyor: true },
         { href: '/crm/market/boshqaruv', nom: 'Woblar market', Icon: IconMarket, tayyor: true },
         // Keyingi bosqich (Jamshid, 01.10): hozircha joyi band, bosilmaydi — "tez orada"
         { href: '/crm/moliya', nom: 'Moliya', Icon: IconReports, tayyor: false },
-        { href: '/crm/eslatmalar', nom: 'Eslatmalar', Icon: IconAlert, tayyor: false },
         { href: '/crm/arxiv', nom: 'Arxiv', Icon: IconArxiv, tayyor: true },
         { href: '/crm/dam-kunlar', nom: 'Dam olish kunlari', Icon: IconAttendance, tayyor: true },
         ...(adminmi(rol)
