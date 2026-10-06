@@ -6,6 +6,7 @@ import { Card, Stat } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
+import { JonliForma } from '@/components/jonli-forma'
 import { IconSearch, IconLeads, IconPhone, IconAlert, IconStudents } from '@/components/icons'
 import { bugunToshkent } from '@/lib/format'
 import { BOSQICHLAR, MANBALAR, MANBA_NOMI, bosqichi, kunQosh, type LidKarta } from '@/lib/lidlar'
@@ -146,7 +147,7 @@ export default async function Lidlar({
       </Card>
 
       <Card className="flex flex-col gap-3 p-4">
-        <form className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_220px_auto_auto]" action="/crm/lidlar">
+        <JonliForma className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_220px_auto]">
           {tez !== 'hammasi' && <input type="hidden" name="tez" value={tez} />}
           <label className="relative">
             <span className="sr-only">Qidirish</span>
@@ -159,15 +160,12 @@ export default async function Lidlar({
               <option key={m} value={m}>{MANBA_NOMI[m]}</option>
             ))}
           </select>
-          <button className="min-h-11 rounded-[9px] border border-line px-4 text-[13px] text-ink-2 hover:border-ink-3 hover:text-ink">
-            Ko‘rsatish
-          </button>
           {(q || manba || tez !== 'hammasi') && (
             <Link href="/crm/lidlar" className="flex min-h-11 items-center px-2 text-[13px] text-ink-3 hover:text-ink">
               Tozalash
             </Link>
           )}
-        </form>
+        </JonliForma>
         <div className="flex flex-wrap gap-2">
           {(Object.keys(TEZ) as Tez[]).map((t) => (
             <Link

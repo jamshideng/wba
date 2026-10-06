@@ -6,6 +6,7 @@ import { Card, CardHeader, Badge, Empty, Stat } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
+import { JonliForma } from '@/components/jonli-forma'
 import { IconPhone, IconAlert, IconDebt, IconJadval, IconAttendance } from '@/components/icons'
 import { bugunToshkent, pul, telefon } from '@/lib/format'
 import { kunQosh } from '@/lib/lidlar'
@@ -222,7 +223,7 @@ export default async function Vazifalar({
             )}
           </Link>
         ))}
-        <form action="/crm/vazifalar" className="ml-auto flex items-center gap-2">
+        <JonliForma className="ml-auto flex items-center gap-2">
           {bolim !== 'bugun' && <input type="hidden" name="bolim" value={bolim} />}
           <select name="turi" defaultValue={turi ?? ''} aria-label="Turi" className={`${kirishKlass} !w-auto`}>
             <option value="">Barcha turlar</option>
@@ -230,8 +231,7 @@ export default async function Vazifalar({
               <option key={t} value={t}>{TUR_NOMI[t]}</option>
             ))}
           </select>
-          <button className="min-h-11 rounded-[9px] border border-line px-4 text-[13px] text-ink-2 hover:border-ink-3 hover:text-ink">Ko‘rsatish</button>
-        </form>
+        </JonliForma>
       </div>
 
       <Card className="flex flex-col">
