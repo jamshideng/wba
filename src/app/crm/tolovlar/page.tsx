@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { IconPayments, IconDebt, IconWoblr } from '@/components/icons'
 import { talabRol, tasdiqlaydimi, adminmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
@@ -118,7 +119,7 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
       <Xabar ok={s.ok} xato={s.xato} />
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <Stat label={`${davrNomi(joriyDavr())} tushumi`} value={p?.joriy_oy_tushumi ?? 0} sub={`${p?.joriy_oy_tolovlari ?? 0} ta to‘lov`} />
+        <Stat label={`${davrNomi(joriyDavr())} tushumi`} value={p?.joriy_oy_tushumi ?? 0} sub={`${p?.joriy_oy_tolovlari ?? 0} ta to‘lov`} ton="ok" Icon={IconPayments} />
         <Stat
           label="Tasdiq kutmoqda"
           value={p?.tasdiqlanmagan_summa ?? 0}
@@ -126,8 +127,8 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
           ton={(p?.tasdiqlanmagan_soni ?? 0) > 0 ? 'accent' : 'ok'}
           border={(p?.tasdiqlanmagan_soni ?? 0) > 0 ? 'accent' : undefined}
         />
-        <Stat label="Jami qarz" value={p?.jami_qarz ?? 0} sub={`${p?.qarzdorlar ?? 0} qarzdor`} ton="brand" />
-        <Stat label="Chegirma" value={p?.chegirma ?? 0} sub="shu oy" />
+        <Stat label="Jami qarz" value={p?.jami_qarz ?? 0} sub={`${p?.qarzdorlar ?? 0} qarzdor`} ton="brand" Icon={IconDebt} />
+        <Stat label="Chegirma" value={p?.chegirma ?? 0} sub="shu oy" ton="accent" Icon={IconWoblr} />
       </div>
 
       <div className="flex flex-wrap gap-2">

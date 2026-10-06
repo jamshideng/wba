@@ -6,7 +6,7 @@ import { Card, Stat } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { IconSearch } from '@/components/icons'
+import { IconSearch, IconLeads, IconPhone, IconAlert, IconStudents } from '@/components/icons'
 import { bugunToshkent } from '@/lib/format'
 import { BOSQICHLAR, MANBALAR, MANBA_NOMI, bosqichi, kunQosh, type LidKarta } from '@/lib/lidlar'
 import type { LeadSource } from '@/lib/types'
@@ -29,7 +29,7 @@ type Qator = Omit<LidKarta, 'guruh'> & { groups: { nom: string } | null; updated
 export default async function Lidlar({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; manba?: string; tez?: string; ok?: string; xato?: string }>
+  searchParams: Promise<{ q?: string; manba?: string; tez?: string; ok?: string; xato?: string; yangi?: string }>
 }) {
   await talabRol('admin', 'direktor', 'qabulxona')
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Lidlar" />
@@ -105,14 +105,14 @@ export default async function Lidlar({
       <Xabar ok={s.ok} xato={s.xato} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Ochiq lidlar" value={String(tezSoni.hammasi)} sub="yangi + bog‘lanildi + sinov" />
-        <Stat label="Bugun aloqa" value={String(tezSoni.bugun)} sub="bugun bog‘lanish kerak" ton="accent" border={tezSoni.bugun ? 'accent' : undefined} />
-        <Stat label="Kechikkan" value={String(tezSoni.kechikkan)} sub="aloqa sanasi o‘tib ketgan" ton="brand" border={tezSoni.kechikkan ? 'brand' : undefined} />
-        <Stat label="Shu oy konversiya" value={`${konversiya}%`} sub={`${oyLidlar.length} lid → ${oyYozildi} o‘quvchi`} ton="ok" />
+        <Stat label="Ochiq lidlar" value={String(tezSoni.hammasi)} sub="yangi + bog‘lanildi + sinov" Icon={IconLeads} />
+        <Stat label="Bugun aloqa" value={String(tezSoni.bugun)} sub="bugun bog‘lanish kerak" ton="accent" border={tezSoni.bugun ? 'accent' : undefined} Icon={IconPhone} />
+        <Stat label="Kechikkan" value={String(tezSoni.kechikkan)} sub="aloqa sanasi o‘tib ketgan" ton="brand" border={tezSoni.kechikkan ? 'brand' : undefined} Icon={IconAlert} />
+        <Stat label="Shu oy konversiya" value={`${konversiya}%`} sub={`${oyLidlar.length} lid → ${oyYozildi} o‘quvchi`} ton="ok" Icon={IconStudents} />
       </div>
 
       <Card className="flex flex-col">
-        <details open={hammasi.length === 0}>
+        <details open={hammasi.length === 0 || s.yangi === '1'}>
           <summary className="flex min-h-12 cursor-pointer items-center px-5 font-[family-name:var(--font-display)] text-[15px] font-bold">
             + Yangi lid
           </summary>

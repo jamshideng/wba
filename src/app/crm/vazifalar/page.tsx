@@ -6,7 +6,7 @@ import { Card, CardHeader, Badge, Empty, Stat } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { IconPhone } from '@/components/icons'
+import { IconPhone, IconAlert, IconDebt, IconJadval, IconAttendance } from '@/components/icons'
 import { bugunToshkent, pul, telefon } from '@/lib/format'
 import { kunQosh } from '@/lib/lidlar'
 import type { VazifaHolat, VazifaMuhimlik, VazifaTuri } from '@/lib/types'
@@ -66,7 +66,7 @@ function muddatMatn(iso: string, bugun: string): string {
 export default async function Vazifalar({
   searchParams,
 }: {
-  searchParams: Promise<{ bolim?: string; turi?: string; ok?: string; xato?: string; lid?: string; oquvchi?: string }>
+  searchParams: Promise<{ bolim?: string; turi?: string; ok?: string; xato?: string; lid?: string; oquvchi?: string; yangi?: string }>
 }) {
   await talabRol('admin', 'direktor', 'qabulxona')
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Vazifalar" />
@@ -130,14 +130,14 @@ export default async function Vazifalar({
       <Xabar ok={s.ok} xato={s.xato} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Bugun" value={String(bugunSoni)} sub="bugun bajarilishi kerak" ton="accent" border={bugunSoni ? 'accent' : undefined} />
-        <Stat label="Kechikkan" value={String(kechikkan)} sub="muddati o‘tib ketgan" ton="brand" border={kechikkan ? 'brand' : undefined} />
-        <Stat label="Kelgusi" value={String(kelgusi)} sub="ertadan boshlab" />
-        <Stat label="Bugun bajarildi" value={String(bugunBajarildi ?? 0)} ton="ok" />
+        <Stat label="Bugun" value={String(bugunSoni)} sub="bugun bajarilishi kerak" ton="accent" border={bugunSoni ? 'accent' : undefined} Icon={IconAlert} />
+        <Stat label="Kechikkan" value={String(kechikkan)} sub="muddati o‘tib ketgan" ton="brand" border={kechikkan ? 'brand' : undefined} Icon={IconDebt} />
+        <Stat label="Kelgusi" value={String(kelgusi)} sub="ertadan boshlab" Icon={IconJadval} />
+        <Stat label="Bugun bajarildi" value={String(bugunBajarildi ?? 0)} ton="ok" Icon={IconAttendance} />
       </div>
 
       <Card className="flex flex-col">
-        <details open={Boolean(oldindan)}>
+        <details open={Boolean(oldindan) || s.yangi === '1'}>
           <summary className="flex min-h-12 cursor-pointer items-center px-5 font-[family-name:var(--font-display)] text-[15px] font-bold">
             + Yangi vazifa
           </summary>

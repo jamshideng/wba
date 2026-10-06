@@ -77,18 +77,29 @@ const TON = {
   ok: 'text-ok',
 } as const
 
+/** Kartadagi ikonka foni — LeaderCRM uslubi: pastel kvadrat, rang ton'dan */
+const IKON_FON = {
+  neytral: 'bg-surface-2 text-ink-2',
+  brand: 'bg-brand-soft text-brand',
+  accent: 'bg-accent-soft text-accent',
+  ok: 'bg-ok-soft text-ok',
+} as const
+
 export function Stat({
   label,
   value,
   sub,
   ton = 'neytral',
   border,
+  Icon,
 }: {
   label: string
   value: string | number
   sub?: string
   ton?: keyof typeof TON
   border?: 'brand' | 'accent'
+  /** Ixtiyoriy: o'ng yuqori burchakda rangli kvadrat ichida ikonka */
+  Icon?: (p: { size?: number; className?: string }) => React.ReactElement
 }) {
   const chiziq =
     border === 'brand'
@@ -99,7 +110,14 @@ export function Stat({
 
   return (
     <div className={`flex flex-col gap-1.5 rounded-[12px] border bg-surface px-4 py-3.5 ${chiziq}`}>
-      <span className="lbl">{label}</span>
+      <span className="flex items-start justify-between gap-2">
+        <span className="lbl pt-0.5">{label}</span>
+        {Icon && (
+          <span className={`-mt-0.5 -mr-1 flex size-9 shrink-0 items-center justify-center rounded-[10px] ${IKON_FON[ton]}`}>
+            <Icon size={17} />
+          </span>
+        )}
+      </span>
       <span
         className={`tnum font-[family-name:var(--font-display)] text-[26px] leading-none font-extrabold tracking-[-0.02em] ${TON[ton]}`}
       >

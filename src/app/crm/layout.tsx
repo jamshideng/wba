@@ -19,6 +19,9 @@ import { MenyuTugma } from '@/components/menyu-tugma'
 import { YuklanishChizigi, HavolaHolati } from '@/components/yuklanish'
 import { BildirishnomaJoyi } from '@/components/bildirishnomalar'
 import { PastkiHavola } from '@/components/pastki-havola'
+import { MenyuHavola } from '@/components/menyu-havola'
+import { Yaratish } from '@/components/yaratish'
+import { TezQidiruv } from '@/components/tez-qidiruv'
 import { IlovaOrnatish, YangilashTugma } from '@/components/ilova'
 import { XabarnomaYoqish } from '@/components/xabarnoma'
 import type { MeningBildirishnomam } from '@/lib/bildirishnoma'
@@ -70,14 +73,10 @@ function Band({ band, nishon }: { band: MenyuBand; nishon?: number }) {
   }
 
   return (
-    <Link
-      href={band.href}
-      title={band.nom}
-      className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-[13.5px] whitespace-nowrap text-ink-2 transition hover:bg-surface-2 hover:text-ink group-data-[menyu=yopiq]/qobiq:justify-center group-data-[menyu=yopiq]/qobiq:px-0"
-    >
+    <MenyuHavola href={band.href} title={band.nom}>
       {ichi}
       <HavolaHolati />
-    </Link>
+    </MenyuHavola>
   )
 }
 
@@ -204,7 +203,13 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
         {/* Kompyuter: o'ng yuqori burchakda tema va profil (bosilsa: Profil, Chiqish) */}
         <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface/90 px-5 py-2 backdrop-blur max-lg:hidden lg:px-7">
           <MenyuTugma />
+          {xodim && (
+            <span className="ml-2 w-full max-w-md">
+              <TezQidiruv />
+            </span>
+          )}
           <span className="flex-1" />
+          {xodim && <Yaratish direktor={profil.rol === 'admin' || tasdiqlaydimi(profil.rol)} />}
           <YangilashTugma />
           <TemaTugma />
           <BildirishnomaJoyi joy="kompyuter" royxat={bildirishnomalar} />

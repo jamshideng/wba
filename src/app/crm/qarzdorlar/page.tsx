@@ -5,7 +5,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, Stat, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan, Sahifalash } from '@/components/crm'
 import { kirishKlass } from '@/components/forma'
-import { IconPhone } from '@/components/icons'
+import { IconPhone, IconDebt, IconStudents } from '@/components/icons'
 import { pul, telefon } from '@/lib/format'
 import type { Qarzdor } from '@/lib/types'
 import { qidiruvTuri, telefonFiltri } from '@/lib/qidiruv'
@@ -54,8 +54,8 @@ export default async function Qarzdorlar({
       <Sarlavha nom="Qarzdorlar" izoh="eng kattadan" />
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <Stat label="Jami qarz" value={Number(panel?.jami_qarz ?? 0)} sub="so‘m" ton="brand" border="brand" />
-        <Stat label="Qarzdorlar" value={Number(panel?.qarzdorlar ?? 0)} sub="faol o‘quvchi" />
+        <Stat label="Jami qarz" value={Number(panel?.jami_qarz ?? 0)} sub="so‘m" ton="brand" border="brand" Icon={IconDebt} />
+        <Stat label="Qarzdorlar" value={Number(panel?.qarzdorlar ?? 0)} sub="faol o‘quvchi" Icon={IconStudents} />
       </div>
 
       <JonliForma className="flex gap-2.5">
