@@ -7,6 +7,8 @@ import { Badge, Empty } from '@/components/ui'
 
 export type KechikishYozuv = {
   id: string
+  sheets_id: string | null
+  group_id: string | null
   sana: string
   daqiqa: number
   sabab: string | null
@@ -16,7 +18,7 @@ export type KechikishYozuv = {
 }
 
 export const KECHIKISH_USTUNLAR =
-  'id, sana, daqiqa, sabab, kiritilgan, teacher_id, teachers(ism), groups(nom)'
+  'id, sheets_id, group_id, sana, daqiqa, sabab, kiritilgan, teacher_id, teachers(ism), groups(nom)'
 
 function sanaQisqa(iso: string): string {
   const [y, m, d] = iso.split('-')
@@ -42,11 +44,14 @@ export function KechikishJadval({
   royxat,
   ustozsiz = false,
   bosh = 'Bu davrda kechikish yo‘q — demak hamma o‘z vaqtida kelgan.',
+  amal,
 }: {
   royxat: KechikishYozuv[]
   /** Bitta ustozning sahifasida ustoz ustuni kerak emas */
   ustozsiz?: boolean
   bosh?: string
+  /** Ixtiyoriy oxirgi ustun (tahrirlash) */
+  amal?: (k: KechikishYozuv) => React.ReactNode
 }) {
   if (!royxat.length) return <Empty>{bosh}</Empty>
   return (
@@ -60,6 +65,7 @@ export function KechikishJadval({
             <th className="lbl px-2 py-2 font-normal">Kech</th>
             <th className="lbl px-2 py-2 font-normal">Sabab</th>
             <th className="lbl px-2 py-2 text-right font-normal">Kiritilgan</th>
+            {amal && <th className="lbl px-2 py-2 font-normal"><span className="sr-only">Amal</span></th>}
           </tr>
         </thead>
         <tbody>
@@ -72,7 +78,9 @@ export function KechikishJadval({
               <td className="px-2 py-2.5 text-ink-3">{k.sabab ?? '—'}</td>
               <td className="tnum px-2 py-2.5 text-right font-[family-name:var(--font-mono)] text-[11.5px] whitespace-nowrap text-ink-3">
                 {vaqtToshkent(k.kiritilgan)}
+                <span className="block text-[10px] text-ink-4">{k.sheets_id ? `Sheets · ${k.sheets_id}` : 'saytda'}</span>
               </td>
+              {amal && <td className="px-2 py-2.5 text-right">{amal(k)}</td>}
             </tr>
           ))}
         </tbody>

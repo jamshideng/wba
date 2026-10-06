@@ -614,6 +614,7 @@ export type UstozKechikish = {
   daqiqa: number
   sabab: string | null
   kiritilgan: string | null
+  kiritdi: string | null
   created_at: string
   updated_at: string
 }

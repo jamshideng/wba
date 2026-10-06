@@ -4,7 +4,9 @@
 --  Qoida (Jamshid, 06.10): faqat KECHIKKAN yoziladi. Yozuv yo'q —
 --  ustoz o'z vaqtida kelgan. Har kechikish aniq guruh bo'yicha.
 --
---  Hozircha kiritish Sheets'da ("Ustoz kechikishlari" varag'i,
+--  Kiritish: Sheets'da (sheets_id bor) yoki saytda (sheets_id null).
+--  Sinxron faqat sheets_id li yozuvlarga tegadi.
+--  Hozircha asosiy kiritish Sheets'da ("Ustoz kechikishlari" varag'i,
 --  Y_UstozKech.js); sayt uni scripts/kechikish-kochir.ts bilan
 --  kuniga 6 marta o'qiydi (sheets_id = UK0001 bo'yicha ko'zgu).
 --  To'liq saytga o'tilganda Sheets'dan kiritish to'xtatiladi.
@@ -20,7 +22,9 @@ create table if not exists ustoz_kechikish (
   teacher_id  text not null references teachers (id) on delete cascade,
   daqiqa      int  not null check (daqiqa between 1 and 300),
   sabab       text check (sabab is null or length(sabab) <= 500),
-  kiritilgan  timestamptz,
+  -- Admin yozgan aniq vaqt: Sheets'dan kelsa o'sha vaqt, saytda kiritilsa — hozir
+  kiritilgan  timestamptz default now(),
+  kiritdi     uuid references profiles (id) on delete set null default auth.uid(),
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
@@ -30,6 +34,7 @@ comment on table ustoz_kechikish is 'Ustoz kechikishlari. Yozuv yo''q = o''z vaq
 create index if not exists ustoz_kechikish_sana_idx    on ustoz_kechikish (sana desc);
 create index if not exists ustoz_kechikish_ustoz_idx   on ustoz_kechikish (teacher_id, sana desc);
 create index if not exists ustoz_kechikish_guruh_idx   on ustoz_kechikish (group_id);
+create index if not exists ustoz_kechikish_kiritdi_idx on ustoz_kechikish (kiritdi);
 
 drop trigger if exists ustoz_kechikish_set_updated_at on ustoz_kechikish;
 create trigger ustoz_kechikish_set_updated_at before update on ustoz_kechikish
