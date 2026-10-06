@@ -71,12 +71,12 @@ export default async function UstozDavomati({
           <summary className="flex min-h-12 cursor-pointer items-center px-5 font-[family-name:var(--font-display)] text-[15px] font-bold">
             + Kechikish qo‘shish
           </summary>
-          <form action={kechikishQosh} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-[150px_minmax(0,2fr)_minmax(0,1fr)_120px]">
+          <form action={kechikishQosh} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-[150px_minmax(0,1fr)_120px]">
             <input type="hidden" name="qaytish" value={yol} />
             <Maydon nom="Sana">
               <input name="sana" type="date" required defaultValue={bugun} max={bugun} className={kirishKlass} />
             </Maydon>
-            <Maydon nom="Guruh">
+            <Maydon nom="Guruh" izoh="Ustoz guruhdan o‘zi olinadi">
               <select name="group_id" required defaultValue="" className={kirishKlass}>
                 <option value="" disabled>Guruhni tanlang</option>
                 {((guruhlar ?? []) as { id: string; nom: string }[]).map((g) => (
@@ -84,18 +84,10 @@ export default async function UstozDavomati({
                 ))}
               </select>
             </Maydon>
-            <Maydon nom="Ustoz" izoh="Bo‘sh — guruh ustozi">
-              <select name="teacher_id" defaultValue="" className={kirishKlass}>
-                <option value="">Guruh ustozi</option>
-                {uList.map((u) => (
-                  <option key={u.id} value={u.id}>{u.ism}</option>
-                ))}
-              </select>
-            </Maydon>
             <Maydon nom="Kech (daqiqa)">
               <input name="daqiqa" type="number" required min={1} max={300} inputMode="numeric" placeholder="12" className={kirishKlass} />
             </Maydon>
-            <Maydon nom="Sabab / izoh" className="sm:col-span-2 lg:col-span-3">
+            <Maydon nom="Sabab / izoh" className="sm:col-span-2">
               <input name="sabab" maxLength={500} placeholder="Ixtiyoriy: tirbandlik, ogohlantirgan…" className={kirishKlass} />
             </Maydon>
             <div className="flex items-end">

@@ -30,7 +30,7 @@ function tugat(yol: string, ok: string): never {
   redirect(xabarliYol(yol, { ok }))
 }
 
-/** Saytda kiritish: guruh tanlanadi, ustoz bo'sh bo'lsa — guruhning ustozi. */
+/** Saytda kiritish: guruh tanlanadi, ustoz — DOIM guruhning ustozi (Jamshid, 06.10). */
 export async function kechikishQosh(fd: FormData) {
   await talabRol(...XODIM)
   const yol = qaytish(fd)
@@ -39,12 +39,9 @@ export async function kechikishQosh(fd: FormData) {
   const t = tekshir(fd, yol)
 
   const supabase = await createClient()
-  let ustoz = matn(fd.get('teacher_id'))
-  if (!ustoz) {
-    const { data: g } = await supabase.from('groups').select('teacher_id').eq('id', guruh!).maybeSingle()
-    ustoz = (g?.teacher_id as string | null) ?? null
-  }
-  if (!ustoz) redirect(xabarliYol(yol, { xato: 'Bu guruhga ustoz biriktirilmagan — ustozni tanlang.' }))
+  const { data: g } = await supabase.from('groups').select('teacher_id').eq('id', guruh!).maybeSingle()
+  const ustoz = (g?.teacher_id as string | null) ?? null
+  if (!ustoz) redirect(xabarliYol(yol, { xato: 'Bu guruhga ustoz biriktirilmagan — avval guruhga ustoz biriktiring.' }))
 
   const { error } = await supabase.from('ustoz_kechikish').insert({ ...t, group_id: guruh!, teacher_id: ustoz! })
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
