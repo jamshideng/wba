@@ -1195,6 +1195,21 @@ async function yoz(d: Tayyor, quruq: boolean) {
     .filter((p) => yangiOquvchi.has(p.id) && ismKalit(p.fish) !== ismKalit(yangiOquvchi.get(p.id)!.fish))
     .map((p) => ({ id: p.id, profile_id: p.profile_id, eski: p.fish, yangi: yangiOquvchi.get(p.id)!.fish }))
 
+  /* 06.10: o'quvchi hisobining (profiles) ismi ham Sheets bilan bir xil bo'lsin.
+     Yuqoridagi ismOzgardi faqat SHU ko'chirishda o'zgargan ismni oladi — hisobda
+     eskisi qolib ketgan holatlar (masalan 2 fanli bola birlashganda) shu yerda
+     tuziladi. Faqat rol='oquvchi': xodim/ustoz ismiga tegilmaydi. */
+  const profIsmlar = new Map(
+    (await hammasi<{ id: string; ism: string; rol: string }>('profiles', 'id, ism, rol'))
+      .filter((x) => x.rol === 'oquvchi')
+      .map((x) => [x.id, x.ism]),
+  )
+  const ozgarganProfil = new Set(ismOzgardi.map((x) => x.profile_id))
+  const profilIsm = pOquvchi
+    .filter((p) => p.profile_id && yangiOquvchi.has(p.id) && profIsmlar.has(p.profile_id) && !ozgarganProfil.has(p.profile_id))
+    .map((p) => ({ id: p.id, profile_id: p.profile_id!, eski: profIsmlar.get(p.profile_id!)!, yangi: yangiOquvchi.get(p.id)!.fish }))
+    .filter((x) => x.eski.trim() !== x.yangi.trim())
+
   const yangiTolovId = new Set(d.tolovlar.map((t) => t.sheets_id).filter(Boolean) as string[])
   const tolovBekor = pTolov.filter((p) => p.manba === 'sheets' && !p.bekor && p.sheets_id && !yangiTolovId.has(p.sheets_id))
   const idsizTolov = pTolov.filter((p) => p.manba === 'sheets' && !p.sheets_id).length
@@ -1255,6 +1270,8 @@ async function yoz(d: Tayyor, quruq: boolean) {
   oquvchiArxiv.forEach((p) => console.log(`     ⌂ ${p.id} ${p.fish} (to‘lovi bor — arxivga)`))
   console.log(`  ismi o‘zgargan (ID boshqa bolaga o‘tgan yoki ism to‘ldirilgan): ${ismOzgardi.length}`)
   ismOzgardi.forEach((x) => console.log(`     ~ ${x.id}: "${x.eski}" → "${x.yangi}"`))
+  console.log(`  hisob (login) ismi Sheets'ga moslanadi: ${profilIsm.length}`)
+  profilIsm.forEach((x) => console.log(`     ≈ ${x.id}: "${x.eski}" → "${x.yangi}"`))
   console.log(`  yozilish: ${d.yozilishlar.length} yoziladi · ${qaytaKalit.length} eski yozuv yangi ID oladi · ${yozilishOchir.length} o‘chiriladi (hisob-fakturasi bilan)`)
   console.log(`  to‘lov: ${d.tolovlar.length} yoziladi · ${tolovBekor.length} eski to‘lov bekor qilinadi (${pul(tolovBekor.reduce((a, p) => a + Number(p.summa), 0))} so‘m)`)
   tolovBekor.slice(0, 15).forEach((p) => console.log(`     × ${p.sheets_id} ${p.student_id} ${pul(Number(p.summa))}`))
@@ -1301,6 +1318,9 @@ async function yoz(d: Tayyor, quruq: boolean) {
 
   for (const x of ismOzgardi) {
     if (x.profile_id) xato('profiles', (await db.from('profiles').update({ ism: x.yangi }).eq('id', x.profile_id)).error)
+  }
+  for (const x of profilIsm) {
+    xato('profiles (ism)', (await db.from('profiles').update({ ism: x.yangi }).eq('id', x.profile_id).eq('rol', 'oquvchi')).error)
   }
 
   for (const q of qaytaKalit) {
