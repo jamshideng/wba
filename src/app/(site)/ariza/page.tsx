@@ -6,7 +6,7 @@ import { after } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { telefonNormal } from '@/lib/format'
-import { MARKAZ, YONALISHLAR, bazadagiYonalish, saytManzil } from '@/lib/markaz'
+import { KUN_TURLARI, MARKAZ, VAQTLAR, YONALISHLAR, bazadagiYonalish, saytManzil } from '@/lib/markaz'
 import { html, xabar, HISOBOT_GURUH } from '@/lib/telegram'
 
 // Bir IP soatiga shuncha arizadan ortiq yubora olmaydi (spam to'sish).
@@ -35,6 +35,9 @@ const Ariza = z.object({
   telefon: z.string().trim().min(7).max(20),
   yonalish: z.string().trim().max(40).optional(),
   izoh: z.string().trim().max(500).optional(),
+  // Faqat ro'yxatdagi qiymatlar — boshqasi kelsa ariza rad etilmaydi, maydon bo'sh qoladi
+  kun: z.enum(KUN_TURLARI.map((k) => k.id) as [string, ...string[]]).optional().catch(undefined),
+  vaqt: z.enum(VAQTLAR.map((v) => v.id) as [string, ...string[]]).optional().catch(undefined),
 })
 
 async function yubor(formData: FormData) {
@@ -48,6 +51,8 @@ async function yubor(formData: FormData) {
     telefon: formData.get('telefon'),
     yonalish: formData.get('yonalish') || undefined,
     izoh: formData.get('izoh') || undefined,
+    kun: formData.get('kun') || undefined,
+    vaqt: formData.get('vaqt') || undefined,
   })
 
   if (!natija.success) redirect('/ariza?holat=xato')
@@ -82,7 +87,13 @@ async function yubor(formData: FormData) {
     natija.data.yonalish && !subjectId
       ? YONALISHLAR.find((y) => y.id === natija.data.yonalish)?.nom
       : undefined
-  const izoh = [tashqiNom && `Yo‘nalish: ${tashqiNom}`, natija.data.izoh].filter(Boolean).join('\n') || null
+  // leads jadvalida kun/vaqt ustuni yo'q — qabulxona izohda ko'radi
+  const kunNom = KUN_TURLARI.find((k) => k.id === natija.data.kun)?.nom
+  const vaqtNom = VAQTLAR.find((v) => v.id === natija.data.vaqt)
+  const qulay = [kunNom, vaqtNom && `${vaqtNom.nom.toLowerCase()} (${vaqtNom.oraliq})`].filter(Boolean).join(', ')
+  const izoh =
+    [tashqiNom && `Yo‘nalish: ${tashqiNom}`, qulay && `Qulay vaqt: ${qulay}`, natija.data.izoh].filter(Boolean).join('\n') ||
+    null
 
   try {
     const { error } = await supabase.from('leads').insert({
@@ -127,9 +138,12 @@ async function arizaXabari(a: { ism: string; telefon: string; yonalish?: string;
 export default async function ArizaSahifasi({
   searchParams,
 }: {
-  searchParams: Promise<{ holat?: string; yonalish?: string }>
+  searchParams: Promise<{ holat?: string; yonalish?: string; kun?: string; vaqt?: string }>
 }) {
-  const { holat, yonalish } = await searchParams
+  const { holat, yonalish, kun, vaqt } = await searchParams
+  // Bosh sahifadagi "qulay vaqt" tanlovidan kelganda — oldindan tanlangan
+  const tanKun = KUN_TURLARI.some((k) => k.id === kun) ? kun : ''
+  const tanVaqt = VAQTLAR.some((v) => v.id === vaqt) ? vaqt : ''
   // Bosh sahifadagi kurs kartasidan kelganda yo'nalish oldindan tanlangan bo'lsin.
   // Faqat ro'yxatdagi id qabul qilinadi — URL'dagi boshqa qiymat e'tiborsiz.
   const tanlangan = YONALISHLAR.some((y) => y.id === yonalish) ? yonalish : ''
@@ -241,13 +255,46 @@ export default async function ArizaSahifasi({
           </select>
         </label>
 
+        <div className="grid gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="lbl">Qulay kunlar</span>
+            <select
+              name="kun"
+              defaultValue={tanKun}
+              className="min-h-12 rounded-[9px] border border-line bg-bg px-3 text-[16px] sm:text-[14.5px]"
+            >
+              <option value="">Farqi yo‘q</option>
+              {KUN_TURLARI.map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.nom} ({k.kunlar.join(', ')})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="lbl">Qulay vaqt</span>
+            <select
+              name="vaqt"
+              defaultValue={tanVaqt}
+              className="min-h-12 rounded-[9px] border border-line bg-bg px-3 text-[16px] sm:text-[14.5px]"
+            >
+              <option value="">Farqi yo‘q</option>
+              {VAQTLAR.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.nom} ({v.oraliq})
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
         <label className="flex flex-col gap-1.5">
           <span className="lbl">Qo‘shimcha (ixtiyoriy)</span>
           <textarea
             name="izoh"
             rows={3}
             maxLength={500}
-            placeholder="Masalan: kechqurungi guruh qulay"
+            placeholder="Masalan: 2-sinf, darajam boshlang‘ich"
             className="resize-y rounded-[9px] border border-line bg-bg p-3.5 text-[16px] sm:text-[14.5px] placeholder:text-ink-4"
           />
         </label>

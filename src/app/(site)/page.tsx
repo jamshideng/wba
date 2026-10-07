@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MARKAZ, STATISTIKA } from '@/lib/markaz'
+import { MARKAZ, YONALISHLAR } from '@/lib/markaz'
 import { IconPhone, IconPin, IconSend } from '@/components/icons'
 import { RaqamSanagich } from '@/components/raqam-sanagich'
 import { Harakat } from '@/components/lending/harakat'
@@ -11,8 +11,9 @@ import { Kurslar } from '@/components/lending/kurslar'
 import { Qadamlar } from '@/components/lending/qadamlar'
 import { Sozlab } from '@/components/lending/sozlab'
 import { arabShrift } from '@/components/lending/shrift'
-import { Test } from '@/components/lending/test'
-import { Jadval } from '@/components/lending/jadval'
+import { TestOyna } from '@/components/lending/test-oyna'
+import { VaqtTanlash } from '@/components/lending/vaqt-tanlash'
+import { Odamlar } from '@/components/lending/odamlar'
 import { Narx } from '@/components/lending/narx'
 import { Savollar } from '@/components/lending/savollar'
 import './lending.css'
@@ -136,31 +137,28 @@ export default function Bosh() {
 
       <div className="mx-auto max-w-[1320px] px-5 lg:px-8">
         {/* ================= Faktlar ================= */}
-        <section aria-label="Raqamlarda" className="flex flex-col">
-          <div className="grid grid-cols-2 border-b border-line lg:grid-cols-4">
-            {[
-              { n: yil, oxiri: '+', t: 'yil tajriba', izoh: `${MARKAZ.tashkilYili} yildan beri Toshkentda` },
-              { n: STATISTIKA.faolOquvchi, t: 'o‘quvchi hozir o‘qiyapti', izoh: 'bolalar va kattalar', brand: true },
-              { n: STATISTIKA.ustoz, t: 'ustoz', izoh: 'har fan bo‘yicha alohida' },
-              { n: STATISTIKA.guruh, t: 'faol guruh', izoh: 'ertalabdan kechgacha' },
-            ].map((f, i) => (
-              <div
-                key={f.t}
-                data-ochil={i * 0.06}
-                className={`flex flex-col gap-1.5 py-7 sm:py-10 ${i % 2 === 1 ? 'border-l border-line pl-5 sm:pl-8' : 'pr-5'} ${
-                  i === 2 ? 'border-t border-line lg:border-t-0 lg:border-l lg:pl-8' : ''
-                } ${i === 3 ? 'border-t border-line lg:border-t-0' : ''}`}
-              >
-                <span className={`h-display text-[52px] leading-none sm:text-[76px] ${f.brand ? 'text-brand' : ''}`}>
-                  <RaqamSanagich qiymat={f.n} />
-                  {f.oxiri}
-                </span>
-                <span className="text-[14.5px] font-bold">{f.t}</span>
-                <span className="text-[13px] text-ink-3">{f.izoh}</span>
-              </div>
-            ))}
-          </div>
-          <p className="pt-3 text-[12px] text-ink-3">Markaz bazasidan, {STATISTIKA.holatiga} holatiga.</p>
+        <section aria-label="Raqamlarda" className="grid grid-cols-2 border-b border-line lg:grid-cols-4">
+          {[
+            { n: yil, oxiri: '+', t: 'yil tajriba', izoh: `${MARKAZ.tashkilYili} yildan beri Toshkentda` },
+            { n: YONALISHLAR.length, t: 'yo‘nalish', izoh: 'tillar, aniq fanlar va IT' },
+            { n: MARKAZ.guruhMaksimal, t: 'kishi — guruhda eng ko‘pi', izoh: 'ustoz har biriga yetadi', brand: true },
+            { n: 0, t: 'so‘m — birinchi dars', izoh: 'avval ko‘rasiz, keyin qaror' },
+          ].map((f, i) => (
+            <div
+              key={f.t}
+              data-ochil={i * 0.06}
+              className={`flex flex-col gap-1.5 py-7 sm:py-10 ${i % 2 === 1 ? 'border-l border-line pl-5 sm:pl-8' : 'pr-5'} ${
+                i === 2 ? 'border-t border-line lg:border-t-0 lg:border-l lg:pl-8' : ''
+              } ${i === 3 ? 'border-t border-line lg:border-t-0' : ''}`}
+            >
+              <span className={`h-display text-[52px] leading-none sm:text-[76px] ${f.brand ? 'text-brand' : ''}`}>
+                <RaqamSanagich qiymat={f.n} />
+                {f.oxiri}
+              </span>
+              <span className="text-[14.5px] font-bold">{f.t}</span>
+              <span className="text-[13px] text-ink-3">{f.izoh}</span>
+            </div>
+          ))}
         </section>
 
         {/* ================= Kurslar ================= */}
@@ -183,11 +181,12 @@ export default function Bosh() {
               <Sozlab matn="Darajangizni hoziroq bilib oling" />
             </h2>
             <p data-ochil="0.1" className="max-w-[420px] text-[16px] leading-relaxed text-ink-2">
-              8 ta savol, osondan qiyinga. Natija taxminiy — aniq darajani markazda bepul aniqlaymiz.
+              8 ta savol, osondan qiyinga. Test alohida oynada ochiladi — hech narsa yuborilmaydi. Natija taxminiy, aniq
+              darajani markazda bepul aniqlaymiz.
             </p>
           </div>
           <div data-ochil="0.1">
-            <Test />
+            <TestOyna />
           </div>
         </section>
       </div>
@@ -196,15 +195,15 @@ export default function Bosh() {
       <Qadamlar />
 
       <div className="mx-auto max-w-[1320px] px-5 lg:px-8">
-        {/* ================= Jadval ================= */}
+        {/* ================= Qulay vaqt ================= */}
         <section id="jadval" className="flex flex-col gap-8 py-14 sm:gap-10 sm:py-20">
           <Sarlavha
-            yorliq="Dars jadvali"
-            matn="O‘zingizga qulay vaqtni toping"
-            izoh="Faol guruhlarning haqiqiy boshlanish vaqtlari. Kun turini tanlang."
+            yorliq="Dars vaqti"
+            matn="O‘zingizga qulay vaqtni tanlang"
+            izoh="Kunlar va vaqtni belgilang — mos guruhni o‘zimiz topamiz. Tanlov ariza bilan birga keladi."
           />
           <div data-ochil>
-            <Jadval />
+            <VaqtTanlash />
           </div>
         </section>
 
@@ -218,13 +217,12 @@ export default function Bosh() {
 
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              { nom: 'VIP', son: 1, t: 'Butun dars faqat sizga. Eng tez natija.', rang: 'var(--color-brand)' },
-              { nom: 'Mini guruh', son: 2, t: 'Ikki kishi — suhbatdosh ham bor, e‘tibor ham yetarli.', rang: 'var(--color-ink)' },
+              { nom: 'VIP', son: 1, t: 'Butun dars faqat sizga. Eng tez natija.' },
+              { nom: 'Mini guruh', son: 2, t: 'Ikki kishi — suhbatdosh ham bor, e‘tibor ham yetarli.' },
               {
                 nom: 'Standart guruh',
                 son: MARKAZ.guruhMaksimal,
                 t: `10–${MARKAZ.guruhMaksimal} kishi. Hech qachon ${MARKAZ.guruhMaksimal} tadan oshmaydi — bu qat‘iy qoida.`,
-                rang: 'var(--color-ink)',
               },
             ].map((g, i) => (
               <article
@@ -232,16 +230,8 @@ export default function Bosh() {
                 data-ochil={i * 0.08}
                 className="sayt-karta flex flex-col gap-6 rounded-[26px] border border-line bg-surface p-7"
               >
-                <div aria-hidden="true" className="flex h-[88px] items-center">
-                  <div className={`grid gap-2 ${g.son > 2 ? 'grid-cols-6' : 'grid-flow-col'}`}>
-                    {Array.from({ length: g.son }, (_, n) => (
-                      <span
-                        key={n}
-                        className={`rounded-full ${g.son === 1 ? 'size-20' : g.son === 2 ? 'size-14' : 'size-8'}`}
-                        style={{ background: g.rang, opacity: g.son > 2 ? 0.25 + (n % 6) * 0.1 : 1 }}
-                      />
-                    ))}
-                  </div>
+                <div className="flex h-[96px] items-end">
+                  <Odamlar son={g.son} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <p className="flex items-baseline justify-between gap-3">

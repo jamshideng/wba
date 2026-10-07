@@ -63,22 +63,33 @@ export function Harakat() {
       })
     })
 
-    // Hero — preloader tugagach
+    // Hero — preloader tugagach. fromTo (from emas): oxirgi holat doim aniq
+    // "ko'rinadigan". Aks holda ikkinchi marta ishga tushganda (React qayta
+    // chizishi, HMR) `from` yashirin holatni "oxiri" deb eslab qolib, sarlavha
+    // va globus yo'qolib qolardi. Oxirida inline uslublar tozalanadi.
     let heroTl: gsap.core.Timeline | null = null
+    let bekor = false
     kirishTayyor().then(() => {
+      if (bekor) return
+      const sozlar = gsap.utils.toArray<HTMLElement>('[data-hero-soz] .lb-w')
+      const bloklar = gsap.utils.toArray<HTMLElement>('[data-hero]')
+      gsap.killTweensOf([...sozlar, ...bloklar])
       heroTl = gsap
-        .timeline()
-        .from('[data-hero-soz] .lb-w', { yPercent: 115, duration: 1, ease: 'expo.out', stagger: 0.05 })
-        .from(
-          '[data-hero]',
-          { y: 30, opacity: 0, filter: xira, duration: 0.9, ease: 'expo.out', stagger: 0.07, clearProps: 'filter' },
+        .timeline({ onComplete: () => gsap.set([...sozlar, ...bloklar], { clearProps: 'transform,opacity,filter' }) })
+        .fromTo(sozlar, { yPercent: 115 }, { yPercent: 0, duration: 1, ease: 'expo.out', stagger: 0.05 })
+        .fromTo(
+          bloklar,
+          { y: 30, opacity: 0, filter: xira },
+          { y: 0, opacity: 1, filter: 'none', duration: 0.9, ease: 'expo.out', stagger: 0.07 },
           0.15,
         )
       ScrollTrigger.refresh()
     })
 
     return () => {
-      heroTl?.kill()
+      bekor = true
+      // To'xtatilgan animatsiya elementlarni yarim yo'lda qoldirmasin
+      heroTl?.progress(1).kill()
       ctx.revert()
       toxta()
     }

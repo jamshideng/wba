@@ -47,3 +47,10 @@ export function kirishTayyor(): Promise<void> {
   if (document.documentElement.dataset.kirish === 'tayyor') return Promise.resolve()
   return new Promise((ok) => window.addEventListener(KIRISH_HODISA, () => ok(), { once: true }))
 }
+
+/** Oyna (modal) ochiq paytida sahifa skrolli to'xtaydi — fokus testdan "qochmasin" */
+export function skrollQulf(qulf: boolean): void {
+  if (qulf) lenis?.stop()
+  else lenis?.start()
+  document.documentElement.style.overflow = qulf ? 'hidden' : ''
+}

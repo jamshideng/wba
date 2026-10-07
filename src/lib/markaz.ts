@@ -134,18 +134,6 @@ export function bazadagiYonalish(id: string | undefined): string | null {
   return y.id
 }
 
-/**
- * Bazadan olingan rost raqamlar (faol o'quvchi/ustoz/guruh) — sayt statik,
- * shuning uchun bu "surat": `holatiga` sanasida olingan. Yangilash: bazadagi
- * students/teachers/groups (holat='faol') sonini qayta sanab, shu yerga yozish.
- */
-export const STATISTIKA = {
-  holatiga: '7-oktabr, 2026',
-  faolOquvchi: 82,
-  ustoz: 10,
-  guruh: 30,
-} as const
-
 /** Kun turlari — Sheets/bazadagi `kun_turi` bilan bir xil. Shanba ikkala turga kiradi. */
 export const KUN_TURLARI = [
   { id: 'toq', nom: 'Toq kunlar', kunlar: ['Du', 'Chor', 'Ju'] },
@@ -155,24 +143,12 @@ export const KUN_TURLARI = [
 
 export const HAFTA = ['Du', 'Se', 'Chor', 'Pay', 'Ju', 'Sha', 'Yak'] as const
 
-/**
- * Faol guruhlarning boshlanish vaqtlari (bazadagi groups, STATISTIKA.holatiga).
- * Bo'sh joy bor-yo'qligi bu yerda ko'rinmaydi — qo'ng'iroqda aniqlanadi.
- */
-export const JADVAL: Record<(typeof KUN_TURLARI)[number]['id'], Partial<Record<Yonalish['id'], string[]>>> = {
-  toq: {
-    'ingliz-tili': ['08:30', '10:00', '11:00', '15:00', '15:30', '16:30', '18:00', '19:30'],
-    matematika: ['10:00', '15:30', '18:30'],
-    'rus-tili': ['10:00', '15:30'],
-  },
-  juft: {
-    'ingliz-tili': ['08:30', '10:00', '15:30', '16:30', '17:00', '18:00'],
-    'arab-tili': ['08:30', '10:00'],
-    matematika: ['18:30'],
-    'ai-it': ['17:00'],
-    'rus-tili': ['15:00'],
-  },
-  dam_olish: {
-    'arab-tili': ['08:00'],
-  },
-}
+/** Kun qismi — darslar 08:00 dan 21:00 gacha (faol guruhlar jadvalidan) */
+export const VAQTLAR = [
+  { id: 'ertalab', nom: 'Ertalab', oraliq: '08:00 – 12:00' },
+  { id: 'kunduzi', nom: 'Kunduzi', oraliq: '12:00 – 17:00' },
+  { id: 'kechqurun', nom: 'Kechqurun', oraliq: '17:00 – 21:00' },
+] as const
+
+export type KunTuri = (typeof KUN_TURLARI)[number]['id']
+export type Vaqt = (typeof VAQTLAR)[number]['id']
