@@ -3,6 +3,7 @@ import { Logo } from '@/components/ui'
 import { MARKAZ } from '@/lib/markaz'
 import { SarlavhaBalandligi } from '@/components/sarlavha-balandligi'
 import { SaytMenyu } from '@/components/sayt-menyu'
+import { TemaTugma } from '@/components/tema'
 
 const MENYU = [
   { href: '/#kurslar', nom: 'Kurslar' },
@@ -42,17 +43,19 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
                 {m.nom}
               </a>
             ))}
-            <span className="flex items-center gap-2.5">
+            <span className="flex items-center gap-2">
+              {/* Yorug'/qorong'i — tanlov saqlanadi (wba-tema) */}
+              <TemaTugma className="size-11! rounded-full!" />
               {/* O'quvchi va ustozlar tizimga kirishni darhol topsin */}
               <Link
                 href="/kirish"
-                className="inline-flex min-h-11 items-center rounded-[9px] border-2 border-ink px-4 text-[14px] sm:px-6 font-bold text-ink transition hover:bg-ink hover:text-bg"
+                className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-[14px] font-bold text-ink transition hover:border-ink sm:px-5"
               >
                 Kirish
               </Link>
               <Link
                 href="/ariza"
-                className="sayt-tugma hidden min-h-11 items-center rounded-[9px] bg-brand text-white px-5 text-[14px] font-bold transition hover:brightness-110 sm:inline-flex"
+                className="sayt-tugma hidden min-h-11 items-center rounded-full bg-brand px-5 text-[14px] font-bold text-white transition hover:brightness-110 sm:inline-flex"
               >
                 Bepul sinov darsi
               </Link>

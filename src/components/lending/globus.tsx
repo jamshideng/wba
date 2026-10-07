@@ -12,40 +12,40 @@ import { useEffect, useRef } from 'react'
 type Soz = { s: string; r: string; arab?: boolean; katta?: boolean }
 
 const SOZLAR: Soz[] = [
-  { s: 'Hello', r: 'var(--color-osmon)', katta: true },
-  { s: 'Привет', r: 'var(--color-brand)', katta: true },
-  { s: 'مرحبا', r: 'var(--color-accent)', arab: true, katta: true },
-  { s: 'Merhaba', r: 'var(--color-firuza)', katta: true },
-  { s: 'Salom', r: 'var(--color-ink)', katta: true },
-  { s: 'π', r: 'var(--color-binafsha)', katta: true },
+  { s: 'Hello', r: 'var(--color-ink)', katta: true },
+  { s: 'Привет', r: 'var(--color-ink)', katta: true },
+  { s: 'مرحبا', r: 'var(--color-ink)', arab: true, katta: true },
+  { s: 'Merhaba', r: 'var(--color-ink)', katta: true },
+  { s: 'Salom', r: 'var(--color-brand)', katta: true },
+  { s: 'π', r: 'var(--color-ink)', katta: true },
   { s: 'AI', r: 'var(--color-brand)', katta: true },
-  { s: '</>', r: 'var(--color-osmon)' },
-  { s: '?', r: 'var(--color-ok)', katta: true },
-  { s: 'IELTS', r: 'var(--color-osmon)' },
-  { s: 'DTM', r: 'var(--color-binafsha)' },
-  { s: 'x²', r: 'var(--color-binafsha)' },
-  { s: '√9 = 3', r: 'var(--color-binafsha)' },
-  { s: 'ABC', r: 'var(--color-osmon)' },
-  { s: 'Азбука', r: 'var(--color-brand)' },
-  { s: 'ا ب ت', r: 'var(--color-accent)', arab: true },
-  { s: 'Günaydın', r: 'var(--color-firuza)' },
-  { s: 'Teşekkürler', r: 'var(--color-firuza)' },
-  { s: 'Thank you', r: 'var(--color-osmon)' },
-  { s: 'Спасибо', r: 'var(--color-brand)' },
-  { s: 'شكرا', r: 'var(--color-accent)', arab: true },
+  { s: '</>', r: 'var(--color-ink)' },
+  { s: '?', r: 'var(--color-ink)', katta: true },
+  { s: 'IELTS', r: 'var(--color-ink)' },
+  { s: 'DTM', r: 'var(--color-ink)' },
+  { s: 'x²', r: 'var(--color-ink)' },
+  { s: '√9 = 3', r: 'var(--color-ink)' },
+  { s: 'ABC', r: 'var(--color-ink)' },
+  { s: 'Азбука', r: 'var(--color-ink)' },
+  { s: 'ا ب ت', r: 'var(--color-ink)', arab: true },
+  { s: 'Günaydın', r: 'var(--color-ink)' },
+  { s: 'Teşekkürler', r: 'var(--color-ink)' },
+  { s: 'Thank you', r: 'var(--color-ink)' },
+  { s: 'Спасибо', r: 'var(--color-ink)' },
+  { s: 'شكرا', r: 'var(--color-ink)', arab: true },
   { s: 'Rahmat', r: 'var(--color-ink)' },
-  { s: 'Nima uchun?', r: 'var(--color-ok)' },
-  { s: '1 + 1', r: 'var(--color-ok)' },
-  { s: 'Scratch', r: 'var(--color-accent)' },
-  { s: 'HTML', r: 'var(--color-osmon)' },
-  { s: 'Python', r: 'var(--color-firuza)' },
-  { s: '∑', r: 'var(--color-binafsha)' },
+  { s: 'Nima uchun?', r: 'var(--color-ink)' },
+  { s: '1 + 1', r: 'var(--color-ink)' },
+  { s: 'Scratch', r: 'var(--color-ink)' },
+  { s: 'HTML', r: 'var(--color-ink)' },
+  { s: 'Python', r: 'var(--color-ink)' },
+  { s: '∑', r: 'var(--color-ink)' },
   { s: 'Kitob', r: 'var(--color-ink)' },
-  { s: 'Book', r: 'var(--color-osmon)' },
-  { s: 'Книга', r: 'var(--color-brand)' },
-  { s: 'Kitap', r: 'var(--color-firuza)' },
-  { s: 'كتاب', r: 'var(--color-accent)', arab: true },
-  { s: '%', r: 'var(--color-binafsha)' },
+  { s: 'Book', r: 'var(--color-ink)' },
+  { s: 'Книга', r: 'var(--color-ink)' },
+  { s: 'Kitap', r: 'var(--color-ink)' },
+  { s: 'كتاب', r: 'var(--color-ink)', arab: true },
+  { s: '%', r: 'var(--color-ink)' },
 ]
 
 /** Fibonachchi shar — nuqtalar sirtda tekis taqsimlanadi */
@@ -164,16 +164,30 @@ export function Globus() {
     <div
       ref={ildiz}
       translate="no"
-      data-kursor="Aylantiring"
       className="lb-globus relative aspect-square w-full cursor-grab touch-pan-y select-none active:cursor-grabbing"
     >
       <span className="sr-only">
         Markazda o‘qitiladigan tillar va fanlar: ingliz, rus, arab, turk tili, matematika, Pochemuchka, IT
       </span>
-      {/* Markaziy shar va meridianlar */}
-      <div aria-hidden="true" className="lb-shar absolute top-1/2 left-1/2 size-[34%] -translate-x-1/2 -translate-y-1/2 rounded-full" />
-      <div aria-hidden="true" className="lb-meridian absolute top-1/2 left-1/2 size-[78%] -translate-x-1/2 -translate-y-1/2 rounded-full" />
-      <div aria-hidden="true" className="lb-meridian lb-meridian-2 absolute top-1/2 left-1/2 size-[78%] -translate-x-1/2 -translate-y-1/2 rounded-full" />
+      {/* Markazda — chiziqli globus (meridian va parallellar) */}
+      <svg
+        aria-hidden="true"
+        viewBox="-100 -100 200 200"
+        className="lb-karkas absolute top-1/2 left-1/2 size-[80%] -translate-x-1/2 -translate-y-1/2"
+        fill="none"
+        stroke="var(--color-line)"
+        strokeWidth="0.6"
+      >
+        <circle r="98" stroke="color-mix(in oklab, var(--color-ink) 22%, transparent)" />
+        {[30, 60, 82].map((rx) => (
+          <ellipse key={`m${rx}`} rx={rx} ry="98" />
+        ))}
+        {[-60, -30, 0, 30, 60].map((y) => (
+          <ellipse key={`p${y}`} cy={y} rx={Math.sqrt(98 * 98 - y * y)} ry={Math.sqrt(98 * 98 - y * y) * 0.18} />
+        ))}
+        <circle r="3.2" fill="var(--color-brand)" stroke="none" />
+        <circle r="9" stroke="var(--color-brand)" strokeWidth="0.8" className="lb-puls-halqa" />
+      </svg>
 
       <div aria-hidden="true" className="absolute top-1/2 left-1/2">
         {SOZLAR.map((v, i) => (
@@ -185,7 +199,7 @@ export function Globus() {
             dir={v.arab ? 'rtl' : undefined}
             className={`absolute top-0 left-0 whitespace-nowrap will-change-transform ${
               v.arab ? 'lb-arab' : 'h-display'
-            } ${v.katta ? 'text-[30px] sm:text-[38px]' : 'text-[17px] sm:text-[21px]'}`}
+            } ${v.katta ? 'text-[24px] sm:text-[34px]' : 'text-[14px] sm:text-[18px]'}`}
             style={{ color: v.r }}
           >
             {v.s}

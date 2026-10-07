@@ -1,7 +1,8 @@
 /* ============================================================
    Bosh sahifa (lending) uslublari — faqat shu sahifa uchun.
-   Ranglar — globals.css tokenlari. Harakat faqat transform/opacity,
-   "harakatni kamaytirish" yoqilganda hammasi to'xtaydi.
+   Palitra ataylab tor: fon/matn tokenlari + bitta brend qizil.
+   Harakat faqat transform/opacity, "harakatni kamaytirish"
+   yoqilganda hammasi to'xtaydi. Ikkala tema ham tokenlardan.
    ============================================================ */
 
 /* Lenis — silliq skroll paytida brauzerning o'z smooth'i xalaqit bermasin */
@@ -15,162 +16,101 @@ html.lenis body { height: auto; }
 .lb-parda { animation: lb-parda-zaxira 0.3s 3.5s forwards; }
 html[data-parda='yoq'] .lb-parda { display: none; }
 
-/* ---------- Tepadagi progress ---------- */
-.lb-progress {
-  background: linear-gradient(90deg, var(--color-brand), var(--color-accent), var(--color-ok), var(--color-osmon), var(--color-binafsha));
-}
-
-/* ---------- Kursor (faqat sichqonchada) ---------- */
-.lb-kursor { display: none; }
-html[data-kursor='ha'] .lb-kursor {
-  display: block;
-  width: 0;
-  height: 0;
-}
-.lb-kursor::before {
-  content: '';
-  position: absolute;
-  left: -7px;
-  top: -7px;
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  background: var(--color-brand);
-  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s;
-}
-.lb-kursor[data-holat='havola']::before { transform: scale(3.2); opacity: 0.25; }
-.lb-kursor[data-holat='yozuv']::before { transform: scale(7); opacity: 1; }
-.lb-kursor[data-holat='yoq']::before { transform: scale(0); }
-.lb-kursor-yozuv {
-  position: absolute;
-  left: 0;
-  top: 0;
-  transform: translate(-50%, -50%) scale(0.6);
-  opacity: 0;
-  color: #fff;
-  font: 700 12px/1 var(--font-sans);
-  white-space: nowrap;
-  transition: opacity 0.25s, transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.lb-kursor[data-holat='yozuv'] .lb-kursor-yozuv { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-
-/* ---------- Hero foni: rangli avrora + to'r ---------- */
-.lb-avrora {
+/* ---------- Hero foni: bitta yumshoq qizil nur + nozik to'r ---------- */
+.lb-fon {
   position: absolute;
   inset: 0;
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
 }
-.lb-avrora i {
+.lb-fon::before {
+  content: '';
   position: absolute;
-  width: 60vmax;
+  top: -20%;
+  right: -25%;
+  width: min(1100px, 150vw);
   aspect-ratio: 1;
   border-radius: 999px;
-  background: radial-gradient(closest-side, var(--c), transparent 70%);
-  opacity: 0.5;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--color-brand) 16%, transparent), transparent 72%);
 }
-.lb-avrora i:nth-child(1) { --c: color-mix(in oklab, var(--color-brand) 70%, transparent); top: -25vmax; right: -15vmax; }
-.lb-avrora i:nth-child(2) { --c: color-mix(in oklab, var(--color-binafsha) 55%, transparent); bottom: -30vmax; right: 10vmax; }
-.lb-avrora i:nth-child(3) { --c: color-mix(in oklab, var(--color-osmon) 45%, transparent); top: 10vmax; left: -30vmax; }
-.lb-avrora i:nth-child(4) { --c: color-mix(in oklab, var(--color-accent) 40%, transparent); top: -20vmax; left: 20vmax; width: 40vmax; }
-.lb-avrora::after {
+.lb-fon::after {
   content: '';
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(color-mix(in oklab, var(--color-ink) 7%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in oklab, var(--color-ink) 7%, transparent) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 20%, transparent 80%);
+    linear-gradient(color-mix(in oklab, var(--color-ink) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--color-ink) 6%, transparent) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse 75% 65% at 60% 35%, #000 15%, transparent 78%);
 }
 
-/* Rangli matn (gradient) */
-.lb-rangli {
-  background: linear-gradient(100deg, var(--color-brand) 0%, var(--color-accent) 35%, var(--color-binafsha) 70%, var(--color-osmon) 100%);
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
+/* Kontur matn (ichi bo'sh) */
+.lb-kontur {
   color: transparent;
+  -webkit-text-stroke: 1.2px color-mix(in oklab, var(--color-ink) 28%, transparent);
 }
 
 /* ---------- Globus ---------- */
-.lb-globus span[dir], .lb-globus .h-display { text-shadow: 0 2px 14px var(--color-bg), 0 0 2px var(--color-bg); }
-.lb-shar {
-  background:
-    radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.55), transparent 22%),
-    radial-gradient(circle at 50% 50%, var(--color-brand), color-mix(in oklab, var(--color-brand) 55%, black) 72%);
-  box-shadow:
-    0 0 80px 10px color-mix(in oklab, var(--color-brand) 45%, transparent),
-    inset -18px -24px 50px rgb(0 0 0 / 0.35);
+.lb-globus span[dir],
+.lb-globus .h-display {
+  text-shadow: 0 1px 10px var(--color-bg), 0 0 2px var(--color-bg);
 }
-.lb-meridian {
-  border: 1.5px dashed color-mix(in oklab, var(--color-ink) 22%, transparent);
-  transform: translate(-50%, -50%) rotateX(72deg);
-}
-.lb-meridian-2 { transform: translate(-50%, -50%) rotateY(72deg); }
+.lb-puls-halqa { transform-box: fill-box; transform-origin: center; }
 
-/* ---------- Kurs kartalari (rangli) ---------- */
+/* ---------- Kurs kartalari ---------- */
 .lb-kurs {
-  --r: var(--color-brand);
-  --rx: 0deg;
-  --ry: 0deg;
-  --mx: 50%;
-  --my: 0%;
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background:
-    radial-gradient(70% 60% at var(--mx) var(--my), rgb(255 255 255 / 0.22), transparent 70%),
-    linear-gradient(145deg, color-mix(in oklab, var(--r) 92%, white) 0%, color-mix(in oklab, var(--r) 72%, black) 100%);
-  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
-  transition:
-    transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 0.4s,
-    opacity 0.4s,
-    filter 0.4s;
-  box-shadow: 0 24px 50px -28px color-mix(in oklab, var(--r) 80%, transparent);
-}
-.lb-kurs:hover { box-shadow: 0 34px 70px -26px color-mix(in oklab, var(--r) 90%, transparent); }
-.lb-kurs .lb-belgi { color: color-mix(in oklab, var(--r) 80%, black); transition: transform 0.5s cubic-bezier(0.3, 1.5, 0.5, 1); }
-.lb-kurs:hover .lb-belgi { transform: rotate(-10deg) scale(1.1); }
-.lb-kurs .lb-soya-belgi { color: #fff; opacity: 0.14; transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.lb-kurs:hover .lb-soya-belgi { transform: translate(-10px, -10px) rotate(-6deg); }
-.lb-kurs .lb-yozil { color: color-mix(in oklab, var(--r) 75%, black); }
-.lb-kurs .lb-strelka { transition: transform 0.3s; }
-.lb-kurs:hover .lb-strelka { transform: translateX(4px); }
-.lb-kurs[data-mos='yoq'] {
-  opacity: 0.22;
-  filter: grayscale(1);
-  transform: perspective(900px) scale(0.96);
-}
-.lb-kurs-qora {
   background: var(--color-surface);
-  box-shadow: 0 0 0 1.5px var(--color-line);
+  box-shadow: 0 0 0 1px var(--color-line);
+  transition:
+    box-shadow 0.35s,
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.35s;
+}
+.lb-kurs .lb-belgi {
+  background: var(--color-surface-2);
   color: var(--color-ink);
+  transition: background-color 0.35s, color 0.35s;
 }
-.lb-kurs-qora:hover { box-shadow: 0 0 0 1.5px var(--color-brand), 0 30px 60px -30px var(--color-brand); }
-
-/* ---------- Qadamlar ---------- */
-.lb-qadam {
-  background: linear-gradient(150deg, color-mix(in oklab, var(--r) 92%, white), color-mix(in oklab, var(--r) 68%, black));
-  box-shadow: 0 30px 60px -30px color-mix(in oklab, var(--r) 80%, transparent);
+.lb-kurs .lb-strelka { transition: transform 0.3s, background-color 0.3s, border-color 0.3s, color 0.3s; }
+.lb-kurs:hover,
+.lb-kurs:focus-visible {
+  box-shadow: 0 0 0 1.5px var(--color-ink), 0 24px 48px -32px rgb(0 0 0 / 0.5);
 }
+.lb-kurs:hover .lb-belgi,
+.lb-kurs:focus-visible .lb-belgi { background: var(--color-brand); color: #fff; }
+.lb-kurs:hover .lb-strelka,
+.lb-kurs:focus-visible .lb-strelka {
+  transform: translateX(3px);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-bg);
+}
+.lb-kurs[data-mos='yoq'] { opacity: 0.3; transform: scale(0.98); }
+.lb-kurs-qizil {
+  background:
+    radial-gradient(90% 80% at 100% 0%, rgb(255 255 255 / 0.16), transparent 60%),
+    var(--color-brand);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.lb-kurs-qizil:hover { transform: translateY(-3px); }
+.lb-kurs-qizil .lb-strelka { transition: transform 0.3s; }
+.lb-kurs-qizil:hover .lb-strelka { transform: translateX(3px); }
 
 /* ---------- Narx: ajratilgan karta ---------- */
 .lb-tanlov {
-  background:
-    radial-gradient(120% 90% at 100% 0%, rgb(255 255 255 / 0.25), transparent 55%),
-    linear-gradient(150deg, var(--color-brand), color-mix(in oklab, var(--color-brand) 65%, black));
-  color: #fff;
-  box-shadow: 0 34px 70px -30px var(--color-brand);
+  background: var(--color-ink);
+  color: var(--color-bg);
 }
 
 /* ---------- Yakun va ulkan so'z ---------- */
 .lb-yakun {
   background:
-    radial-gradient(60% 90% at 0% 0%, color-mix(in oklab, var(--color-accent) 55%, transparent), transparent 60%),
-    radial-gradient(60% 90% at 100% 100%, color-mix(in oklab, var(--color-binafsha) 60%, transparent), transparent 60%),
+    radial-gradient(70% 100% at 100% 100%, rgb(0 0 0 / 0.28), transparent 60%),
+    radial-gradient(60% 80% at 0% 0%, rgb(255 255 255 / 0.14), transparent 60%),
     var(--color-brand);
 }
 .lb-ulkan {
@@ -181,22 +121,16 @@ html[data-kursor='ha'] .lb-kursor {
 
 /* ---------- Harakatlar ---------- */
 @keyframes lb-fan {
-  from { transform: translateY(105%) rotate(4deg); }
-  to { transform: none; }
+  from { transform: translateY(105%); opacity: 0; }
+  to { transform: none; opacity: 1; }
 }
-@keyframes lb-suzish {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-14px); }
-}
-@keyframes lb-avrora {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(4vmax, 3vmax) scale(1.12); }
-}
-@keyframes lb-rangli { to { background-position: 200% 0; } }
-@keyframes lb-meridian { to { rotate: 360deg; } }
 @keyframes lb-puls {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.35; transform: scale(1.8); }
+  50% { opacity: 0.3; transform: scale(1.8); }
+}
+@keyframes lb-halqa {
+  from { opacity: 0.9; transform: scale(0.4); }
+  to { opacity: 0; transform: scale(2.4); }
 }
 @keyframes lb-chiqish {
   from { transform: translateY(110%); }
@@ -204,15 +138,9 @@ html[data-kursor='ha'] .lb-kursor {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .lb-fan { animation: lb-fan 0.6s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
-  .lb-avrora i { animation: lb-avrora 14s ease-in-out infinite; }
-  .lb-avrora i:nth-child(2) { animation-duration: 18s; animation-direction: reverse; }
-  .lb-avrora i:nth-child(3) { animation-duration: 22s; }
-  .lb-avrora i:nth-child(4) { animation-duration: 16s; animation-direction: reverse; }
-  .lb-rangli { animation: lb-rangli 6s linear infinite; }
-  .lb-meridian { animation: lb-meridian 40s linear infinite; }
-  .lb-suzuvchi { animation: lb-suzish 5s ease-in-out infinite; animation-delay: var(--k, 0ms); }
+  .lb-fan { animation: lb-fan 0.55s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
   .lb-nuqta::after { animation: lb-puls 2s ease-in-out infinite; }
+  .lb-puls-halqa { animation: lb-halqa 2.4s ease-out infinite; }
   .lb-panel { animation: lb-chiqish 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 1.2s both; }
 }
 

@@ -2,53 +2,30 @@
 
 import { useEffect, useRef } from 'react'
 import { skrollTezligi } from '@/lib/harakat'
+import { YONALISHLAR } from '@/lib/markaz'
 
 /**
- * Ikki qator lenta — qarama-qarshi tomonga oqadi, skroll tezlashsa lenta ham
- * tezlashadi va qiyshayadi (portfolio'dagi velocity-marquee). Bezak.
+ * Ikki qator yo'nalishlar lentasi — qarama-qarshi tomonga oqadi, skroll
+ * tezlashsa lenta ham tezlashadi. Monoxrom: birinchi qator to'liq, ikkinchisi
+ * kontur. Ajratuvchi — brend qizil kvadrat. Bezak, ekran o'quvchiga yashirin.
  */
+const NOMLAR = YONALISHLAR.map((y) => y.nom)
 
-type Bolak = { s: string; r: string; arab?: boolean }
-
-const QATOR_1: Bolak[] = [
-  { s: 'Ingliz tili', r: 'var(--color-osmon)' },
-  { s: 'Hello', r: 'var(--color-osmon)' },
-  { s: 'Rus tili', r: 'var(--color-brand)' },
-  { s: 'Привет', r: 'var(--color-brand)' },
-  { s: 'Arab tili', r: 'var(--color-accent)' },
-  { s: 'مرحبا', r: 'var(--color-accent)', arab: true },
-  { s: 'Turk tili', r: 'var(--color-firuza)' },
-  { s: 'Merhaba', r: 'var(--color-firuza)' },
-]
-const QATOR_2: Bolak[] = [
-  { s: 'Matematika', r: 'var(--color-binafsha)' },
-  { s: 'a² + b² = c²', r: 'var(--color-binafsha)' },
-  { s: 'Pochemuchka', r: 'var(--color-ok)' },
-  { s: 'Nima uchun?', r: 'var(--color-ok)' },
-  { s: 'AI & IT', r: 'var(--color-brand)' },
-  { s: 'Web dasturlash', r: 'var(--color-osmon)' },
-  { s: 'Scratch', r: 'var(--color-accent)' },
-  { s: 'IELTS · DTM', r: 'var(--color-firuza)' },
-]
-
-function Qator({ bolaklar, yonalish }: { bolaklar: Bolak[]; yonalish: 1 | -1 }) {
+function Qator({ kontur, yonalish }: { kontur?: boolean; yonalish: 1 | -1 }) {
   const ichki = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const el = ichki.current
     if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    let x = 0
-    let qiya = 0
+    let x = yonalish === 1 ? 0 : -el.scrollWidth / 4
     let kadr = 0
     let korinadi = true
     const qadam = () => {
-      const v = skrollTezligi()
       const yarim = el.scrollWidth / 2
-      x -= (0.6 + Math.min(Math.abs(v) * 0.35, 14)) * yonalish
+      x -= (0.5 + Math.min(Math.abs(skrollTezligi()) * 0.3, 12)) * yonalish
       if (x <= -yarim) x += yarim
       if (x > 0) x -= yarim
-      qiya += (Math.max(-8, Math.min(8, v * 0.4)) - qiya) * 0.1
-      el.style.transform = `translate3d(${x.toFixed(1)}px,0,0) skewX(${(-qiya).toFixed(2)}deg)`
+      el.style.transform = `translate3d(${x.toFixed(1)}px,0,0)`
       kadr = korinadi ? requestAnimationFrame(qadam) : 0
     }
     const kuzat = new IntersectionObserver(([e]) => {
@@ -63,16 +40,12 @@ function Qator({ bolaklar, yonalish }: { bolaklar: Bolak[]; yonalish: 1 | -1 }) 
     }
   }, [yonalish])
 
-  const bir = bolaklar.map((b) => (
-    <span
-      key={b.s}
-      dir={b.arab ? 'rtl' : undefined}
-      className={`mr-3 inline-flex shrink-0 items-center rounded-full px-6 py-3 text-[22px] leading-none text-white sm:mr-4 sm:px-8 sm:py-4 sm:text-[34px] ${
-        b.arab ? 'lb-arab' : 'h-display'
-      }`}
-      style={{ background: `color-mix(in oklab, ${b.r} 84%, black)` }}
-    >
-      {b.s}
+  const bir = NOMLAR.map((s) => (
+    <span key={s} className="flex shrink-0 items-center">
+      <span className={`h-display px-5 text-[38px] leading-none whitespace-nowrap sm:px-8 sm:text-[72px] ${kontur ? 'lb-kontur' : ''}`}>
+        {s}
+      </span>
+      <span className="size-2.5 shrink-0 bg-brand sm:size-3.5" />
     </span>
   ))
 
@@ -88,9 +61,9 @@ function Qator({ bolaklar, yonalish }: { bolaklar: Bolak[]; yonalish: 1 | -1 }) 
 
 export function TezlikLenta() {
   return (
-    <div aria-hidden="true" translate="no" className="flex flex-col gap-3 py-10 sm:gap-4 sm:py-16">
-      <Qator bolaklar={QATOR_1} yonalish={1} />
-      <Qator bolaklar={QATOR_2} yonalish={-1} />
+    <div aria-hidden="true" translate="no" className="flex flex-col gap-2 border-y border-line py-7 sm:gap-4 sm:py-12">
+      <Qator yonalish={1} />
+      <Qator kontur yonalish={-1} />
     </div>
   )
 }

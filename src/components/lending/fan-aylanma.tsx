@@ -2,16 +2,8 @@
 
 import { useEffect, useState } from 'react'
 
-/** Hero'dagi almashib turadigan fan nomi — har biri o'z rangida */
-const FANLAR = [
-  { nom: 'ingliz tili', r: 'var(--color-osmon)' },
-  { nom: 'matematika', r: 'var(--color-binafsha)' },
-  { nom: 'arab tili', r: 'var(--color-accent)' },
-  { nom: 'rus tili', r: 'var(--color-brand)' },
-  { nom: 'turk tili', r: 'var(--color-firuza)' },
-  { nom: 'Pochemuchka', r: 'var(--color-ok)' },
-  { nom: 'IT va AI', r: 'var(--color-brand)' },
-] as const
+/** Hero'dagi almashib turadigan fan nomi */
+const FANLAR = ['ingliz tili', 'matematika', 'arab tili', 'rus tili', 'turk tili', 'Pochemuchka', 'IT va AI'] as const
 
 const ORALIQ_MS = 2000
 
@@ -24,17 +16,11 @@ export function FanAylanma() {
     return () => clearInterval(t)
   }, [])
 
-  const f = FANLAR[i]
   return (
-    <span className="relative inline-flex overflow-hidden py-[0.1em] align-middle leading-[1.2]">
+    <span className="relative inline-flex overflow-hidden py-[0.08em] align-bottom leading-[1.15]">
       <span className="sr-only">ingliz, rus, arab, turk tili, matematika, Pochemuchka, IT</span>
-      <span
-        key={f.nom}
-        aria-hidden="true"
-        className="lb-fan inline-block rounded-[0.18em] px-[0.22em] text-white"
-        style={{ background: `color-mix(in oklab, ${f.r} 84%, black)` }}
-      >
-        {f.nom}
+      <span key={FANLAR[i]} aria-hidden="true" className="lb-fan inline-block text-brand">
+        {FANLAR[i]}
       </span>
     </span>
   )

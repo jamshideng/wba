@@ -18,7 +18,7 @@ export function SaytMenyu({ menyu }: { menyu: { href: string; nom: string }[] })
     <details ref={ref} className="sayt-menyu group sm:hidden">
       <summary
         aria-label="Menyu"
-        className="flex size-11 cursor-pointer list-none items-center justify-center rounded-[9px] border border-line text-ink [&::-webkit-details-marker]:hidden"
+        className="flex size-11 cursor-pointer list-none items-center justify-center rounded-full border border-line text-ink [&::-webkit-details-marker]:hidden"
       >
         <IconMenyu size={20} />
       </summary>

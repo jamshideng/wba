@@ -21,15 +21,14 @@ function YozilishTugma({ katta = false, oq = false }: { katta?: boolean; oq?: bo
   return (
     <Link
       href="/ariza"
-      data-kursor="Yozilish"
       className={`sayt-tugma group inline-flex items-center justify-center gap-3 rounded-full font-bold transition hover:scale-[1.03] ${
-        katta ? 'min-h-16 pr-2.5 pl-8 text-[17px]' : 'min-h-14 pr-2 pl-7 text-[15.5px]'
+        katta ? 'min-h-16 pr-2.5 pl-6 text-[15.5px] whitespace-nowrap sm:pl-8 sm:text-[17px]' : 'min-h-14 pr-2 pl-7 text-[15.5px] whitespace-nowrap'
       } ${oq ? 'bg-white text-brand' : 'bg-brand text-white shadow-[0_18px_40px_-14px_var(--color-brand)]'}`}
     >
       Bepul sinov darsiga yozilish
       <span
         aria-hidden="true"
-        className={`flex items-center justify-center rounded-full transition group-hover:rotate-[-45deg] ${
+        className={`flex items-center justify-center rounded-full transition group-hover:translate-x-0.5 ${
           katta ? 'size-11' : 'size-10'
         } ${oq ? 'bg-brand text-white' : 'bg-white text-brand'}`}
       >
@@ -69,14 +68,9 @@ export default function Bosh() {
 
       {/* ================= Hero ================= */}
       <section className="relative isolate">
-        <div className="lb-avrora" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-          <i />
-        </div>
-        <div className="mx-auto grid min-h-[calc(100svh-70px)] max-w-[1320px] items-center gap-6 px-5 pt-8 pb-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-10 lg:px-8">
-          <div className="flex flex-col gap-7">
+        <div className="lb-fon" aria-hidden="true" />
+        <div className="mx-auto grid max-w-[1320px] items-center gap-4 px-5 pt-7 pb-6 sm:pt-10 lg:min-h-[calc(100svh-70px)] lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-10 lg:px-8 lg:pb-12">
+          <div className="flex flex-col gap-6 sm:gap-7">
             <p
               data-hero
               className="inline-flex w-fit items-center gap-2.5 rounded-full border border-line bg-surface/70 px-4 py-2 text-[13.5px] font-semibold text-ink-2 backdrop-blur"
@@ -85,17 +79,17 @@ export default function Bosh() {
               Toshkent · {MARKAZ.tashkilYili} yildan beri · qabul ochiq
             </p>
 
-            <h1 className="h-display text-[44px] leading-[0.95] sm:text-[68px] lg:text-[72px] xl:text-[78px]" data-hero-soz>
+            <h1 className="h-display text-[40px] leading-[0.96] text-balance sm:text-[64px] lg:text-[70px] xl:text-[76px]" data-hero-soz>
               <Sozlab matn="Biz shunchaki bilim bermaymiz —" />
               <span className="inline-block overflow-hidden pb-[0.08em] align-bottom">
-                <span className="lb-w lb-rangli inline-block">hayotlarni</span>
+                <span className="lb-w inline-block text-brand">hayotlarni</span>
               </span>{' '}
               <span className="inline-block overflow-hidden pb-[0.08em] align-bottom">
-                <span className="lb-w lb-rangli inline-block">o‘zgartiramiz</span>
+                <span className="lb-w inline-block text-brand">o‘zgartiramiz</span>
               </span>
             </h1>
 
-            <p data-hero className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[20px] font-semibold sm:text-[26px]">
+            <p data-hero className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[19px] font-semibold sm:text-[24px]">
               <span className="text-ink-2">Bu yerda o‘rganasiz:</span>
               <FanAylanma />
             </p>
@@ -106,36 +100,31 @@ export default function Bosh() {
               {MARKAZ.darsHaftada} marta, {MARKAZ.darsDaqiqa} daqiqadan.
             </p>
 
-            <div data-hero className="flex flex-wrap items-center gap-3">
+            <div data-hero className="grid gap-3 sm:flex sm:flex-wrap sm:items-center">
               <YozilishTugma />
               <a
                 href="#kurslar"
-                className="inline-flex min-h-14 items-center rounded-full border-2 border-line px-7 text-[15px] font-bold text-ink-2 transition hover:border-ink hover:text-ink"
+                className="inline-flex min-h-14 items-center justify-center rounded-full border border-line px-7 text-[15px] font-bold text-ink transition hover:border-ink"
               >
                 Kurslarni ko‘rish
               </a>
             </div>
 
-            <ul data-hero className="flex flex-wrap gap-2">
-              {[
-                { t: 'Birinchi dars bepul', r: 'var(--color-ok)' },
-                { t: 'Daraja aniqlash bepul', r: 'var(--color-osmon)' },
-                { t: 'Oldindan to‘lov yo‘q', r: 'var(--color-accent)' },
-              ].map((v) => (
-                <li
-                  key={v.t}
-                  className="flex items-center gap-2 rounded-full border border-line bg-surface/70 px-3.5 py-2 text-[13.5px] font-semibold backdrop-blur"
-                >
-                  <span className="size-2 rounded-full" style={{ background: v.r }} aria-hidden="true" />
-                  {v.t}
+            <ul data-hero className="flex flex-wrap gap-x-5 gap-y-2 text-[14px] font-medium text-ink-2">
+              {['Birinchi dars bepul', 'Daraja aniqlash bepul', 'Oldindan to‘lov yo‘q'].map((t) => (
+                <li key={t} className="flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M3 8.4l3 2.9 7-7" stroke="var(--color-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {t}
                 </li>
               ))}
             </ul>
           </div>
 
-          <div data-hero className="relative mx-auto w-full max-w-[600px]">
+          <div data-hero className="relative mx-auto w-full max-w-[340px] sm:max-w-[520px] lg:max-w-[600px]">
             <Globus />
-            <p className="lbl -mt-4 text-center text-ink-3">Barmoq yoki sichqoncha bilan aylantiring</p>
+            <p className="lbl -mt-2 text-center text-ink-3">Aylantirib ko‘ring</p>
           </div>
         </div>
       </section>
@@ -144,35 +133,32 @@ export default function Bosh() {
 
       <div className="mx-auto max-w-[1320px] px-5 lg:px-8">
         {/* ================= Faktlar ================= */}
-        <section aria-label="Raqamlarda" className="grid grid-cols-2 gap-3 pb-16 lg:grid-cols-4 lg:gap-4">
+        <section aria-label="Raqamlarda" className="grid grid-cols-2 border-b border-line lg:grid-cols-4">
           {[
-            { n: yil, oxiri: '+', t: 'yil tajriba', izoh: `${MARKAZ.tashkilYili} yildan beri Toshkentda`, r: 'var(--color-brand)' },
-            { n: YONALISHLAR.length, t: 'yo‘nalish', izoh: 'tillar, aniq fanlar va IT', r: 'var(--color-osmon)' },
-            { n: MARKAZ.guruhMaksimal, t: 'kishi — guruhda eng ko‘pi', izoh: 'ustoz har biriga yetadi', r: 'var(--color-binafsha)' },
-            { n: 0, t: 'so‘m — birinchi dars', izoh: 'avval ko‘rasiz, keyin qaror', r: 'var(--color-ok)' },
+            { n: yil, oxiri: '+', t: 'yil tajriba', izoh: `${MARKAZ.tashkilYili} yildan beri Toshkentda` },
+            { n: YONALISHLAR.length, t: 'yo‘nalish', izoh: 'tillar, aniq fanlar va IT' },
+            { n: MARKAZ.guruhMaksimal, t: 'kishi — guruhda eng ko‘pi', izoh: 'ustoz har biriga yetadi', brand: true },
+            { n: 0, t: 'so‘m — birinchi dars', izoh: 'avval ko‘rasiz, keyin qaror' },
           ].map((f, i) => (
             <div
               key={f.t}
-              data-ochil={i * 0.07}
-              className="relative flex flex-col gap-2 overflow-hidden rounded-[26px] border border-line bg-surface p-5 sm:p-7"
+              data-ochil={i * 0.06}
+              className={`flex flex-col gap-1.5 py-7 sm:py-10 ${i % 2 === 1 ? 'border-l border-line pl-5 sm:pl-8' : 'pr-5'} ${
+                i === 2 ? 'border-t border-line lg:border-t-0 lg:border-l lg:pl-8' : ''
+              } ${i === 3 ? 'border-t border-line lg:border-t-0' : ''}`}
             >
-              <span
-                aria-hidden="true"
-                className="absolute -top-10 -right-10 size-32 rounded-full opacity-25"
-                style={{ background: `radial-gradient(closest-side, ${f.r}, transparent)` }}
-              />
-              <span className="h-display text-[54px] leading-none sm:text-[80px]" style={{ color: f.r }}>
+              <span className={`h-display text-[52px] leading-none sm:text-[76px] ${f.brand ? 'text-brand' : ''}`}>
                 <RaqamSanagich qiymat={f.n} />
                 {f.oxiri}
               </span>
-              <span className="text-[15px] font-bold">{f.t}</span>
+              <span className="text-[14.5px] font-bold">{f.t}</span>
               <span className="text-[13px] text-ink-3">{f.izoh}</span>
             </div>
           ))}
         </section>
 
         {/* ================= Kurslar ================= */}
-        <section id="kurslar" className="flex flex-col gap-10 py-12">
+        <section id="kurslar" className="flex flex-col gap-8 py-14 sm:gap-10 sm:py-20">
           <Sarlavha
             yorliq="Yo‘nalishlar"
             matn="Har yoshga — o‘z yo‘li"
@@ -187,7 +173,7 @@ export default function Bosh() {
 
       <div className="mx-auto max-w-[1320px] px-5 lg:px-8">
         {/* ================= Format ================= */}
-        <section id="dars" className="flex flex-col gap-10 py-12">
+        <section id="dars" className="flex flex-col gap-8 py-14 sm:gap-10 sm:py-20">
           <Sarlavha
             yorliq="Dars formati"
             matn="Kichik guruh — katta natija"
@@ -197,12 +183,12 @@ export default function Bosh() {
           <div className="grid gap-4 md:grid-cols-3">
             {[
               { nom: 'VIP', son: 1, t: 'Butun dars faqat sizga. Eng tez natija.', rang: 'var(--color-brand)' },
-              { nom: 'Mini guruh', son: 2, t: 'Ikki kishi — suhbatdosh ham bor, e‘tibor ham yetarli.', rang: 'var(--color-accent)' },
+              { nom: 'Mini guruh', son: 2, t: 'Ikki kishi — suhbatdosh ham bor, e‘tibor ham yetarli.', rang: 'var(--color-ink)' },
               {
                 nom: 'Standart guruh',
                 son: MARKAZ.guruhMaksimal,
                 t: `10–${MARKAZ.guruhMaksimal} kishi. Hech qachon ${MARKAZ.guruhMaksimal} tadan oshmaydi — bu qat‘iy qoida.`,
-                rang: 'var(--color-osmon)',
+                rang: 'var(--color-ink)',
               },
             ].map((g, i) => (
               <article
@@ -216,7 +202,7 @@ export default function Bosh() {
                       <span
                         key={n}
                         className={`rounded-full ${g.son === 1 ? 'size-20' : g.son === 2 ? 'size-14' : 'size-8'}`}
-                        style={{ background: g.rang, opacity: g.son > 2 ? 0.45 + (n % 6) * 0.1 : 1 }}
+                        style={{ background: g.rang, opacity: g.son > 2 ? 0.25 + (n % 6) * 0.1 : 1 }}
                       />
                     ))}
                   </div>
@@ -224,7 +210,7 @@ export default function Bosh() {
                 <div className="flex flex-col gap-2">
                   <p className="flex items-baseline justify-between gap-3">
                     <span className="h-display text-[28px]">{g.nom}</span>
-                    <span className="lbl" style={{ color: g.rang }}>
+                    <span className="lbl">
                       {g.son === 1 ? '1 kishi' : g.son === 2 ? '2 kishi' : `${MARKAZ.guruhMaksimal} gacha`}
                     </span>
                   </p>
@@ -236,7 +222,7 @@ export default function Bosh() {
         </section>
 
         {/* ================= Narxlar ================= */}
-        <section id="narxlar" className="flex flex-col gap-10 py-12">
+        <section id="narxlar" className="flex flex-col gap-8 py-14 sm:gap-10 sm:py-20">
           <Sarlavha
             yorliq="Narxlar"
             matn="Avval darsni ko‘rasiz, keyin to‘laysiz"
@@ -260,21 +246,21 @@ export default function Bosh() {
 
             <article data-ochil="0.16" className="lb-tanlov sayt-karta relative flex flex-col gap-4 rounded-[26px] p-8">
               <p className="flex items-center justify-between gap-3">
-                <span className="lbl text-white">Uch oylik · eng foydali</span>
-                <span className="rounded-full bg-white px-3 py-1.5 text-[12px] font-bold text-brand">
+                <span className="lbl text-bg/70">Uch oylik · eng foydali</span>
+                <span className="rounded-full bg-brand px-3 py-1.5 text-[12px] font-bold text-white">
                   {pul(NARX.uchOylikAsl - NARX.uchOylik)} so‘m tejaysiz
                 </span>
               </p>
               <p className="flex flex-wrap items-baseline gap-2.5">
                 <span className="h-display tnum text-[48px] leading-none">{pul(NARX.uchOylik)}</span>
-                <span className="tnum font-[family-name:var(--font-mono)] text-sm text-white/70 line-through">{pul(NARX.uchOylikAsl)}</span>
+                <span className="tnum font-[family-name:var(--font-mono)] text-sm text-bg/50 line-through">{pul(NARX.uchOylikAsl)}</span>
               </p>
-              <p className="text-[14.5px] leading-relaxed text-white/90">Uch oyni bittada to‘lasangiz, uchala oy ham tanishuv narxida qoladi.</p>
+              <p className="text-[14.5px] leading-relaxed text-bg/75">Uch oyni bittada to‘lasangiz, uchala oy ham tanishuv narxida qoladi.</p>
             </article>
           </div>
 
-          <p data-ochil className="flex items-start gap-4 rounded-[20px] border border-accent-line bg-accent-soft px-6 py-5">
-            <span className="mt-0.5 shrink-0 text-accent">
+          <p data-ochil className="flex items-start gap-4 rounded-[20px] border border-line bg-surface px-6 py-5">
+            <span className="mt-0.5 shrink-0 text-brand">
               <IconAlert size={20} />
             </span>
             <span className="text-[14.5px] leading-relaxed text-ink-2">
@@ -302,26 +288,25 @@ export default function Bosh() {
                 </span>
               </p>
 
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-2.5 sm:grid-cols-3 sm:gap-3">
                 {[
-                  { href: `tel:${MARKAZ.telefonRaw}`, nom: 'Qo‘ng‘iroq', qiymat: MARKAZ.telefon, ikonka: <IconPhone size={20} />, r: 'var(--color-ok)' },
-                  { href: MARKAZ.telegram, nom: 'Telegram', qiymat: '@WBA_LC', ikonka: <IconSend size={20} />, r: 'var(--color-osmon)' },
-                  { href: MARKAZ.instagram, nom: 'Instagram', qiymat: MARKAZ.instagramNom, ikonka: <InstagramBelgi />, r: 'var(--color-binafsha)' },
+                  { href: `tel:${MARKAZ.telefonRaw}`, nom: 'Qo‘ng‘iroq', qiymat: MARKAZ.telefon, ikonka: <IconPhone size={20} /> },
+                  { href: MARKAZ.telegram, nom: 'Telegram', qiymat: '@WBA_LC', ikonka: <IconSend size={20} /> },
+                  { href: MARKAZ.instagram, nom: 'Instagram', qiymat: MARKAZ.instagramNom, ikonka: <InstagramBelgi /> },
                 ].map((a) => (
                   <a
                     key={a.nom}
                     href={a.href}
                     {...(a.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                    className="group flex min-h-11 flex-col gap-2.5 rounded-[18px] border border-line bg-surface-2 p-4 transition hover:-translate-y-1"
+                    className="group flex min-h-11 items-center gap-3.5 rounded-[18px] border border-line bg-surface-2 p-3.5 transition hover:border-ink sm:flex-col sm:items-start sm:gap-2.5 sm:p-4"
                   >
-                    <span
-                      className="flex size-10 items-center justify-center rounded-full text-white"
-                      style={{ background: `color-mix(in oklab, ${a.r} 84%, black)` }}
-                    >
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink text-bg transition group-hover:bg-brand group-hover:text-white">
                       {a.ikonka}
                     </span>
-                    <span className="text-[13px] text-ink-3">{a.nom}</span>
-                    <span className="font-[family-name:var(--font-mono)] text-[13.5px] break-all text-ink">{a.qiymat}</span>
+                    <span className="flex flex-col gap-0.5 sm:gap-2.5">
+                      <span className="text-[13px] text-ink-3">{a.nom}</span>
+                      <span className="font-[family-name:var(--font-mono)] text-[13.5px] break-all text-ink">{a.qiymat}</span>
+                    </span>
                   </a>
                 ))}
               </div>
@@ -349,11 +334,11 @@ export default function Bosh() {
               <p className="max-w-[540px] text-[16.5px] leading-relaxed text-white/90 text-pretty">
                 Yozilib qo‘ying — daraja aniqlaymiz, guruhni tanlaymiz, siz esa bir dars o‘tirib ko‘rasiz. Oldindan to‘lov yo‘q.
               </p>
-              <div className="flex flex-wrap items-center justify-center gap-3">
+              <div className="grid w-full max-w-[420px] gap-3 sm:flex sm:w-auto sm:max-w-none sm:flex-wrap sm:items-center sm:justify-center">
                 <YozilishTugma katta oq />
                 <a
                   href={`tel:${MARKAZ.telefonRaw}`}
-                  className="inline-flex min-h-16 items-center gap-2.5 rounded-full border-2 border-white/50 px-7 text-[15.5px] font-bold transition hover:border-white hover:bg-white/10"
+                  className="inline-flex min-h-16 items-center justify-center gap-2.5 rounded-full border-2 border-white/50 px-7 text-[15.5px] font-bold transition hover:border-white hover:bg-white/10"
                 >
                   <IconPhone size={18} />
                   {MARKAZ.telefon}
@@ -366,7 +351,7 @@ export default function Bosh() {
 
       {/* ================= Ulkan so'z ================= */}
       <div aria-hidden="true" translate="no" className="overflow-hidden pt-4">
-        <p data-parallaks="-60" className="lb-ulkan lb-rangli h-display text-center whitespace-nowrap select-none">
+        <p data-parallaks="-60" className="lb-ulkan lb-kontur h-display text-center whitespace-nowrap select-none">
           WORLD BRIDGE
         </p>
       </div>

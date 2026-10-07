@@ -61,7 +61,13 @@ const TEMA_SKRIPT = `(function(){try{var t=localStorage.getItem('wba-tema');if(t
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="uz" className={`${archivo.variable} ${manrope.variable} ${plexMono.variable}`}>
+    // suppressHydrationWarning: tema (data-theme) va preloader (data-parda) skriptlari
+    // <html> atributlarini React'dan OLDIN qo'yadi — bu ataylab, xato emas.
+    <html
+      lang="uz"
+      suppressHydrationWarning
+      className={`${archivo.variable} ${manrope.variable} ${plexMono.variable}`}
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: TEMA_SKRIPT }} />
       </head>
