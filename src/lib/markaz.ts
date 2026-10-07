@@ -96,7 +96,7 @@ export const YONALISHLAR = [
   },
   {
     id: 'pochemuchka',
-    nom: 'Pochemuchka',
+    nom: 'Почемучка',
     yorliq: 'maktabga tayyorlov',
     qisqa_tavsif: 'O‘yin shaklida: harf, son, diqqat va nutq.',
     yosh_chegarasi: '4–6 yosh',
@@ -132,4 +132,47 @@ export function bazadagiYonalish(id: string | undefined): string | null {
   const y = YONALISHLAR.find((v) => v.id === id)
   if (!y || ('bazada' in y && y.bazada === false)) return null
   return y.id
+}
+
+/**
+ * Bazadan olingan rost raqamlar (faol o'quvchi/ustoz/guruh) — sayt statik,
+ * shuning uchun bu "surat": `holatiga` sanasida olingan. Yangilash: bazadagi
+ * students/teachers/groups (holat='faol') sonini qayta sanab, shu yerga yozish.
+ */
+export const STATISTIKA = {
+  holatiga: '7-oktabr, 2026',
+  faolOquvchi: 82,
+  ustoz: 10,
+  guruh: 30,
+} as const
+
+/** Kun turlari — Sheets/bazadagi `kun_turi` bilan bir xil. Shanba ikkala turga kiradi. */
+export const KUN_TURLARI = [
+  { id: 'toq', nom: 'Toq kunlar', kunlar: ['Du', 'Chor', 'Ju'] },
+  { id: 'juft', nom: 'Juft kunlar', kunlar: ['Se', 'Pay', 'Sha'] },
+  { id: 'dam_olish', nom: 'Dam olish kunlari', kunlar: ['Sha', 'Yak'] },
+] as const
+
+export const HAFTA = ['Du', 'Se', 'Chor', 'Pay', 'Ju', 'Sha', 'Yak'] as const
+
+/**
+ * Faol guruhlarning boshlanish vaqtlari (bazadagi groups, STATISTIKA.holatiga).
+ * Bo'sh joy bor-yo'qligi bu yerda ko'rinmaydi — qo'ng'iroqda aniqlanadi.
+ */
+export const JADVAL: Record<(typeof KUN_TURLARI)[number]['id'], Partial<Record<Yonalish['id'], string[]>>> = {
+  toq: {
+    'ingliz-tili': ['08:30', '10:00', '11:00', '15:00', '15:30', '16:30', '18:00', '19:30'],
+    matematika: ['10:00', '15:30', '18:30'],
+    'rus-tili': ['10:00', '15:30'],
+  },
+  juft: {
+    'ingliz-tili': ['08:30', '10:00', '15:30', '16:30', '17:00', '18:00'],
+    'arab-tili': ['08:30', '10:00'],
+    matematika: ['18:30'],
+    'ai-it': ['17:00'],
+    'rus-tili': ['15:00'],
+  },
+  dam_olish: {
+    'arab-tili': ['08:00'],
+  },
 }

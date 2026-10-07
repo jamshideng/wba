@@ -7,8 +7,9 @@ import { TemaTugma } from '@/components/tema'
 
 const MENYU = [
   { href: '/#kurslar', nom: 'Kurslar' },
-  { href: '/#dars', nom: 'Format' },
+  { href: '/#jadval', nom: 'Jadval' },
   { href: '/#narxlar', nom: 'Narxlar' },
+  { href: '/#savollar', nom: 'Savollar' },
   { href: '/#aloqa', nom: 'Aloqa' },
 ]
 

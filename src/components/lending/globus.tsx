@@ -167,7 +167,7 @@ export function Globus() {
       className="lb-globus relative aspect-square w-full cursor-grab touch-pan-y select-none active:cursor-grabbing"
     >
       <span className="sr-only">
-        Markazda o‘qitiladigan tillar va fanlar: ingliz, rus, arab, turk tili, matematika, Pochemuchka, IT
+        Markazda o‘qitiladigan tillar va fanlar: ingliz, rus, arab, turk tili, matematika, Почемучка, IT
       </span>
       {/* Markazda — chiziqli globus (meridian va parallellar) */}
       <svg

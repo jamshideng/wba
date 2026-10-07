@@ -137,7 +137,14 @@ html[data-parda='yoq'] .lb-parda { display: none; }
   to { transform: none; }
 }
 
+@keyframes lb-savol {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  .lb-savol { animation: lb-savol 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .lb-savol-blok[open] > p { animation: lb-savol 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
   .lb-fan { animation: lb-fan 0.55s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
   .lb-nuqta::after { animation: lb-puls 2s ease-in-out infinite; }
   .lb-puls-halqa { animation: lb-halqa 2.4s ease-out infinite; }

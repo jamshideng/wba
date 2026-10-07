@@ -15,7 +15,7 @@ const YOSHLAR: { id: Yosh; nom: string }[] = [
 
 /**
  * Har yo'nalishning belgisi va qaysi yoshga mosligi.
- * Yosh — markaz.ts dagi `yosh_chegarasi` dan: Pochemuchka 4–6, matematika
+ * Yosh — markaz.ts dagi `yosh_chegarasi` dan: Почемучка 4–6, matematika
  * 5 yoshdan 11-sinfgacha, Scratch 16 yoshgacha. Tillar va IT maktabdan boshlab.
  */
 const USLUB: Record<Yonalish['id'], { belgi: string; yosh: Yosh[]; keng?: boolean; arab?: boolean }> = {

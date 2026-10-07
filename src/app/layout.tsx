@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     template: '%s · World Bridge Academy',
   },
   description:
-    '2018 yildan beri Toshkentda. Ingliz, rus, arab, turk tili, matematika, Pochemuchka va IT — guruhda 12 kishidan ortiq emas, ' +
+    '2018 yildan beri Toshkentda. Ingliz, rus, arab, turk tili, matematika, Почемучка va IT — guruhda 12 kishidan ortiq emas, ' +
     'birinchi dars va daraja aniqlash bepul.',
   openGraph: {
     type: 'website',
