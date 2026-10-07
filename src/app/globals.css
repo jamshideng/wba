@@ -32,6 +32,11 @@
   --color-accent-soft: #33280f;
   --color-accent-line: #5a4a22;
 
+  /* Lending: yo'nalishlar ranglari (har fan o'z rangida) */
+  --color-osmon: #5cc8ff;
+  --color-binafsha: #b39bff;
+  --color-firuza: #3ddbc4;
+
   /* Holat */
   --color-ok: #5fbf8b;
   --color-ok-soft: #14301f;
@@ -73,6 +78,9 @@
       --color-accent-line: #ecd9a0;
       --color-ok: #2f9e68;
       --color-ok-soft: #dff2e6;
+      --color-osmon: #0a78b8;
+      --color-binafsha: #6a4bd6;
+      --color-firuza: #0b8f7d;
       --color-warn: #9e6412;
       --color-crit: #d92c1c;
     }
@@ -97,6 +105,9 @@
     --color-accent-line: #ecd9a0;
     --color-ok: #2f9e68;
     --color-ok-soft: #dff2e6;
+    --color-osmon: #0a78b8;
+    --color-binafsha: #6a4bd6;
+    --color-firuza: #0b8f7d;
     --color-warn: #9e6412;
     --color-crit: #d92c1c;
   }
@@ -122,6 +133,9 @@
     --color-accent-line: #5a4a22;
     --color-ok: #5fbf8b;
     --color-ok-soft: #14301f;
+    --color-osmon: #5cc8ff;
+    --color-binafsha: #b39bff;
+    --color-firuza: #3ddbc4;
     --color-warn: #f2b33d;
     --color-crit: #ff6a5a;
   }

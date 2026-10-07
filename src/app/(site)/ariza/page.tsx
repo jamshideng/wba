@@ -6,7 +6,7 @@ import { after } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { telefonNormal } from '@/lib/format'
-import { MARKAZ, YONALISHLAR, saytManzil } from '@/lib/markaz'
+import { MARKAZ, YONALISHLAR, bazadagiYonalish, saytManzil } from '@/lib/markaz'
 import { html, xabar, HISOBOT_GURUH } from '@/lib/telegram'
 
 // Bir IP soatiga shuncha arizadan ortiq yubora olmaydi (spam to'sish).
@@ -76,14 +76,22 @@ async function yubor(formData: FormData) {
   }
   if (chegaraOshdi) redirect('/ariza?holat=kop')
 
+  // Bazada hali yo'q yo'nalish (masalan Turk tili) izohga yoziladi — ariza yo'qolmasin.
+  const subjectId = bazadagiYonalish(natija.data.yonalish)
+  const tashqiNom =
+    natija.data.yonalish && !subjectId
+      ? YONALISHLAR.find((y) => y.id === natija.data.yonalish)?.nom
+      : undefined
+  const izoh = [tashqiNom && `Yo‘nalish: ${tashqiNom}`, natija.data.izoh].filter(Boolean).join('\n') || null
+
   try {
     const { error } = await supabase.from('leads').insert({
       ism: natija.data.ism,
       telefon: tel,
-      subject_id: natija.data.yonalish || null,
+      subject_id: subjectId,
       manba: 'sayt',
       holat: 'yangi',
-      izoh: natija.data.izoh || null,
+      izoh,
     })
     if (error) throw error
   } catch {
@@ -119,9 +127,12 @@ async function arizaXabari(a: { ism: string; telefon: string; yonalish?: string;
 export default async function ArizaSahifasi({
   searchParams,
 }: {
-  searchParams: Promise<{ holat?: string }>
+  searchParams: Promise<{ holat?: string; yonalish?: string }>
 }) {
-  const { holat } = await searchParams
+  const { holat, yonalish } = await searchParams
+  // Bosh sahifadagi kurs kartasidan kelganda yo'nalish oldindan tanlangan bo'lsin.
+  // Faqat ro'yxatdagi id qabul qilinadi — URL'dagi boshqa qiymat e'tiborsiz.
+  const tanlangan = YONALISHLAR.some((y) => y.id === yonalish) ? yonalish : ''
 
   if (holat === 'yuborildi') {
     return (
@@ -218,7 +229,7 @@ export default async function ArizaSahifasi({
           <span className="lbl">Qaysi yo‘nalish</span>
           <select
             name="yonalish"
-            defaultValue=""
+            defaultValue={tanlangan}
             className="min-h-12 rounded-[9px] border border-line bg-bg px-3 text-[16px] sm:text-[14.5px]"
           >
             <option value="">Hali tanlamaganman</option>

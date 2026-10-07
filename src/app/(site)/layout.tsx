@@ -6,7 +6,7 @@ import { SaytMenyu } from '@/components/sayt-menyu'
 
 const MENYU = [
   { href: '/#kurslar', nom: 'Kurslar' },
-  { href: '/#dars', nom: 'Dars' },
+  { href: '/#dars', nom: 'Format' },
   { href: '/#narxlar', nom: 'Narxlar' },
   { href: '/#aloqa', nom: 'Aloqa' },
 ]

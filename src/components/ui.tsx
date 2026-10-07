@@ -9,7 +9,8 @@ export function Logo({ size = 'md', matnKlass = '' }: { size?: 'sm' | 'md' | 'lg
   const nomi = size === 'sm' ? 'text-[15px]' : size === 'lg' ? 'text-xl' : 'text-[17px]'
 
   return (
-    <span className="flex items-center gap-2.5">
+    // translate="no": brauzer avtotarjimasi brend nomini ("WBA" → "ВБА") buzmasin
+    <span translate="no" className="flex items-center gap-2.5">
       {/* Haqiqiy logotip — qizil belgi ikkala temada ham ko'rinadi */}
       <Image
         src="/logo-qizil.png"

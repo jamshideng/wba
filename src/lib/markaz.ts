@@ -50,7 +50,11 @@ export const NARX = {
   uchOylikAsl: 1_950_000,
 } as const
 
-/** 0004_seed.sql dagi `subjects` bilan bir xil. Baza ulanmaganda ishlatiladi. */
+/**
+ * 0004_seed.sql dagi `subjects` bilan bir xil. Baza ulanmaganda ishlatiladi.
+ * `bazada: false` — yo'nalish saytda bor, lekin `subjects` jadvaliga hali
+ * qo'shilmagan (FK yiqilmasin deb arizada subject_id bo'sh qoladi).
+ */
 export const YONALISHLAR = [
   {
     id: 'ingliz-tili',
@@ -73,6 +77,15 @@ export const YONALISHLAR = [
     yorliq: 'alifbodan',
     qisqa_tavsif: 'Harflarni tanishdan boshlab, matnni mustaqil o‘qiy olishgacha.',
     yosh_chegarasi: 'bolalar va kattalar',
+  },
+  {
+    id: 'turk-tili',
+    nom: 'Turk tili',
+    yorliq: 'daraja bo‘yicha',
+    qisqa_tavsif: 'Birinchi kelganda darajangiz aniqlanadi va mos guruhga yozilasiz.',
+    yosh_chegarasi: 'bolalar va kattalar',
+    /** subjects jadvalida hali yo'q — ariza subject_id'siz, izohda yoziladi */
+    bazada: false,
   },
   {
     id: 'matematika',
@@ -113,3 +126,10 @@ export const YONALISHLAR = [
 ] as const
 
 export type Yonalish = (typeof YONALISHLAR)[number]
+
+/** Arizadagi yo'nalish `subjects` jadvalida bormi (leads.subject_id FK uchun). */
+export function bazadagiYonalish(id: string | undefined): string | null {
+  const y = YONALISHLAR.find((v) => v.id === id)
+  if (!y || ('bazada' in y && y.bazada === false)) return null
+  return y.id
+}

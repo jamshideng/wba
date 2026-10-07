@@ -12,7 +12,7 @@ const archivo = Archivo({
 })
 
 const manrope = Manrope({
-  subsets: ['latin', 'latin-ext'],
+  subsets: ['latin', 'latin-ext', 'cyrillic'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-manrope',
   display: 'swap',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     template: '%s · World Bridge Academy',
   },
   description:
-    '2018 yildan beri Toshkentda. Sakkiz yo‘nalish, guruhda 12 kishidan ortiq emas, ' +
+    '2018 yildan beri Toshkentda. Ingliz, rus, arab, turk tili, matematika, Pochemuchka va IT — guruhda 12 kishidan ortiq emas, ' +
     'birinchi dars va daraja aniqlash bepul.',
   openGraph: {
     type: 'website',

@@ -1,0 +1,187 @@
+/* ============================================================
+   Bosh sahifa (lending) uslublari — faqat shu sahifa uchun.
+   Ranglar — globals.css tokenlari. Harakat faqat transform/opacity,
+   "harakatni kamaytirish" yoqilganda hammasi to'xtaydi.
+   ============================================================ */
+
+/* Fon: qizil nur + nozik to'r — hero orqasida */
+.lb-fon {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.lb-fon::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: 50%;
+  width: min(1100px, 160vw);
+  aspect-ratio: 1;
+  transform: translateX(-30%);
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--color-brand) 28%, transparent), transparent 70%);
+  filter: blur(10px);
+}
+.lb-fon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--color-line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-line-soft) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
+  opacity: 0.9;
+}
+
+/* Hero kartasi — chegarasi bo'ylab nur */
+.lb-karta {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in oklab, var(--color-brand) 14%, transparent), transparent 60%),
+    var(--color-surface);
+  box-shadow:
+    0 0 0 1px var(--color-line),
+    0 40px 80px -40px color-mix(in oklab, var(--color-brand) 55%, transparent);
+}
+
+/* Salomlashuv so'zi almashganda — xiralikdan chiqadi */
+@keyframes lb-soz {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); filter: blur(8px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+
+/* Ko'prik chizilishi */
+@keyframes lb-chiz {
+  from { stroke-dashoffset: var(--uz, 900); }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes lb-yon {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes lb-puls {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(1.8); }
+}
+@keyframes lb-suzish {
+  0%, 100% { transform: translateY(0) rotate(var(--b, 0deg)); }
+  50% { transform: translateY(-10px) rotate(var(--b, 0deg)); }
+}
+@keyframes lb-lenta {
+  to { transform: translateX(-50%); }
+}
+@keyframes lb-chiqish {
+  from { transform: translateY(110%); }
+  to { transform: none; }
+}
+
+.lb-soz { display: inline-block; }
+.lb-suzuvchi { transform: rotate(var(--b, 0deg)); }
+.lb-lenta-ichi { display: flex; width: max-content; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .lb-soz { animation: lb-soz 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .lb-chizik {
+    stroke-dasharray: var(--uz, 900);
+    animation: lb-chiz 1.8s cubic-bezier(0.6, 0, 0.2, 1) both;
+    animation-delay: var(--k, 0ms);
+  }
+  .lb-bekat {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: lb-yon 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+    animation-delay: var(--k, 0ms);
+  }
+  .lb-nuqta::after { animation: lb-puls 2s ease-in-out infinite; }
+  .lb-suzuvchi { animation: lb-suzish 5s ease-in-out infinite; animation-delay: var(--k, 0ms); }
+  .lb-lenta-ichi { animation: lb-lenta 38s linear infinite; }
+  .lb-lenta:hover .lb-lenta-ichi { animation-play-state: paused; }
+  .lb-panel { animation: lb-chiqish 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 1.2s both; }
+}
+
+/* Jonli nuqta (yorliqda) */
+.lb-nuqta {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-ok);
+}
+.lb-nuqta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+}
+
+/* Kurs kartasi: rang --r orqali beriladi (style={{ '--r': 'var(--color-...)' }}) */
+.lb-kurs {
+  --r: var(--color-brand);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-line);
+  transition:
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.35s,
+    opacity 0.35s,
+    filter 0.35s;
+}
+.lb-kurs::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(90% 70% at 100% 100%, color-mix(in oklab, var(--r) 18%, transparent), transparent 70%);
+  opacity: 0.55;
+  transition: opacity 0.35s;
+}
+.lb-kurs:hover,
+.lb-kurs:focus-visible {
+  transform: translateY(-5px);
+  box-shadow:
+    0 0 0 1.5px var(--r),
+    0 26px 50px -26px color-mix(in oklab, var(--r) 70%, transparent);
+}
+.lb-kurs:hover::before { opacity: 1; }
+.lb-kurs .lb-belgi { color: var(--r); transition: transform 0.45s cubic-bezier(0.3, 1.5, 0.5, 1); }
+.lb-kurs:hover .lb-belgi { transform: rotate(-8deg) scale(1.08); }
+.lb-kurs .lb-soya-belgi { color: var(--r); opacity: 0.08; transition: opacity 0.35s, transform 0.6s; }
+.lb-kurs:hover .lb-soya-belgi { opacity: 0.16; transform: translate(-6px, -6px); }
+.lb-kurs .lb-strelka { transition: transform 0.3s; }
+.lb-kurs:hover .lb-strelka { transform: translateX(4px); }
+.lb-kurs[data-mos='yoq'] {
+  opacity: 0.28;
+  filter: grayscale(1);
+  transform: scale(0.97);
+}
+
+/* Narx kartasi — ajratilgan (3 oylik) */
+.lb-tanlov {
+  background:
+    radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--color-brand) 22%, transparent), transparent 60%),
+    var(--color-surface);
+  box-shadow:
+    0 0 0 1.5px var(--color-brand),
+    0 30px 60px -30px color-mix(in oklab, var(--color-brand) 60%, transparent);
+}
+
+/* Yakuniy chaqiriq bloki */
+.lb-yakun {
+  background:
+    radial-gradient(80% 120% at 0% 0%, rgb(255 255 255 / 0.18), transparent 55%),
+    radial-gradient(70% 100% at 100% 100%, rgb(0 0 0 / 0.25), transparent 60%),
+    var(--color-brand);
+}
+
+/* Arab yozuvi */
+.lb-arab {
+  font-family: var(--font-arab), 'Noto Naskh Arabic', serif;
+  font-weight: 700;
+}
