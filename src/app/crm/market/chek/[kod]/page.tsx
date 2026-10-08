@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { talabProfil, staffmi } from '@/lib/auth'
+import { talabProfil, staffmi, adminmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, Badge, Button } from '@/components/ui'
@@ -146,6 +146,22 @@ export default async function Chek({
               </Button>
             </form>
           </div>
+        )}
+
+        {/* Berilganini faqat admin/direktor qaytaradi (0061) — woblar va mahsulot qaytadi */}
+        {b.holat === 'berildi' && adminmi(profil.rol) && (
+          <form action={buyurtmaniBekorQil} className="flex flex-col gap-2 border-t border-line px-5 py-4">
+            <input type="hidden" name="kod" value={kod} />
+            <input type="hidden" name="qaytish" value={yol} />
+            <input
+              name="sabab"
+              placeholder="Bekor sababi (ixtiyoriy)"
+              className="min-h-11 w-full rounded-[9px] border border-line bg-surface px-3 text-[13.5px] text-ink placeholder:text-ink-4"
+            />
+            <Button type="submit" variant="ikkilamchi" className="w-full">
+              Berilganini bekor qilish — woblar qaytadi
+            </Button>
+          </form>
         )}
       </Card>
 

@@ -1312,6 +1312,38 @@ begin
   raise exception 'XATO: berilgan narsani o''quvchi bekor qilib woblarni qaytardi';
 exception when others then if sqlerrm like 'XATO%' then raise; end if;
 end $$;
+
+-- 0061: berilganini qabulxona emas, faqat admin bekor qiladi; reyting = balans
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';   -- qabulxona
+do $$
+begin
+  perform market_bekor((select qiymat from market_t where kalit = 'kod1'), null);
+  raise exception 'XATO: qabulxona berilgan buyurtmani bekor qildi';
+exception when others then if sqlerrm like 'XATO%' then raise; end if;
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare
+  v_kod text := (select qiymat from market_t where kalit = 'kod1');
+  v_b0  int  := (select balans from v_woblr_balance where student_id = 'S001');
+  v_q0  int  := (select qolgan_soni from woblr_rewards where id = 'cccccccc-0000-0000-0000-000000000001');
+begin
+  if (select ball from woblr_leaderboard() where student_id = 'S001') <> v_b0 then
+    raise exception 'XATO: reyting balansdan farq qiladi (Market sarfi ayrilmagan)';
+  end if;
+  perform market_bekor(v_kod, 'xato berildi');
+  if (select balans from v_woblr_balance where student_id = 'S001') <> v_b0 + 2 then
+    raise exception 'XATO: berilgan buyurtma bekor qilinganda woblar qaytmadi';
+  end if;
+  if (select qolgan_soni from woblr_rewards where id = 'cccccccc-0000-0000-0000-000000000001') <> v_q0 + 1 then
+    raise exception 'XATO: berilgan buyurtma bekor qilinganda ombor qaytmadi';
+  end if;
+  if (select ball from woblr_leaderboard() where student_id = 'S001') <> v_b0 + 2 then
+    raise exception 'XATO: bekordan keyin reyting yangilanmadi';
+  end if;
+  raise notice 'OK: 0061 — admin berilganni bekor qiladi, reyting = balans';
+end $$;
 reset role;
 reset request.jwt.claim.sub;
 

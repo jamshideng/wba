@@ -9,7 +9,7 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { woblrBer } from './actions'
-import { davrNomi, joriyDavr, guruhUstozsiz } from '@/lib/format'
+import { guruhUstozsiz } from '@/lib/format'
 import { xatoMatni } from '@/lib/kiritish'
 import type { LeaderboardRow } from '@/lib/types'
 
@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic'
 
 /**
  * Woblar reytingi. Woblar — o'quvchini rag'batlantiruvchi mukofot birligi; darsda davomat bilan birga yoki shu yerda beriladi
- * (/crm/davomat). Reyting funksiya orqali olinadi: faqat ism va ball —
+ * (/crm/davomat). Reyting — HOZIRGI balans (olgan − Market sarfi, 0061), funksiya orqali: faqat ism va ball —
  * telefon, qarz, davomat chiqmaydi.
  *
  * Kim nimani ko'radi (Q6, bazada ham tekshiriladi — 0020):
@@ -70,12 +70,10 @@ export default async function Woblr({
     hammasi.find((v) => v.k === soralgan) ??
     (profil.rol === 'ustoz' && guruhKorinish[0] ? guruhKorinish[0] : markaz)
   const guruh = tanlov.guruh
-  const davr = s.davr === 'hammasi' ? null : /^\d{4}-\d{2}$/.test(s.davr ?? '') ? s.davr! : joriyDavr()
 
   const { data, error: reytingXato } = await supabase.rpc('woblr_leaderboard', {
     p_group: tanlov.guruh,
     p_fan: tanlov.fan,
-    p_davr: davr,
   })
   const reyting = (data ?? []) as LeaderboardRow[]
 
@@ -102,7 +100,7 @@ export default async function Woblr({
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha
         nom="Woblar reytingi"
-        izoh={`${tanlov.nom} · ${davr ? davrNomi(davr) : 'hamma vaqt'}`}
+        izoh={`${tanlov.nom} · hozirgi woblar`}
       />
 
       <Xabar ok={s.ok} xato={s.xato ?? (reytingXato ? xatoMatni(reytingXato) : undefined)} />
@@ -128,20 +126,13 @@ export default async function Woblr({
             )}
           </select>
         </Maydon>
-        <Maydon nom="Oy">
-          <select name="davr" defaultValue={davr ?? 'hammasi'} className={kirishKlass}>
-            <option value={joriyDavr()}>{davrNomi(joriyDavr())}</option>
-            {davr && davr !== joriyDavr() && <option value={davr}>{davrNomi(davr)}</option>}
-            <option value="hammasi">Hamma vaqt</option>
-          </select>
-        </Maydon>
       </JonliForma>
 
       <Card className="flex flex-col">
         <CardHeader title="Reyting" meta={`${reyting.length} o‘quvchi`} />
         {reyting.length === 0 ? (
           <div className="px-5 pb-5">
-            <Empty>Bu davrda hali woblar berilmagan. Woblar davomat ekranida yoki pastdagi bo‘limda beriladi.</Empty>
+            <Empty>Hali woblar berilmagan. Woblar davomat ekranida yoki pastdagi bo‘limda beriladi.</Empty>
           </div>
         ) : (
           <ol>
@@ -163,7 +154,7 @@ export default async function Woblr({
                   </Link>
                 )}
                 <Badge ton={r.ball > 0 ? 'accent' : 'brand'}>
-                  {r.ball > 0 ? `+${r.ball}` : r.ball} W
+                  {r.ball} W
                 </Badge>
               </li>
             ))}
