@@ -1157,24 +1157,47 @@ reset role;
 
 \echo '--- 0037/0038: woblar chegarasi, kunlik hisobot bir marta ---'
 reset role;
-update settings set qiymat = '6'::jsonb where kalit = 'woblr.max_ball_dars';
+-- 0064: "bir darsda eng ko'pi" va ±10 yo'q — ustozni OYLIK guruh limiti cheklaydi
+create temp table limit_t (qoldi int);
+grant all on limit_t to authenticated;
+insert into limit_t
+select guruh_woblar_limiti('NX', to_char(bugun_toshkent(), 'YYYY-MM'))
+     - guruh_woblar_sarfi('NX', to_char(bugun_toshkent(), 'YYYY-MM'));
 set role authenticated;
 set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana (NX)
 do $$
+declare v_q int := (select qoldi from limit_t);
 begin
-  -- S002 (NX, 0029 bloki): 5 + 1 = 6 — mumkin, yana +1 — chegaradan oshadi
-  perform woblar_ber('NX', 'S002', 5);
-  perform woblar_ber('NX', 'S002', 1);
+  if v_q <= 1 then raise exception 'XATO: test uchun NX limitida joy yo''q (%).', v_q; end if;
+  -- Bir martada 10 dan ko'p — endi mumkin (limit ichida)
+  perform woblar_ber('NX', 'S002', v_q);
+  if (ustoz_woblar_limiti() -> 'guruhlar' -> 0 ->> 'qoldi')::int is null then
+    raise exception 'XATO: ustoz_woblar_limiti guruhlarni qaytarmadi';
+  end if;
   begin
     perform woblar_ber('NX', 'S002', 1);
-    raise exception 'XATO: woblar chegarasidan oshdi!';
+    raise exception 'XATO: oylik limitdan oshdi!';
   exception when others then
-    if sqlerrm not like '%eng ko''pi%' then raise; end if;
+    if sqlerrm not like '%Oylik limit%' then raise; end if;
   end;
-  raise notice 'OK: bir darsda woblar Sozlamalardagi chegaradan oshmaydi';
+  -- Minus limitga qaytadi
+  perform woblar_ber('NX', 'S002', -2);
+  perform woblar_ber('NX', 'S002', 2);
+  begin
+    insert into woblr (student_id, teacher_id, bergan_profile, ball, sabab, group_id)
+    values ('S002', 'U01', '33333333-3333-3333-3333-333333333333', 1, 'faollik', 'NX');
+    raise exception 'XATO: Woblar bo''limidan limitdan oshib berildi';
+  exception when others then
+    if sqlerrm not like '%Oylik limit%' then raise; end if;
+  end;
+  raise notice 'OK: 0064 — oylik limit, ±10 yo''q, minus qaytadi';
 end $$;
 reset role;
-update settings set qiymat = 'null'::jsonb where kalit = 'woblr.max_ball_dars';
+-- Admin limitsiz
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+do $$ begin perform woblar_ber('NX', 'S002', 50); raise notice 'OK: 0064 — admin limitsiz'; end $$;
+reset role;
 
 do $$
 begin
@@ -1311,6 +1334,38 @@ begin
   perform market_bekor((select qiymat from market_t where kalit = 'kod1'), null);
   raise exception 'XATO: berilgan narsani o''quvchi bekor qilib woblarni qaytardi';
 exception when others then if sqlerrm like 'XATO%' then raise; end if;
+end $$;
+
+-- 0061: berilganini qabulxona emas, faqat admin bekor qiladi; reyting = balans
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';   -- qabulxona
+do $$
+begin
+  perform market_bekor((select qiymat from market_t where kalit = 'kod1'), null);
+  raise exception 'XATO: qabulxona berilgan buyurtmani bekor qildi';
+exception when others then if sqlerrm like 'XATO%' then raise; end if;
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare
+  v_kod text := (select qiymat from market_t where kalit = 'kod1');
+  v_b0  int  := (select balans from v_woblr_balance where student_id = 'S001');
+  v_q0  int  := (select qolgan_soni from woblr_rewards where id = 'cccccccc-0000-0000-0000-000000000001');
+begin
+  if (select ball from woblr_leaderboard() where student_id = 'S001') <> v_b0 then
+    raise exception 'XATO: reyting balansdan farq qiladi (Market sarfi ayrilmagan)';
+  end if;
+  perform market_bekor(v_kod, 'xato berildi');
+  if (select balans from v_woblr_balance where student_id = 'S001') <> v_b0 + 2 then
+    raise exception 'XATO: berilgan buyurtma bekor qilinganda woblar qaytmadi';
+  end if;
+  if (select qolgan_soni from woblr_rewards where id = 'cccccccc-0000-0000-0000-000000000001') <> v_q0 + 1 then
+    raise exception 'XATO: berilgan buyurtma bekor qilinganda ombor qaytmadi';
+  end if;
+  if (select ball from woblr_leaderboard() where student_id = 'S001') <> v_b0 + 2 then
+    raise exception 'XATO: bekordan keyin reyting yangilanmadi';
+  end if;
+  raise notice 'OK: 0061 — admin berilganni bekor qiladi, reyting = balans';
 end $$;
 reset role;
 reset request.jwt.claim.sub;
@@ -1592,3 +1647,110 @@ reset role;
 reset request.jwt.claim.sub;
 
 \echo '=== TEST TUGADI ==='
+
+\echo '--- 0062: davomat hisoboti — kutilgan belgilar ---'
+reset role;
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare r jsonb := hisobot_davomat('2020-01-01', bugun_toshkent());
+        b jsonb := r->'belgilar'; d jsonb := r->'darslar';
+begin
+  if (b->>'kutilgan')::int <> (b->>'keldi')::int + (b->>'kechikdi')::int + (b->>'sababli')::int
+                              + (b->>'kelmadi')::int + (b->>'belgilanmagan')::int then
+    raise exception 'XATO: kutilgan belgi qismlar yig''indisiga teng emas: %', b;
+  end if;
+  if (d->>'reja')::int <> (d->>'otildi')::int + (d->>'belgilanmagan')::int then
+    raise exception 'XATO: darslar reja <> o''tildi + belgilanmagan: %', d;
+  end if;
+  if (b->>'kutilgan')::int < (select sum((g->>'kutilgan')::int) from jsonb_array_elements(r->'guruhlar') g) then
+    raise exception 'XATO: guruhlar yig''indisi jamidan katta';
+  end if;
+  raise notice 'OK: 0062 — darslar %, belgilar %', d, b;
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+
+\echo '--- 0063: an''anaviy bozordan xarid ---'
+reset role;
+insert into woblr (student_id, lesson_id, teacher_id, bergan_profile, ball, sabab)
+select 'S001', l.id, 'U01', '33333333-3333-3333-3333-333333333333', 7, 'faollik'
+from lessons l where l.group_id = 'N01' order by l.sana desc limit 1;
+set role authenticated;
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi S001
+do $$
+declare v_b0 int := (select balans from v_woblr_balance where student_id = 'S001'); v_kod text;
+begin
+  v_kod := market_bozor_xarid('  Shokolad   katta ', 3);
+  if (select balans from v_woblr_balance where student_id = 'S001') <> v_b0 - 3 then raise exception 'XATO: bozor xaridida woblar yechilmadi'; end if;
+  if (select tur || '|' || holat || '|' || mahsulot_nomi || '|' || coalesce(reward_id::text, 'null')
+        from woblr_redemptions where kod = v_kod) <> 'bozor|kutilmoqda|Shokolad katta|null' then
+    raise exception 'XATO: bozor xaridi noto''g''ri yozildi';
+  end if;
+  begin perform market_bozor_xarid('Velosiped', v_b0 + 100); raise exception 'XATO: woblar yetmasa ham o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  begin perform market_bozor_xarid(' ', 1); raise exception 'XATO: nomsiz xarid o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  begin perform market_bozor_xarid('Ruchka', 0); raise exception 'XATO: 0 woblar o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  perform market_bekor(v_kod, null);
+  if (select balans from v_woblr_balance where student_id = 'S001') <> v_b0 then raise exception 'XATO: bozor xaridi bekor qilinganda woblar qaytmadi'; end if;
+  raise notice 'OK: 0063 — bozor xaridi, chegaralar, bekor';
+end $$;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+begin
+  perform market_bozor_xarid('Ruchka', 1);
+  raise exception 'XATO: admin o''quvchi nomidan bozor xaridi qildi';
+exception when others then if sqlerrm like 'XATO%' then raise; end if;
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+
+\echo '--- 0065: market takliflari ---'
+set role authenticated;
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi S001
+do $$
+declare v_id uuid;
+begin
+  insert into woblr_takliflar (student_id, nom, havola, qachon) values ('S001', 'Futbol to''pi', 'https://uzum.uz/x', 'keyingi_bozor')
+  returning id into v_id;
+  begin
+    insert into woblr_takliflar (student_id, nom) values ('S002', 'Begona nomidan');
+    raise exception 'XATO: o''quvchi boshqa bola nomidan taklif yubordi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  begin
+    insert into woblr_takliflar (student_id, nom, holat) values ('S001', 'O''zi tasdiqladi', 'olib_kelindi');
+    raise exception 'XATO: o''quvchi taklifni o''zi "olib kelindi" qildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  begin
+    insert into woblr_takliflar (student_id, nom, havola) values ('S001', 'Yomon havola', 'javascript:alert(1)');
+    raise exception 'XATO: http bo''lmagan havola o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  update woblr_takliflar set holat = 'olib_kelindi' where id = v_id;
+  if (select holat from woblr_takliflar where id = v_id) <> 'yangi' then
+    raise exception 'XATO: o''quvchi taklif holatini o''zgartirdi';
+  end if;
+  raise notice 'OK: 0065 — o''quvchi taklif yuboradi, holatni o''zgartira olmaydi';
+end $$;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  if exists (select 1 from woblr_takliflar) then raise exception 'XATO: ustoz o''quvchi takliflarini ko''rdi'; end if;
+end $$;
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';   -- qabulxona (xodim)
+do $$
+declare v_id uuid := (select id from woblr_takliflar where nom = 'Futbol to''pi');
+begin
+  update woblr_takliflar set holat = 'korib_chiqamiz', admin_javob = 'Bozorga olib kelamiz' where id = v_id;
+  if (select holat from woblr_takliflar where id = v_id) <> 'korib_chiqamiz' then
+    raise exception 'XATO: xodim taklif holatini o''zgartira olmadi';
+  end if;
+  begin
+    update woblr_takliflar set nom = 'Boshqa narsa' where id = v_id;
+    raise exception 'XATO: xodim taklif mazmunini o''zgartirdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  raise notice 'OK: 0065 — xodim holat va javobni o''zgartiradi, mazmun o''zgarmaydi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;

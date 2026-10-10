@@ -7,9 +7,10 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
-import { Yuborish } from '@/components/yuborish'
-import { woblrBer } from './actions'
-import { davrNomi, joriyDavr, guruhUstozsiz } from '@/lib/format'
+import { WoblarBerishForma, type BerishOquvchi } from './berish-forma'
+import { WoblarLimitKartasi } from '@/components/woblar-limit'
+import type { WoblarLimiti } from '@/lib/woblar-chegara'
+import { guruhUstozsiz } from '@/lib/format'
 import { xatoMatni } from '@/lib/kiritish'
 import type { LeaderboardRow } from '@/lib/types'
 
@@ -18,7 +19,7 @@ export const dynamic = 'force-dynamic'
 
 /**
  * Woblar reytingi. Woblar — o'quvchini rag'batlantiruvchi mukofot birligi; darsda davomat bilan birga yoki shu yerda beriladi
- * (/crm/davomat). Reyting funksiya orqali olinadi: faqat ism va ball —
+ * (/crm/davomat). Reyting — HOZIRGI balans (olgan − Market sarfi, 0061), funksiya orqali: faqat ism va ball —
  * telefon, qarz, davomat chiqmaydi.
  *
  * Kim nimani ko'radi (Q6, bazada ham tekshiriladi — 0020):
@@ -44,10 +45,10 @@ export default async function Woblr({
   // RLS: ustozga o'z guruhlari, o'quvchiga o'zi o'qiydigan guruhlar, xodimga hammasi
   const { data: guruhlar } = await supabase
     .from('groups')
-    .select('id, nom, subject_id, subjects(nom)')
+    .select('id, nom, subject_id, teacher_id, subjects(nom)')
     .eq('holat', 'faol')
     .order('nom')
-  const gList = (guruhlar ?? []) as unknown as { id: string; nom: string; subject_id: string | null; subjects: { nom: string } | null }[]
+  const gList = (guruhlar ?? []) as unknown as { id: string; nom: string; subject_id: string | null; teacher_id: string | null; subjects: { nom: string } | null }[]
 
   const fanlar = new Map<string, string>()
   for (const g of gList) if (g.subject_id) fanlar.set(g.subject_id, g.subjects?.nom ?? g.subject_id)
@@ -70,39 +71,55 @@ export default async function Woblr({
     hammasi.find((v) => v.k === soralgan) ??
     (profil.rol === 'ustoz' && guruhKorinish[0] ? guruhKorinish[0] : markaz)
   const guruh = tanlov.guruh
-  const davr = s.davr === 'hammasi' ? null : /^\d{4}-\d{2}$/.test(s.davr ?? '') ? s.davr! : joriyDavr()
 
   const { data, error: reytingXato } = await supabase.rpc('woblr_leaderboard', {
     p_group: tanlov.guruh,
     p_fan: tanlov.fan,
-    p_davr: davr,
   })
   const reyting = (data ?? []) as LeaderboardRow[]
 
-  const { data: maxBall } = await supabase.from('settings').select('qiymat').eq('kalit', 'woblr.max_ball_dars').maybeSingle()
+  const { data: stavka } = await supabase.from('settings').select('qiymat').eq('kalit', 'woblr.oylik_stavka').maybeSingle()
 
   /* Woblar berish huquqi: ustoz (o'z o'quvchisiga) yoki admin.
      Ro'yxatni RLS cheklaydi — ustozga faqat o'z guruhlari keladi. */
   const ustoz = await getUstoz()
   const beraOladi = Boolean(ustoz) || adminmi(profil.rol)
 
-  const { data: qatnashuvchilar } = beraOladi && guruh
+  /* Berish ro'yxati: ustozga faqat O'Z guruhlari va o'quvchilari, adminga hammasi.
+     Tanlangan reyting (markaz / fan / guruh) ga bog'liq emas — har doim beriladi. */
+  const admin = adminmi(profil.rol)
+  const berishGuruhlari = beraOladi
+    ? gList.filter((g) => admin || g.teacher_id === ustoz?.id).map((g) => ({ id: g.id, nom: admin ? g.nom : guruhUstozsiz(g.nom) }))
+    : []
+  const { data: qatnashuvchilar } = berishGuruhlari.length
     ? await supabase
         .from('enrollments')
-        .select('student_id, students(fish)')
-        .eq('group_id', guruh)
+        .select('student_id, group_id, students(fish, holat)')
+        .in('group_id', berishGuruhlari.map((g) => g.id))
         .neq('holat', 'tugagan')
     : { data: [] }
 
-  const oquvchilar = ((qatnashuvchilar ?? []) as unknown as { student_id: string; students: { fish: string } | null }[])
-    .map((e) => ({ id: e.student_id, fish: e.students?.fish ?? e.student_id }))
-    .sort((a, b) => a.fish.localeCompare(b.fish, 'uz'))
+  const berishMap = new Map<string, BerishOquvchi>()
+  for (const e of (qatnashuvchilar ?? []) as unknown as { student_id: string; group_id: string; students: { fish: string; holat: string } | null }[]) {
+    if (e.students?.holat && e.students.holat !== 'faol') continue
+    const o = berishMap.get(e.student_id) ?? { id: e.student_id, fish: e.students?.fish ?? e.student_id, guruhlar: [] }
+    o.guruhlar.push(e.group_id)
+    berishMap.set(e.student_id, o)
+  }
+  const berishOquvchilar = [...berishMap.values()].sort((a, b) => a.fish.localeCompare(b.fish, 'uz'))
+  const qaytishYoli = `/crm/woblr?k=${encodeURIComponent(tanlov.k)}`
+
+  // 0064 — ustozning oylik limiti (admin limitsiz)
+  const { data: limitXom } = beraOladi && !admin && ustoz
+    ? await supabase.rpc('ustoz_woblar_limiti', {})
+    : { data: null }
+  const limit = limitXom as WoblarLimiti | null
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha
         nom="Woblar reytingi"
-        izoh={`${tanlov.nom} · ${davr ? davrNomi(davr) : 'hamma vaqt'}`}
+        izoh={`${tanlov.nom} · hozirgi woblar`}
       />
 
       <Xabar ok={s.ok} xato={s.xato ?? (reytingXato ? xatoMatni(reytingXato) : undefined)} />
@@ -128,20 +145,13 @@ export default async function Woblr({
             )}
           </select>
         </Maydon>
-        <Maydon nom="Oy">
-          <select name="davr" defaultValue={davr ?? 'hammasi'} className={kirishKlass}>
-            <option value={joriyDavr()}>{davrNomi(joriyDavr())}</option>
-            {davr && davr !== joriyDavr() && <option value={davr}>{davrNomi(davr)}</option>}
-            <option value="hammasi">Hamma vaqt</option>
-          </select>
-        </Maydon>
       </JonliForma>
 
       <Card className="flex flex-col">
         <CardHeader title="Reyting" meta={`${reyting.length} o‘quvchi`} />
         {reyting.length === 0 ? (
           <div className="px-5 pb-5">
-            <Empty>Bu davrda hali woblar berilmagan. Woblar davomat ekranida yoki pastdagi bo‘limda beriladi.</Empty>
+            <Empty>Hali woblar berilmagan. Woblar davomat ekranida yoki pastdagi bo‘limda beriladi.</Empty>
           </div>
         ) : (
           <ol>
@@ -163,7 +173,7 @@ export default async function Woblr({
                   </Link>
                 )}
                 <Badge ton={r.ball > 0 ? 'accent' : 'brand'}>
-                  {r.ball > 0 ? `+${r.ball}` : r.ball} W
+                  {r.ball} W
                 </Badge>
               </li>
             ))}
@@ -171,44 +181,28 @@ export default async function Woblr({
         )}
       </Card>
 
-      {beraOladi && guruh && oquvchilar.length > 0 && (
+      {limit && <WoblarLimitKartasi limit={limit} guruh={null} kim="Sizning woblar limitingiz" />}
+
+      {beraOladi && berishGuruhlari.length > 0 && (
         <Card className="flex flex-col">
-          <CardHeader title="Woblar berish" meta="davomatdan keyin ham beriladi" />
-          <form action={woblrBer} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-[2fr_1fr_1.2fr_1.5fr_auto] sm:items-end">
-            <input type="hidden" name="guruh" value={guruh} />
-            <Maydon nom="O‘quvchi">
-              <select name="student_id" required defaultValue="" className={kirishKlass}>
-                <option value="" disabled>Tanlang…</option>
-                {oquvchilar.map((o) => (
-                  <option key={o.id} value={o.id}>{o.fish}</option>
-                ))}
-              </select>
-            </Maydon>
-            <Maydon nom="Woblar" izoh={adminmi(profil.rol) ? 'Chegara yo‘q (admin)' : '−10…+10'}>
-              <input name="ball" type="number" min={-woblarChegara(adminmi(profil.rol))} max={woblarChegara(adminmi(profil.rol))} step={1} defaultValue={1} required className={kirishKlass} />
-            </Maydon>
-            <Maydon nom="Sabab">
-              <select name="sabab" defaultValue="faollik" className={kirishKlass}>
-                <option value="faollik">Faollik</option>
-                <option value="uy_vazifasi">Uy vazifasi</option>
-                <option value="yordam">Yordam berdi</option>
-                <option value="qoida">Qoida buzdi</option>
-                <option value="boshqa">Boshqa</option>
-              </select>
-            </Maydon>
-            <Maydon nom="Izoh">
-              <input name="izoh" placeholder="Ixtiyoriy" className={kirishKlass} />
-            </Maydon>
-            <Yuborish>Berish</Yuborish>
-          </form>
+          <CardHeader title="Woblar berish" meta={admin ? 'barcha o‘quvchilar' : 'faqat o‘z o‘quvchilaringiz'} />
+          <WoblarBerishForma
+            guruhlar={berishGuruhlari}
+            oquvchilar={berishOquvchilar}
+            boshGuruh={guruh}
+            chegara={woblarChegara()}
+            admin={admin}
+            qaytish={qaytishYoli}
+            limit={limit ? { jami: limit.jami.qoldi, guruhlar: Object.fromEntries(limit.guruhlar.map((x) => [x.group_id, x.qoldi])) } : null}
+          />
         </Card>
       )}
 
       {/* Woblar beradiganlar uchun eslatma — o'quvchiga keraksiz */}
       {beraOladi && (
         <p className="text-[12px] text-ink-3">
-          Bir darsda eng ko‘p woblar: {maxBall?.qiymat != null ? String(maxBall.qiymat) : '[ANIQLANMAGAN]'} ·
-          bazadagi chegara −10…+10.
+          Ustozning oylik limiti: darslar × o‘quvchilar × {stavka?.qiymat != null ? String(stavka.qiymat) : '3'} (bir darsda bitta bolaga).
+          Xohlasa bir kunda, xohlasa bo‘lib beradi; minus woblar limitga qaytadi. Admin — limitsiz.
         </p>
       )}
     </div>

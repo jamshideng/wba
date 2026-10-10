@@ -20,7 +20,7 @@ export default async function MahsulotSahifasi({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ xato?: string }>
+  searchParams: Promise<{ xato?: string; taklif?: string }>
 }) {
   await talabRol('admin', 'direktor')
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Mahsulot" />
@@ -44,6 +44,20 @@ export default async function MahsulotSahifasi({
   if (!yangi && !data) notFound()
   const toifalar = [...new Set((toifaQatorlar ?? []).map((t) => t.toifa as string))].sort((a, b) => a.localeCompare(b, 'uz'))
 
+  // 0065 — "Mahsulot qilish": o'quvchi taklifidan to'ldiriladi
+  const { data: taklif } = yangi && s.taklif && /^[0-9a-f-]{36}$/i.test(s.taklif)
+    ? await supabase.from('woblr_takliflar').select('nom, tavsif, havola, rasm_url, taxminiy_narx, qachon').eq('id', s.taklif).maybeSingle()
+    : { data: null }
+  const andoza = taklif
+    ? {
+        nom: taklif.nom as string,
+        tavsif: [taklif.tavsif, taklif.havola].filter(Boolean).join('\n') || null,
+        rasm_url: (taklif.rasm_url as string | null) ?? null,
+        narx: (taklif.taxminiy_narx as number | null) ?? null,
+        oldindan: taklif.qachon === 'keyingi_bozor',
+      }
+    : null
+
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Link href="/crm/market/boshqaruv?bolim=mahsulot" className="flex items-center gap-2 text-[13px] text-ink-3 transition hover:text-ink">
@@ -51,7 +65,7 @@ export default async function MahsulotSahifasi({
       </Link>
       <Sarlavha nom={yangi ? 'Yangi mahsulot' : 'Mahsulotni tahrirlash'} izoh="woblar market" />
       <Xabar xato={s.xato} />
-      <MahsulotForma key={id} m={(data as Mahsulot | null) ?? null} toifalar={toifalar} bozor={bozor} zakazlar={zakazlar ?? 0} />
+      <MahsulotForma key={id} m={(data as Mahsulot | null) ?? null} toifalar={toifalar} bozor={bozor} zakazlar={zakazlar ?? 0} andoza={andoza} />
       {!yangi && data && (
         <div className="mt-4 max-w-3xl">
           <MahsulotOchirish id={id} nom={(data as Mahsulot).nom} ochiq={ochiq} berilgan={berilgan} />

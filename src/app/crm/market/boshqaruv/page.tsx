@@ -11,6 +11,7 @@ import { HOLAT_NOMI, HOLAT_TONI, kelishSanasi, kunOy, nechaKunQoldi, omborMatni,
 import { bugunToshkent, joriyDavr } from '@/lib/format'
 import { bozorSanasi, buyurtmaBerildi, buyurtmaKeldi, kodniOch, mahsulotKeldi } from '../actions'
 import { MahsulotRasm, Woblar } from '../bolaklar'
+import { TakliflarBolimi } from './takliflar'
 import { bozorKuni } from '../bozor'
 
 export const metadata = { title: 'Market boshqaruvi' }
@@ -34,16 +35,17 @@ export default async function Boshqaruv({
   const s = await searchParams
   const supabase = await createClient()
   const admin = adminmi(profil.rol)
-  const bolim = s.bolim === 'mahsulot' && admin ? 'mahsulot' : 'buyurtma'
+  const bolim = s.bolim === 'mahsulot' && admin ? 'mahsulot' : s.bolim === 'taklif' ? 'taklif' : 'buyurtma'
   const holat = HOLATLAR.find((h) => h === s.holat) ?? 'kutilmoqda'
   const qidiruv = (s.q ?? '').trim().replace(/[%_,()"\\]/g, ' ').trim()
 
   const oyBoshi = `${joriyDavr()}-01`
-  const [{ count: kutilmoqdaSoni }, { data: oyBerilgan }, { count: oldindanSoni }, bozor] = await Promise.all([
+  const [{ count: kutilmoqdaSoni }, { data: oyBerilgan }, { count: oldindanSoni }, bozor, { count: yangiTaklif }] = await Promise.all([
     supabase.from('woblr_redemptions').select('id', { count: 'exact', head: true }).eq('holat', 'kutilmoqda'),
     supabase.from('woblr_redemptions').select('ball').eq('holat', 'berildi').gte('berildi_vaqt', oyBoshi),
     supabase.from('woblr_redemptions').select('id', { count: 'exact', head: true }).eq('holat', 'buyurtma'),
     bozorKuni(supabase),
+    supabase.from('woblr_takliflar').select('id', { count: 'exact', head: true }).eq('holat', 'yangi'),
   ])
   const bugun = bugunToshkent()
   const oyWoblar = (oyBerilgan ?? []).reduce((a, r) => a + (Number(r.ball) || 0), 0)
@@ -53,10 +55,11 @@ export default async function Boshqaruv({
       {[
         { k: 'buyurtma', nom: `Buyurtmalar${kutilmoqdaSoni ? ` · ${kutilmoqdaSoni}` : ''}` },
         ...(admin ? [{ k: 'mahsulot', nom: 'Mahsulotlar' }] : []),
+        { k: 'taklif', nom: `Takliflar${yangiTaklif ? ` · ${yangiTaklif} yangi` : ''}` },
       ].map((t) => (
         <Link
           key={t.k}
-          href={t.k === 'buyurtma' ? '/crm/market/boshqaruv' : '/crm/market/boshqaruv?bolim=mahsulot'}
+          href={t.k === 'buyurtma' ? '/crm/market/boshqaruv' : `/crm/market/boshqaruv?bolim=${t.k}`}
           aria-current={bolim === t.k ? 'page' : undefined}
           className={`flex min-h-11 items-center rounded-full border px-4 text-[13px] font-semibold transition ${
             bolim === t.k ? 'border-brand bg-brand text-white' : 'border-line bg-surface text-ink-2 hover:border-ink-3 hover:text-ink'
@@ -72,7 +75,7 @@ export default async function Boshqaruv({
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha
         nom="Woblar market"
-        izoh="buyurtmalar va mahsulotlar"
+        izoh="buyurtmalar, mahsulotlar va takliflar"
         amal={
           <span className="flex flex-wrap gap-2">
             <Button href="/crm/market" variant="ikkilamchi">Vitrina</Button>
@@ -108,6 +111,8 @@ export default async function Boshqaruv({
 
       {bolim === 'buyurtma' ? (
         <BuyurtmalarBolimi holat={holat} qidiruv={qidiruv} q={s.q} />
+      ) : bolim === 'taklif' ? (
+        <TakliflarBolimi holat={s.holat} admin={admin} />
       ) : (
         <MahsulotlarBolimi bozor={bozor} />
       )}
@@ -199,7 +204,7 @@ async function BuyurtmalarBolimi({ holat, qidiruv, q }: { holat: BuyurtmaHolati 
                     {ism.get(b.student_id) ?? '—'}
                   </span>
                   <span className="truncate text-[12.5px] text-ink-2">
-                    {b.mahsulot_nomi ?? 'Mahsulot'}{b.soni > 1 ? ` × ${b.soni}` : ''}
+                    {b.mahsulot_nomi ?? 'Mahsulot'}{b.soni > 1 ? ` × ${b.soni}` : ''}{b.tur === 'bozor' ? ' · an’anaviy bozor' : ''}
                   </span>
                   <span className="tnum text-[11.5px] text-ink-3">{b.kod} · {sanaVaqt(b.created_at)}</span>
                 </Link>

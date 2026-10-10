@@ -490,18 +490,30 @@ export async function kozguniYoz(): Promise<{ varaq: string; qatorlar: number }[
     },
   })
 
-  // 2) Dizayn: avval eski shartli formatlar va grafiklar olinadi (har safar yig'ilib ketmasin)
-  const req: sheets_v4.Schema$Request[] = []
-  for (const v of varaqlar) {
-    const s = varaqMalumot.get(v.nom)
-    const sheetId = s?.properties?.sheetId
-    if (sheetId == null) continue
-    for (let i = (s?.conditionalFormats?.length ?? 0) - 1; i >= 0; i--) req.push({ deleteConditionalFormatRule: { sheetId, index: i } })
-    for (const c of s?.charts ?? []) req.push({ deleteEmbeddedObject: { objectId: c.chartId! } })
-    req.push(...dizayn(v, sheetId, v.qatorlar.length))
-    if (v.nom === 'BAZA_Panel') req.push(...grafiklar(sheetId))
+  // 2) Dizayn: avval eski shartli formatlar va grafiklar olinadi (har safar yig'ilib ketmasin).
+  //    Grafiklar ro'yxati shu yerda yangidan olinadi: ikki ishga tushish ustma-ust kelsa,
+  //    biri o'chirgan grafikni ikkinchisi o'chirmoqchi bo'lib butun dizayn yiqilardi
+  //    ("No embedded object with id") — shunday bo'lsa bir marta qayta urinadi.
+  const dizaynSorovlari = async () => {
+    const malumot = new Map(((await olish()).data.sheets ?? []).map((s) => [s.properties!.title!, s]))
+    const req: sheets_v4.Schema$Request[] = []
+    for (const v of varaqlar) {
+      const s = malumot.get(v.nom)
+      const sheetId = s?.properties?.sheetId
+      if (sheetId == null) continue
+      for (let i = (s?.conditionalFormats?.length ?? 0) - 1; i >= 0; i--) req.push({ deleteConditionalFormatRule: { sheetId, index: i } })
+      for (const c of s?.charts ?? []) req.push({ deleteEmbeddedObject: { objectId: c.chartId! } })
+      req.push(...dizayn(v, sheetId, v.qatorlar.length))
+      if (v.nom === 'BAZA_Panel') req.push(...grafiklar(sheetId))
+    }
+    return req
   }
-  await sheets.spreadsheets.batchUpdate({ spreadsheetId: id, requestBody: { requests: req } })
+  try {
+    await sheets.spreadsheets.batchUpdate({ spreadsheetId: id, requestBody: { requests: await dizaynSorovlari() } })
+  } catch (e) {
+    if (!/embedded object|conditional format/i.test(String((e as Error)?.message ?? e))) throw e
+    await sheets.spreadsheets.batchUpdate({ spreadsheetId: id, requestBody: { requests: await dizaynSorovlari() } })
+  }
 
   return varaqlar.map((v) => ({ varaq: v.nom, qatorlar: Math.max(v.qatorlar.length - 1, 0) }))
 }

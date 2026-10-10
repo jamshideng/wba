@@ -155,6 +155,8 @@ export type Woblr = {
   ball: number
   sabab: WoblrReason
   izoh: string | null
+  /** 0064 — qaysi guruh limitidan */
+  group_id?: string | null
   created_at: string
 }
 
@@ -556,8 +558,16 @@ export type HisobotUstoz = {
 export type HisobotDavomat = {
   jami_belgi: number
   jami_kelgan: number
+  /** 0062 — jadval bo'yicha darslar (bugungacha) */
+  darslar: { reja: number; otildi: number; belgilanmagan: number }
+  /** 0062 — kutilgan belgi = dars kuni × o'sha kuni guruhdagi o'quvchi */
+  belgilar: { kutilgan: number; keldi: number; kechikdi: number; sababli: number; kelmadi: number; belgilanmagan: number }
   haftalar: { hafta: string; belgi: number; kelgan: number }[]
-  guruhlar: { id: string; nom: string; ustoz: string; oquvchi: number; belgi: number; kelgan: number }[]
+  guruhlar: {
+    id: string; nom: string; ustoz: string; oquvchi: number; belgi: number; kelgan: number
+    dars_reja: number; dars_otildi: number
+    kutilgan: number; s_keldi: number; s_kelmadi: number; s_sababli: number; s_belgilanmagan: number
+  }[]
   qoldiruvchilar: { student_id: string; fish: string; guruh: string; belgi: number; kelmadi: number }[]
 }
 
@@ -660,6 +670,7 @@ export type Database = {
       woblr: Table<Woblr>
       woblr_rewards: Table<WoblrReward>
       woblr_redemptions: Table<WoblrRedemption>
+      woblr_takliflar: Table<import('./market').Taklif>
       invoices: Table<Invoice>
       payments: Table<Payment>
       leads: Table<Lead>
@@ -714,6 +725,7 @@ export type Database = {
       dam_kunimi: { Args: { p_sana: string }; Returns: boolean }
       kunlik_band: { Args: { p_kun: string }; Returns: boolean }
       market_buyurtma: { Args: { p_reward: string; p_soni?: number }; Returns: string }
+      market_bozor_xarid: { Args: { p_nom: string; p_ball: number }; Returns: string }
       market_berildi: { Args: { p_kod: string }; Returns: undefined }
       market_bekor: { Args: { p_kod: string; p_sabab?: string | null }; Returns: undefined }
       market_keldi: { Args: { p_kod: string }; Returns: string }
@@ -768,6 +780,7 @@ export type Database = {
       hisobot_oquvchilar: { Args: { p_oylar?: number }; Returns: HisobotOquvchilar }
       hisobot_ustozlar: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotUstoz[] }
       hisobot_davomat: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotDavomat }
+      ustoz_woblar_limiti: { Args: { p_ustoz?: string | null; p_davr?: string | null }; Returns: import('./woblar-chegara').WoblarLimiti | null }
       chegirma_ozgartir: { Args: { p_enrollment: string; p: Record<string, unknown> }; Returns: number }
       telegram_token_ol: { Args: Record<string, never>; Returns: string }
       telegram_ula_token: { Args: { p_token: string; p_chat: number; p_tg_ism: string }; Returns: UlanishNatija[] }
