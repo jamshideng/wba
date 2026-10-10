@@ -28,6 +28,8 @@ export type Buyurtma = {
   student_id: string
   reward_id: string | null
   mahsulot_nomi: string | null
+  /** 0063 — market | bozor (an'anaviy bozor, o'quvchi o'zi yozgan) */
+  tur?: 'market' | 'bozor'
   soni: number
   ball: number
   holat: BuyurtmaHolati

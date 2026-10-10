@@ -18,7 +18,10 @@ const SABABLAR: WoblrReason[] = ['faollik', 'uy_vazifasi', 'yordam', 'qoida', 'b
 export async function woblrBer(fd: FormData) {
   const profil = await talabProfil()
   const ustoz = await getUstoz()
-  const yol = `/crm/woblr${matn(fd.get('guruh')) ? `?guruh=${matn(fd.get('guruh'))}` : ''}`
+  const qaytish = matn(fd.get('qaytish'))
+  const yol = qaytish?.startsWith('/crm/woblr')
+    ? qaytish
+    : `/crm/woblr${matn(fd.get('guruh')) ? `?guruh=${matn(fd.get('guruh'))}` : ''}`
 
   if (!ustoz && !adminmi(profil.rol)) {
     redirect(xabarliYol(yol, { xato: 'Woblar berish huquqingiz yo‘q.' }))

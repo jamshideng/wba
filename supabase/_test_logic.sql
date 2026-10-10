@@ -1647,3 +1647,39 @@ begin
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+
+\echo '--- 0063: an''anaviy bozordan xarid ---'
+reset role;
+insert into woblr (student_id, lesson_id, teacher_id, bergan_profile, ball, sabab)
+select 'S001', l.id, 'U01', '33333333-3333-3333-3333-333333333333', 7, 'faollik'
+from lessons l where l.group_id = 'N01' order by l.sana desc limit 1;
+set role authenticated;
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi S001
+do $$
+declare v_b0 int := (select balans from v_woblr_balance where student_id = 'S001'); v_kod text;
+begin
+  v_kod := market_bozor_xarid('  Shokolad   katta ', 3);
+  if (select balans from v_woblr_balance where student_id = 'S001') <> v_b0 - 3 then raise exception 'XATO: bozor xaridida woblar yechilmadi'; end if;
+  if (select tur || '|' || holat || '|' || mahsulot_nomi || '|' || coalesce(reward_id::text, 'null')
+        from woblr_redemptions where kod = v_kod) <> 'bozor|kutilmoqda|Shokolad katta|null' then
+    raise exception 'XATO: bozor xaridi noto''g''ri yozildi';
+  end if;
+  begin perform market_bozor_xarid('Velosiped', v_b0 + 100); raise exception 'XATO: woblar yetmasa ham o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  begin perform market_bozor_xarid(' ', 1); raise exception 'XATO: nomsiz xarid o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  begin perform market_bozor_xarid('Ruchka', 0); raise exception 'XATO: 0 woblar o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  perform market_bekor(v_kod, null);
+  if (select balans from v_woblr_balance where student_id = 'S001') <> v_b0 then raise exception 'XATO: bozor xaridi bekor qilinganda woblar qaytmadi'; end if;
+  raise notice 'OK: 0063 — bozor xaridi, chegaralar, bekor';
+end $$;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+begin
+  perform market_bozor_xarid('Ruchka', 1);
+  raise exception 'XATO: admin o''quvchi nomidan bozor xaridi qildi';
+exception when others then if sqlerrm like 'XATO%' then raise; end if;
+end $$;
+reset role;
+reset request.jwt.claim.sub;

@@ -109,6 +109,19 @@ export default async function Market({
         </Card>
       )}
 
+      {oquvchimi && (
+        <Link
+          href="/crm/market/bozor-xarid"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-line bg-surface px-5 py-4 transition hover:border-ink-3"
+        >
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-[14.5px] font-bold">An’anaviy bozordan sotib olish</span>
+            <span className="text-[12.5px] text-ink-3">Marketda yo‘q narsa oldingizmi? Nomini va narxini o‘zingiz yozib, woblar bilan to‘lang.</span>
+          </span>
+          <span className="flex min-h-11 items-center rounded-[10px] bg-brand px-4 text-[13.5px] font-bold text-white">Tanlash →</span>
+        </Link>
+      )}
+
       {oquvchimi && (kutilmoqda ?? 0) > 0 && (
         <Link
           href="/crm/market/buyurtmalar"

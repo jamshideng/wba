@@ -722,6 +722,7 @@ export type Database = {
       dam_kunimi: { Args: { p_sana: string }; Returns: boolean }
       kunlik_band: { Args: { p_kun: string }; Returns: boolean }
       market_buyurtma: { Args: { p_reward: string; p_soni?: number }; Returns: string }
+      market_bozor_xarid: { Args: { p_nom: string; p_ball: number }; Returns: string }
       market_berildi: { Args: { p_kod: string }; Returns: undefined }
       market_bekor: { Args: { p_kod: string; p_sabab?: string | null }; Returns: undefined }
       market_keldi: { Args: { p_kod: string }; Returns: string }

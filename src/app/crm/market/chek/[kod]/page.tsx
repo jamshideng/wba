@@ -59,7 +59,7 @@ export default async function Chek({
       <Xabar ok={s.ok} xato={s.xato} />
       {s.yangi && b.holat === 'kutilmoqda' && (
         <p role="status" className="rounded-[10px] border border-ok bg-ok-soft px-4 py-3 text-[13.5px] text-ok">
-          Buyurtma qabul qilindi! Quyidagi kodni adminga ko‘rsating — sovg‘angizni beradi.
+          {b.tur === 'bozor' ? 'To‘lov qilindi — woblar yechildi! Quyidagi chekni adminga ko‘rsatib, narsangizni olib keting.' : 'Buyurtma qabul qilindi! Quyidagi kodni adminga ko‘rsating — sovg‘angizni beradi.'}
         </p>
       )}
       {s.yangi && b.holat === 'buyurtma' && (
@@ -83,6 +83,7 @@ export default async function Chek({
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[14.5px] font-semibold text-ink">{nom}{b.soni > 1 ? ` × ${b.soni}` : ''}</span>
             <Woblar son={b.ball} />
+            {b.tur === 'bozor' && <span className="text-[11.5px] text-ink-3">An’anaviy bozordan — o‘quvchi o‘zi yozgan</span>}
           </div>
         </div>
 

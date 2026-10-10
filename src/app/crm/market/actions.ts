@@ -86,6 +86,37 @@ export async function buyurtmaBer(fd: FormData) {
   redirect(`/crm/market/chek/${kod}?yangi=1`)
 }
 
+/**
+ * An'anaviy bozor (0063): o'quvchi nima olganini va necha woblar ekanini
+ * o'zi yozadi — woblar darhol yechiladi, chek chiqadi. Balans bazada tekshiriladi.
+ */
+export async function bozorXarid(fd: FormData) {
+  const profil = await talabProfil()
+  const yol = '/crm/market/bozor-xarid'
+  if (profil.rol !== 'oquvchi') redirect(xabarliYol(yol, { xato: 'Xaridni o‘quvchi o‘z hisobidan qiladi.' }))
+  const nom = matn(fd.get('nom'))
+  const ball = sonOqi(fd.get('ball'))
+  if (!nom || !ball) redirect(xabarliYol(yol, { xato: 'Nima olganingizni va necha woblar ekanini yozing.' }))
+
+  const supabase = await createClient()
+  const { data: kod, error } = await supabase.rpc('market_bozor_xarid', { p_nom: nom!, p_ball: ball! })
+  if (error || !kod) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  if (xabarYoqilgan()) after(async () => {
+    await xabar(
+      Number(HISOBOT_GURUH),
+      [
+        '<b>[SAYT] WOBLAR — an’anaviy bozordan xarid</b>',
+        `${html(profil.ism)}: <b>${html(nom!)}</b> — ${ball} woblar`,
+        `Kod: <b>${html(kod as string)}</b>`,
+      ].join('\n'),
+    )
+  })
+
+  revalidatePath('/crm/market', 'layout')
+  redirect(`/crm/market/chek/${kod}?yangi=1`)
+}
+
 export async function buyurtmaniBekorQil(fd: FormData) {
   await talabProfil()
   const kod = kodNormal(String(fd.get('kod') ?? ''))

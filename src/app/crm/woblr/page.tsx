@@ -7,8 +7,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
-import { Yuborish } from '@/components/yuborish'
-import { woblrBer } from './actions'
+import { WoblarBerishForma, type BerishOquvchi } from './berish-forma'
 import { guruhUstozsiz } from '@/lib/format'
 import { xatoMatni } from '@/lib/kiritish'
 import type { LeaderboardRow } from '@/lib/types'
@@ -44,10 +43,10 @@ export default async function Woblr({
   // RLS: ustozga o'z guruhlari, o'quvchiga o'zi o'qiydigan guruhlar, xodimga hammasi
   const { data: guruhlar } = await supabase
     .from('groups')
-    .select('id, nom, subject_id, subjects(nom)')
+    .select('id, nom, subject_id, teacher_id, subjects(nom)')
     .eq('holat', 'faol')
     .order('nom')
-  const gList = (guruhlar ?? []) as unknown as { id: string; nom: string; subject_id: string | null; subjects: { nom: string } | null }[]
+  const gList = (guruhlar ?? []) as unknown as { id: string; nom: string; subject_id: string | null; teacher_id: string | null; subjects: { nom: string } | null }[]
 
   const fanlar = new Map<string, string>()
   for (const g of gList) if (g.subject_id) fanlar.set(g.subject_id, g.subjects?.nom ?? g.subject_id)
@@ -84,17 +83,29 @@ export default async function Woblr({
   const ustoz = await getUstoz()
   const beraOladi = Boolean(ustoz) || adminmi(profil.rol)
 
-  const { data: qatnashuvchilar } = beraOladi && guruh
+  /* Berish ro'yxati: ustozga faqat O'Z guruhlari va o'quvchilari, adminga hammasi.
+     Tanlangan reyting (markaz / fan / guruh) ga bog'liq emas — har doim beriladi. */
+  const admin = adminmi(profil.rol)
+  const berishGuruhlari = beraOladi
+    ? gList.filter((g) => admin || g.teacher_id === ustoz?.id).map((g) => ({ id: g.id, nom: admin ? g.nom : guruhUstozsiz(g.nom) }))
+    : []
+  const { data: qatnashuvchilar } = berishGuruhlari.length
     ? await supabase
         .from('enrollments')
-        .select('student_id, students(fish)')
-        .eq('group_id', guruh)
+        .select('student_id, group_id, students(fish, holat)')
+        .in('group_id', berishGuruhlari.map((g) => g.id))
         .neq('holat', 'tugagan')
     : { data: [] }
 
-  const oquvchilar = ((qatnashuvchilar ?? []) as unknown as { student_id: string; students: { fish: string } | null }[])
-    .map((e) => ({ id: e.student_id, fish: e.students?.fish ?? e.student_id }))
-    .sort((a, b) => a.fish.localeCompare(b.fish, 'uz'))
+  const berishMap = new Map<string, BerishOquvchi>()
+  for (const e of (qatnashuvchilar ?? []) as unknown as { student_id: string; group_id: string; students: { fish: string; holat: string } | null }[]) {
+    if (e.students?.holat && e.students.holat !== 'faol') continue
+    const o = berishMap.get(e.student_id) ?? { id: e.student_id, fish: e.students?.fish ?? e.student_id, guruhlar: [] }
+    o.guruhlar.push(e.group_id)
+    berishMap.set(e.student_id, o)
+  }
+  const berishOquvchilar = [...berishMap.values()].sort((a, b) => a.fish.localeCompare(b.fish, 'uz'))
+  const qaytishYoli = `/crm/woblr?k=${encodeURIComponent(tanlov.k)}`
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -162,36 +173,17 @@ export default async function Woblr({
         )}
       </Card>
 
-      {beraOladi && guruh && oquvchilar.length > 0 && (
+      {beraOladi && berishGuruhlari.length > 0 && (
         <Card className="flex flex-col">
-          <CardHeader title="Woblar berish" meta="davomatdan keyin ham beriladi" />
-          <form action={woblrBer} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-[2fr_1fr_1.2fr_1.5fr_auto] sm:items-end">
-            <input type="hidden" name="guruh" value={guruh} />
-            <Maydon nom="O‘quvchi">
-              <select name="student_id" required defaultValue="" className={kirishKlass}>
-                <option value="" disabled>Tanlang…</option>
-                {oquvchilar.map((o) => (
-                  <option key={o.id} value={o.id}>{o.fish}</option>
-                ))}
-              </select>
-            </Maydon>
-            <Maydon nom="Woblar" izoh={adminmi(profil.rol) ? 'Chegara yo‘q (admin)' : '−10…+10'}>
-              <input name="ball" type="number" min={-woblarChegara(adminmi(profil.rol))} max={woblarChegara(adminmi(profil.rol))} step={1} defaultValue={1} required className={kirishKlass} />
-            </Maydon>
-            <Maydon nom="Sabab">
-              <select name="sabab" defaultValue="faollik" className={kirishKlass}>
-                <option value="faollik">Faollik</option>
-                <option value="uy_vazifasi">Uy vazifasi</option>
-                <option value="yordam">Yordam berdi</option>
-                <option value="qoida">Qoida buzdi</option>
-                <option value="boshqa">Boshqa</option>
-              </select>
-            </Maydon>
-            <Maydon nom="Izoh">
-              <input name="izoh" placeholder="Ixtiyoriy" className={kirishKlass} />
-            </Maydon>
-            <Yuborish>Berish</Yuborish>
-          </form>
+          <CardHeader title="Woblar berish" meta={admin ? 'barcha o‘quvchilar' : 'faqat o‘z o‘quvchilaringiz'} />
+          <WoblarBerishForma
+            guruhlar={berishGuruhlari}
+            oquvchilar={berishOquvchilar}
+            boshGuruh={guruh}
+            chegara={woblarChegara(admin)}
+            admin={admin}
+            qaytish={qaytishYoli}
+          />
         </Card>
       )}
 

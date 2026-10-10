@@ -199,7 +199,7 @@ async function BuyurtmalarBolimi({ holat, qidiruv, q }: { holat: BuyurtmaHolati 
                     {ism.get(b.student_id) ?? '—'}
                   </span>
                   <span className="truncate text-[12.5px] text-ink-2">
-                    {b.mahsulot_nomi ?? 'Mahsulot'}{b.soni > 1 ? ` × ${b.soni}` : ''}
+                    {b.mahsulot_nomi ?? 'Mahsulot'}{b.soni > 1 ? ` × ${b.soni}` : ''}{b.tur === 'bozor' ? ' · an’anaviy bozor' : ''}
                   </span>
                   <span className="tnum text-[11.5px] text-ink-3">{b.kod} · {sanaVaqt(b.created_at)}</span>
                 </Link>
