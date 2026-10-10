@@ -279,60 +279,108 @@ export function UstozlarBolimi({ u }: { u: HisobotUstoz[] }) {
 /* ================================================================== */
 
 export function DavomatBolimi({ d }: { d: HisobotDavomat }) {
-  const umumiy = foiz(d.jami_kelgan, d.jami_belgi)
+  const b = d.belgilar
+  const keldi = b.keldi + b.kechikdi
+  const qoyilgan = b.kutilgan - b.belgilanmagan
   const tola = d.guruhlar.filter((g) => g.oquvchi >= sigim(g.nom)).length
   const bosh = d.guruhlar.reduce((a, g) => a + Math.max(0, sigim(g.nom) - g.oquvchi), 0)
+  // Faqat shu oraliqda darsi bo'lgan guruhlar; belgilanmagani ko'p — tepada
+  const guruhlar = d.guruhlar
+    .filter((g) => g.dars_reja > 0)
+    .sort((x, y) => y.s_belgilanmagan - x.s_belgilanmagan || y.kutilgan - x.kutilgan)
   return (
     <>
-      <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <Stat label="Davomat" value={umumiy === null ? '—' : `${umumiy}%`} sub={`${d.jami_kelgan} / ${d.jami_belgi} belgi`} ton={umumiy !== null && umumiy >= 85 ? 'ok' : 'accent'} />
-        <Stat label="Ko‘p qoldiradi" value={String(d.qoldiruvchilar.length)} sub="2+ marta kelmagan bola" ton={d.qoldiruvchilar.length ? 'brand' : 'ok'} />
-        <Stat label="To‘lgan guruhlar" value={`${tola} / ${d.guruhlar.length}`} sub={`guruh ${SIGIM} kishilik, individual — 1`} />
-        <Stat label="Bo‘sh joylar" value={String(bosh)} sub="faol guruhlarda — yangi o‘quvchi uchun" ton="ok" />
+      <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3 xl:grid-cols-5">
+        <Stat
+          label="Darslar"
+          value={`${d.darslar.otildi} / ${d.darslar.reja}`}
+          sub={d.darslar.belgilanmagan ? `${d.darslar.belgilanmagan} ta darsga davomat qo‘yilmagan` : 'hamma darsga davomat qo‘yilgan'}
+          ton={d.darslar.belgilanmagan ? 'brand' : 'ok'}
+        />
+        <Stat label="Belgi bo‘lishi kerak" value={String(b.kutilgan)} sub="dars kuni × guruhdagi o‘quvchi" />
+        <Stat
+          label="Keldi"
+          value={String(keldi)}
+          sub={`${foiz(keldi, qoyilgan) ?? '—'}% belgilanganlardan${b.kechikdi ? ` · ${b.kechikdi} kechikdi` : ''}`}
+          ton="ok"
+        />
+        <Stat label="Kelmadi" value={String(b.kelmadi)} sub={b.sababli ? `+ ${b.sababli} sababli` : 'sababli yo‘q'} ton={b.kelmadi ? 'accent' : 'ok'} />
+        <Stat
+          label="Belgilanmagan"
+          value={String(b.belgilanmagan)}
+          sub={`${foiz(b.belgilanmagan, b.kutilgan) ?? 0}% — ustoz belgi qo‘ymagan`}
+          ton={b.belgilanmagan ? 'brand' : 'ok'}
+          border={b.belgilanmagan ? 'brand' : undefined}
+        />
       </div>
 
-      <Card className="flex flex-col">
-        <CardHeader title="Haftalik davomat" meta="hafta boshi (dushanba) bo‘yicha, %" />
-        {d.haftalar.length === 0 ? (
-          <div className="px-5 pb-5"><Empty>Bu oraliqda davomat yo‘q.</Empty></div>
+      <Card className="flex flex-col overflow-hidden">
+        <CardHeader title="Guruhlar bo‘yicha belgilar" meta="jadval bo‘yicha, bugungacha · dam kunlari hisobga olinmaydi" />
+        {guruhlar.length === 0 ? (
+          <div className="px-5 pb-5"><Empty>Bu oraliqda dars yo‘q.</Empty></div>
         ) : (
-          <div className="px-3 pb-4">
-            <ChiziqGrafik
-              format="foiz"
-              data={d.haftalar.map((h) => ({ x: sanaQisqa(h.hafta).slice(0, 5), davomat: Math.round(foiz(h.kelgan, h.belgi) ?? 0) }))}
-              seriyalar={[{ kalit: 'davomat', nom: 'Davomat', rang: RANG.ok }]}
-            />
-          </div>
-        )}
-      </Card>
-
-      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <Card className="flex flex-col overflow-hidden">
-          <CardHeader title="Guruhlar" meta="to‘lishi va davomati" />
           <Jadval>
             <thead className="border-y border-line bg-surface-2/60">
-              <tr><th className={th}>Guruh</th><th className={th}>Ustoz</th><th className={th}>To‘lishi</th><th className={th}>Davomat</th></tr>
+              <tr>
+                <th className={th}>Guruh</th><th className={th}>Ustoz</th><th className={th}>Darslar</th>
+                <th className={th}>Belgi</th><th className={th}>Keldi</th><th className={th}>Kelmadi</th>
+                <th className={th}>Sababli</th><th className={th}>Belgilanmagan</th><th className={th}>Davomat</th>
+              </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {d.guruhlar.map((g) => (
+              {guruhlar.map((g) => (
                 <tr key={g.id}>
                   <td className={`${td} max-w-[260px] truncate font-semibold`}>
-                    <Link href={`/crm/guruhlar/${g.id}`} className="hover:text-brand">{g.nom.split(' · ').slice(0, 1).join('')} <span className="font-normal text-ink-3">{g.nom.split(' · ').slice(2).join(' · ')}</span></Link>
+                    <Link href={`/crm/davomat/${g.id}`} className="hover:text-brand">{g.nom.split(' · ').slice(0, 1).join('')} <span className="font-normal text-ink-3">{g.nom.split(' · ').slice(2).join(' · ')}</span></Link>
                   </td>
                   <td className={`${td} text-ink-2`}>{g.ustoz}</td>
                   <td className={td}>
-                    <span className="inline-flex items-center gap-2">
-                      <span className="h-2 w-16 overflow-hidden rounded bg-surface-2">
-                        <span className={`block h-2 ${g.oquvchi >= sigim(g.nom) ? 'bg-ok' : 'bg-brand'}`} style={{ width: `${Math.min(100, (g.oquvchi / sigim(g.nom)) * 100)}%` }} />
-                      </span>
-                      {g.oquvchi}/{sigim(g.nom)}
-                    </span>
+                    <span className={g.dars_otildi < g.dars_reja ? 'text-brand' : ''}>{g.dars_otildi}</span>
+                    <span className="text-ink-3"> / {g.dars_reja}</span>
                   </td>
-                  <td className={td}><FoizBelgi f={foiz(g.kelgan, g.belgi)} yaxshi={85} /></td>
+                  <td className={td}>{g.kutilgan}</td>
+                  <td className={`${td} text-ok`}>{g.s_keldi}</td>
+                  <td className={td}>{g.s_kelmadi || <span className="text-ink-4">0</span>}</td>
+                  <td className={td}>{g.s_sababli || <span className="text-ink-4">0</span>}</td>
+                  <td className={td}>{g.s_belgilanmagan ? <b className="text-brand">{g.s_belgilanmagan}</b> : <span className="text-ink-4">0</span>}</td>
+                  <td className={td}><FoizBelgi f={foiz(g.s_keldi, g.s_keldi + g.s_kelmadi + g.s_sababli)} yaxshi={85} /></td>
                 </tr>
               ))}
             </tbody>
+            <tfoot className="border-t border-line bg-surface-2/60 font-semibold">
+              <tr>
+                <td className={td}>Jami</td><td className={td} />
+                <td className={td}>{d.darslar.otildi} / {d.darslar.reja}</td>
+                <td className={td}>{b.kutilgan}</td>
+                <td className={td}>{keldi}</td>
+                <td className={td}>{b.kelmadi}</td>
+                <td className={td}>{b.sababli}</td>
+                <td className={td}>{b.belgilanmagan}</td>
+                <td className={td}><FoizBelgi f={foiz(keldi, qoyilgan)} yaxshi={85} /></td>
+              </tr>
+            </tfoot>
           </Jadval>
+        )}
+        <p className="px-5 py-3 text-[11.5px] leading-relaxed text-ink-3">
+          Belgi bo‘lishi kerak — har dars kuni o‘sha kuni guruhda bo‘lgan o‘quvchilar soni (keyin qo‘shilgan yoki chiqib ketgan bola o‘sha kunlarga sanalmaydi).
+          Keldi — kechikib kelganlar bilan. Davomat foizi — belgi qo‘yilganlardan.
+        </p>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <Card className="flex flex-col">
+          <CardHeader title="Haftalik davomat" meta="hafta boshi (dushanba) bo‘yicha, %" />
+          {d.haftalar.length === 0 ? (
+            <div className="px-5 pb-5"><Empty>Bu oraliqda davomat yo‘q.</Empty></div>
+          ) : (
+            <div className="px-3 pb-4">
+              <ChiziqGrafik
+                format="foiz"
+                data={d.haftalar.map((h) => ({ x: sanaQisqa(h.hafta).slice(0, 5), davomat: Math.round(foiz(h.kelgan, h.belgi) ?? 0) }))}
+                seriyalar={[{ kalit: 'davomat', nom: 'Davomat', rang: RANG.ok }]}
+              />
+            </div>
+          )}
         </Card>
 
         <Card className="flex flex-col">
@@ -357,6 +405,11 @@ export function DavomatBolimi({ d }: { d: HisobotDavomat }) {
             )}
           </ul>
         </Card>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3.5">
+        <Stat label="To‘lgan guruhlar" value={`${tola} / ${d.guruhlar.length}`} sub={`guruh ${SIGIM} kishilik, individual — 1`} />
+        <Stat label="Bo‘sh joylar" value={String(bosh)} sub="faol guruhlarda — yangi o‘quvchi uchun" ton="ok" />
       </div>
     </>
   )

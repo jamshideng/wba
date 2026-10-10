@@ -556,8 +556,16 @@ export type HisobotUstoz = {
 export type HisobotDavomat = {
   jami_belgi: number
   jami_kelgan: number
+  /** 0062 — jadval bo'yicha darslar (bugungacha) */
+  darslar: { reja: number; otildi: number; belgilanmagan: number }
+  /** 0062 — kutilgan belgi = dars kuni × o'sha kuni guruhdagi o'quvchi */
+  belgilar: { kutilgan: number; keldi: number; kechikdi: number; sababli: number; kelmadi: number; belgilanmagan: number }
   haftalar: { hafta: string; belgi: number; kelgan: number }[]
-  guruhlar: { id: string; nom: string; ustoz: string; oquvchi: number; belgi: number; kelgan: number }[]
+  guruhlar: {
+    id: string; nom: string; ustoz: string; oquvchi: number; belgi: number; kelgan: number
+    dars_reja: number; dars_otildi: number
+    kutilgan: number; s_keldi: number; s_kelmadi: number; s_sababli: number; s_belgilanmagan: number
+  }[]
   qoldiruvchilar: { student_id: string; fish: string; guruh: string; belgi: number; kelmadi: number }[]
 }
 

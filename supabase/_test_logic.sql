@@ -1624,3 +1624,26 @@ reset role;
 reset request.jwt.claim.sub;
 
 \echo '=== TEST TUGADI ==='
+
+\echo '--- 0062: davomat hisoboti — kutilgan belgilar ---'
+reset role;
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare r jsonb := hisobot_davomat('2020-01-01', bugun_toshkent());
+        b jsonb := r->'belgilar'; d jsonb := r->'darslar';
+begin
+  if (b->>'kutilgan')::int <> (b->>'keldi')::int + (b->>'kechikdi')::int + (b->>'sababli')::int
+                              + (b->>'kelmadi')::int + (b->>'belgilanmagan')::int then
+    raise exception 'XATO: kutilgan belgi qismlar yig''indisiga teng emas: %', b;
+  end if;
+  if (d->>'reja')::int <> (d->>'otildi')::int + (d->>'belgilanmagan')::int then
+    raise exception 'XATO: darslar reja <> o''tildi + belgilanmagan: %', d;
+  end if;
+  if (b->>'kutilgan')::int < (select sum((g->>'kutilgan')::int) from jsonb_array_elements(r->'guruhlar') g) then
+    raise exception 'XATO: guruhlar yig''indisi jamidan katta';
+  end if;
+  raise notice 'OK: 0062 — darslar %, belgilar %', d, b;
+end $$;
+reset role;
+reset request.jwt.claim.sub;
