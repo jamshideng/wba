@@ -49,17 +49,20 @@ export function MahsulotForma({
   toifalar,
   bozor,
   zakazlar,
+  andoza = null,
 }: {
   m: Mahsulot | null
+  /** Yangi mahsulot o'quvchi taklifidan (0065) — maydonlar oldindan to'ldiriladi */
+  andoza?: { nom: string; tavsif: string | null; rasm_url: string | null; narx: number | null; oldindan: boolean } | null
   toifalar: string[]
   bozor: string | null
   /** Shu mahsulotning kelishi kutilayotgan oldindan buyurtmalari soni */
   zakazlar: number
 }) {
-  const boshRejim: Rejim = !m ? 'sotuvda' : m.holat !== 'faol' ? 'yopilgan' : m.rejim
+  const boshRejim: Rejim = !m ? (andoza?.oldindan ? 'oldindan' : 'sotuvda') : m.holat !== 'faol' ? 'yopilgan' : m.rejim
   const [rejim, setRejim] = useState<Rejim>(boshRejim)
   const [cheksiz, setCheksiz] = useState(m?.cheksiz ?? false)
-  const [rasmlar, setRasmlar] = useState<string[]>(m?.rasmlar?.length ? m.rasmlar : m?.rasm_url ? [m.rasm_url] : [])
+  const [rasmlar, setRasmlar] = useState<string[]>(m?.rasmlar?.length ? m.rasmlar : m?.rasm_url ? [m.rasm_url] : andoza?.rasm_url ? [andoza.rasm_url] : [])
   const [yuklanmoqda, setYuklanmoqda] = useState(0)
   const [rasmXato, setRasmXato] = useState<string | null>(null)
   const [tanlangan, setTanlangan] = useState(0)
@@ -166,12 +169,12 @@ export function MahsulotForma({
       {/* ── Ma'lumot ── */}
       <div className="flex flex-col gap-4">
         <Maydon nom="Nomi">
-          <input name="nom" required maxLength={120} defaultValue={m?.nom ?? ''} placeholder="Masalan: WBA daftar" className={kirishKlass} />
+          <input name="nom" required maxLength={120} defaultValue={m?.nom ?? andoza?.nom ?? ''} placeholder="Masalan: WBA daftar" className={kirishKlass} />
         </Maydon>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Maydon nom="Narxi (woblarda)">
-            <input name="narx_ball" type="number" required min={1} step={1} inputMode="numeric" defaultValue={m?.narx_ball ?? ''} className={kirishKlass} />
+            <input name="narx_ball" type="number" required min={1} step={1} inputMode="numeric" defaultValue={m?.narx_ball ?? andoza?.narx ?? ''} className={kirishKlass} />
           </Maydon>
           <Maydon nom="Toifa" izoh="Vitrinada filtr bo‘lib chiqadi">
             <input name="toifa" list="market-toifalar" maxLength={40} defaultValue={m?.toifa ?? ''} placeholder="Kanselyariya, Kiyim…" className={kirishKlass} />
@@ -240,7 +243,7 @@ export function MahsulotForma({
         </div>
 
         <Maydon nom="Tavsif">
-          <textarea name="tavsif" rows={4} maxLength={1000} defaultValue={m?.tavsif ?? ''} placeholder="O‘lchami, rangi, qanday narsa…" className={`${kirishKlass} py-2.5`} />
+          <textarea name="tavsif" rows={4} maxLength={1000} defaultValue={m?.tavsif ?? andoza?.tavsif ?? ''} placeholder="O‘lchami, rangi, qanday narsa…" className={`${kirishKlass} py-2.5`} />
         </Maydon>
 
         <Maydon nom="Tartib" izoh="Kattasi vitrinada birinchi turadi">

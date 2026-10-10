@@ -670,6 +670,7 @@ export type Database = {
       woblr: Table<Woblr>
       woblr_rewards: Table<WoblrReward>
       woblr_redemptions: Table<WoblrRedemption>
+      woblr_takliflar: Table<import('./market').Taklif>
       invoices: Table<Invoice>
       payments: Table<Payment>
       leads: Table<Lead>

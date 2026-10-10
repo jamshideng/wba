@@ -1706,3 +1706,51 @@ exception when others then if sqlerrm like 'XATO%' then raise; end if;
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+
+\echo '--- 0065: market takliflari ---'
+set role authenticated;
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi S001
+do $$
+declare v_id uuid;
+begin
+  insert into woblr_takliflar (student_id, nom, havola, qachon) values ('S001', 'Futbol to''pi', 'https://uzum.uz/x', 'keyingi_bozor')
+  returning id into v_id;
+  begin
+    insert into woblr_takliflar (student_id, nom) values ('S002', 'Begona nomidan');
+    raise exception 'XATO: o''quvchi boshqa bola nomidan taklif yubordi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  begin
+    insert into woblr_takliflar (student_id, nom, holat) values ('S001', 'O''zi tasdiqladi', 'olib_kelindi');
+    raise exception 'XATO: o''quvchi taklifni o''zi "olib kelindi" qildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  begin
+    insert into woblr_takliflar (student_id, nom, havola) values ('S001', 'Yomon havola', 'javascript:alert(1)');
+    raise exception 'XATO: http bo''lmagan havola o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  update woblr_takliflar set holat = 'olib_kelindi' where id = v_id;
+  if (select holat from woblr_takliflar where id = v_id) <> 'yangi' then
+    raise exception 'XATO: o''quvchi taklif holatini o''zgartirdi';
+  end if;
+  raise notice 'OK: 0065 — o''quvchi taklif yuboradi, holatni o''zgartira olmaydi';
+end $$;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  if exists (select 1 from woblr_takliflar) then raise exception 'XATO: ustoz o''quvchi takliflarini ko''rdi'; end if;
+end $$;
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';   -- qabulxona (xodim)
+do $$
+declare v_id uuid := (select id from woblr_takliflar where nom = 'Futbol to''pi');
+begin
+  update woblr_takliflar set holat = 'korib_chiqamiz', admin_javob = 'Bozorga olib kelamiz' where id = v_id;
+  if (select holat from woblr_takliflar where id = v_id) <> 'korib_chiqamiz' then
+    raise exception 'XATO: xodim taklif holatini o''zgartira olmadi';
+  end if;
+  begin
+    update woblr_takliflar set nom = 'Boshqa narsa' where id = v_id;
+    raise exception 'XATO: xodim taklif mazmunini o''zgartirdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  raise notice 'OK: 0065 — xodim holat va javobni o''zgartiradi, mazmun o''zgarmaydi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;

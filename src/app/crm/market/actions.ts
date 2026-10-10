@@ -382,3 +382,93 @@ export async function mahsulotOchir(fd: FormData) {
     ok: `“${m!.nom}” o‘chirildi.${bekor.length ? ` ${bekor.length} ta ochiq buyurtma bekor qilindi, woblar qaytdi.` : ''}`,
   }))
 }
+
+/* ── Takliflar (0065): o'quvchi istaklari ── */
+
+const TAKLIF_HOLATLARI_ICHKI = ['yangi', 'korib_chiqamiz', 'olib_kelindi', 'rad_etildi'] as const
+
+/** O'quvchi taklif yuboradi — woblar yechilmaydi. Huquq va cheklov bazada (RLS + trigger). */
+export async function taklifYubor(fd: FormData) {
+  const profil = await talabProfil()
+  const yol = '/crm/market/taklif'
+  if (profil.rol !== 'oquvchi') redirect(xabarliYol(yol, { xato: 'Taklifni o‘quvchi yuboradi.' }))
+
+  const nom = matn(fd.get('nom'))
+  if (!nom || nom.length < 2) redirect(xabarliYol(yol, { xato: 'Nima istashingizni yozing.' }))
+  const havola = matn(fd.get('havola'))
+  if (havola && !/^https?:\/\//i.test(havola)) redirect(xabarliYol(yol, { xato: 'Havola http:// yoki https:// bilan boshlansin.' }))
+  const narx = sonOqi(fd.get('taxminiy_narx'))
+  if (narx !== null && (narx < 1 || narx > 100_000)) redirect(xabarliYol(yol, { xato: 'Taxminiy narx 1 dan 100 000 gacha woblar bo‘lsin.' }))
+  // Rasm faqat o'zimizning market bucketidan (o'quvchi yuklagan)
+  const rasm = rasmlarniOqi(JSON.stringify([matn(fd.get('rasm_url'))].filter(Boolean)), process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')[0] ?? null
+
+  const supabase = await createClient()
+  const { data: men } = await supabase.from('students').select('id').eq('profile_id', profil.id).maybeSingle()
+  if (!men) redirect(xabarliYol(yol, { xato: 'O‘quvchi hisobingiz topilmadi.' }))
+
+  const { error } = await supabase.from('woblr_takliflar').insert({
+    student_id: men!.id,
+    nom: nom!,
+    tavsif: matn(fd.get('tavsif')),
+    havola,
+    rasm_url: rasm,
+    taxminiy_narx: narx,
+    qachon: fd.get('qachon') === 'keyingi_bozor' ? 'keyingi_bozor' : 'umumiy',
+    izoh: matn(fd.get('izoh')),
+  })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  if (xabarYoqilgan()) after(async () => {
+    await xabar(
+      Number(HISOBOT_GURUH),
+      [
+        '<b>[SAYT] WOBLAR MARKET — yangi taklif</b>',
+        `${html(profil.ism)}: <b>${html(nom!)}</b>${narx ? ` · ~${narx} woblar` : ''}`,
+        `Ko‘rish: ${SAYT}/crm/market/boshqaruv?bolim=taklif`,
+      ].join('\n'),
+    )
+  })
+
+  revalidatePath('/crm/market', 'layout')
+  redirect(xabarliYol(yol, { ok: 'Taklifingiz yuborildi! Admin ko‘rib chiqadi.' }))
+}
+
+/** Xodim: taklif holati va javobi. O'quvchiga Telegram xabari (holat o'zgarsa). */
+export async function taklifHolati(fd: FormData) {
+  await talabRol('admin', 'direktor', 'qabulxona')
+  const id = matn(fd.get('id'))
+  const holat = TAKLIF_HOLATLARI_ICHKI.find((h) => h === fd.get('holat'))
+  const qaytish = matn(fd.get('qaytish'))
+  const yol = qaytish?.startsWith('/crm/market/boshqaruv') ? qaytish : '/crm/market/boshqaruv?bolim=taklif'
+  if (!id || !holat) redirect(xabarliYol(yol, { xato: 'Holatni tanlang.' }))
+
+  const supabase = await createClient()
+  const { data: eski } = await supabase.from('woblr_takliflar').select('holat, nom, student_id').eq('id', id!).maybeSingle()
+  if (!eski) redirect(xabarliYol(yol, { xato: 'Taklif topilmadi.' }))
+
+  const javob = matn(fd.get('admin_javob'))
+  const { error } = await supabase.from('woblr_takliflar').update({ holat: holat!, admin_javob: javob }).eq('id', id!)
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  if (eski!.holat !== holat && holat !== 'yangi') {
+    const matnlar: Record<string, string> = {
+      korib_chiqamiz: 'taklifingizni ko‘rib chiqyapmiz',
+      olib_kelindi: 'siz uchun olib kelindi! Marketda tez orada paydo bo‘ladi',
+      rad_etildi: 'bu safar olib kelolmaymiz',
+    }
+    const royxat = await chatlar([eski!.student_id])
+    yubor(royxat, () =>
+      [
+        '<b>WOBLAR MARKET — taklifingiz</b>',
+        '',
+        `<b>${html(eski!.nom)}</b> — ${matnlar[holat!]}.`,
+        javob ? `Admin: ${html(javob)}` : '',
+        '',
+        `Takliflaringiz: ${SAYT}/crm/market/taklif`,
+      ].filter((q, i, a) => q !== '' || a[i - 1] !== '').join('\n'),
+    )
+  }
+
+  revalidatePath('/crm/market', 'layout')
+  redirect(xabarliYol(yol, { ok: 'Taklif holati saqlandi.' }))
+}

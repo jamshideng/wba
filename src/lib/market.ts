@@ -124,3 +124,39 @@ export function kunOy(sana: string | null | undefined): string {
 export function nechaKunQoldi(sana: string, bugun: string): number {
   return Math.round((Date.parse(`${sana}T00:00:00Z`) - Date.parse(`${bugun}T00:00:00Z`)) / 86_400_000)
 }
+
+/* ---------- 0065 · O'quvchi takliflari (istak) ---------- */
+
+export type TaklifHolati = 'yangi' | 'korib_chiqamiz' | 'olib_kelindi' | 'rad_etildi'
+
+export type Taklif = {
+  id: string
+  student_id: string
+  nom: string
+  tavsif: string | null
+  havola: string | null
+  rasm_url: string | null
+  taxminiy_narx: number | null
+  qachon: 'keyingi_bozor' | 'umumiy'
+  izoh: string | null
+  holat: TaklifHolati
+  admin_javob: string | null
+  created_at: string
+  updated_at: string
+}
+
+export const TAKLIF_HOLATLARI: TaklifHolati[] = ['yangi', 'korib_chiqamiz', 'olib_kelindi', 'rad_etildi']
+
+export const TAKLIF_HOLAT_NOMI: Record<TaklifHolati, string> = {
+  yangi: 'Yangi',
+  korib_chiqamiz: 'Ko‘rib chiqamiz',
+  olib_kelindi: 'Siz uchun olib kelindi',
+  rad_etildi: 'Rad etildi',
+}
+
+export const TAKLIF_HOLAT_TONI: Record<TaklifHolati, 'accent' | 'ok' | 'jim' | 'brand'> = {
+  yangi: 'brand',
+  korib_chiqamiz: 'accent',
+  olib_kelindi: 'ok',
+  rad_etildi: 'jim',
+}
