@@ -9,6 +9,8 @@ import { IconArrowLeft } from '@/components/icons'
 import { vaqt, bugunToshkent, kunlarNomi, haftaKuni, davrQisqa, HAFTA_KUNLARI, guruhQisqa } from '@/lib/format'
 import { Jurnal, type JurnalQatori, type DarsKuni, type Huquq } from './jurnal'
 import type { AttendanceStatus } from '@/lib/types'
+import type { WoblarLimiti } from '@/lib/woblar-chegara'
+import { WoblarLimitKartasi } from '@/components/woblar-limit'
 
 export const metadata = { title: 'Davomat jurnali' }
 export const dynamic = 'force-dynamic'
@@ -189,6 +191,13 @@ export default async function DavomatJurnali({
 
   const bugunDarsKunimi = davr === joriy && kunlar.some((k) => k.sana === bugun && !k.dam)
 
+  /* 0064 — guruh ustozining oylik woblar limiti (ustozning o'ziga va adminga ko'rinadi) */
+  const { data: limitXom } = huquq !== 'yoq' && guruhi.teacher_id
+    ? await supabase.rpc('ustoz_woblar_limiti', { p_ustoz: guruhi.teacher_id, p_davr: joriy })
+    : { data: null }
+  const limit = limitXom as WoblarLimiti | null
+  const guruhLimit = limit?.guruhlar.find((x) => x.group_id === guruh) ?? null
+
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Link href="/crm/davomat" className="flex items-center gap-2 text-[13px] text-ink-3 transition hover:text-ink">
@@ -245,6 +254,14 @@ export default async function DavomatJurnali({
           )
         })}
       </nav>
+
+      {limit && guruhLimit && (
+        <WoblarLimitKartasi
+          limit={limit}
+          guruh={guruhLimit}
+          kim={huquq === 'hammasi' ? `${guruhi.teachers?.ism ?? 'Ustoz'} limiti` : 'Sizning woblar limitingiz'}
+        />
+      )}
 
       {qatorlar.length === 0 ? (
         <Card className="p-5">

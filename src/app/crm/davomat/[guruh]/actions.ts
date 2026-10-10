@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { getProfile, adminmi } from '@/lib/auth'
+import { getProfile } from '@/lib/auth'
 import { woblarXato } from '@/lib/woblar-chegara'
 import type { AttendanceStatus } from '@/lib/types'
 
@@ -70,8 +70,7 @@ export async function probniyBelgila(
 export async function woblarBer(guruhId: string, studentId: string, ball: number): Promise<AmalNatijasi<number>> {
   const xato = await ruxsat()
   if (xato) return { ok: false, xato }
-  const profil = await getProfile()
-  const chegaraXato = woblarXato(ball, Boolean(profil && adminmi(profil.rol)))
+  const chegaraXato = woblarXato(ball)
   if (chegaraXato) return { ok: false, xato: chegaraXato }
 
   const supabase = await createClient()
@@ -83,5 +82,6 @@ export async function woblarBer(guruhId: string, studentId: string, ball: number
   if (error) return { ok: false, xato: error.message }
 
   revalidatePath('/crm/woblr')
+  revalidatePath(`/crm/davomat/${guruhId}`) // oylik limit soni yangilansin (0064)
   return { ok: true, natija: Number(data) || 0 }
 }

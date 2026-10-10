@@ -1157,24 +1157,47 @@ reset role;
 
 \echo '--- 0037/0038: woblar chegarasi, kunlik hisobot bir marta ---'
 reset role;
-update settings set qiymat = '6'::jsonb where kalit = 'woblr.max_ball_dars';
+-- 0064: "bir darsda eng ko'pi" va ±10 yo'q — ustozni OYLIK guruh limiti cheklaydi
+create temp table limit_t (qoldi int);
+grant all on limit_t to authenticated;
+insert into limit_t
+select guruh_woblar_limiti('NX', to_char(bugun_toshkent(), 'YYYY-MM'))
+     - guruh_woblar_sarfi('NX', to_char(bugun_toshkent(), 'YYYY-MM'));
 set role authenticated;
 set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana (NX)
 do $$
+declare v_q int := (select qoldi from limit_t);
 begin
-  -- S002 (NX, 0029 bloki): 5 + 1 = 6 — mumkin, yana +1 — chegaradan oshadi
-  perform woblar_ber('NX', 'S002', 5);
-  perform woblar_ber('NX', 'S002', 1);
+  if v_q <= 1 then raise exception 'XATO: test uchun NX limitida joy yo''q (%).', v_q; end if;
+  -- Bir martada 10 dan ko'p — endi mumkin (limit ichida)
+  perform woblar_ber('NX', 'S002', v_q);
+  if (ustoz_woblar_limiti() -> 'guruhlar' -> 0 ->> 'qoldi')::int is null then
+    raise exception 'XATO: ustoz_woblar_limiti guruhlarni qaytarmadi';
+  end if;
   begin
     perform woblar_ber('NX', 'S002', 1);
-    raise exception 'XATO: woblar chegarasidan oshdi!';
+    raise exception 'XATO: oylik limitdan oshdi!';
   exception when others then
-    if sqlerrm not like '%eng ko''pi%' then raise; end if;
+    if sqlerrm not like '%Oylik limit%' then raise; end if;
   end;
-  raise notice 'OK: bir darsda woblar Sozlamalardagi chegaradan oshmaydi';
+  -- Minus limitga qaytadi
+  perform woblar_ber('NX', 'S002', -2);
+  perform woblar_ber('NX', 'S002', 2);
+  begin
+    insert into woblr (student_id, teacher_id, bergan_profile, ball, sabab, group_id)
+    values ('S002', 'U01', '33333333-3333-3333-3333-333333333333', 1, 'faollik', 'NX');
+    raise exception 'XATO: Woblar bo''limidan limitdan oshib berildi';
+  exception when others then
+    if sqlerrm not like '%Oylik limit%' then raise; end if;
+  end;
+  raise notice 'OK: 0064 — oylik limit, ±10 yo''q, minus qaytadi';
 end $$;
 reset role;
-update settings set qiymat = 'null'::jsonb where kalit = 'woblr.max_ball_dars';
+-- Admin limitsiz
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+do $$ begin perform woblar_ber('NX', 'S002', 50); raise notice 'OK: 0064 — admin limitsiz'; end $$;
+reset role;
 
 do $$
 begin

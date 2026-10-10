@@ -8,6 +8,8 @@ import { Card, CardHeader, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { WoblarBerishForma, type BerishOquvchi } from './berish-forma'
+import { WoblarLimitKartasi } from '@/components/woblar-limit'
+import type { WoblarLimiti } from '@/lib/woblar-chegara'
 import { guruhUstozsiz } from '@/lib/format'
 import { xatoMatni } from '@/lib/kiritish'
 import type { LeaderboardRow } from '@/lib/types'
@@ -76,7 +78,7 @@ export default async function Woblr({
   })
   const reyting = (data ?? []) as LeaderboardRow[]
 
-  const { data: maxBall } = await supabase.from('settings').select('qiymat').eq('kalit', 'woblr.max_ball_dars').maybeSingle()
+  const { data: stavka } = await supabase.from('settings').select('qiymat').eq('kalit', 'woblr.oylik_stavka').maybeSingle()
 
   /* Woblar berish huquqi: ustoz (o'z o'quvchisiga) yoki admin.
      Ro'yxatni RLS cheklaydi — ustozga faqat o'z guruhlari keladi. */
@@ -106,6 +108,12 @@ export default async function Woblr({
   }
   const berishOquvchilar = [...berishMap.values()].sort((a, b) => a.fish.localeCompare(b.fish, 'uz'))
   const qaytishYoli = `/crm/woblr?k=${encodeURIComponent(tanlov.k)}`
+
+  // 0064 — ustozning oylik limiti (admin limitsiz)
+  const { data: limitXom } = beraOladi && !admin && ustoz
+    ? await supabase.rpc('ustoz_woblar_limiti', {})
+    : { data: null }
+  const limit = limitXom as WoblarLimiti | null
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -173,6 +181,8 @@ export default async function Woblr({
         )}
       </Card>
 
+      {limit && <WoblarLimitKartasi limit={limit} guruh={null} kim="Sizning woblar limitingiz" />}
+
       {beraOladi && berishGuruhlari.length > 0 && (
         <Card className="flex flex-col">
           <CardHeader title="Woblar berish" meta={admin ? 'barcha o‘quvchilar' : 'faqat o‘z o‘quvchilaringiz'} />
@@ -180,9 +190,10 @@ export default async function Woblr({
             guruhlar={berishGuruhlari}
             oquvchilar={berishOquvchilar}
             boshGuruh={guruh}
-            chegara={woblarChegara(admin)}
+            chegara={woblarChegara()}
             admin={admin}
             qaytish={qaytishYoli}
+            limit={limit ? { jami: limit.jami.qoldi, guruhlar: Object.fromEntries(limit.guruhlar.map((x) => [x.group_id, x.qoldi])) } : null}
           />
         </Card>
       )}
@@ -190,8 +201,8 @@ export default async function Woblr({
       {/* Woblar beradiganlar uchun eslatma — o'quvchiga keraksiz */}
       {beraOladi && (
         <p className="text-[12px] text-ink-3">
-          Bir darsda eng ko‘p woblar: {maxBall?.qiymat != null ? String(maxBall.qiymat) : '[ANIQLANMAGAN]'} ·
-          bazadagi chegara −10…+10.
+          Ustozning oylik limiti: darslar × o‘quvchilar × {stavka?.qiymat != null ? String(stavka.qiymat) : '3'} (bir darsda bitta bolaga).
+          Xohlasa bir kunda, xohlasa bo‘lib beradi; minus woblar limitga qaytadi. Admin — limitsiz.
         </p>
       )}
     </div>

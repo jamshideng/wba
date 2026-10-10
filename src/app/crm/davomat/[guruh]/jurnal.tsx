@@ -165,7 +165,7 @@ export function Jurnal({
 
   function woblarBerish(q: JurnalQatori) {
     const ball = Number(woblarKirish[q.student_id] ?? '')
-    const chegaraXato = woblarXato(ball, huquq === 'hammasi')
+    const chegaraXato = woblarXato(ball)
     if (chegaraXato) {
       setXato(chegaraXato)
       return
@@ -311,8 +311,8 @@ export function Jurnal({
                         <input
                           type="number"
                           inputMode="numeric"
-                          min={-woblarChegara(huquq === 'hammasi')}
-                          max={woblarChegara(huquq === 'hammasi')}
+                          min={-woblarChegara()}
+                          max={woblarChegara()}
                           value={woblarKirish[q.student_id] ?? ''}
                           onChange={(e) => setWoblarKirish((w) => ({ ...w, [q.student_id]: e.target.value }))}
                           onKeyDown={(e) => e.key === 'Enter' && woblarBerish(q)}

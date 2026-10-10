@@ -155,6 +155,8 @@ export type Woblr = {
   ball: number
   sabab: WoblrReason
   izoh: string | null
+  /** 0064 — qaysi guruh limitidan */
+  group_id?: string | null
   created_at: string
 }
 
@@ -777,6 +779,7 @@ export type Database = {
       hisobot_oquvchilar: { Args: { p_oylar?: number }; Returns: HisobotOquvchilar }
       hisobot_ustozlar: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotUstoz[] }
       hisobot_davomat: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotDavomat }
+      ustoz_woblar_limiti: { Args: { p_ustoz?: string | null; p_davr?: string | null }; Returns: import('./woblar-chegara').WoblarLimiti | null }
       chegirma_ozgartir: { Args: { p_enrollment: string; p: Record<string, unknown> }; Returns: number }
       telegram_token_ol: { Args: Record<string, never>; Returns: string }
       telegram_ula_token: { Args: { p_token: string; p_chat: number; p_tg_ism: string }; Returns: UlanishNatija[] }

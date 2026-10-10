@@ -22,6 +22,7 @@ export function WoblarBerishForma({
   chegara,
   admin,
   qaytish,
+  limit,
 }: {
   guruhlar: { id: string; nom: string }[]
   oquvchilar: BerishOquvchi[]
@@ -30,6 +31,8 @@ export function WoblarBerishForma({
   admin: boolean
   /** Berilgandan keyin shu ko'rinishga qaytadi (reyting tanlovi saqlanadi) */
   qaytish: string
+  /** Ustozning oylik limiti (0064): guruh → qoldi; admin uchun null */
+  limit: { jami: number; guruhlar: Record<string, number> } | null
 }) {
   const [guruh, setGuruh] = useState(boshGuruh && guruhlar.some((g) => g.id === boshGuruh) ? boshGuruh : '')
   const [qidiruv, setQidiruv] = useState('')
@@ -54,7 +57,7 @@ export function WoblarBerishForma({
         <select value={guruh} onChange={(e) => { setGuruh(e.target.value); setTanlangan('') }} className={kirishKlass}>
           <option value="">{admin ? 'Barcha guruhlar' : 'Barcha guruhlarim'}</option>
           {guruhlar.map((g) => (
-            <option key={g.id} value={g.id}>{g.nom}</option>
+            <option key={g.id} value={g.id}>{g.nom}{limit ? ` · qoldi ${limit.guruhlar[g.id] ?? 0}` : ''}</option>
           ))}
         </select>
       </Maydon>
@@ -92,6 +95,17 @@ export function WoblarBerishForma({
         <input name="izoh" placeholder="Ixtiyoriy" className={kirishKlass} />
       </Maydon>
       <Yuborish>Berish</Yuborish>
+      {limit && (
+        <p className="text-[12.5px] text-ink-2 sm:col-span-full">
+          Oylik limit:{' '}
+          {boshqaGuruh ? (
+            <>
+              shu guruh uchun <b className="tnum">{limit.guruhlar[boshqaGuruh] ?? 0}</b> qoldi ·{' '}
+            </>
+          ) : null}
+          jami <b className="tnum">{limit.jami}</b> qoldi. O‘quvchining guruhi avtomatik topiladi — woblar o‘sha guruh limitidan ham ayriladi.
+        </p>
+      )}
     </form>
   )
 }

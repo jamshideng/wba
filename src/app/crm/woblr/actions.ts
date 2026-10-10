@@ -33,7 +33,7 @@ export async function woblrBer(fd: FormData) {
 
   if (!studentId) redirect(xabarliYol(yol, { xato: 'O‘quvchini tanlang.' }))
   // Ustozga −10…+10, admin/direktorga chegara yo'q (0057)
-  const chegaraXato = ball === null ? 'Woblar sonini yozing.' : woblarXato(ball, adminmi(profil.rol))
+  const chegaraXato = ball === null ? 'Woblar sonini yozing.' : woblarXato(ball)
   if (chegaraXato) redirect(xabarliYol(yol, { xato: chegaraXato }))
 
   const supabase = await createClient()
@@ -45,6 +45,8 @@ export async function woblrBer(fd: FormData) {
     sabab,
     izoh: matn(fd.get('izoh')),
     lesson_id: null,
+    // Qaysi guruh limitidan — formadagi guruh; bo'sh bo'lsa baza o'zi topadi (0064)
+    group_id: matn(fd.get('guruh')),
   })
 
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
