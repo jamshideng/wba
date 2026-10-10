@@ -63,7 +63,7 @@ export function Narx() {
             <span className="text-[18px] font-semibold text-ink-2 sm:text-[22px]">so‘m</span>
           </p>
           <p className="max-w-[46ch] text-[15.5px] leading-relaxed text-ink-2">
-            Sinov darsi va daraja aniqlash — bepul. To‘lov faqat dars yoqqandan keyin, hech qanday oldindan to‘lovsiz.
+            Sinov darsi bepul. To‘lov — faqat dars yoqqandan keyin.
           </p>
         </div>
         <button
@@ -138,10 +138,9 @@ export function Narx() {
                 reja === 'uch'
                   ? 'Uchala oy ham tanishuv narxida qoladi'
                   : 'Birinchi oy arzonroq — guruh va ustozni sinab ko‘rasiz',
-                `Haftada ${MARKAZ.darsHaftada} dars, ${MARKAZ.darsDaqiqa} daqiqadan`,
-                `Guruhda ${MARKAZ.guruhMaksimal} kishidan ortiq emas`,
-                'Davomat va baholar shaxsiy sahifada',
-                'Ikki fan, aka-uka yoki do‘st bilan kelsangiz — chegirma',
+                `${MARKAZ.darsHaftada} dars + ${MARKAZ.supportHaftada} kun support teacher`,
+                `Guruhda ${MARKAZ.guruhMaksimal} kishigacha`,
+                'Ikki fan yoki do‘st bilan — chegirma',
               ].map((t) => (
                 <li key={t} className="flex items-center gap-3 px-5 py-3.5 text-[14.5px]">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="shrink-0">

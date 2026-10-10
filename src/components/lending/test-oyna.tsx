@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { skrollQulf } from '@/lib/harakat'
 import { Test } from '@/components/lending/test'
+import { SAVOL_SONI, TEST_FANLAR } from '@/lib/test-savollar'
 
 /**
  * Mini-test sahifada yopiq turadi (narxlar kabi). "Testni boshlash" bosilganda
@@ -37,9 +38,9 @@ export function TestOyna() {
       <div className="flex flex-col gap-6 rounded-[28px] border border-line bg-surface p-6 sm:p-9">
         <div className="grid grid-cols-3 divide-x divide-line rounded-[18px] border border-line">
           {[
-            ['8', 'savol'],
+            [String(TEST_FANLAR.length), 'fan'],
+            [String(SAVOL_SONI), 'savol'],
             ['1', 'daqiqa'],
-            ['A1–B2', 'darajalar'],
           ].map(([n, t]) => (
             <div key={t} className="flex flex-col items-center gap-1 px-2 py-4">
               <span className="h-display text-[24px] leading-none sm:text-[30px]">{n}</span>
@@ -47,8 +48,12 @@ export function TestOyna() {
             </div>
           ))}
         </div>
-        <p lang="en" translate="no" aria-hidden="true" className="h-display text-[22px] leading-snug text-ink-3 sm:text-[28px]">
-          I ___ a student. <span className="text-ink">am</span> · is · are
+        <p className="flex flex-wrap gap-2" aria-label="Test fanlari">
+          {TEST_FANLAR.map((f) => (
+            <span key={f.id} className="rounded-full border border-line px-3.5 py-1.5 text-[13.5px] font-semibold text-ink-2">
+              {f.nom}
+            </span>
+          ))}
         </p>
         <button
           type="button"
@@ -62,7 +67,7 @@ export function TestOyna() {
 
       <dialog
         ref={oyna}
-        aria-label="Ingliz tili mini-testi"
+        aria-label="Mini-test"
         data-lenis-prevent
         className="lb-oyna m-0 h-dvh max-h-none w-full max-w-none bg-transparent p-0 backdrop:bg-black/60 backdrop:backdrop-blur-sm sm:m-auto sm:h-auto sm:max-w-[720px] sm:p-4"
         onClick={(e) => {
@@ -72,7 +77,7 @@ export function TestOyna() {
       >
         <div className="relative flex h-full flex-col bg-bg sm:h-auto sm:rounded-[30px]">
           <div className="flex items-center justify-between gap-4 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-3 sm:px-7 sm:pt-6">
-            <span className="lbl text-brand">Ingliz tili · mini-test</span>
+            <span className="lbl text-brand">Mini-test</span>
             <button
               type="button"
               onClick={() => oyna.current?.close()}

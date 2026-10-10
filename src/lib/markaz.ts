@@ -41,6 +41,8 @@ export const MARKAZ = {
   guruhMaksimal: 12,
   darsHaftada: 3,
   darsDaqiqa: 90,
+  /** 3 + 3: asosiy darslardan tashqari yana 3 kun support teacher bilan amaliyot */
+  supportHaftada: 3,
 } as const
 
 export const NARX = {
@@ -134,11 +136,15 @@ export function bazadagiYonalish(id: string | undefined): string | null {
   return y.id
 }
 
-/** Kun turlari — Sheets/bazadagi `kun_turi` bilan bir xil. Shanba ikkala turga kiradi. */
+/**
+ * Kun turlari — Sheets/bazadagi `kun_turi` bilan bir xil. Shanba ikkala turga kiradi.
+ * `support` — asosiy darsdan bo'sh kunlar: shu kunlari support teacher bilan
+ * vazifa va amaliyot (3 + 3). Dam olish guruhida support kuni kelishiladi.
+ */
 export const KUN_TURLARI = [
-  { id: 'toq', nom: 'Toq kunlar', kunlar: ['Du', 'Chor', 'Ju'] },
-  { id: 'juft', nom: 'Juft kunlar', kunlar: ['Se', 'Pay', 'Sha'] },
-  { id: 'dam_olish', nom: 'Dam olish kunlari', kunlar: ['Sha', 'Yak'] },
+  { id: 'toq', nom: 'Toq kunlar', kunlar: ['Du', 'Chor', 'Ju'], support: ['Se', 'Pay', 'Sha'] },
+  { id: 'juft', nom: 'Juft kunlar', kunlar: ['Se', 'Pay', 'Sha'], support: ['Du', 'Chor', 'Ju'] },
+  { id: 'dam_olish', nom: 'Dam olish kunlari', kunlar: ['Sha', 'Yak'], support: [] },
 ] as const
 
 export const HAFTA = ['Du', 'Se', 'Chor', 'Pay', 'Ju', 'Sha', 'Yak'] as const

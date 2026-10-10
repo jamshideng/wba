@@ -13,7 +13,6 @@ import { Sozlab } from '@/components/lending/sozlab'
 import { arabShrift } from '@/components/lending/shrift'
 import { TestOyna } from '@/components/lending/test-oyna'
 import { VaqtTanlash } from '@/components/lending/vaqt-tanlash'
-import { Odamlar } from '@/components/lending/odamlar'
 import { Narx } from '@/components/lending/narx'
 import { Savollar } from '@/components/lending/savollar'
 import './lending.css'
@@ -99,9 +98,11 @@ export default function Bosh() {
             </p>
 
             <p data-hero className="max-w-[560px] text-[16.5px] leading-relaxed text-ink-2 text-pretty sm:text-[18px]">
-              Bitta markazda — tillar, aniq fanlar va IT. Bir guruhda{' '}
-              <b className="font-bold text-ink">{MARKAZ.guruhMaksimal} kishidan ortiq emas</b>, haftada{' '}
-              {MARKAZ.darsHaftada} marta, {MARKAZ.darsDaqiqa} daqiqadan.
+              Tillar, aniq fanlar va IT. Haftada{' '}
+              <b className="font-bold text-ink">
+                {MARKAZ.darsHaftada} dars + {MARKAZ.supportHaftada} kun support teacher
+              </b>
+              , guruhda {MARKAZ.guruhMaksimal} kishigacha.
             </p>
 
             <div data-hero className="grid gap-3 sm:flex sm:flex-wrap sm:items-center">
@@ -115,7 +116,7 @@ export default function Bosh() {
             </div>
 
             <ul data-hero className="flex flex-wrap gap-x-5 gap-y-2 text-[14px] font-medium text-ink-2">
-              {['Birinchi dars bepul', 'Daraja aniqlash bepul', 'Oldindan to‘lov yo‘q'].map((t) => (
+              {['Birinchi dars bepul', 'Oldindan to‘lov yo‘q'].map((t) => (
                 <li key={t} className="flex items-center gap-2">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                     <path d="M3 8.4l3 2.9 7-7" stroke="var(--color-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -139,10 +140,10 @@ export default function Bosh() {
         {/* ================= Faktlar ================= */}
         <section aria-label="Raqamlarda" className="grid grid-cols-2 border-b border-line lg:grid-cols-4">
           {[
-            { n: yil, oxiri: '+', t: 'yil tajriba', izoh: `${MARKAZ.tashkilYili} yildan beri Toshkentda` },
-            { n: YONALISHLAR.length, t: 'yo‘nalish', izoh: 'tillar, aniq fanlar va IT' },
-            { n: MARKAZ.guruhMaksimal, t: 'kishi — guruhda eng ko‘pi', izoh: 'ustoz har biriga yetadi', brand: true },
-            { n: 0, t: 'so‘m — birinchi dars', izoh: 'avval ko‘rasiz, keyin qaror' },
+            { n: yil, oxiri: '+', t: 'yil tajriba' },
+            { n: YONALISHLAR.length, t: 'yo‘nalish' },
+            { n: MARKAZ.darsHaftada + MARKAZ.supportHaftada, t: 'kun haftada — ustoz yoningizda', brand: true },
+            { n: 0, t: 'so‘m — birinchi dars' },
           ].map((f, i) => (
             <div
               key={f.t}
@@ -156,7 +157,6 @@ export default function Bosh() {
                 {f.oxiri}
               </span>
               <span className="text-[14.5px] font-bold">{f.t}</span>
-              <span className="text-[13px] text-ink-3">{f.izoh}</span>
             </div>
           ))}
         </section>
@@ -166,7 +166,7 @@ export default function Bosh() {
           <Sarlavha
             yorliq="Yo‘nalishlar"
             matn="Har yoshga — o‘z yo‘li"
-            izoh="Yoshni tanlang — mos kurslar ajralib turadi. Kartani bossangiz, ariza shu kurs bilan ochiladi."
+            izoh="Yoshni tanlang — mos kurslar ajraladi."
           />
           <Kurslar />
         </section>
@@ -175,14 +175,13 @@ export default function Bosh() {
         <section id="test" className="grid gap-8 py-14 sm:py-20 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center lg:gap-14">
           <div className="flex flex-col gap-4">
             <p className="lbl text-brand" data-ochil>
-              Ingliz tili · 1 daqiqa
+              Mini-test · 1 daqiqa
             </p>
             <h2 data-sozlab className="h-display text-[42px] leading-[0.95] sm:text-[64px]">
-              <Sozlab matn="Darajangizni hoziroq bilib oling" />
+              <Sozlab matn="Darajangizni bilib oling" />
             </h2>
             <p data-ochil="0.1" className="max-w-[420px] text-[16px] leading-relaxed text-ink-2">
-              8 ta savol, osondan qiyinga. Test alohida oynada ochiladi — hech narsa yuborilmaydi. Natija taxminiy, aniq
-              darajani markazda bepul aniqlaymiz.
+              Fanni tanlang — 8 ta savol. Natija sinov darsiga yozilganda arizangizga qo‘shiladi.
             </p>
           </div>
           <div data-ochil="0.1">
@@ -200,7 +199,7 @@ export default function Bosh() {
           <Sarlavha
             yorliq="Dars vaqti"
             matn="O‘zingizga qulay vaqtni tanlang"
-            izoh="Kunlar va vaqtni belgilang — mos guruhni o‘zimiz topamiz. Tanlov ariza bilan birga keladi."
+            izoh="Mos guruhni o‘zimiz topamiz."
           />
           <div data-ochil>
             <VaqtTanlash />
@@ -209,39 +208,59 @@ export default function Bosh() {
 
         {/* ================= Format ================= */}
         <section id="dars" className="flex flex-col gap-8 py-14 sm:gap-10 sm:py-20">
-          <Sarlavha
-            yorliq="Dars formati"
-            matn="Kichik guruh — katta natija"
-            izoh={`Haftada ${MARKAZ.darsHaftada} marta, ${MARKAZ.darsDaqiqa} daqiqadan. Guruh hajmini o‘zingiz tanlaysiz.`}
-          />
+          <Sarlavha yorliq="Dars formati" matn="3 + 3: dars va amaliyot" izoh="Haftada 6 kun — ustoz yoningizda." />
 
-          <div className="grid gap-4 md:grid-cols-3">
+          {/* 3 + 3 — asosiy g'oya: darsdan keyin ham yolg'iz qolmaysiz */}
+          <div className="grid gap-4 md:grid-cols-2">
             {[
-              { nom: 'VIP', son: 1, t: 'Butun dars faqat sizga. Eng tez natija.' },
-              { nom: 'Mini guruh', son: 2, t: 'Ikki kishi — suhbatdosh ham bor, e‘tibor ham yetarli.' },
               {
-                nom: 'Standart guruh',
-                son: MARKAZ.guruhMaksimal,
-                t: `10–${MARKAZ.guruhMaksimal} kishi. Hech qachon ${MARKAZ.guruhMaksimal} tadan oshmaydi — bu qat‘iy qoida.`,
+                son: MARKAZ.darsHaftada,
+                nom: 'kun — dars',
+                t: `Ustoz bilan guruhda, ${MARKAZ.darsDaqiqa} daqiqadan. Yangi mavzu va mashq.`,
+                asosiy: true,
               },
+              {
+                son: MARKAZ.supportHaftada,
+                nom: 'kun — support teacher',
+                t: 'Vazifa, savollar va amaliyot. Tushunmagan joyingiz shu yerda yopiladi.',
+                asosiy: false,
+              },
+            ].map((b, i) => (
+              <article
+                key={b.nom}
+                data-ochil={i * 0.08}
+                className={`flex flex-col justify-between gap-8 rounded-[26px] p-7 sm:p-9 ${
+                  b.asosiy ? 'bg-brand text-white' : 'border-2 border-dashed border-brand bg-surface'
+                }`}
+              >
+                <p className="flex items-baseline gap-3">
+                  <span className="h-display text-[80px] leading-none sm:text-[104px]">{b.son}</span>
+                  <span className="h-display text-[24px] leading-tight sm:text-[30px]">{b.nom}</span>
+                </p>
+                <p className={`max-w-[40ch] text-[15.5px] leading-relaxed ${b.asosiy ? 'text-white/90' : 'text-ink-2'}`}>{b.t}</p>
+              </article>
+            ))}
+          </div>
+
+          {/* Guruh hajmi — ixcham */}
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              { nom: 'VIP', son: 1, lbl: '1 kishi' },
+              { nom: 'Mini guruh', son: 2, lbl: '2 kishi' },
+              { nom: 'Standart', son: MARKAZ.guruhMaksimal, lbl: `${MARKAZ.guruhMaksimal} gacha` },
             ].map((g, i) => (
               <article
                 key={g.nom}
-                data-ochil={i * 0.08}
-                className="sayt-karta flex flex-col gap-6 rounded-[26px] border border-line bg-surface p-7"
+                data-ochil={i * 0.06}
+                className="sayt-karta flex items-center gap-5 rounded-[22px] border border-line bg-surface p-5"
               >
-                <div className="flex h-[96px] items-end">
-                  <Odamlar son={g.son} />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <p className="flex items-baseline justify-between gap-3">
-                    <span className="h-display text-[28px]">{g.nom}</span>
-                    <span className="lbl">
-                      {g.son === 1 ? '1 kishi' : g.son === 2 ? '2 kishi' : `${MARKAZ.guruhMaksimal} gacha`}
-                    </span>
-                  </p>
-                  <p className="text-[14.5px] leading-relaxed text-ink-2">{g.t}</p>
-                </div>
+                <span className="h-display tnum flex size-16 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[30px] leading-none">
+                  {g.son}
+                </span>
+                <p className="flex flex-col gap-0.5">
+                  <span className="h-display text-[22px]">{g.nom}</span>
+                  <span className="lbl">{g.lbl}</span>
+                </p>
               </article>
             ))}
           </div>
@@ -252,7 +271,7 @@ export default function Bosh() {
           <Sarlavha
             yorliq="Narxlar"
             matn="Avval darsni ko‘rasiz, keyin to‘laysiz"
-            izoh="Boshlash — bepul. Keyingi oylar narxini bir tugma bilan ko‘ring."
+            izoh="Boshlash — bepul."
           />
           <div data-ochil>
             <Narx />
@@ -269,7 +288,7 @@ export default function Bosh() {
               <Sozlab matn="Ko‘p so‘raladigan savollar" />
             </h2>
             <p data-ochil="0.1" className="max-w-[360px] text-[16px] leading-relaxed text-ink-2">
-              Javob topilmadimi? Qo‘ng‘iroq qiling yoki Telegram’da yozing — tezda javob beramiz.
+              Javob topilmadimi? Qo‘ng‘iroq qiling yoki Telegram’da yozing.
             </p>
           </div>
           <Savollar />
@@ -337,7 +356,7 @@ export default function Bosh() {
                 <Sozlab matn="Birinchi dars bepul. Qolganini o‘zingiz hal qilasiz." />
               </h2>
               <p className="max-w-[540px] text-[16.5px] leading-relaxed text-white/90 text-pretty">
-                Yozilib qo‘ying — daraja aniqlaymiz, guruhni tanlaymiz, siz esa bir dars o‘tirib ko‘rasiz. Oldindan to‘lov yo‘q.
+                Yozilib qo‘ying — bir dars o‘tirib ko‘rasiz. Oldindan to‘lov yo‘q.
               </p>
               <div className="grid w-full max-w-[420px] gap-3 sm:flex sm:w-auto sm:max-w-none sm:flex-wrap sm:items-center sm:justify-center">
                 <YozilishTugma katta oq />

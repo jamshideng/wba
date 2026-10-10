@@ -8,6 +8,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { telefonNormal } from '@/lib/format'
 import { KUN_TURLARI, MARKAZ, VAQTLAR, YONALISHLAR, bazadagiYonalish, saytManzil } from '@/lib/markaz'
 import { html, xabar, HISOBOT_GURUH } from '@/lib/telegram'
+import { arizaIzohi, type ArizaTest } from '@/lib/ariza-izoh'
+import { SAVOL_SONI, TEST_FANLAR, testDaraja, testFan, testFoiz } from '@/lib/test-savollar'
+import { HaftaIzoh, HaftaQator, VAQT_IKONKA } from '@/components/lending/hafta'
 
 // Bir IP soatiga shuncha arizadan ortiq yubora olmaydi (spam to'sish).
 const ARIZA_LIMIT = 5
@@ -38,7 +41,18 @@ const Ariza = z.object({
   // Faqat ro'yxatdagi qiymatlar — boshqasi kelsa ariza rad etilmaydi, maydon bo'sh qoladi
   kun: z.enum(KUN_TURLARI.map((k) => k.id) as [string, ...string[]]).optional().catch(undefined),
   vaqt: z.enum(VAQTLAR.map((v) => v.id) as [string, ...string[]]).optional().catch(undefined),
+  // Mini-test natijasi — noto'g'ri kelsa ariza rad etilmaydi, test qatori tushmaydi
+  test: z.enum(TEST_FANLAR.map((f) => f.id) as [string, ...string[]]).optional().catch(undefined),
+  togri: z.coerce.number().int().min(0).max(SAVOL_SONI).optional().catch(undefined),
 })
+
+/** URL yoki formadagi test natijasi → ariza qatori. Daraja shu yerda qayta hisoblanadi. */
+function testNatija(id: string | undefined, togri: number | undefined): ArizaTest | undefined {
+  const fan = testFan(id)
+  if (!fan || togri === undefined || !Number.isInteger(togri) || togri < 0 || togri > SAVOL_SONI) return undefined
+  const jami = SAVOL_SONI
+  return { fan: fan.nom, togri, jami, foiz: testFoiz(togri, jami), daraja: testDaraja(fan, togri).nom }
+}
 
 async function yubor(formData: FormData) {
   'use server'
@@ -53,6 +67,8 @@ async function yubor(formData: FormData) {
     izoh: formData.get('izoh') || undefined,
     kun: formData.get('kun') || undefined,
     vaqt: formData.get('vaqt') || undefined,
+    test: formData.get('test') || undefined,
+    togri: formData.get('togri') || undefined,
   })
 
   if (!natija.success) redirect('/ariza?holat=xato')
@@ -87,13 +103,17 @@ async function yubor(formData: FormData) {
     natija.data.yonalish && !subjectId
       ? YONALISHLAR.find((y) => y.id === natija.data.yonalish)?.nom
       : undefined
-  // leads jadvalida kun/vaqt ustuni yo'q — qabulxona izohda ko'radi
+  // leads jadvalida kun/vaqt va test ustuni yo'q — izohga belgili qatorlar
+  // bilan yoziladi, CRM kartasi ularni ajratib ko'rsatadi (lib/ariza-izoh.ts)
   const kunNom = KUN_TURLARI.find((k) => k.id === natija.data.kun)?.nom
   const vaqtNom = VAQTLAR.find((v) => v.id === natija.data.vaqt)
   const qulay = [kunNom, vaqtNom && `${vaqtNom.nom.toLowerCase()} (${vaqtNom.oraliq})`].filter(Boolean).join(', ')
-  const izoh =
-    [tashqiNom && `Yo‘nalish: ${tashqiNom}`, qulay && `Qulay vaqt: ${qulay}`, natija.data.izoh].filter(Boolean).join('\n') ||
-    null
+  const izoh = arizaIzohi({
+    yonalish: tashqiNom,
+    test: testNatija(natija.data.test, natija.data.togri),
+    qulay: qulay || undefined,
+    izoh: natija.data.izoh,
+  })
 
   try {
     const { error } = await supabase.from('leads').insert({
@@ -113,7 +133,7 @@ async function yubor(formData: FormData) {
   // Ariza bazada. Hisobot guruhiga xabar javobdan KEYIN ketadi — Telegram
   // sekinlashsa yoki xato bersa ham foydalanuvchi kutmaydi, ariza yo'qolmaydi.
   const d = natija.data
-  after(() => arizaXabari({ ism: d.ism, telefon: tel, yonalish: d.yonalish, izoh: d.izoh }))
+  after(() => arizaXabari({ ism: d.ism, telefon: tel, yonalish: d.yonalish, izoh: izoh ?? undefined }))
 
   redirect('/ariza?holat=yuborildi')
 }
@@ -138,9 +158,11 @@ async function arizaXabari(a: { ism: string; telefon: string; yonalish?: string;
 export default async function ArizaSahifasi({
   searchParams,
 }: {
-  searchParams: Promise<{ holat?: string; yonalish?: string; kun?: string; vaqt?: string }>
+  searchParams: Promise<{ holat?: string; yonalish?: string; kun?: string; vaqt?: string; test?: string; togri?: string }>
 }) {
-  const { holat, yonalish, kun, vaqt } = await searchParams
+  const { holat, yonalish, kun, vaqt, test, togri } = await searchParams
+  // Mini-testdan kelganda natija formada ko'rinadi va yashirin maydon bilan yuboriladi
+  const tanTest = testNatija(test, togri === undefined ? undefined : Number(togri))
   // Bosh sahifadagi "qulay vaqt" tanlovidan kelganda — oldindan tanlangan
   const tanKun = KUN_TURLARI.some((k) => k.id === kun) ? kun : ''
   const tanVaqt = VAQTLAR.some((v) => v.id === vaqt) ? vaqt : ''
@@ -215,6 +237,23 @@ export default async function ArizaSahifasi({
           </p>
         )}
 
+        {tanTest && (
+          <div className="flex items-center gap-4 rounded-[14px] border border-brand bg-brand-soft p-4">
+            <span className="h-display tnum flex size-14 shrink-0 items-center justify-center rounded-full bg-brand text-[17px] text-white">
+              {tanTest.foiz}%
+            </span>
+            <span className="flex flex-col gap-0.5">
+              <span className="lbl text-brand">Test natijangiz · {tanTest.fan}</span>
+              <span className="text-[15px] font-bold" translate="no">{tanTest.daraja}</span>
+              <span className="text-[12.5px] text-ink-3">
+                {tanTest.togri} / {tanTest.jami} to‘g‘ri · arizaga qo‘shiladi
+              </span>
+            </span>
+            <input type="hidden" name="test" value={test} />
+            <input type="hidden" name="togri" value={tanTest.togri} />
+          </div>
+        )}
+
         <label className="flex flex-col gap-1.5">
           <span className="lbl">Ism</span>
           <input
@@ -255,38 +294,55 @@ export default async function ArizaSahifasi({
           </select>
         </label>
 
-        <div className="grid gap-4">
-          <label className="flex flex-col gap-1.5">
-            <span className="lbl">Qulay kunlar</span>
-            <select
-              name="kun"
-              defaultValue={tanKun}
-              className="min-h-12 rounded-[9px] border border-line bg-bg px-3 text-[16px] sm:text-[14.5px]"
-            >
-              <option value="">Farqi yo‘q</option>
-              {KUN_TURLARI.map((k) => (
-                <option key={k.id} value={k.id}>
-                  {k.nom} ({k.kunlar.join(', ')})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="lbl">Qulay vaqt</span>
-            <select
-              name="vaqt"
-              defaultValue={tanVaqt}
-              className="min-h-12 rounded-[9px] border border-line bg-bg px-3 text-[16px] sm:text-[14.5px]"
-            >
-              <option value="">Farqi yo‘q</option>
-              {VAQTLAR.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.nom} ({v.oraliq})
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="lbl mb-1.5">Qulay kunlar</legend>
+          <div className="grid gap-2">
+            {KUN_TURLARI.map((k) => (
+              <label
+                key={k.id}
+                className="group flex cursor-pointer flex-col gap-3 rounded-[14px] border border-line bg-bg p-4 transition hover:border-ink-3 has-[:checked]:border-brand has-[:checked]:bg-brand-soft has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand"
+              >
+                <input type="radio" name="kun" value={k.id} defaultChecked={tanKun === k.id} className="sr-only" />
+                <span className="flex items-center gap-3">
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="text-[15px] font-bold">{k.nom}</span>
+                    <span className="text-[12.5px] text-ink-3">
+                      {k.support.length
+                        ? `${k.kunlar.length} kun dars + ${k.support.length} kun support`
+                        : `Dars: ${k.kunlar.join(', ')} · support kelishiladi`}
+                    </span>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="flex size-5 shrink-0 items-center justify-center rounded-full border-2 border-line transition group-has-[:checked]:border-brand group-has-[:checked]:bg-brand"
+                  >
+                    <span className="size-1.5 rounded-full bg-white opacity-0 transition group-has-[:checked]:opacity-100" />
+                  </span>
+                </span>
+                <HaftaQator kun={k.id} kichik />
+              </label>
+            ))}
+          </div>
+          <HaftaIzoh />
+        </fieldset>
+
+        <fieldset className="flex flex-col gap-2">
+          <legend className="lbl mb-1.5">Qulay vaqt</legend>
+          <div className="grid grid-cols-3 gap-2">
+            {VAQTLAR.map((v) => (
+              <label
+                key={v.id}
+                className="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[14px] border border-line bg-bg px-2 py-3 text-center transition hover:border-ink-3 has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-bg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand"
+              >
+                <input type="radio" name="vaqt" value={v.id} defaultChecked={tanVaqt === v.id} className="sr-only" />
+                <span className="text-brand">{VAQT_IKONKA[v.id]}</span>
+                <span className="text-[14px] font-bold">{v.nom}</span>
+                <span className="tnum text-[11.5px] opacity-70">{v.oraliq}</span>
+              </label>
+            ))}
+          </div>
+          <p className="text-[12.5px] text-ink-3">Tanlamasangiz — qo‘ng‘iroqda kelishamiz.</p>
+        </fieldset>
 
         <label className="flex flex-col gap-1.5">
           <span className="lbl">Qo‘shimcha (ixtiyoriy)</span>

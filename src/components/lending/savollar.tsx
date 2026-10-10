@@ -7,35 +7,23 @@ import { MARKAZ } from '@/lib/markaz'
 const SAVOLLAR: { s: string; j: string }[] = [
   {
     s: 'Birinchi dars haqiqatan bepulmi?',
-    j: 'Ha. Sinov darsi va daraja aniqlash bepul. To‘lov faqat dars yoqib, davom etishga qaror qilganingizdan keyin.',
+    j: 'Ha. Sinov darsi va daraja aniqlash bepul. To‘lov — dars yoqib, davom etishga qaror qilganingizdan keyin.',
+  },
+  {
+    s: '3 + 3 nima degani?',
+    j: `Haftada ${MARKAZ.darsHaftada} kun ustoz bilan asosiy dars (${MARKAZ.darsDaqiqa} daqiqadan), qolgan ${MARKAZ.supportHaftada} kun support teacher bilan vazifa va amaliyot. Darslar 08:00 dan 21:00 gacha.`,
   },
   {
     s: 'Guruhda nechta o‘quvchi bo‘ladi?',
-    j: `Standart guruh — 10–${MARKAZ.guruhMaksimal} kishi va hech qachon ${MARKAZ.guruhMaksimal} tadan oshmaydi. Mini guruh — 2 kishi, VIP — yakka tartibda.`,
-  },
-  {
-    s: 'Darslar qachon va qancha davom etadi?',
-    j: `Haftada ${MARKAZ.darsHaftada} marta, har biri ${MARKAZ.darsDaqiqa} daqiqa. Toq kunlar (Du, Chor, Ju), juft kunlar (Se, Pay, Sha) yoki dam olish kunlari — ertalab 08:00 dan kechqurun 21:00 gacha.`,
+    j: `Standart guruh — ${MARKAZ.guruhMaksimal} kishigacha, hech qachon oshmaydi. Mini guruh — 2 kishi, VIP — yakka.`,
   },
   {
     s: 'Qaysi yoshdan qabul qilasiz?',
-    j: 'Почемучка — 4–6 yosh (maktabga tayyorlov). Matematika — 5 yoshdan 11-sinfgacha. Tillar — bolalar va kattalar uchun. AI & IT va Web dasturlashda yosh chegarasi yo‘q.',
-  },
-  {
-    s: 'Kompyuterim yo‘q — AI & IT kursiga bora olamanmi?',
-    j: 'Ha. Kompyuteri yo‘q o‘quvchiga darsda markaz kompyuter beradi.',
-  },
-  {
-    s: 'Natijani qanday kuzataman?',
-    j: 'Har dars davomat va faollik belgilanadi — bularni shaxsiy sahifada ko‘rib borasiz. Kursni tugatganda markaz sertifikati beriladi.',
+    j: 'Почемучка — 4–6 yosh. Matematika — 5 yoshdan 11-sinfgacha. Tillar — bolalar va kattalar. AI & IT va Web’da yosh chegarasi yo‘q.',
   },
   {
     s: 'Chegirmalar bormi?',
-    j: 'Bor: ikki va undan ortiq fanga yozilganda, shuningdek aka-uka, opa-singil yoki do‘st bilan birga kelganda. Miqdorini qo‘ng‘iroq paytida aytamiz.',
-  },
-  {
-    s: 'Qanday yozilaman?',
-    j: `Saytda ariza qoldiring — bir ish kuni ichida qo‘ng‘iroq qilamiz. Yoki o‘zingiz qo‘ng‘iroq qiling: ${MARKAZ.telefon}, yoki Telegram: @WBA_LC.`,
+    j: 'Bor: ikki fanga yozilganda yoki aka-uka, do‘st bilan kelganda. Miqdorini qo‘ng‘iroqda aytamiz.',
   },
 ]
 

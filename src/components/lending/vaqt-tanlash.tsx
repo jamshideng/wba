@@ -2,33 +2,18 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { HAFTA, KUN_TURLARI, VAQTLAR, type KunTuri, type Vaqt } from '@/lib/markaz'
-import { IconMoon, IconSun } from '@/components/icons'
+import { KUN_TURLARI, MARKAZ, VAQTLAR, type KunTuri, type Vaqt } from '@/lib/markaz'
+import { HaftaIzoh, HaftaQator, VAQT_IKONKA } from '@/components/lending/hafta'
 
 /**
  * "O'zingizga qulay vaqtni tanlang": kun turi + kun qismi. Tanlov ariza
  * formasiga o'tadi (/ariza?kun=…&vaqt=…) — guruhni shu bo'yicha tanlaymiz.
  * Ichki jadval (qaysi guruh qachon) ataylab ko'rsatilmaydi.
  */
-function Tong({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
-      <path d="M3 13h12M5.5 13a3.5 3.5 0 0 1 7 0M9 4.5v2M3.8 7.6l1.3 1.1M14.2 7.6l-1.3 1.1" />
-    </svg>
-  )
-}
-
-const VAQT_IKONKA: Record<Vaqt, React.ReactNode> = {
-  ertalab: <Tong />,
-  kunduzi: <IconSun size={20} />,
-  kechqurun: <IconMoon size={20} />,
-}
-
 export function VaqtTanlash() {
   const [kun, setKun] = useState<KunTuri | null>(null)
   const [vaqt, setVaqt] = useState<Vaqt | null>(null)
 
-  const kunlar: readonly string[] = kun ? KUN_TURLARI.find((k) => k.id === kun)!.kunlar : []
   const params = new URLSearchParams()
   if (kun) params.set('kun', kun)
   if (vaqt) params.set('vaqt', vaqt)
@@ -92,21 +77,8 @@ export function VaqtTanlash() {
       <div className="flex flex-col justify-between gap-6 rounded-[28px] bg-ink p-6 text-bg sm:p-9">
         <div className="flex flex-col gap-5">
           <span className="lbl text-bg/60">Sizning haftangiz</span>
-          <div className="grid grid-cols-7 gap-1.5" aria-hidden="true">
-            {HAFTA.map((h) => {
-              const bor = kunlar.includes(h)
-              return (
-                <span
-                  key={h}
-                  className={`flex aspect-square items-center justify-center rounded-[12px] text-[12px] font-bold transition duration-300 sm:text-[13px] ${
-                    bor ? 'scale-100 bg-brand text-white' : 'border border-bg/15 text-bg/40'
-                  }`}
-                >
-                  {h}
-                </span>
-              )
-            })}
-          </div>
+          <HaftaQator kun={kun} qorongi />
+          <HaftaIzoh qorongi />
           <p className="h-display text-[26px] leading-tight sm:text-[32px]" aria-live="polite">
             {tayyor
               ? `${KUN_TURLARI.find((k) => k.id === kun)!.nom}, ${VAQTLAR.find((v) => v.id === vaqt)!.nom.toLowerCase()}`
@@ -115,7 +87,7 @@ export function VaqtTanlash() {
                 : 'Kunlar va vaqtni tanlang'}
           </p>
           <p className="text-[14px] leading-relaxed text-bg/70">
-            Darslar haftada 3 marta, 90 daqiqadan. Tanlovingiz bo‘yicha mos guruhni topib, qo‘ng‘iroqda aytamiz.
+            {MARKAZ.darsHaftada} kun — dars, {MARKAZ.supportHaftada} kun — support teacher bilan amaliyot.
           </p>
         </div>
         <Link

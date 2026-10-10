@@ -9,10 +9,10 @@ import { gsap, harakatKam } from '@/lib/harakat'
  * oddiy ustun. Matn — rost: markazning o'z jarayoni.
  */
 const QADAMLAR = [
-  { nom: 'Ariza qoldirasiz', t: 'Ism va telefon — boshqa hech narsa kerak emas. Bir daqiqa ham ketmaydi.' },
-  { nom: 'Qo‘ng‘iroq qilamiz', t: 'Bir ish kuni ichida bog‘lanamiz va sizga qulay vaqtni kelishamiz.' },
-  { nom: 'Bepul sinov darsi', t: 'Daraja bepul aniqlanadi, guruhda bir dars o‘tirib ko‘rasiz.' },
-  { nom: 'Yoqsa — davom etasiz', t: 'To‘lov faqat shundan keyin. Davomat va baholar shaxsiy sahifada ko‘rinadi, oxirida sertifikat.' },
+  { nom: 'Ariza qoldirasiz', t: 'Ism va telefon — bir daqiqa.' },
+  { nom: 'Qo‘ng‘iroq qilamiz', t: 'Bir ish kuni ichida, qulay vaqtni kelishamiz.' },
+  { nom: 'Bepul sinov darsi', t: 'Daraja aniqlanadi, bir dars o‘tirib ko‘rasiz.' },
+  { nom: 'Yoqsa — davom etasiz', t: 'To‘lov shundan keyin. Oxirida sertifikat.' },
 ]
 
 export function Qadamlar() {
@@ -49,7 +49,7 @@ export function Qadamlar() {
             To‘rt qadam — va siz darsdasiz
           </h2>
           <p className="max-w-[380px] text-[15.5px] leading-relaxed text-ink-2">
-            Oldindan to‘lov ham, majburiyat ham yo‘q. Avval ko‘rasiz, keyin qaror qilasiz.
+            Oldindan to‘lov yo‘q. Avval ko‘rasiz, keyin qaror qilasiz.
           </p>
         </div>
 

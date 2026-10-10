@@ -14,6 +14,7 @@ import { Yuborish } from '@/components/yuborish'
 import { Maydon, kirishKlass } from '@/components/forma'
 import { IconPhone, IconSend } from '@/components/icons'
 import { bosqichi, kunQosh, MANBA_NOMI, type Bosqich, type LidKarta } from '@/lib/lidlar'
+import { izohniAjrat } from '@/lib/ariza-izoh'
 import { lidBosqich, lidBoglanildi, lidOquvchi, lidSaqla } from './actions'
 
 type Guruh = { id: string; nom: string }
@@ -160,6 +161,7 @@ function Karta({
   const yopiq = b === 'oquvchi' || b === 'yoqotildi'
   const aloqa = lid.keyingi_aloqa
   const aloqaTon = !aloqa || yopiq ? '' : aloqa < bugun ? 'text-brand' : aloqa === bugun ? 'text-accent' : 'text-ink-3'
+  const ariza = izohniAjrat(lid.izoh)
   const aloqaMatn = !aloqa ? null : aloqa < bugun ? `Kechikdi · ${sanaKorinish(aloqa)}` : aloqa === bugun ? 'Bugun bog‘lanish' : `Aloqa · ${sanaKorinish(aloqa)}`
 
   return (
@@ -205,7 +207,21 @@ function Karta({
       </div>
 
       {aloqaMatn && !yopiq && <p className={`text-[12px] font-semibold ${aloqaTon}`}>{aloqaMatn}</p>}
-      {lid.izoh && <p className="line-clamp-2 text-[12px] leading-snug whitespace-pre-line text-ink-3">{lid.izoh}</p>}
+      {/* Saytdagi arizadan: mini-test natijasi va qulay kun/vaqt — alohida belgilar */}
+      {ariza.test && (
+        <p className="flex items-center gap-2 rounded-[8px] bg-brand-soft px-2 py-1.5 text-[11.5px] leading-snug" title="Saytdagi mini-test natijasi">
+          <span className="tnum shrink-0 rounded-md bg-brand px-1.5 py-0.5 font-bold text-white">
+            {ariza.test.foiz ?? '—'}%
+          </span>
+          <span className="min-w-0 truncate font-semibold text-ink">Test · {ariza.test.matn}</span>
+        </p>
+      )}
+      {ariza.vaqt && (
+        <p className="rounded-[8px] border border-line px-2 py-1.5 text-[11.5px] font-semibold leading-snug text-ink-2" title="Arizada tanlangan qulay vaqt">
+          {ariza.vaqt}
+        </p>
+      )}
+      {ariza.qolgan && <p className="line-clamp-2 text-[12px] leading-snug whitespace-pre-line text-ink-3">{ariza.qolgan}</p>}
       {b === 'yoqotildi' && lid.sabab && (
         <p className="text-[12px] text-ink-3">
           {lid.holat === 'kelmadi' ? 'Kelmadi' : 'Rad etdi'}: {lid.sabab}

@@ -2,39 +2,32 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { TEST_FANLAR, testDaraja, testFoiz, testTanla, type Savol, type TestFan } from '@/lib/test-savollar'
 
 /**
- * Ingliz tili — 1 daqiqalik mini-test. 8 savol, osondan qiyinga (A1 → B2).
- * Natija TAXMINIY: aniq daraja markazda bepul aniqlanadi (shuni aytamiz ham).
- * Hech narsa yuborilmaydi va saqlanmaydi — hammasi brauzerda.
+ * Mini-test: avval fan tanlanadi, keyin bankdan 8 savol osondan qiyinga —
+ * har urinishda boshqa savollar va boshqa variant tartibi.
+ * Natija TAXMINIY — aniq daraja markazda bepul aniqlanadi. Natija faqat
+ * "yozilish" bosilganda arizaga o'tadi (URL orqali), boshqa joyga yuborilmaydi.
  */
-const SAVOLLAR = [
-  { s: 'I ___ a student.', v: ['am', 'is', 'are'], t: 0 },
-  { s: 'She ___ to school every day.', v: ['go', 'goes', 'going'], t: 1 },
-  { s: 'Yesterday we ___ a film.', v: ['watch', 'watched', 'have watched'], t: 1 },
-  { s: 'Look at those clouds! It ___ rain.', v: ['is going to', 'goes to', 'go to'], t: 0 },
-  { s: 'I have lived in Tashkent ___ 2018.', v: ['for', 'since', 'from'], t: 1 },
-  { s: 'This book ___ by millions of people.', v: ['has read', 'has been read', 'was reading'], t: 1 },
-  { s: 'If I ___ you, I would accept the offer.', v: ['am', 'were', 'will be'], t: 1 },
-  { s: 'Hardly ___ the door when the phone rang.', v: ['I had opened', 'had I opened', 'I opened'], t: 1 },
-] as const
-
-/** To'g'ri javoblar soni → WBA bosqichlari (markaz.ts dagi ingliz tili ro'yxatidan) */
-function natija(togri: number): { daraja: string; izoh: string } {
-  if (togri <= 2) return { daraja: 'Beginner', izoh: 'Asoslardan boshlash kerak — bu juda yaxshi start nuqtasi.' }
-  if (togri <= 4) return { daraja: 'Elementary', izoh: 'Asosiy grammatika tanish. Endi so‘z boyligi va gapirishni oshirish vaqti.' }
-  if (togri <= 6) return { daraja: 'Pre-Intermediate', izoh: 'Yaxshi poydevor bor. Murakkab zamonlar va erkin nutq ustida ishlaymiz.' }
-  if (togri === 7) return { daraja: 'Intermediate', izoh: 'Kuchli daraja. Pre-IELTS va IELTS sari to‘g‘ri yo‘ldasiz.' }
-  return { daraja: 'Pre-IELTS', izoh: 'A’lo! IELTS tayyorgarligini boshlash mumkin.' }
-}
-
 export function Test() {
+  const [fan, setFan] = useState<TestFan | null>(null)
+  const [savollar, setSavollar] = useState<Savol[]>([])
   const [qadam, setQadam] = useState(0)
   const [togri, setTogri] = useState(0)
   const [tanlov, setTanlov] = useState<number | null>(null)
 
-  const tugadi = qadam >= SAVOLLAR.length
-  const q = SAVOLLAR[Math.min(qadam, SAVOLLAR.length - 1)]
+  // Savollar faqat bosilganda tanlanadi — server va brauzer render'i farq qilmaydi
+  function fanniTanla(f: TestFan) {
+    setSavollar(testTanla(f))
+    setFan(f)
+  }
+
+  if (!fan || !savollar.length) return <FanTanlash onTanla={fanniTanla} />
+
+  const jami = savollar.length
+  const tugadi = qadam >= jami
+  const q = savollar[Math.min(qadam, jami - 1)]
 
   function javob(i: number) {
     if (tanlov !== null) return
@@ -47,21 +40,24 @@ export function Test() {
     }, 650)
   }
 
-  function qaytadan() {
+  function boshqaFan() {
+    setFan(null)
+    setSavollar([])
     setQadam(0)
     setTogri(0)
     setTanlov(null)
   }
 
-  const r = natija(togri)
+  const r = testDaraja(fan, togri)
+  const foiz = testFoiz(togri, jami)
+  const havola = `/ariza?${new URLSearchParams({ yonalish: fan.yonalish, test: fan.id, togri: String(togri) })}`
 
   return (
     <div className="overflow-hidden rounded-[28px] border border-line bg-surface">
-      {/* Progress */}
       <div className="h-1 bg-surface-2" aria-hidden="true">
         <div
           className="h-full bg-brand transition-[width] duration-500 ease-out"
-          style={{ width: `${(Math.min(qadam, SAVOLLAR.length) / SAVOLLAR.length) * 100}%` }}
+          style={{ width: `${(Math.min(qadam, jami) / jami) * 100}%` }}
         />
       </div>
 
@@ -70,11 +66,13 @@ export function Test() {
           <>
             <div className="flex items-center justify-between gap-4">
               <span className="lbl">
-                Savol {qadam + 1} / {SAVOLLAR.length}
+                {fan.nom} · {qadam + 1} / {jami}
               </span>
-              <span className="lbl text-ink-3">Taxminiy daraja</span>
+              <button type="button" onClick={boshqaFan} className="lbl min-h-11 text-ink-3 transition hover:text-ink">
+                ← Fan
+              </button>
             </div>
-            <p key={qadam} className="lb-savol h-display text-[26px] leading-tight sm:text-[38px]" translate="no" lang="en">
+            <p key={qadam} className="lb-savol h-display text-[26px] leading-tight sm:text-[38px]" translate="no" lang={fan.til}>
               {q.s}
             </p>
             <div className="grid gap-2.5 sm:grid-cols-3" role="group" aria-label="Javob variantlari">
@@ -85,7 +83,7 @@ export function Test() {
                   <button
                     key={v}
                     type="button"
-                    lang="en"
+                    lang={fan.til}
                     translate="no"
                     disabled={tanlov !== null}
                     onClick={() => javob(i)}
@@ -104,34 +102,58 @@ export function Test() {
           <div className="lb-savol flex flex-1 flex-col justify-between gap-6" aria-live="polite">
             <div className="flex flex-col gap-3">
               <span className="lbl text-brand">
-                {togri} / {SAVOLLAR.length} to‘g‘ri javob
+                {fan.nom} · {togri} / {jami} · {foiz}%
               </span>
-              <p className="text-[15px] text-ink-2">Taxminiy darajangiz:</p>
               <p className="h-display text-[44px] leading-none sm:text-[64px]" translate="no">
-                {r.daraja}
+                {r.nom}
               </p>
               <p className="max-w-[52ch] text-[15.5px] leading-relaxed text-ink-2">
-                {r.izoh} Bu — tezkor test. Aniq darajani markazda <b className="text-ink">bepul</b> aniqlaymiz va mos guruhga
-                qo‘shamiz.
+                {r.izoh} Natija arizangizga qo‘shiladi — aniq darajani sinov darsida <b className="text-ink">bepul</b> aniqlaymiz.
               </p>
             </div>
             <div className="grid gap-3 sm:flex sm:items-center">
               <Link
-                href="/ariza?yonalish=ingliz-tili"
+                href={havola}
                 className="inline-flex min-h-14 items-center justify-center rounded-full bg-brand px-7 text-[15px] font-bold text-white transition hover:brightness-110"
               >
-                Aniq darajani bepul bilish →
+                Natija bilan sinov darsiga yozilish →
               </Link>
               <button
                 type="button"
-                onClick={qaytadan}
+                onClick={boshqaFan}
                 className="inline-flex min-h-14 items-center justify-center rounded-full border border-line px-6 text-[15px] font-semibold text-ink-2 transition hover:border-ink hover:text-ink"
               >
-                Qaytadan
+                Boshqa fan
               </button>
             </div>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+function FanTanlash({ onTanla }: { onTanla: (f: TestFan) => void }) {
+  return (
+    <div className="lb-savol flex flex-col gap-5 rounded-[28px] border border-line bg-surface p-6 sm:p-10">
+      <div className="flex flex-col gap-1.5">
+        <span className="lbl">1-qadam</span>
+        <p className="h-display text-[28px] leading-tight sm:text-[36px]">Qaysi fandan test?</p>
+      </div>
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+        {TEST_FANLAR.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => onTanla(f)}
+            className="group flex min-h-24 flex-col items-start justify-between gap-3 rounded-[18px] border border-line p-4 text-left transition hover:border-ink hover:bg-ink hover:text-bg"
+          >
+            <span className="h-display text-[26px] leading-none text-brand transition group-hover:text-white" translate="no">
+              {f.belgi}
+            </span>
+            <span className="text-[15px] font-bold">{f.nom}</span>
+          </button>
+        ))}
       </div>
     </div>
   )
