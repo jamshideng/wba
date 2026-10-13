@@ -26,7 +26,7 @@ rejimida yurgizish SHART EMAS.
 | `/kirish` 404 yoki server boshqa portga (3001, 3002) o'tib ketgan | 3000 ni kechagi qotgan `node` ushlab turibdi | `npm run ishga` (portni tozalaydi) |
 | Fon jarayoni "system is running low on memory" bilan o'ldirildi | `next dev` 1 GB+ oladi, kompyuterda 1–4 GB bo'sh | `next dev` ishlatmang — `npm run ishga` (`next start`) |
 | `tsc` yoki `next build` "heap out of memory" | xotira kam | `NODE_OPTIONS=--max-old-space-size=3072` |
-| Supabase `ports are not available … 5432x` | Windows 54268–54767 ni zaxiralagan | portlar allaqachon 583xx (config.toml) |
+| Supabase `ports are not available …` | Windows port oralig'ini zaxiralagan (54268–54767, 13.10 dan 58137–58336 ham) | portlar 563xx. Yana band bo'lsa: `netsh int ipv4 show excludedportrange protocol=tcp` → bo'sh oraliq → config.toml, .env.local, next.config.ts, scripts/ishga-tushir.ps1 da almashtirish |
 | Background TaskStop dan keyin port hali band | Windows'da `npx` o'lsa ham `node` bolasi qoladi | `npm run toxta` |
 
 ## Tekshirish
@@ -35,4 +35,4 @@ rejimida yurgizish SHART EMAS.
 - Login oddiy so'z bo'lishi mumkin: `aziza` → `aziza@wba.uz`.
 - `loading.tsx` bor sahifalarda redirect oqim ichida keladi — `fetch()` bilan
   "ochiq" ko'rinadi. Huquqni BRAUZERDA (navigate) tekshiring.
-- Studio (bazani ko'rish): http://127.0.0.1:58323
+- Studio (bazani ko'rish): http://127.0.0.1:56323

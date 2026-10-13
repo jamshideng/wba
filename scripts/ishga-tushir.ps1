@@ -54,7 +54,7 @@ if (-not $ishlayapti) {
   npx --yes supabase@latest start -x realtime,storage-api,imgproxy,edge-runtime,logflare,vector,supavisor,mailpit | Out-Null
   if ($LASTEXITCODE -ne 0) { throw "Supabase ko'tarilmadi: npx supabase start ni qo'lda yuriting." }
 }
-Ok 'Baza ishlayapti (Studio: http://127.0.0.1:58323)'
+Ok 'Baza ishlayapti (Studio: http://127.0.0.1:56323)'
 
 # 3. Eski server -------------------------------------------------
 Qadam '3000-port'

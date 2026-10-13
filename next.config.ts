@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url'
  */
 const dev = process.env.NODE_ENV !== 'production'
 
-/** Lokal Supabase (127.0.0.1:58321) bilan `next start` ham ishlasin — env'dagi manzil ruxsatda. */
+/** Lokal Supabase (127.0.0.1:56321) bilan `next start` ham ishlasin — env'dagi manzil ruxsatda. */
 function supabaseManzil(): string {
   try {
     const u = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')
