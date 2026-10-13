@@ -32,6 +32,12 @@ export type MenyuBand = {
   tayyor: boolean
   /** Telefonning pastki panelida chiqadimi */
   mobil?: boolean
+  /**
+   * Ichki bo'limlar (Jamshid, 13.10: "alohida bo'lim emas, sub kategoriya").
+   * Yon menyuda ochiladigan guruh, sahifa tepasida — tablar (BolimTablari).
+   * Guruhning o'z havolasi — birinchi tayyor ichki band.
+   */
+  ichki?: MenyuBand[]
 }
 
 export type MenyuBolim = {
@@ -39,63 +45,98 @@ export type MenyuBolim = {
   bandlar: MenyuBand[]
 }
 
+/** Guruh: ichki bandlar bitta bo'lsa — guruh emas, oddiy band bo'lib qoladi. */
+function guruh(nom: string, Icon: IconKomponent, ichki: MenyuBand[]): MenyuBand[] {
+  if (ichki.length === 0) return []
+  if (ichki.length === 1) return [ichki[0]]
+  const birinchi = ichki.find((x) => x.tayyor) ?? ichki[0]
+  return [{ href: birinchi.href, nom, Icon, tayyor: ichki.some((x) => x.tayyor), ichki }]
+}
+
+/** Hamma bandlar tekis ro'yxatda (guruh ichidagilar ham) — pastki panel va qidiruv uchun. */
+export function tekisBandlar(bolimlar: MenyuBolim[]): MenyuBand[] {
+  return bolimlar.flatMap((b) => b.bandlar.flatMap((x) => (x.ichki ? x.ichki : [x])))
+}
+
 export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
   const bolimlar: MenyuBolim[] = []
+  const xodim = staffmi(rol)
+  const admin = adminmi(rol)
 
   if (ustozmi) {
     bolimlar.push({
       nom: 'Ustoz paneli',
-      bandlar: [
-        { href: '/crm/davomat', nom: 'Davomat', Icon: IconAttendance, tayyor: true, mobil: true },
-        { href: '/crm/guruhlar', nom: 'Guruhlarim', Icon: IconGroups, tayyor: true, mobil: true },
-        // Faqat ustoz bo'lsa — telefonning pastki panelida ham (xodim-ustozda
-        // u yerni "Bugun" va "O'quvchilar" egallaydi)
-        { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true, mobil: !staffmi(rol) },
-        { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true, mobil: !staffmi(rol) },
-        // 0060 — o'z kechikishlari (faqat ko'rish)
-        { href: '/crm/kechikishlarim', nom: 'Kechikishlarim', Icon: IconAttendance, tayyor: true },
-      ],
+      bandlar: xodim
+        ? // Xodim-ustozda guruh, davomat, jadval, woblar "Boshqaruv"dagi guruhlarda bor
+          [{ href: '/crm/kechikishlarim', nom: 'Kechikishlarim', Icon: IconAttendance, tayyor: true }]
+        : [
+            { href: '/crm/davomat', nom: 'Davomat', Icon: IconAttendance, tayyor: true, mobil: true },
+            { href: '/crm/guruhlar', nom: 'Guruhlarim', Icon: IconGroups, tayyor: true, mobil: true },
+            { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true, mobil: true },
+            { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true, mobil: true },
+            // 0060 — o'z kechikishlari (faqat ko'rish)
+            { href: '/crm/kechikishlarim', nom: 'Kechikishlarim', Icon: IconAttendance, tayyor: true },
+          ],
     })
   }
 
-  if (staffmi(rol)) {
+  if (xodim) {
     bolimlar.push({
       nom: ustozmi ? 'Boshqaruv' : 'Boshqaruv paneli',
       bandlar: [
         { href: '/crm/dashboard', nom: 'Bugun', Icon: IconDashboard, tayyor: true, mobil: true },
-        { href: '/crm/oquvchilar', nom: 'O‘quvchilar', Icon: IconStudents, tayyor: true, mobil: true },
-        // Ustoz ham bo'lsa bu uchtasi yuqoridagi "Ustoz paneli"da bor
-        ...(ustozmi
-          ? []
-          : [
-              { href: '/crm/guruhlar', nom: 'Guruhlar', Icon: IconGroups, tayyor: true, mobil: true },
-              { href: '/crm/davomat', nom: 'Davomat', Icon: IconAttendance, tayyor: true },
-              { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true },
-              { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true },
-            ]),
-        { href: '/crm/qarzdorlar', nom: 'Qarzdorlar', Icon: IconDebt, tayyor: true },
-        // Qabulxonada eng ko'p ishlatiladigan bo'lim — telefonning pastki panelida ham
-        { href: '/crm/tolovlar', nom: 'To‘lovlar', Icon: IconPayments, tayyor: true, mobil: true },
-        { href: '/crm/lidlar', nom: 'Lidlar', Icon: IconLeads, tayyor: true },
-        { href: '/crm/vazifalar', nom: 'Vazifalar', Icon: IconAlert, tayyor: true },
-        { href: '/crm/ustoz-davomati', nom: 'Ustozlar davomati', Icon: IconTeacher, tayyor: true },
-        { href: '/crm/hisobotlar', nom: 'Hisobotlar', Icon: IconReports, tayyor: true },
-        { href: '/crm/xarajatlar', nom: 'Xarajatlar', Icon: IconXarajat, tayyor: true },
-        { href: '/crm/market/boshqaruv', nom: 'Woblar market', Icon: IconMarket, tayyor: true },
-        // Keyingi bosqich (Jamshid, 01.10): hozircha joyi band, bosilmaydi — "tez orada"
-        { href: '/crm/moliya', nom: 'Moliya', Icon: IconReports, tayyor: false },
-        { href: '/crm/arxiv', nom: 'Arxiv', Icon: IconArxiv, tayyor: true },
-        { href: '/crm/dam-kunlar', nom: 'Dam olish kunlari', Icon: IconAttendance, tayyor: true },
-        ...(adminmi(rol)
-          ? [
+        ...guruh('O‘quvchilar', IconStudents, [
+          { href: '/crm/oquvchilar', nom: 'O‘quvchilar', Icon: IconStudents, tayyor: true, mobil: true },
+          { href: '/crm/qarzdorlar', nom: 'Qarzdorlar', Icon: IconDebt, tayyor: true },
+          { href: '/crm/arxiv', nom: 'Arxiv', Icon: IconArxiv, tayyor: true },
+          ...(admin ? [{ href: '/crm/oquvchilar/takroriy', nom: 'Takroriylar', Icon: IconStudents, tayyor: true }] : []),
+        ]),
+        ...guruh('Guruhlar', IconGroups, [
+          { href: '/crm/guruhlar', nom: 'Guruhlar', Icon: IconGroups, tayyor: true, mobil: true },
+          { href: '/crm/davomat', nom: 'Davomat', Icon: IconAttendance, tayyor: true },
+          { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true },
+          { href: '/crm/dam-kunlar', nom: 'Dam olish kunlari', Icon: IconAttendance, tayyor: true },
+        ]),
+        ...guruh('Lidlar', IconLeads, [
+          { href: '/crm/lidlar', nom: 'Lidlar', Icon: IconLeads, tayyor: true },
+          { href: '/crm/probniylar', nom: 'Probniylar', Icon: IconLeads, tayyor: true },
+          { href: '/crm/vazifalar', nom: 'Vazifalar', Icon: IconAlert, tayyor: true },
+        ]),
+        ...guruh('Moliya', IconPayments, [
+          // Qabulxonada eng ko'p ishlatiladigan bo'lim — telefonning pastki panelida ham
+          { href: '/crm/tolovlar', nom: 'To‘lovlar', Icon: IconPayments, tayyor: true, mobil: true },
+          { href: '/crm/xarajatlar', nom: 'Xarajatlar', Icon: IconXarajat, tayyor: true },
+          // Keyingi bosqich (Jamshid, 01.10): hozircha joyi band, bosilmaydi — "tez orada"
+          { href: '/crm/moliya', nom: 'Umumiy moliya', Icon: IconReports, tayyor: false },
+        ]),
+        ...guruh('Woblar', IconWoblr, [
+          { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true },
+          { href: '/crm/market/boshqaruv', nom: 'Woblar market', Icon: IconMarket, tayyor: true },
+        ]),
+        // Xodimlar (Jamshid, 13.10): administratorlar, ustozlar (maoshi, davomati),
+        // boshqa xodimlar (farrosh va h.k.) — bitta bo'lim ichida
+        ...guruh('Xodimlar', IconTeacher, [
+          ...(admin
+            ? [
+                { href: '/crm/xodimlar', nom: 'Administratorlar', Icon: IconStudents, tayyor: true },
+                { href: '/crm/ustozlar', nom: 'Ustozlar', Icon: IconTeacher, tayyor: true },
+                { href: '/crm/maosh', nom: 'Ustoz maoshi', Icon: IconPayments, tayyor: true },
+              ]
+            : []),
+          { href: '/crm/ustoz-davomati', nom: 'Ustozlar davomati', Icon: IconTeacher, tayyor: true },
+          ...(admin ? [{ href: '/crm/boshqa-xodimlar', nom: 'Boshqa xodimlar', Icon: IconStudents, tayyor: true }] : []),
+        ]),
+        ...(admin
+          ? guruh('Xabarlar', IconSend, [
               { href: '/crm/xabarlar', nom: 'Xabarlar', Icon: IconSend, tayyor: true },
               { href: '/crm/bildirishnomalar', nom: 'Bildirishnomalar', Icon: IconAlert, tayyor: true },
-              { href: '/crm/ustozlar', nom: 'Ustozlar', Icon: IconTeacher, tayyor: true },
-              { href: '/crm/xodimlar', nom: 'Xodimlar', Icon: IconStudents, tayyor: true },
-              { href: '/crm/audit', nom: 'Audit', Icon: IconAudit, tayyor: true },
-              { href: '/crm/sozlamalar', nom: 'Sozlamalar', Icon: IconSettings, tayyor: true },
-            ]
+            ])
           : []),
+        ...guruh('Hisobotlar', IconReports, [
+          { href: '/crm/hisobotlar', nom: 'Hisobotlar', Icon: IconReports, tayyor: true },
+          ...(admin ? [{ href: '/crm/audit', nom: 'Audit', Icon: IconAudit, tayyor: true }] : []),
+        ]),
+        ...(admin ? [{ href: '/crm/sozlamalar', nom: 'Sozlamalar', Icon: IconSettings, tayyor: true }] : []),
       ],
     })
   }

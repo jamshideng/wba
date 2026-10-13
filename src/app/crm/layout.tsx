@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { talabProfil, getUstoz, ROL_NOMI, staffmi, tasdiqlaydimi } from '@/lib/auth'
-import { menyular, type MenyuBand } from '@/lib/menyu'
+import { menyular, tekisBandlar, type MenyuBand } from '@/lib/menyu'
+import { MenyuGuruh, BolimTablari, type TabGuruh } from '@/components/menyu-guruh'
 import { MENYU_COOKIE } from '@/lib/menyu-holat'
 import { createClient } from '@/lib/supabase/server'
 import { chiqishdaPushniUz } from '@/lib/push'
@@ -43,7 +44,7 @@ function ertagaBoshi(): string {
 }
 
 /** Menyu bandi. Tayyor bo'lmasa — havola emas: bosib 404 ga tushmasin. */
-function Band({ band, nishon }: { band: MenyuBand; nishon?: number }) {
+function Band({ band, nishon, qoshnilar }: { band: MenyuBand; nishon?: number; qoshnilar?: string[] }) {
   const ichi = (
     <>
       <band.Icon size={17} className="shrink-0" />
@@ -73,7 +74,7 @@ function Band({ band, nishon }: { band: MenyuBand; nishon?: number }) {
   }
 
   return (
-    <MenyuHavola href={band.href} title={band.nom}>
+    <MenyuHavola href={band.href} title={band.nom} qoshnilar={qoshnilar}>
       {ichi}
       <HavolaHolati />
     </MenyuHavola>
@@ -127,9 +128,16 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
 
   /* Telefon uchun: eng kerakli 4 ta band + "Menyu" (qolgan hammasi).
      Pastki panelga 5 tadan ortig'i sig'maydi, bo'limlar esa ko'p. */
-  const mobilBandlar = bolimlar
-    .flatMap((b) => b.bandlar.filter((x) => x.mobil && x.tayyor))
+  const mobilBandlar = tekisBandlar(bolimlar)
+    .filter((x) => x.mobil && x.tayyor)
     .slice(0, 4)
+
+  /* Sahifa tepasidagi ichki bo'limlar (tablar) — faqat guruhlar */
+  const tabGuruhlar: TabGuruh[] = bolimlar.flatMap((b) =>
+    b.bandlar
+      .filter((x) => x.ichki)
+      .map((x) => ({ nom: x.nom, bandlar: x.ichki!.map((i) => ({ href: i.href, nom: i.nom, tayyor: i.tayyor })) })),
+  )
 
   /* Kim ekani — botdagi menyuMatni() kabi: ikki rol bo'lsa ikkalasi ham. */
   const kim = [
@@ -155,9 +163,29 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
           {bolimlar.map((bolim) => (
             <div key={bolim.nom} className="flex flex-col gap-0.5">
               <span className="lbl truncate px-3 pb-1 group-data-[menyu=yopiq]/qobiq:hidden">{bolim.nom}</span>
-              {bolim.bandlar.map((band) => (
-                <Band key={band.href} band={band} nishon={nishon(band)} />
-              ))}
+              {bolim.bandlar.map((band) =>
+                band.ichki ? (
+                  <MenyuGuruh
+                    key={band.nom}
+                    nom={band.nom}
+                    href={band.href}
+                    hreflar={band.ichki.map((i) => i.href)}
+                    ikonka={<band.Icon size={17} className="shrink-0" />}
+                    nishon={band.ichki.reduce((a, i) => a + (nishon(i) ?? 0), 0) || undefined}
+                  >
+                    {band.ichki.map((i) => (
+                      <Band
+                        key={i.href}
+                        band={i}
+                        nishon={nishon(i)}
+                        qoshnilar={band.ichki!.map((x) => x.href).filter((h) => h !== i.href)}
+                      />
+                    ))}
+                  </MenyuGuruh>
+                ) : (
+                  <Band key={band.href} band={band} nishon={nishon(band)} />
+                ),
+              )}
             </div>
           ))}
         </nav>
@@ -224,6 +252,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
         <main className="min-w-0 flex-1 max-lg:pt-14 max-lg:pb-16">
           <IlovaOrnatish joy="banner" />
           <XabarnomaYoqish joy="banner" />
+          <BolimTablari guruhlar={tabGuruhlar} />
           {children}
         </main>
       </div>

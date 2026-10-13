@@ -1646,6 +1646,185 @@ end $$;
 reset role;
 reset request.jwt.claim.sub;
 
+-- ============================================================
+--  0066 — ustoz maoshi (o'quvchi soni × stavka ± avans/bonus/jarima)
+-- ============================================================
+\echo '--- ustoz maoshi ---'
+reset role;
+reset request.jwt.claim.sub;
+insert into teacher_salaries (teacher_id, qiymati) values ('U01', 50000)
+  on conflict (teacher_id) do update set qiymati = excluded.qiymati;
+create temp table _maosh_kutil as
+  select count(distinct e.id) as n
+  from invoices i join enrollments e on e.id = i.enrollment_id join groups g on g.id = e.group_id
+  where i.davr = '2026-10' and i.holat <> 'bekor' and g.teacher_id = 'U01';
+grant select on _maosh_kutil to authenticated;
+
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+insert into maosh_harakatlar (teacher_id, davr, turi, summa, izoh) values
+  ('U01', '2026-10', 'avans', 30000, 'test'),
+  ('U01', '2026-10', 'bonus', 20000, 'test'),
+  ('U01', '2026-10', 'jarima', 10000, 'test');
+do $$
+declare r record; n bigint := (select n from _maosh_kutil);
+begin
+  if n = 0 then raise exception 'XATO: test uchun U01 da 2026-10 fakturasi yo''q'; end if;
+  select * into r from ustoz_maosh('2026-10') where teacher_id = 'U01';
+  if r.oquvchilar <> n or r.hisob <> 50000 * n or r.yakuniy <> 50000 * n - 30000 + 20000 - 10000 then
+    raise exception 'XATO: maosh noto''g''ri: % o''quvchi, hisob %, yakuniy %', r.oquvchilar, r.hisob, r.yakuniy;
+  end if;
+  if (select hisob from ustoz_maosh('2026-10') where teacher_id = 'U02') is not null then
+    raise exception 'XATO: stavkasiz ustozga maosh hisoblandi';
+  end if;
+  begin
+    update maosh_harakatlar set summa = 1 where turi = 'avans' and teacher_id = 'U01';
+    raise exception 'XATO: harakat summasi o''zgardi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  update maosh_harakatlar set bekor = true, bekor_sabab = 'test' where turi = 'jarima' and teacher_id = 'U01';
+  if (select jarima from ustoz_maosh('2026-10') where teacher_id = 'U01') <> 0 then
+    raise exception 'XATO: bekor qilingan jarima hisobga kirdi';
+  end if;
+  raise notice 'OK: maosh — % o''quvchi × 50 000, avans/bonus/jarima, bekor', n;
+end $$;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana (U01)
+do $$
+begin
+  begin
+    perform ustoz_maosh('2026-10');
+    raise exception 'XATO: ustoz maoshni ko''rdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  if (select count(*) from teacher_salaries) > 0 or (select count(*) from maosh_harakatlar) > 0 then
+    raise exception 'XATO: ustoz stavka/harakatni ko''rdi';
+  end if;
+  begin
+    insert into maosh_harakatlar (teacher_id, davr, turi, summa) values ('U01', '2026-10', 'bonus', 999);
+    raise exception 'XATO: ustoz o''ziga bonus yozdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: maosh — ustozga to''liq yopiq (o''zinikini ham ko''rmaydi)';
+end $$;
+
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi
+do $$
+begin
+  begin
+    perform ustoz_maosh('2026-10');
+    raise exception 'XATO: o''quvchi maoshni ko''rdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  if (select count(*) from teacher_salaries) > 0 or (select count(*) from maosh_harakatlar) > 0 then
+    raise exception 'XATO: o''quvchi stavka/harakatni ko''rdi';
+  end if;
+  raise notice 'OK: maosh — o''quvchiga yopiq';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+
+-- ============================================================
+--  0067 — takroriy o'quvchilar va birlashtirish
+-- ============================================================
+\echo '--- takroriy o''quvchilar ---'
+reset role;
+reset request.jwt.claim.sub;
+insert into students (id, fish, shaxsiy_tel, ota_tel, qoshilgan_sana) values
+  ('S901', 'Asilya Muhammadeva',  '+998 90 111 22 33', '901112200', '2026-09-01'),
+  ('S902', 'Muhummadeva Asilya',  '901112233',          null,        '2026-10-01'),
+  ('S903', 'Bobur Karimov',       null,                 '901112200', '2026-09-01'),
+  ('S904', 'Dilshod Karimov',     null,                 '901112200', '2026-09-01');
+insert into enrollments (student_id, group_id, boshlandi) values ('S901', 'N01', '2026-09-01');
+insert into enrollments (student_id, group_id, boshlandi) values ('S902', 'N02', '2026-10-01');
+insert into payments (student_id, enrollment_id, sana, davr, summa, usul, qabul_qildi)
+select 'S902', e.id, '2026-10-03', '2026-10', 100000, 'naqd', '22222222-2222-2222-2222-222222222222'
+from enrollments e where e.student_id = 'S902';
+
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare r jsonb;
+begin
+  if ism_kaliti('Muhummadeva  Asilya') <> ism_kaliti('asilya muhummadeva') then
+    raise exception 'XATO: so''z tartibi farqi solishtirilmadi';
+  end if;
+  if not exists (select 1 from takroriy_oquvchilar() where a_id = 'S901' and b_id = 'S902') then
+    raise exception 'XATO: imlo farqli juftlik topilmadi';
+  end if;
+  if exists (select 1 from takroriy_oquvchilar() where a_id = 'S903' and b_id = 'S904') then
+    raise exception 'XATO: aka-uka (faqat ota telefoni bir xil) takror deb chiqdi';
+  end if;
+
+  r := oquvchi_birlashtir('S901', 'S902');
+  if (r ->> 'qatnashuv')::int <> 1 or (r ->> 'tolov')::int <> 1 then
+    raise exception 'XATO: yozuvlar ko''chmadi: %', r;
+  end if;
+  if (select count(*) from enrollments where student_id = 'S901') <> 2
+     or exists (select 1 from payments where student_id = 'S902') then
+    raise exception 'XATO: qatnashuv/to''lov asosiyga o''tmadi';
+  end if;
+  if (select holat from students where id = 'S902') <> 'ketgan'
+     or (select arxiv_sabab from students where id = 'S902') <> 'Birlashtirildi → S901' then
+    raise exception 'XATO: ikkinchisi arxivga tushmadi';
+  end if;
+  if exists (select 1 from takroriy_oquvchilar() where b_id = 'S902' or a_id = 'S902') then
+    raise exception 'XATO: birlashtirilgan juftlik qayta chiqdi';
+  end if;
+  if not exists (select 1 from audit_log where amal = 'BIRLASHTIRISH' and obyekt_id = 'S901') then
+    raise exception 'XATO: birlashtirish auditga tushmadi';
+  end if;
+
+  -- Bitta guruhda ikkalasi faol — to'xtashi kerak
+  begin
+    perform oquvchi_birlashtir('S901', 'S001');
+    raise exception 'XATO: bitta guruhdagilar birlashdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+
+  if (select holat from students where id = 'S001') = 'ketgan' then
+    raise exception 'XATO: to''xtatilgan birlashtirishdan keyin S001 arxivlandi';
+  end if;
+  insert into oquvchi_takror_emas (a, b) values ('S903', 'S904');
+  raise notice 'OK: takroriy — imlo/so''z tartibi, aka-uka chiqmaydi, birlashtirish, arxiv, audit';
+end $$;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  begin
+    perform takroriy_oquvchilar();
+    raise exception 'XATO: ustoz takroriylar ro''yxatini ko''rdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    perform oquvchi_birlashtir('S903', 'S904');
+    raise exception 'XATO: ustoz o''quvchilarni birlashtirdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: takroriy — ustozga yopiq';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+
+-- ============================================================
+--  0068 — boshqa xodimlar (faqat admin)
+-- ============================================================
+\echo '--- boshqa xodimlar ---'
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+insert into boshqa_xodimlar (ism, lavozim, oylik) values ('Test Farrosh', 'Farrosh', 2000000);
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';   -- qabulxona
+do $$
+begin
+  if (select count(*) from boshqa_xodimlar) > 0 then
+    raise exception 'XATO: qabulxona boshqa xodimlarni (oyligini) ko''rdi';
+  end if;
+  raise notice 'OK: boshqa xodimlar — faqat admin';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+
 \echo '=== TEST TUGADI ==='
 
 \echo '--- 0062: davomat hisoboti — kutilgan belgilar ---'

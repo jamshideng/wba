@@ -492,6 +492,68 @@ export type Xarajat = {
   updated_at: string
 }
 
+/** Ustoz maosh stavkasi (0066) — teachers'dan alohida, hammaga ochiq emas */
+export type TeacherSalary = {
+  teacher_id: string
+  turi: SalaryType
+  qiymati: number
+  updated_at: string
+}
+
+/** Maoshga qo'lda: avans (−), bonus (+), jarima (−). O'chirilmaydi — bekor qilinadi */
+export type MaoshHarakat = {
+  id: number
+  teacher_id: string
+  davr: string
+  turi: 'avans' | 'bonus' | 'jarima'
+  summa: number
+  izoh: string | null
+  kiritgan: string | null
+  bekor: boolean
+  bekor_sabab: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** ustoz_maosh(davr) qatori. stavka null — maosh aniqlanmagan */
+export type UstozMaosh = {
+  teacher_id: string
+  ism: string
+  stavka: number | null
+  oquvchilar: number
+  hisob: number | null
+  avans: number
+  bonus: number
+  jarima: number
+  yakuniy: number | null
+}
+
+/** takroriy_oquvchilar() qatori (0067) — bitta odam ikki ID bilan bo'lishi mumkin */
+export type TakroriyJuft = {
+  a_id: string
+  a_fish: string
+  a_holat: StudentStatus
+  b_id: string
+  b_fish: string
+  b_holat: StudentStatus
+  oxshashlik: number
+  sabab: string
+}
+
+/** Tizimga kirmaydigan xodim — farrosh, qorovul … (0068) */
+export type BoshqaXodim = {
+  id: number
+  ism: string
+  lavozim: string
+  telefon: string | null
+  oylik: number | null
+  ishga_kirgan: string | null
+  holat: 'faol' | 'ketgan'
+  izoh: string | null
+  created_at: string
+  updated_at: string
+}
+
 /** davomat_saqla() qaytaradigan natija */
 export type DavomatNatija = {
   dars_id: string
@@ -678,6 +740,10 @@ export type Database = {
       ustoz_kechikish: Table<UstozKechikish>
       tuzatishlar: Table<Tuzatish>
       xarajatlar: Table<Xarajat>
+      teacher_salaries: Table<TeacherSalary>
+      maosh_harakatlar: Table<MaoshHarakat>
+      boshqa_xodimlar: Table<BoshqaXodim>
+      oquvchi_takror_emas: Table<{ a: string; b: string; belgiladi: string | null; created_at: string }>
       dam_kunlar: Table<{ sana: string; sabab: string; kiritdi: string | null; created_at: string }>
       settings: Table<Setting>
       audit_log: Table<AuditLog>
@@ -757,6 +823,12 @@ export type Database = {
       oylik_moliya: {
         Args: { p_davr: string }
         Returns: { davr: string; tushum: number; xarajat: number; foyda: number; toifalar: { toifa: string; summa: number; soni: number }[] }
+      }
+      ustoz_maosh: { Args: { p_davr: string }; Returns: UstozMaosh[] }
+      takroriy_oquvchilar: { Args: Record<string, never>; Returns: TakroriyJuft[] }
+      oquvchi_birlashtir: {
+        Args: { p_asosiy: string; p_ikkinchi: string }
+        Returns: { asosiy: string; ikkinchi: string; qatnashuv: number; tolov: number; davomat: number; davomat_qoldi: number }
       }
       keyingi_oy_summasi: { Args: { p_enrollment: string; p_davr?: string | null }; Returns: number }
       tuzatish_qosh: {

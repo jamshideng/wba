@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { faolHavola } from '@/components/menyu-guruh'
 
 /**
  * Yon menyudagi band. Hozirgi bo'lim ajralib turadi (LeaderCRM uslubi:
@@ -11,15 +12,17 @@ import { usePathname } from 'next/navigation'
 export function MenyuHavola({
   href,
   title,
+  qoshnilar,
   children,
 }: {
   href: string
   title: string
+  /** Guruhdagi boshqa havolalar — eng aniq mosi faol bo'ladi (/crm/oquvchilar/takroriy) */
+  qoshnilar?: string[]
   children: React.ReactNode
 }) {
   const yol = usePathname()
-  const asos = href.split('?')[0]
-  const faol = !href.includes('?') && (yol === asos || yol.startsWith(`${asos}/`))
+  const faol = faolHavola(yol, [href, ...(qoshnilar ?? [])]) === href
   return (
     <Link
       href={href}

@@ -34,23 +34,30 @@ export default async function Menyu() {
     <div className="flex flex-col gap-5 px-5 py-5">
       <Sarlavha nom="Menyu" izoh={`${profil.ism} · ${ustoz ? 'ustoz · ' : ''}${ROL_NOMI[profil.rol]}`} />
 
-      {bolimlar.map((b) => (
-        <section key={b.nom} className="flex flex-col gap-2">
-          <h2 className="lbl">{b.nom}</h2>
-          <div className="grid grid-cols-2 gap-2">
-            {b.bandlar.filter((x) => x.tayyor).map((x) => (
-              <Link
-                key={x.href}
-                href={x.href}
-                className="flex min-h-14 items-center gap-3 rounded-[11px] border border-line bg-surface px-4 text-[13.5px] transition hover:border-ink-3"
-              >
-                <x.Icon size={18} />
-                {x.nom}
-              </Link>
-            ))}
-          </div>
-        </section>
-      ))}
+      {bolimlar
+        // Guruhlar (O'quvchilar, Xodimlar …) — o'z sarlavhasi bilan alohida
+        .flatMap((b) => [
+          { nom: b.nom, bandlar: b.bandlar.filter((x) => !x.ichki) },
+          ...b.bandlar.filter((x) => x.ichki).map((x) => ({ nom: x.nom, bandlar: x.ichki! })),
+        ])
+        .filter((b) => b.bandlar.some((x) => x.tayyor))
+        .map((b) => (
+          <section key={b.nom} className="flex flex-col gap-2">
+            <h2 className="lbl">{b.nom}</h2>
+            <div className="grid grid-cols-2 gap-2">
+              {b.bandlar.filter((x) => x.tayyor).map((x) => (
+                <Link
+                  key={x.href}
+                  href={x.href}
+                  className="flex min-h-14 items-center gap-3 rounded-[11px] border border-line bg-surface px-4 text-[13.5px] transition hover:border-ink-3"
+                >
+                  <x.Icon size={18} />
+                  {x.nom}
+                </Link>
+              ))}
+            </div>
+          </section>
+        ))}
 
       <IlovaOrnatish joy="menyu" />
       <XabarnomaYoqish joy="menyu" />
