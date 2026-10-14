@@ -142,6 +142,8 @@ type Yozilish = {
   sheetOylar: number
   /** Sheets'ning o'zi noto'g'ri hisoblagan bo'lsa — sababi. Farq shu bilan tushuntiriladi. */
   sheetsXato: string | null
+  /** _Guruh_tarixi bo'yicha ajratilgan ESKI davr — asl (hozirgi) yozilish kaliti; solishtiruvda unga qo'shiladi */
+  asl?: string
 }
 
 type Hisob = {
@@ -967,6 +969,110 @@ function bolalarniBirlashtir(oquvchilar: Oquvchi[], yozilishlar: Yozilish[]): Ma
 }
 
 /* ------------------------------------------------------------------ */
+/*  3d. Guruh tarixi — o'tkazilgan bola eski davri eski guruhda          */
+/* ------------------------------------------------------------------ */
+
+type TarixQator = { qator: number; sana: string; sid: string; eski: string; yangi: string }
+
+function tarixniQur(qatorlar: Qator[]): TarixQator[] {
+  const natija: TarixQator[] = []
+  for (const q of qatorlar) {
+    const sid = matn(q, "O'quvchi ID").toUpperCase()
+    const sana = sanaga(qiymat(q, 'Sana'))
+    const eski = matn(q, 'Eski guruh')
+    const yangi = matn(q, 'Yangi guruh')
+    if (!sid || !eski || !yangi || eski === yangi) continue
+    if (!sana) {
+      ogoh(`_Guruh_tarixi ${q._qator}-qator: sana yo'q — ${sid}`)
+      continue
+    }
+    natija.push({ qator: q._qator, sana, sid, eski, yangi })
+  }
+  return natija
+}
+
+const kunOldin = (sana: string) => {
+  const d = new Date(`${sana}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
+/**
+ * 07.10: Sheets'da O'quvchilar qatori bitta — HOZIRGI guruh bilan. Bola boshqa
+ * guruhga o'tkazilsa (_Guruh_tarixi: sana, eski → yangi), saytda eski davr eski
+ * guruhda qolishi kerak: o'sha oylar jurnali, hisobi va to'lovi eski ustozniki.
+ * Yozilish davrlarga bo'linadi; hisob/to'lov/tuzatish OY bo'yicha egasiga o'tadi —
+ * o'tkazilgan oy YANGI guruhniki (Jamshid qarori 07.10; oy hisobi kalendar oy).
+ * Qo'shilgan kuni yoki undan oldingi yozuv (xato tuzatish) e'tiborga olinmaydi.
+ */
+function guruhTarixiBoyichaBol(
+  tarix: TarixQator[],
+  guruhlar: Guruh[],
+  yozilishlar: Yozilish[],
+  hisoblar: Hisob[],
+  tolovlar: Tolov[],
+  tuzatishRoyxat: { kalit: string | null; oy: number }[],
+): string[] {
+  const guruhId = new Map(guruhlar.map((g) => [g.nom, g.id]))
+  const hisobot: string[] = []
+
+  for (const y of [...yozilishlar]) {
+    if (y.kerakQatiy !== undefined || !y.sheets_id) continue
+    const qatorlar = tarix
+      .filter((t) => t.sid === y.sheets_id && t.sana > y.boshlandi && (!y.tugadi || t.sana <= y.tugadi))
+      .sort((a, b) => a.sana.localeCompare(b.sana) || a.qator - b.qator)
+    if (!qatorlar.length) continue
+
+    const zanjir = qatorlar.every((t, i) => (i === qatorlar.length - 1 ? t.yangi === y.guruhNomi : t.yangi === qatorlar[i + 1].eski))
+    if (!zanjir) {
+      ogoh(`_Guruh_tarixi: ${y.sheets_id} o'tkazishlari hozirgi guruhga ("${y.guruhNomi}") ulanmaydi — bo'linmadi`)
+      continue
+    }
+    const topilmadi = qatorlar.find((t) => !guruhId.has(t.eski))
+    if (topilmadi) {
+      ogoh(`_Guruh_tarixi ${topilmadi.qator}-qator: eski guruh topilmadi — "${topilmadi.eski}" (${y.sheets_id}) — bo'linmadi`)
+      continue
+    }
+
+    const eskilar: Yozilish[] = []
+    qatorlar.forEach((t, i) => {
+      const dan = i === 0 ? y.boshlandi : qatorlar[i - 1].sana
+      const gacha = kunOldin(t.sana)
+      if (gacha < dan) return
+      const gid = guruhId.get(t.eski)!
+      eskilar.push({
+        ...y,
+        kalit: `${y.student_id}|${gid}|${dan}`,
+        sheets_id: `${y.sheets_id}~${dan}`,
+        group_id: gid,
+        guruhNomi: t.eski,
+        boshlandi: dan,
+        tugadi: gacha,
+        holat: 'tugagan',
+        qoldiq: 0,
+        sheetKerak: 0, sheetTolangan: 0, sheetQarz: 0, sheetOylar: 0,
+        sheetsXato: null,
+        asl: y.kalit,
+      })
+    })
+    if (!eskilar.length) continue
+
+    y.boshlandi = qatorlar.at(-1)!.sana
+    yozilishlar.push(...eskilar)
+    const davrlar = [...eskilar, y]
+    const egasi = (davr: string) =>
+      davrlar.filter((z) => z.boshlandi.slice(0, 7) <= davr).at(-1) ?? davrlar[0]
+
+    for (const h of hisoblar) if (h.kalit === y.kalit) h.kalit = egasi(h.davr).kalit
+    for (const t of tolovlar) if (t.kalit === y.kalit) t.kalit = egasi(t.davr).kalit
+    for (const t of tuzatishRoyxat) if (t.kalit === y.kalit) t.kalit = egasi(davrdan(t.oy)).kalit
+
+    hisobot.push(`${y.sheets_id}: ${davrlar.map((z) => `${z.guruhNomi} (${z.boshlandi} dan)`).join(' → ')}`)
+  }
+  return hisobot
+}
+
+/* ------------------------------------------------------------------ */
 /*  4. Hammasini yig'ish                                               */
 /* ------------------------------------------------------------------ */
 
@@ -1077,9 +1183,14 @@ function malumotniQur(kitob: Map<string, ReturnType<typeof varaq>>) {
     })
   }
 
+  const tarixVaraq = yangiTuzilma ? varaqBormi(kitob, '_Guruh_tarixi') : null
+  const bolingan = tarixVaraq
+    ? guruhTarixiBoyichaBol(tarixniQur(tarixVaraq.qatorlar), guruhlar, yozilishlar, hisoblar, tolovlar, tuzatishRoyxat)
+    : []
+
   return {
     ustozlar, guruhlar, oquvchilar, yozilishlar, hisoblar, tolovlar, probniylar, davomat,
-    tuzatishlar, tuzatishRoyxat, arxivTolovlari, yangiTuzilma, birlash,
+    tuzatishlar, tuzatishRoyxat, arxivTolovlari, yangiTuzilma, birlash, bolingan,
     davomatGacha: DAVOMAT_GACHA,
   }
 }
@@ -1091,15 +1202,21 @@ type Tayyor = ReturnType<typeof malumotniQur>
 /* ------------------------------------------------------------------ */
 
 function solishtir(d: Tayyor) {
+  // Guruh tarixi bo'yicha ajratilgan eski davrlar — Sheets'dagi bitta qatoriga qo'shib solishtiriladi
+  const asl = new Map(d.yozilishlar.filter((y) => y.asl).map((y) => [y.kalit, y.asl!]))
+  const aslKalit = (k: string) => asl.get(k) ?? k
+
   const hisobJami = new Map<string, number>()
   for (const h of d.hisoblar) {
-    hisobJami.set(h.kalit, (hisobJami.get(h.kalit) ?? 0) + h.summa)
+    const k = aslKalit(h.kalit)
+    hisobJami.set(k, (hisobJami.get(k) ?? 0) + h.summa)
   }
 
   const tolovJami = new Map<string, number>()
   for (const t of d.tolovlar) {
     if (!t.kalit) continue
-    tolovJami.set(t.kalit, (tolovJami.get(t.kalit) ?? 0) + t.summa)
+    const k = aslKalit(t.kalit)
+    tolovJami.set(k, (tolovJami.get(k) ?? 0) + t.summa)
   }
 
   const farqlar: string[] = []
@@ -1108,6 +1225,7 @@ function solishtir(d: Tayyor) {
   let jamiTolangan = 0, jamiTolanganSheets = 0
 
   for (const y of d.yozilishlar) {
+    if (y.asl) continue
     const kerak = hisobJami.get(y.kalit) ?? 0   // "Oldingi qoldiq" — hisob-faktura ichida
     const tolangan = tolovJami.get(y.kalit) ?? 0
 
@@ -1567,6 +1685,8 @@ async function ishga() {
     console.log(`  arxivdagilar    ${d.oquvchilar.filter((o) => o.holat === 'ketgan').length}`)
     console.log(`  tuzatishlar     ${tuzSoni}  (${pul(tuzJami)} so‘m)`)
     console.log(`  arxiv to‘lovlari ${d.arxivTolovlari.length}  (${pul(d.arxivTolovlari.reduce((a, x) => a + x.summa, 0))} so‘m)`)
+    console.log(`  guruhi o‘zgargan (davrlarga bo‘lindi) ${d.bolingan.length}`)
+    d.bolingan.forEach((b) => console.log(`     · ${b}`))
   }
 
   const usulsiz = d.tolovlar.filter((t) => !t.usul).length
