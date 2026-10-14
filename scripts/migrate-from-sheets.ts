@@ -56,13 +56,13 @@ const SHEETS_ID = process.env.SHEETS_ID
 /*  Ogohlantirishlar                                                    */
 /* ------------------------------------------------------------------ */
 
-const ogohlantirishlar: string[] = []
+export const ogohlantirishlar: string[] = []
 const ogoh = (m: string) => {
   if (ogohlantirishlar.length < 300) ogohlantirishlar.push(m)
 }
 
 /** Yozishni to'xtatadigan muammolar — taxmin qilmasdan hal qilib bo'lmaydi. */
-const toxtatuvchilar: string[] = []
+export const toxtatuvchilar: string[] = []
 const toxtat = (m: string) => {
   toxtatuvchilar.push(m)
 }
@@ -71,7 +71,7 @@ const toxtat = (m: string) => {
 /*  Tiplar                                                             */
 /* ------------------------------------------------------------------ */
 
-type Ustoz = {
+export type Ustoz = {
   id: string
   ism: string
   telefon: string | null
@@ -79,7 +79,7 @@ type Ustoz = {
   holat: 'faol' | 'bloklangan'
 }
 
-type Guruh = {
+export type Guruh = {
   id: string
   nom: string
   subject_id: string | null
@@ -92,7 +92,7 @@ type Guruh = {
   holat: 'faol' | 'yopilgan'
 }
 
-type Oquvchi = {
+export type Oquvchi = {
   id: string
   fish: string
   tugilgan_sana: string | null
@@ -109,7 +109,7 @@ type Oquvchi = {
   arxiv_sabab: string | null
 }
 
-type Yozilish = {
+export type Yozilish = {
   kalit: string                 // "S001|N01"
   sheets_id: string | null      // Qatnashuv ID — Q001
   student_id: string
@@ -146,7 +146,7 @@ type Yozilish = {
   asl?: string
 }
 
-type Hisob = {
+export type Hisob = {
   kalit: string
   davr: string
   /** Yakuniy (Sheets bilan solishtiriladi): narx − chegirma − tuzatish, VIP — 0 */
@@ -165,7 +165,7 @@ type Hisob = {
 /** Tuzatishlar varag'idagi bitta qator (bazada `tuzatishlar` jadvali) */
 type TuzatishQator = { sid: string; oy: number; summa: number; sabab: string }
 
-type Tolov = {
+export type Tolov = {
   sheets_id: string | null      // Tolovlar ID — T0001
   student_id: string
   kalit: string | null
@@ -178,7 +178,7 @@ type Tolov = {
   tasdiqlangan_vaqt: string | null
 }
 
-type Probniy = {
+export type Probniy = {
   sheets_id: string             // Probniylar ID — P001
   ism: string
   telefon: string
@@ -898,7 +898,7 @@ function davomatniQur(
 /*  3c. 2 fanli bola — bitta o'quvchi                                   */
 /* ------------------------------------------------------------------ */
 
-const ismKalit = (s: string) =>
+export const ismKalit = (s: string) =>
   s.toLowerCase().replace(/[‘’ʻʼ`']/g, '').replace(/\s+/g, ' ').trim()
 
 /**
@@ -1076,7 +1076,7 @@ function guruhTarixiBoyichaBol(
 /*  4. Hammasini yig'ish                                               */
 /* ------------------------------------------------------------------ */
 
-function malumotniQur(kitob: Map<string, ReturnType<typeof varaq>>) {
+export function malumotniQur(kitob: Map<string, ReturnType<typeof varaq>>) {
   const ustozlar = ustozlarniQur(varaq(kitob, 'Ustozlar').qatorlar)
   const guruhlar = guruhlarniQur(varaq(kitob, 'Guruhlar').qatorlar, ustozlar)
   const oquvVaraq = varaq(kitob, "O'quvchilar")
@@ -1195,13 +1195,13 @@ function malumotniQur(kitob: Map<string, ReturnType<typeof varaq>>) {
   }
 }
 
-type Tayyor = ReturnType<typeof malumotniQur>
+export type Tayyor = ReturnType<typeof malumotniQur>
 
 /* ------------------------------------------------------------------ */
 /*  5. Solishtiruv — hisob Sheets bilan mos keladimi                    */
 /* ------------------------------------------------------------------ */
 
-function solishtir(d: Tayyor) {
+export function solishtir(d: Tayyor) {
   // Guruh tarixi bo'yicha ajratilgan eski davrlar — Sheets'dagi bitta qatoriga qo'shib solishtiriladi
   const asl = new Map(d.yozilishlar.filter((y) => y.asl).map((y) => [y.kalit, y.asl!]))
   const aslKalit = (k: string) => asl.get(k) ?? k
@@ -1770,7 +1770,8 @@ Yozishni to'xtatadi (${toxtatuvchilar.length}):`)
   }
 }
 
-ishga().catch((e) => {
+/* sinxron.ts bu fayldan faqat yig'ish qismini oladi — o'zi yurmaydi */
+if (/migrate-from-sheets/.test(process.argv[1] ?? '')) ishga().catch((e) => {
   console.error('\nXATO:', e instanceof Error ? e.message : e)
   process.exit(1)
 })
