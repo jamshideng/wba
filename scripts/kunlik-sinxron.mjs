@@ -69,7 +69,16 @@ const HASH_FAYL = join(ROOT, 'logs', 'sinxron-oxirgi-ishlar.txt')
 const eski = existsSync(HASH_FAYL) ? readFileSync(HASH_FAYL, 'utf8').trim() : ''
 writeFileSync(HASH_FAYL, hash)
 
+/* Pul — tasdiqlash uchun (eski ko'chirish xabari kabi): to'lovlar soni va Sheets hisobi bilan solishtirish */
+const tolovSoni = s.out.match(/To‘lov\s+(\d+) \/ (\d+)/)
+const pulQ = s.out.match(/to‘lashi kerak (\d[\d   ]*) \/ Sheets (\d[\d   ]*) · to‘langan (\d[\d   ]*) \/ Sheets (\d[\d   ]*)/)
+const belgi = (a, b) => (a.trim() === b.trim() ? '✓' : '✗ FARQ')
 const qism = [`✅ Sinxron (${vaqt}): saytga ${natija.saytga}, Sheets'ga ${natija.sheetsga}`]
+if (tolovSoni) qism.push(`To'lovlar: ${tolovSoni[2]} ta (Sheets ${tolovSoni[1]})`)
+if (pulQ) {
+  qism.push(`To'langan: ${pulQ[3].trim()} so'm / Sheets ${pulQ[4].trim()} ${belgi(pulQ[3], pulQ[4])}`)
+  qism.push(`To'lashi kerak: ${pulQ[1].trim()} so'm / Sheets ${pulQ[2].trim()} ${belgi(pulQ[1], pulQ[2])}`)
+}
 if (ishlar.length && hash !== eski) {
   qism.push(`\nHal qilish kerak (${ishlar.length}):\n${ishlar.slice(0, 40).join('\n')}${ishlar.length > 40 ? `\n… yana ${ishlar.length - 40} ta (log)` : ''}`)
 } else if (ishlar.length) {
