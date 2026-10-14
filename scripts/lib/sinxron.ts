@@ -100,6 +100,9 @@ export function uchTomon(
         const sv = normal(S[m]), dv = normal(D[m])
         if (teng(sv, dv)) { yangi[m] = sv; continue }
         if (!B) {
+          // Oldingi holat yo'q (yangi juftlik): bir tomon bo'sh bo'lsa — to'lganini olamiz
+          if (dv === null) { saytga[m] = sv; saytgaEski[m] = dv; yangi[m] = sv; continue }
+          if (sv === null && !yopiq.has(m) && !faqatSheets) { sheetsga[m] = dv; sheetsgaEski[m] = sv; yangi[m] = dv; continue }
           amallar.push({ tur: 'ziddiyat', kalit: k, maydon: m, baza: undefined, sheets: sv, sayt: dv })
           yangi[m] = null
           continue

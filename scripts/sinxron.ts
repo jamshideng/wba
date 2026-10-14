@@ -42,6 +42,9 @@ const KOP = process.argv.includes('--kop')
 const HOLAT_FAYL = process.env.SINXRON_HOLAT ?? 'holat/sinxron.json'
 const SHEETS_ID = process.env.SHEETS_ID
 const CHEGARA = 40
+/** Formulalar shu qatorgacha oldindan qo'yilgan (B_Yangi.js QATOR_SONI, Tolovlar 1500) */
+const OQ_OXIRGI = 300
+const TL_OXIRGI = 1497
 
 type Holat = { versiya: 1; vaqt: string; toplamlar: Record<string, Record<string, Yozuv>> }
 
@@ -70,7 +73,8 @@ const SOZ: Record<string, Sozlama> = {
   tuzatish: { maydonlar: TUZ_M, sheetsgaYozilmaydi: HAMMASI(TUZ_M), sheetsgaQoshiladi: false },
   tolov: {
     maydonlar: TOL_M,
-    sheetsgaYozilmaydi: ['student_id', 'yozilish', 'bekor'],
+    // Tasdiq ustuni Sheets'da himoyalangan — faqat direktor belgilaydi
+    sheetsgaYozilmaydi: ['student_id', 'yozilish', 'bekor', 'tasdiqlangan'],
     faqatSheetsdan: (k) => k.startsWith('AT'),        // _Arxiv_tolovlar
   },
   probniy: { maydonlar: PROB_M, sheetsgaYozilmaydi: HAMMASI(PROB_M), sheetsgaQoshiladi: false },
@@ -89,7 +93,8 @@ const NOMI: Record<Tur, string> = {
 
 const pul = (n: number) => n.toLocaleString('uz-UZ')
 const vaqt5 = (v: unknown) => (v ? String(v).slice(0, 5) : null)
-const sana10 = (v: unknown) => (v ? String(v).slice(0, 10) : null)
+/** Chegirma yo'q bo'lsa "necha oy" ahamiyatsiz — bo'sh va 0 bir xil */
+const chegOy = (summa: unknown, oy: number | null) => (Number(summa) > 0 ? oy : 0)
 const tel = (o: Yozuv) => new Set([o.ota_tel, o.ona_tel, o.shaxsiy_tel].filter(Boolean).map(String))
 /** Saytda birlashtirilgan o'quvchi: arxiv_sabab "Birlashtirildi → S014" */
 const birlashganga = (sabab: string | null) => sabab?.match(/^Birlashtirildi\D*(S\d+)/)?.[1] ?? null
@@ -136,8 +141,8 @@ function sheetsKorinishi(d: Tayyor) {
     }])),
     yozilish: new Map(d.yozilishlar.filter((y) => y.sheets_id).map((y) => [y.sheets_id!, {
       student_id: y.student_id, group_id: y.group_id, boshlandi: y.boshlandi, tugadi: y.tugadi,
-      chegirma_summa: y.chegirma_summa, chegirma_oy: y.chegirma_oy,
-      chegirma2_summa: y.chegirma2_summa, chegirma2_oy: y.chegirma2_oy, vip: y.vip,
+      chegirma_summa: y.chegirma_summa, chegirma_oy: chegOy(y.chegirma_summa, y.chegirma_oy),
+      chegirma2_summa: y.chegirma2_summa, chegirma2_oy: chegOy(y.chegirma2_summa, y.chegirma2_oy), vip: y.vip,
     }])),
     tuzatish: new Map(),
     tolov: new Map(d.tolovlar.filter((p) => p.sheets_id).map((p) => [p.sheets_id!, {
@@ -225,8 +230,8 @@ function saytKorinishi(x: SaytXom, alias: Map<string, string>) {
       }])),
     yozilish: new Map(x.enrollments.map((e) => [sk(e.sheets_id, e.id), {
       student_id: a(e.student_id), group_id: e.group_id, boshlandi: e.boshlandi, tugadi: e.tugadi,
-      chegirma_summa: Number(e.chegirma_summa), chegirma_oy: e.chegirma_oy,
-      chegirma2_summa: Number(e.chegirma2_summa), chegirma2_oy: e.chegirma2_oy, vip: e.vip,
+      chegirma_summa: Number(e.chegirma_summa), chegirma_oy: chegOy(e.chegirma_summa, e.chegirma_oy),
+      chegirma2_summa: Number(e.chegirma2_summa), chegirma2_oy: chegOy(e.chegirma2_summa, e.chegirma2_oy), vip: e.vip,
     }])),
     tuzatish: new Map(),
     tolov: new Map(x.payments.map((p) => [sk(p.sheets_id, p.id), {
@@ -304,6 +309,15 @@ function rejaTuz(S: Record<Tur, Toplam>, x: SaytXom, baza: Holat | null) {
   return { rejalar, juftliklar, alias, D }
 }
 
+/** "Qo'lda" bo'lganda nima qilish kerak — aniq ko'rsatma */
+const QOLDA: Record<string, string> = {
+  'tolov.tasdiqlangan': "saytda tasdiqlangan — direktor Sheets'da ham Tasdiq belgilasin",
+  'tolov.bekor': "saytda bekor qilingan — Sheets'dagi qatorni bot orqali o'chiring",
+  'yozilish.tugadi': "saytda fandan chiqarilgan — Sheets'da \"Tugadi\" sanasini qo'ying",
+  'yozilish.group_id': "saytda guruhi almashgan — Sheets'da ham guruhni almashtiring",
+  'oquvchi.holat': "saytda holati o'zgargan (arxiv/tanaffus) — Sheets'da ham o'zgartiring",
+}
+
 /* ------------------------------------------------------------------ */
 /*  4. Hisobot                                                          */
 /* ------------------------------------------------------------------ */
@@ -316,7 +330,7 @@ function amalMatni(t: Tur, a: Amal): string {
     case 'saytga': return `→ saytga: ${NOMI[t]} ${a.kalit}: ${Object.keys(a.ozgarish).map((m) => `${m} ${q(a.eski[m])} → ${q(a.ozgarish[m])}`).join('; ')}`
     case 'sheetsga': return `← Sheets'ga: ${NOMI[t]} ${a.kalit}: ${Object.keys(a.ozgarish).map((m) => `${m} ${q(a.eski[m])} → ${q(a.ozgarish[m])}`).join('; ')}`
     case 'ziddiyat': return `✗ ZIDDIYAT ${NOMI[t]} ${a.kalit}.${a.maydon}: Sheets "${q(a.sheets)}" · sayt "${q(a.sayt)}"${a.baza === undefined ? ' (oldingi holat noma’lum)' : ` · oldin "${q(a.baza)}"`}`
-    case 'qolda': return `✋ QO‘LDA ${NOMI[t]} ${a.kalit}${a.maydon ? `.${a.maydon}: Sheets "${q(a.sheets)}" · sayt "${q(a.sayt)}"` : ''} — ${a.sabab}`
+    case 'qolda': return `✋ QO‘LDA ${NOMI[t]} ${a.kalit}${a.maydon ? `.${a.maydon}: Sheets "${q(a.sheets)}" · sayt "${q(a.sayt)}"` : ''} — ${QOLDA[`${t}.${a.maydon}`] ?? a.sabab}`
     case 'yoqoldi': return `? ${NOMI[t]} ${a.kalit} ${a.qayerda === 'sheets' ? "Sheets'dan" : 'saytdan'} yo‘qolgan — o‘chirilmadi`
   }
 }
@@ -520,7 +534,6 @@ async function sheetsgaYoz(
   const t = {
     sana: ustun(TL, 'Sana'), oq: ustun(TL, "O'quvchi"), davr: ustun(TL, 'Davr'), summa: ustun(TL, 'Summa'),
     usul: ustun(TL, 'Usul'), izoh: ustun(TL, 'Izoh'), narx: ustun(TL, 'Oylik narx'), kirit: ustun(TL, 'Kiritilgan'),
-    tasdiq: ustun(TL, 'Tasdiq'), tvaqt: ustun(TL, 'Tasdiqlangan'),
   }
   const u = { tel: ustun(US, 'Telefon'), tg: ustun(US, 'Telegram ID') }
 
@@ -599,6 +612,7 @@ async function sheetsgaYoz(
       qolda.push(`${a.kalit} (${s.fish}): ikkinchi fan, telefoni yo'q — Sheets'ga qo'lda qo'shing`)
       continue
     }
+    if (oxir + 1 > OQ_OXIRGI) { qolda.push(`${a.kalit} (${s.fish}): O'quvchilar varag'ida formulali bo'sh qator qolmadi (${OQ_OXIRGI})`); continue }
     const id = birinchi ? sid : yangiId()
     yozYangiId.set(a.kalit, id)
     yangiGuruh.set(id, nom)
@@ -623,6 +637,7 @@ async function sheetsgaYoz(
   for (const a of rejalar.oquvchi.amallar) {
     if (a.tur !== 'sheetsga-yangi' || yozilishli.has(a.kalit)) continue
     const s = st.get(a.kalit)!
+    if (oxir + 1 > OQ_OXIRGI) { qolda.push(`${a.kalit} (${s.fish}): O'quvchilar varag'ida formulali bo'sh qator qolmadi`); continue }
     const r = ++oxir
     yangiQatorlar.push(r)
     k(OQ, r, c.id, a.kalit)
@@ -648,10 +663,6 @@ async function sheetsgaYoz(
     if ('summa' in o) k(TL, q._qator, t.summa, Number(o.summa))
     if ('usul' in o) k(TL, q._qator, t.usul, usulSheets(o.usul as string | null))
     if ('izoh' in o) k(TL, q._qator, t.izoh, o.izoh)
-    if ('tasdiqlangan' in o) {
-      k(TL, q._qator, t.tasdiq, o.tasdiqlangan === true)
-      k(TL, q._qator, t.tvaqt, o.tasdiqlangan ? vaqtSeriya(pay.get(a.kalit)?.tasdiqlangan_vaqt ?? new Date().toISOString()) : null)
-    }
   }
   let tOxir = Math.max(1, ...TL.qatorlar.map((q) => q._qator))
   const yangiTolov = new Map<string, number>()        // 'sayt:<id>' → Sheets qatori (ID = T + qator-1)
@@ -672,6 +683,7 @@ async function sheetsgaYoz(
       qolda.push(`to'lov ${a.kalit} (${s?.fish ?? a.yozuv.student_id}, ${pul(Number(a.yozuv.summa))}): qaysi fanga ekanini aniqlab bo'lmadi — Sheets'ga qo'lda kiriting`)
       continue
     }
+    if (tOxir + 1 > TL_OXIRGI) { qolda.push(`to'lov ${a.kalit}: Tolovlar varag'ida formulali bo'sh qator qolmadi`); continue }
     const r = ++tOxir
     yangiTolov.set(a.kalit, r)
     const gId = [...guruhNomi].find(([, n]) => n === gNom)?.[0]
@@ -680,11 +692,10 @@ async function sheetsgaYoz(
     k(TL, r, t.davr, p.davr)
     k(TL, r, t.summa, Number(p.summa))
     k(TL, r, t.usul, usulSheets(p.usul))
-    k(TL, r, t.izoh, [p.izoh, 'saytdan'].filter(Boolean).join(' · '))
+    if (p.izoh) k(TL, r, t.izoh, p.izoh)
     k(TL, r, t.narx, (qq ? Number(qiymat(qq, 'Oylik narx')) || null : null) ?? (gId ? guruhNarx.get(gId) ?? null : null))
     k(TL, r, t.kirit, vaqtSeriya(new Date().toISOString()))
-    k(TL, r, t.tasdiq, p.tasdiqlangan)
-    if (p.tasdiqlangan) k(TL, r, t.tvaqt, vaqtSeriya(p.tasdiqlangan_vaqt))
+    // Tasdiq — himoyalangan ustun; saytda tasdiqlangan bo'lsa keyingi yurish "qo'lda" deb eslatadi
   }
 
   /* ── Ustoz telefoni / Telegram ID ── */
@@ -820,6 +831,8 @@ async function ishga() {
     const { error } = await db.from('payments').update({ sheets_id: tid }).eq('id', Number(saytK.slice(5)))
     if (error) throw new Error(`payments (yangi ID): ${error.message}`)
     kalitAlmashtir(yangiBaza.tolov, saytK, tid)
+    const b = yangiBaza.tolov.get(tid)
+    if (b) b.tasdiqlangan = false
   }
   // Sheets'ga yozilmay qolgan yangi yozuvlar holatga kirmaydi — keyingi safar yana urinadi
   for (const t of ['yozilish', 'tolov', 'oquvchi'] as const) {

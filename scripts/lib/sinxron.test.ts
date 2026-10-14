@@ -79,3 +79,8 @@ test('juftla — ikkala tomonda kiritilgan bir xil to‘lov', () => {
   )
   assert.deepEqual([...m], [['sayt:9', 'T0201']])
 })
+
+test('baza yo‘q, bir tomon bo‘sh — to‘lgani olinadi', () => {
+  const r = uchTomon(null, t({ T1: { fish: 'Ali', tel: '1' } }), t({ T1: { fish: 'Ali', tel: null } }), S)
+  assert.deepEqual(r.amallar, [{ tur: 'saytga', kalit: 'T1', ozgarish: { tel: '1' }, eski: { tel: null } }])
+})
