@@ -306,6 +306,25 @@ function rejaTuz(S: Record<Tur, Toplam>, x: SaytXom, baza: Holat | null) {
   for (const k of [...D.oquvchi.keys()]) if (eskiArxiv.has(k) && !S.oquvchi.has(k) && yangi('oquvchi', k)) D.oquvchi.delete(k)
 
   const rejalar = Object.fromEntries(TARTIB.map((t) => [t, uchTomon(B[t], S[t], D[t], SOZ[t])])) as Record<Tur, Reja>
+
+  /* ID to'qnashuvi: bitta ID ikki tomonda ikki xil bolada (ism ziddiyati). Bu bola
+     hal bo'lmaguncha uning yozilish va to'lovlari hech qayerga yozilmaydi — aks holda
+     Sheets'dagi bolaning guruhi/puli saytdagi boshqa bolaga yopishib qoladi. */
+  const toqnash = new Set(rejalar.oquvchi.amallar.filter((a) => a.tur === 'ziddiyat' && a.maydon === 'fish').map((a) => a.kalit))
+  if (toqnash.size) {
+    for (const t of ['yozilish', 'tolov'] as const) {
+      const r = rejalar[t]
+      const bolasi = (a: Amal) => String(
+        'yozuv' in a ? a.yozuv.student_id : (S[t].get(a.kalit)?.student_id ?? D[t].get(a.kalit)?.student_id ?? ''))
+      r.amallar = r.amallar.map((a): Amal => {
+        if (a.tur === 'qolda' || a.tur === 'ziddiyat' || !toqnash.has(bolasi(a))) return a
+        const b = B[t]?.get(a.kalit)
+        if (b) r.yangiBaza.set(a.kalit, b)
+        else r.yangiBaza.delete(a.kalit)
+        return { tur: 'qolda', kalit: a.kalit, sabab: `${bolasi(a)} ID'si ikki tomonda ikki xil bolada — avval o'quvchini hal qiling` }
+      })
+    }
+  }
   return { rejalar, juftliklar, alias, D }
 }
 
