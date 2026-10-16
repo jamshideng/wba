@@ -95,7 +95,7 @@ export default async function OquvchiProfil({
     supabase
       .from('enrollments')
       .select(
-        'id, group_id, boshlandi, tugadi, holat, chegirma_summa, chegirma_oy, chegirma2_summa, chegirma2_oy, chegirma_sabab, vip, vip_dan, groups(nom, boshlanish, tugash, kunlar, oylik_narx, teachers(ism))',
+        'id, group_id, boshlandi, tugadi, holat, chegirma_summa, chegirma_oy, chegirma2_summa, chegirma2_oy, chegirma_sabab, vip, vip_dan, groups(nom, subject_id, boshlanish, tugash, kunlar, oylik_narx, teachers(ism))',
       )
       .eq('student_id', id)
       .order('boshlandi', { ascending: false }),
@@ -111,8 +111,8 @@ export default async function OquvchiProfil({
     supabase.from('v_attendance_monthly').select('davr, group_id, darslar, kelgan, foiz').eq('student_id', id).order('davr', { ascending: false }).limit(6),
     supabase.from('v_woblr_balance').select('jami_ball, sarflangan, balans').eq('student_id', id).maybeSingle(),
     pulKoradi
-      ? supabase.from('groups').select('id, nom').eq('holat', 'faol').order('nom')
-      : Promise.resolve({ data: [] as { id: string; nom: string }[] }),
+      ? supabase.from('groups').select('id, nom, subject_id').eq('holat', 'faol').order('nom')
+      : Promise.resolve({ data: [] as { id: string; nom: string; subject_id: string | null }[] }),
     // RLS: pulni ko'radiganlar; o'quvchining yozilishlari bo'yicha
     pulKoradi
       ? supabase
@@ -152,6 +152,7 @@ export default async function OquvchiProfil({
     vip_dan: string | null
     groups: {
       nom: string
+      subject_id: string | null
       boshlanish: string
       tugash: string
       kunlar: number[]
@@ -451,13 +452,18 @@ export default async function OquvchiProfil({
                       <details className="w-full">
                         <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Guruhni almashtirish</summary>
                         <form action={guruhAlmashtir} className="mt-2 flex flex-col gap-2">
+                          <p className="text-[12.5px] leading-snug text-ink-2">
+                            Shu fan ichida almashadi. Hozirgi guruh: <b className="text-ink">{y.groups?.nom ?? y.group_id}</b>
+                          </p>
                           <input type="hidden" name="student_id" value={oquvchi.id} />
                           <input type="hidden" name="enrollment_id" value={y.id} />
                           <div className="grid grid-cols-1 gap-2 sm:grid-cols-[2fr_1fr]">
                             <Maydon nom="Yangi guruh">
                               <select name="group_id" required defaultValue="" className={kirishKlass}>
                                 <option value="" disabled>Tanlang…</option>
-                                {((barchaGuruhlar ?? []) as { id: string; nom: string }[])
+                                {/* Faqat shu fanning boshqa guruhlari — ikkinchi fanga yozish "Guruhga biriktirish" orqali */}
+                                {((barchaGuruhlar ?? []) as { id: string; nom: string; subject_id: string | null }[])
+                                  .filter((g) => !y.groups?.subject_id || g.subject_id === y.groups.subject_id)
                                   .filter((g) => !yList.some((z) => z.group_id === g.id && z.holat !== 'tugagan'))
                                   .map((g) => (
                                     <option key={g.id} value={g.id}>{g.nom}</option>
