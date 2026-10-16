@@ -28,7 +28,7 @@ import {
   type Tayyor,
 } from './migrate-from-sheets'
 import {
-  uchTomon, juftla, toplamdan, toplamga, teng,
+  uchTomon, juftla, toplamdan, toplamga, teng, normal,
   type Toplam, type Yozuv, type Amal, type Sozlama, type Reja,
 } from './lib/sinxron'
 import {
@@ -280,6 +280,10 @@ function saytKorinishi(x: SaytXom, alias: Map<string, string>) {
 /* ------------------------------------------------------------------ */
 
 type Juftlik = { tur: Tur; saytKalit: string; sheetsKalit: string }
+/** Saytda guruh almashtirilgan (0074): kalit — hozirgi (yangi guruh), eskiKalit — "ID~boshlanish" */
+type Almashuv = { kalit: string; eskiKalit: string; eskiGuruh: string; yangiGuruh: string; sana: string }
+
+const CHEG_M = ['chegirma_summa', 'chegirma_oy', 'chegirma2_summa', 'chegirma2_oy'] as const
 
 function rejaTuz(S: Record<Tur, Toplam>, x: SaytXom, baza: Holat | null) {
   const B = Object.fromEntries(TARTIB.map((t) => [t, toplamga(baza?.toplamlar[t])])) as Record<Tur, Toplam | null>
@@ -346,7 +350,37 @@ function rejaTuz(S: Record<Tur, Toplam>, x: SaytXom, baza: Holat | null) {
       })
     }
   }
-  return { rejalar, juftliklar, alias, D }
+  /* Saytda guruh almashtirilgan (guruh_almashtir, 0074): K yangi guruhda, "K~<asl boshlanish>"
+     eski davr. Sheets'ga O'quvchilar "Guruh" katagi + _Guruh_tarixi qatori yoziladi —
+     keyingi o'qishda Sheets ham xuddi shunday bo'linadi. Chegirma Sheets'da asl
+     boshlanishdan sanaladi, saytda qolgan muddat — Sheets'ga yozilmaydi. */
+  const almashuvlar: Almashuv[] = []
+  const ry = rejalar.yozilish
+  for (const [k, d] of D.yozilish) {
+    if (k.includes('~') || k.startsWith('sayt:')) continue
+    const b = B.yozilish?.get(k)
+    const s = S.yozilish.get(k)
+    if (!b || !s || teng(normal(d.group_id), normal(b.group_id)) || !teng(normal(s.group_id), normal(b.group_id))) continue
+    const eskiKalit = `${k}~${b.boshlandi}`
+    const eski = D.yozilish.get(eskiKalit)
+    if (!eski || S.yozilish.has(eskiKalit) || !d.boshlandi) continue
+    almashuvlar.push({ kalit: k, eskiKalit, eskiGuruh: String(b.group_id), yangiGuruh: String(d.group_id), sana: String(d.boshlandi) })
+    ry.amallar = ry.amallar
+      .filter((a) => !(a.kalit === eskiKalit && a.tur === 'qolda'))
+      .filter((a) => !(a.kalit === k && a.tur === 'qolda' && (a.maydon === 'group_id' || a.maydon === 'boshlandi')))
+      .map((a): Amal => {
+        if (a.kalit !== k || a.tur !== 'sheetsga') return a
+        const o = { ...a.ozgarish }
+        for (const m of CHEG_M) delete o[m]
+        return { ...a, ozgarish: o }
+      })
+      .filter((a) => !(a.kalit === k && a.tur === 'sheetsga' && !Object.keys(a.ozgarish).length))
+    const yb: Yozuv = { ...(ry.yangiBaza.get(k) ?? b), group_id: d.group_id, boshlandi: d.boshlandi }
+    for (const m of CHEG_M) yb[m] = d[m] ?? null
+    ry.yangiBaza.set(k, yb)
+    ry.yangiBaza.set(eskiKalit, { ...eski })
+  }
+  return { rejalar, juftliklar, alias, D, almashuvlar }
 }
 
 /** "Qo'lda" bo'lganda nima qilish kerak — aniq ko'rsatma */
@@ -443,7 +477,35 @@ async function saytgaYoz(
     xato('enrollments (ID)', (await db.from('enrollments').update({ sheets_id: j.sheetsKalit }).eq('id', id)).error)
     enId.set(j.sheetsKalit, id)
   }
+  /* Sheets'da guruh almashtirilgan (_Guruh_tarixi): K yangi guruhga o'tgan, "K~<asl>"
+     yangi paydo bo'lgan — yozilishni ko'chirish emas, guruh_almashtir (0074):
+     eski davr eski guruhda qoladi, o'tish oyidan boshlab hisob/to'lov yangisida. */
+  const almashdi = new Set<string>()
   for (const a of amallar('yozilish')) {
+    if (a.tur !== 'saytga' || !('group_id' in a.ozgarish) || !a.ozgarish.boshlandi) continue
+    const eski = amallar('yozilish').find((z) => z.tur === 'saytga-yangi' && z.kalit.startsWith(`${a.kalit}~`))
+    const eid = enId.get(a.kalit)
+    if (!eski || !eid) continue
+    const { data, error } = await db.rpc('guruh_almashtir', {
+      p_enrollment: eid, p_group: String(a.ozgarish.group_id), p_sana: String(a.ozgarish.boshlandi),
+    })
+    if (error) { hisob.push(`guruh almashuvi ${a.kalit}: ${error.message} — qo'lda`); continue }
+    const r = data as { eski: string; yangi: string }
+    enId.set(a.kalit, r.yangi)
+    enId.set(eski.kalit, r.eski)
+    almashdi.add(a.kalit).add(eski.kalit)
+    hisob.push(`guruh almashtirildi: ${a.kalit} → ${a.ozgarish.group_id} (${a.ozgarish.boshlandi} dan)`)
+  }
+
+  for (const a of amallar('yozilish')) {
+    if (almashdi.has(a.kalit)) {
+      if (a.tur !== 'saytga') continue
+      const o: Record<string, unknown> = { ...a.ozgarish }
+      delete o.group_id
+      delete o.boshlandi
+      if (Object.keys(o).length) xato('enrollments', (await db.from('enrollments').update(o).eq('id', enId.get(a.kalit)!)).error)
+      continue
+    }
     if (a.tur === 'saytga-yangi') {
       const y = d.yozilishlar.find((z) => z.sheets_id === a.kalit)!
       const { data, error } = await db.from('enrollments').insert({
@@ -558,7 +620,7 @@ async function saytgaYoz(
 
 async function sheetsgaYoz(
   kitob: Map<string, Varaq>, d: Tayyor, x: SaytXom, D: Record<Tur, Toplam>,
-  rejalar: Record<Tur, Reja>, quruq: boolean,
+  rejalar: Record<Tur, Reja>, quruq: boolean, almashuvlar: Almashuv[] = [],
 ) {
   const OQ = varaq(kitob, "O'quvchilar")
   const TL = varaq(kitob, 'Tolovlar')
@@ -625,6 +687,33 @@ async function sheetsgaYoz(
     if ('chegirma_oy' in o) k(OQ, q._qator, c.o1, o.chegirma_oy)
     if ('chegirma2_summa' in o) k(OQ, q._qator, c.c2, Number(o.chegirma2_summa) || null)
     if ('chegirma2_oy' in o) k(OQ, q._qator, c.o2, o.chegirma2_oy)
+  }
+
+  /* ── Saytda guruh almashtirilgan: "Guruh" katagi + _Guruh_tarixi (Apps Script bilan bir xil) ── */
+  const GT = varaqBormi(kitob, '_Guruh_tarixi')
+  let gtOxir = GT ? Math.max(1, ...GT.qatorlar.map((q) => q._qator)) : 1
+  const almashmadi: Almashuv[] = []
+  for (const al of almashuvlar) {
+    const q = oqQator.get(al.kalit)
+    const eskiNom = guruhNomi.get(al.eskiGuruh)
+    const yangiNom = guruhNomi.get(al.yangiGuruh)
+    const sabab = !GT ? "_Guruh_tarixi varag'i yo'q"
+      : !q ? "O'quvchilar varag'ida qatori yo'q"
+      : !eskiNom || !yangiNom ? "guruh Sheets'da topilmadi"
+      : matn(q, 'Guruh') !== eskiNom ? `Sheets'dagi guruhi "${matn(q, 'Guruh')}" — kutilgani "${eskiNom}"`
+      : null
+    if (sabab || !GT || !q || !yangiNom || !eskiNom) {
+      qolda.push(`${al.kalit}: saytda guruhi almashgan (${al.sana} dan) — ${sabab}; Sheets'da qo'lda almashtiring`)
+      almashmadi.push(al)
+      continue
+    }
+    k(OQ, q._qator, c.guruh, yangiNom)
+    const r = ++gtOxir
+    k(GT, r, 1, sanaSeriya(al.sana))
+    k(GT, r, 2, al.kalit)
+    k(GT, r, 3, eskiNom)
+    k(GT, r, 4, yangiNom)
+    k(GT, r, 5, 'sayt')
   }
 
   /* ── Yangi qatorlar: saytda qo'shilgan yozilish (va bola) ── */
@@ -756,7 +845,7 @@ async function sheetsgaYoz(
     }
     await kataklarniYoz(sh, SHEETS_ID!, kataklar)
   }
-  return { kataklar, qolda, yozYangiId, yangiTolov, yozilganOquvchi: new Set([...yozilishli].filter((sid) => [...yozYangiId.values()].includes(sid)).concat([...oqYangi].filter((sid) => !yozilishli.has(sid)))) }
+  return { kataklar, qolda, almashmadi, yozYangiId, yangiTolov, yozilganOquvchi: new Set([...yozilishli].filter((sid) => [...yozYangiId.values()].includes(sid)).concat([...oqYangi].filter((sid) => !yozilishli.has(sid)))) }
 }
 
 /* ------------------------------------------------------------------ */
@@ -788,7 +877,7 @@ async function ishga() {
   const S = sheetsKorinishi(d)
   const x = await saytniOqi(db)
   saytBirlashuvi(S, x)
-  const { rejalar, juftliklar, alias, D } = rejaTuz(S, x, baza)
+  const { rejalar, juftliklar, alias, D, almashuvlar } = rejaTuz(S, x, baza)
 
   /* ── To'xtatuvchilar ── */
   const toxta: string[] = [...toxtatuvchilar]
@@ -824,6 +913,7 @@ async function ishga() {
       if (a.tur === 'ziddiyat' || a.tur === 'qolda' || a.tur === 'sheetsga' || a.tur === 'sheetsga-yangi') bloklangan.add(`${t}:${a.kalit}`)
     }
   }
+  for (const al of almashuvlar) console.log(`  ⇄ Sheets'ga guruh almashuvi: ${al.kalit} ${al.eskiGuruh} → ${al.yangiGuruh} (${al.sana} dan)`)
   for (const j of juftliklar) console.log(`  = juftlandi: ${NOMI[j.tur]} saytdagi ${j.saytKalit} ↔ Sheets ${j.sheetsKalit}`)
   // Tuzatishi o'zgarayotgan yozilishning hisobi ham kutadi
   for (const a of rejalar.tuzatish.amallar) if (a.tur === 'ziddiyat' || a.tur === 'qolda') bloklangan.add(`yozilish:${a.kalit.split('|')[0]}`)
@@ -838,7 +928,7 @@ async function ishga() {
   if (ogohlantirishlar.length) console.log(`\nOgohlantirishlar: ${ogohlantirishlar.length} (migrate:dry da batafsil)`)
 
   // Sheets'ga yozish rejasi (quruq) — qo'lda qoladiganlarni ham ko'rsatadi
-  const sq = await sheetsgaYoz(kitob, d, x, D, rejalar, true)
+  const sq = await sheetsgaYoz(kitob, d, x, D, rejalar, true, almashuvlar)
   if (sq.qolda.length) { console.log(`\nSheets'ga yozib bo'lmaydi — qo‘lda (${sq.qolda.length}):`); sq.qolda.forEach((m) => console.log('  ✋', m)) }
   console.log(`Sheets'ga yoziladigan kataklar: ${sq.kataklar.length}`)
 
@@ -855,7 +945,7 @@ async function ishga() {
   /* ── Yozish: avval sayt, keyin Sheets, oxirida holat ── */
   const sy = await saytgaYoz(db, d, x, rejalar, juftliklar, alias, bloklangan)
   sy.hisob.forEach((m) => console.log('  ·', m))
-  const shy = await sheetsgaYoz(kitob, d, x, D, rejalar, false)
+  const shy = await sheetsgaYoz(kitob, d, x, D, rejalar, false, almashuvlar)
   console.log(`  · Sheets'ga ${shy.kataklar.length} katak yozildi`)
 
   // Sheets'ga qo'shilgan yozuvlar endi Sheets ID oldi — saytga ham, holatga ham
@@ -874,6 +964,12 @@ async function ishga() {
     kalitAlmashtir(yangiBaza.tolov, saytK, tid)
     const b = yangiBaza.tolov.get(tid)
     if (b) b.tasdiqlangan = false
+  }
+  // Sheets'ga yozilmagan guruh almashuvi — holat eskicha qoladi, keyingi safar yana urinadi
+  for (const al of shy.almashmadi) {
+    const b = baza?.toplamlar.yozilish?.[al.kalit]
+    if (b) yangiBaza.yozilish.set(al.kalit, b)
+    yangiBaza.yozilish.delete(al.eskiKalit)
   }
   // Sheets'ga yozilmay qolgan yangi yozuvlar holatga kirmaydi — keyingi safar yana urinadi
   for (const t of ['yozilish', 'tolov', 'oquvchi'] as const) {

@@ -6,7 +6,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty, Button } from '@/components/ui'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { guruhgaBiriktir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor, vipOzgartir, oquvchiArxivla, oquvchiArxivdan } from '../actions'
+import { guruhgaBiriktir, guruhAlmashtir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor, vipOzgartir, oquvchiArxivla, oquvchiArxivdan } from '../actions'
 import { ChegirmaMaydonlari } from '../bolaklar'
 import { HisobForma } from '@/components/hisob'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
@@ -15,6 +15,13 @@ import { pul, sana, telefon, jadval, davrNomi, joriyDavr, bugunToshkent } from '
 import type { StudentStatus, PaymentMethod, AttendanceStatus } from '@/lib/types'
 
 export const metadata = { title: 'O‘quvchi profili' }
+
+/** YYYY-MM-DD dan keyingi kun */
+function kunKeyin(s: string): string {
+  const d = new Date(`${s}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
 export const dynamic = 'force-dynamic'
 
 const HOLAT_NOMI: Record<StudentStatus, string> = {
@@ -440,6 +447,34 @@ export default async function OquvchiProfil({
                       </details>
                     )}
 
+                    {pulKoradi && y.holat !== 'tugagan' && (
+                      <details className="w-full">
+                        <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Guruhni almashtirish</summary>
+                        <form action={guruhAlmashtir} className="mt-2 flex flex-col gap-2">
+                          <input type="hidden" name="student_id" value={oquvchi.id} />
+                          <input type="hidden" name="enrollment_id" value={y.id} />
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[2fr_1fr]">
+                            <Maydon nom="Yangi guruh">
+                              <select name="group_id" required defaultValue="" className={kirishKlass}>
+                                <option value="" disabled>Tanlang…</option>
+                                {((barchaGuruhlar ?? []) as { id: string; nom: string }[])
+                                  .filter((g) => !yList.some((z) => z.group_id === g.id && z.holat !== 'tugagan'))
+                                  .map((g) => (
+                                    <option key={g.id} value={g.id}>{g.nom}</option>
+                                  ))}
+                              </select>
+                            </Maydon>
+                            <Maydon nom="Qaysi kundan">
+                              <input type="date" name="sana" required defaultValue={bugunToshkent()} min={kunKeyin(y.boshlandi)} max={bugunToshkent()} className={kirishKlass} />
+                            </Maydon>
+                          </div>
+                          <p className="text-[12px] leading-snug text-ink-3">
+                            Shu kungacha davomat va hisob eski guruhda qoladi. Shu oyning hisobi, to‘lovi va shu kundan keyingi davomat yangi guruhga o‘tadi. Chegirma qolgan muddati bilan o‘tadi.
+                          </p>
+                          <Yuborish kutish="…">Almashtirish</Yuborish>
+                        </form>
+                      </details>
+                    )}
                     {pulKoradi && y.holat !== 'tugagan' && (
                       <details className="w-full">
                         <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Guruhdan chiqarish</summary>

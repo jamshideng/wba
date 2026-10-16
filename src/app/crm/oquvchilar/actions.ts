@@ -121,6 +121,40 @@ export async function guruhgaBiriktir(fd: FormData) {
   redirect(xabarliYol(yol, { ok: 'Guruhga biriktirildi. Oylar hisobi yozildi.' }))
 }
 
+/**
+ * Shu fan ichida guruhni sana bilan almashtirish (0074). Sanagacha tarix
+ * eski guruhda qoladi; o'tish oyining hisobi va to'lovi yangi guruhniki.
+ */
+export async function guruhAlmashtir(fd: FormData) {
+  await talabRol('admin', 'direktor', 'qabulxona')
+  const studentId = matn(fd.get('student_id'))
+  const enrollmentId = matn(fd.get('enrollment_id'))
+  const groupId = matn(fd.get('group_id'))
+  const yol = `/crm/oquvchilar/${studentId}`
+  if (!studentId || !enrollmentId) redirect('/crm/oquvchilar')
+  if (!groupId) redirect(xabarliYol(yol, { xato: 'Yangi guruhni tanlang.' }))
+  const sana = sanaOqi(fd.get('sana'))
+  if (!sana) redirect(xabarliYol(yol, { xato: 'O‘tish sanasini tanlang.' }))
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('guruh_almashtir', {
+    p_enrollment: enrollmentId!,
+    p_group: groupId!,
+    p_sana: sana!,
+  })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  const n = (data ?? {}) as { davomat?: number; davomat_qoldi?: number; tolovlar?: number }
+  const qoshimcha = [
+    n.tolovlar ? `${n.tolovlar} ta to‘lov` : '',
+    n.davomat ? `${n.davomat} ta davomat` : '',
+  ].filter(Boolean).join(', ')
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(yol, {
+    ok: `Guruh almashtirildi.${qoshimcha ? ` Yangi guruhga o‘tdi: ${qoshimcha}.` : ''}${n.davomat_qoldi ? ` ${n.davomat_qoldi} ta davomat yangi guruhda dars kuni bo‘lmagani uchun eski guruhda qoldi.` : ''}`,
+  }))
+}
+
 export async function guruhdanChiqar(fd: FormData) {
   await talabRol('admin', 'direktor', 'qabulxona')
   const studentId = matn(fd.get('student_id'))

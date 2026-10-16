@@ -991,6 +991,26 @@ function tarixniQur(qatorlar: Qator[]): TarixQator[] {
   return natija
 }
 
+/**
+ * 16.10 (0074): Sheets'da qator bitta — chegirma muddati ASL boshlanishdan
+ * sanaladi. Saytda yangi davr o'z boshlanishidan sanaydi, shuning uchun
+ * yangi davrga faqat QOLGAN oylar yoziladi (guruh_almashtir bilan bir xil).
+ */
+function chegirmaQoldi(y: Yozilish, asl: string, dan: string) {
+  const k = (Number(dan.slice(0, 4)) * 12 + Number(dan.slice(5, 7))) - (Number(asl.slice(0, 4)) * 12 + Number(asl.slice(5, 7)))
+  if (k <= 0) return
+  const d1 = y.chegirma_summa > 0 ? (y.chegirma_oy ?? Infinity) : 0
+  const d2 = y.chegirma2_summa > 0 ? (y.chegirma2_oy ?? Infinity) : 0
+  const n1 = Math.max(d1 - k, 0)
+  const n2 = Math.max(d2 - Math.max(k - d1, 0), 0)
+  if (y.chegirma_summa > 0) {
+    if (n1 === 0) { y.chegirma_summa = 0; y.chegirma_oy = 0 } else if (y.chegirma_oy !== null) y.chegirma_oy = n1
+  }
+  if (y.chegirma2_summa > 0) {
+    if (n2 === 0) { y.chegirma2_summa = 0; y.chegirma2_oy = 0 } else if (y.chegirma2_oy !== null) y.chegirma2_oy = n2
+  }
+}
+
 const kunOldin = (sana: string) => {
   const d = new Date(`${sana}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() - 1)
@@ -1057,7 +1077,10 @@ function guruhTarixiBoyichaBol(
     })
     if (!eskilar.length) continue
 
+    const asl = y.boshlandi
+    eskilar.slice(1).forEach((z) => chegirmaQoldi(z, asl, z.boshlandi))
     y.boshlandi = qatorlar.at(-1)!.sana
+    chegirmaQoldi(y, asl, y.boshlandi)
     yozilishlar.push(...eskilar)
     const davrlar = [...eskilar, y]
     const egasi = (davr: string) =>

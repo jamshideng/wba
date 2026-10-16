@@ -160,6 +160,19 @@ export type Woblr = {
   created_at: string
 }
 
+/** 0073 — sinov darsidagi bolaga woblar (doimiy bo'lsa woblr ga ko'chadi) */
+export type ProbniyWoblar = {
+  id: number
+  lead_id: string
+  lesson_id: string | null
+  group_id: string | null
+  teacher_id: string | null
+  bergan_profile: string | null
+  ball: number
+  sabab: WoblrReason
+  created_at: string
+}
+
 export type WoblrReward = {
   id: string
   nom: string
@@ -746,6 +759,7 @@ export type Database = {
       lessons: Table<Lesson>
       attendance: Table<Attendance>
       woblr: Table<Woblr>
+      probniy_woblar: Table<ProbniyWoblar>
       woblr_rewards: Table<WoblrReward>
       woblr_redemptions: Table<WoblrRedemption>
       woblr_takliflar: Table<import('./market').Taklif>
@@ -823,6 +837,15 @@ export type Database = {
       jurnal_probniylar: {
         Args: { p_group: string; p_dan: string; p_gacha: string }
         Returns: { lead_id: string; ism: string; dan: string; belgilar: Record<string, AttendanceStatus> }[]
+      }
+      guruh_almashtir: {
+        Args: { p_enrollment: string; p_group: string; p_sana: string }
+        Returns: { eski: string; yangi: string; tolovlar: number; davomat: number; davomat_qoldi: number; woblar: number }
+      }
+      probniy_woblar_ber: { Args: { p_group: string; p_lead: string; p_ball: number }; Returns: number }
+      jurnal_probniy_woblar: {
+        Args: { p_group: string; p_sana: string }
+        Returns: { lead_id: string; bugun: number; jami: number }[]
       }
       probniy_belgila: {
         Args: { p_group: string; p_sana: string; p_lead: string; p_holat: AttendanceStatus | null }
