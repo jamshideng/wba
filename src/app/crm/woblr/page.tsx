@@ -77,6 +77,11 @@ export default async function Woblr({
     p_fan: tanlov.fan,
   })
   const reyting = (data ?? []) as LeaderboardRow[]
+  /* 0070: xodim bo'lmaganga baza top 10 (+ o'quvchiga o'z qatori) qaytaradi —
+     markazdagi bolalar soni bilinmasin. Ustoz o'z guruhini to'liq ko'radi. */
+  const yopiq = !staffmi(profil.rol) && !(profil.rol === 'ustoz' && guruh)
+  const top = yopiq ? reyting.filter((r) => r.orin <= 10) : reyting
+  const men = yopiq ? (reyting.find((r) => r.orin > 10) ?? null) : null
 
   const { data: stavka } = await supabase.from('settings').select('qiymat').eq('kalit', 'woblr.oylik_stavka').maybeSingle()
 
@@ -148,15 +153,18 @@ export default async function Woblr({
       </JonliForma>
 
       <Card className="flex flex-col">
-        <CardHeader title="Reyting" meta={`${reyting.length} o‘quvchi`} />
+        <CardHeader title="Reyting" meta={yopiq ? 'eng yaxshi 10 ta' : `${reyting.length} o‘quvchi`} />
         {reyting.length === 0 ? (
           <div className="px-5 pb-5">
             <Empty>Hali woblar berilmagan. Woblar davomat ekranida yoki pastdagi bo‘limda beriladi.</Empty>
           </div>
         ) : (
           <ol>
-            {reyting.map((r) => (
-              <li key={r.student_id} className="flex items-center gap-3 border-t border-line-soft px-5 py-3">
+            {[...top, ...(men ? [men] : [])].map((r) => (
+              <li
+                key={r.student_id}
+                className={`flex items-center gap-3 px-5 py-3 ${r === men ? 'mt-1 border-t-2 border-dashed border-line bg-surface-2' : 'border-t border-line-soft'}`}
+              >
                 <span
                   className={`tnum flex size-9 shrink-0 items-center justify-center rounded-full font-[family-name:var(--font-display)] text-[14px] font-bold ${
                     r.orin <= 3 ? 'bg-accent-soft text-accent' : 'bg-surface-2 text-ink-3'
@@ -166,7 +174,10 @@ export default async function Woblr({
                 </span>
                 {/* Profil faqat xodimga ochiq — ustoz va o'quvchiga oddiy ism */}
                 {!staffmi(profil.rol) ? (
-                  <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold">{r.fish}</span>
+                  <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold">
+                    {r.fish}
+                    {r === men && <span className="ml-1.5 text-[12px] font-normal text-ink-3">· siz</span>}
+                  </span>
                 ) : (
                   <Link href={`/crm/oquvchilar/${r.student_id}`} className="min-w-0 flex-1 truncate text-[13.5px] font-semibold hover:text-brand">
                     {r.fish}
