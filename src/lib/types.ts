@@ -375,6 +375,22 @@ export type MonthlyIncome = {
   tasdiqlangan: number | null
 }
 
+export type WoblrTarixQatori = {
+  id: number
+  vaqt: string
+  dars_sana: string | null
+  student_id: string
+  fish: string
+  group_id: string | null
+  guruh: string | null
+  fan: string | null
+  bergan_profile: string | null
+  bergan: string
+  ball: number
+  sabab: WoblrReason
+  izoh: string | null
+}
+
 export type LeaderboardRow = {
   orin: number
   student_id: string
@@ -872,6 +888,14 @@ export type Database = {
       push_ochir: { Args: { p_endpoint: string }; Returns: undefined }
       push_oluvchilar: { Args: { p_bildirishnoma: number }; Returns: { endpoint: string; p256dh: string; auth: string }[] }
       push_eskirgan: { Args: { p_endpoint: string }; Returns: undefined }
+      // 0071 — woblar xabari va tarixi
+      woblr_xabar_manzil: { Args: { p_student: string }; Returns: unknown }
+      woblr_xabar_tg_saqla: { Args: { p_student: string; p_chat: number; p_msg: number }; Returns: undefined }
+      woblr_push_eskirgan: { Args: { p_student: string; p_endpoint: string }; Returns: undefined }
+      woblr_tarix: {
+        Args: { p_dan?: string | null; p_gacha?: string | null; p_bergan?: string | null; p_student?: string | null; p_group?: string | null; p_limit?: number }
+        Returns: WoblrTarixQatori[]
+      }
       sorovnomaga_javob: { Args: { p_id: number; p_variantlar: number[] }; Returns: undefined }
       sorovnoma_natija: { Args: { p_id: number }; Returns: { variant_id: number; matn: string; ovoz: number; jami: number }[] }
       bildirishnoma_statistika: { Args: Record<string, never>; Returns: { bildirishnoma_id: number; korgan: number; yopgan: number; javob_bergan: number }[] }

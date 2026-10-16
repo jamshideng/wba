@@ -73,6 +73,7 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
             { href: '/crm/davomat', nom: 'Davomat', Icon: IconAttendance, tayyor: true, mobil: true },
             { href: '/crm/guruhlar', nom: 'Guruhlarim', Icon: IconGroups, tayyor: true, mobil: true },
             { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true, mobil: true },
+            { href: '/crm/woblr/tarix', nom: 'Woblar tarixi', Icon: IconWoblr, tayyor: true },
             { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true, mobil: true },
             // 0060 — o'z kechikishlari (faqat ko'rish)
             { href: '/crm/kechikishlarim', nom: 'Kechikishlarim', Icon: IconAttendance, tayyor: true },
@@ -111,6 +112,7 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
         ]),
         ...guruh('Woblar', IconWoblr, [
           { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true },
+          { href: '/crm/woblr/tarix', nom: 'Woblar tarixi', Icon: IconWoblr, tayyor: true },
           { href: '/crm/market/boshqaruv', nom: 'Woblar market', Icon: IconMarket, tayyor: true },
         ]),
         // Xodimlar (Jamshid, 13.10): administratorlar, ustozlar (maoshi, davomati),
@@ -162,6 +164,7 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
       bandlar: [
         { href: '/crm/men', nom: 'Bosh sahifa', Icon: IconDashboard, tayyor: true, mobil: true },
         { href: '/crm/woblr', nom: 'Woblar reytingi', Icon: IconWoblr, tayyor: true, mobil: true },
+        { href: '/crm/woblr/tarix', nom: 'Woblar tarixi', Icon: IconWoblr, tayyor: true },
         { href: '/crm/market', nom: 'Woblar market', Icon: IconMarket, tayyor: true, mobil: true },
       ],
     })
@@ -172,6 +175,7 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
       nom: 'Farzandim',
       bandlar: [
         { href: '/crm/farzand', nom: 'Farzandim', Icon: IconStudents, tayyor: true, mobil: true },
+        { href: '/crm/woblr/tarix', nom: 'Woblar tarixi', Icon: IconWoblr, tayyor: true },
       ],
     })
   }

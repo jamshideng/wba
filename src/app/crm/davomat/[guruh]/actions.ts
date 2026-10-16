@@ -1,6 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
+import { woblarXabariniYubor } from '@/lib/woblar-xabar'
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/auth'
 import { woblarXato } from '@/lib/woblar-chegara'
@@ -80,6 +82,9 @@ export async function woblarBer(guruhId: string, studentId: string, ball: number
     p_ball: ball,
   })
   if (error) return { ok: false, xato: error.message }
+
+  // O'quvchiga telefon va Telegram xabari (sayt bildirishnomasini trigger yozdi, 0071)
+  after(() => woblarXabariniYubor(supabase, studentId))
 
   revalidatePath('/crm/woblr')
   revalidatePath(`/crm/davomat/${guruhId}`) // oylik limit soni yangilansin (0064)

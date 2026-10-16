@@ -183,7 +183,13 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
                     ))}
                   </MenyuGuruh>
                 ) : (
-                  <Band key={band.href} band={band} nishon={nishon(band)} />
+                  <Band
+                    key={band.href}
+                    band={band}
+                    nishon={nishon(band)}
+                    // /crm/woblr/tarix da "Woblar" emas, "Woblar tarixi" faol bo'lsin
+                    qoshnilar={bolim.bandlar.filter((b) => !b.ichki && b.href !== band.href).map((b) => b.href)}
+                  />
                 ),
               )}
             </div>

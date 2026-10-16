@@ -32,7 +32,8 @@ export default async function Bildirishnomalar({
 
   const supabase = await createClient()
   const [{ data: royxat }, { data: stat }, { data: guruhlar }, { data: oquvchilar }, { data: ustozlar }] = await Promise.all([
-    supabase.from('bildirishnomalar').select('*').order('created_at', { ascending: false }).limit(50),
+    // Woblar haqidagi avtomatik xabarlar (0071) bu ro'yxatga kirmaydi
+    supabase.from('bildirishnomalar').select('*').is('manba', null).order('created_at', { ascending: false }).limit(50),
     supabase.rpc('bildirishnoma_statistika'),
     supabase.from('groups').select('id, nom, subject_id, subjects(nom)').eq('holat', 'faol').order('nom'),
     // Bitta o'quvchiga yuborish uchun (0056) — ketganlardan tashqari

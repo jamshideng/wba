@@ -18,7 +18,7 @@
  *
  * Yangilansa VERSIYA ni oshiring: eski kesh o'chadi.
  */
-const VERSIYA = 'wba-v3'
+const VERSIYA = 'wba-v4'
 const BELGI = 'wba-belgi'
 const OLDINDAN = ['/offline.html', '/ikonka-192.png', '/logo-qizil.png']
 
@@ -82,6 +82,8 @@ self.addEventListener('push', (e) => {
         icon: '/ikonka-192.png',
         badge: '/ikonka-maskable-192.png',
         tag: x.teg || undefined,
+        // Bir xil teg (masalan kunlik woblar) — eski xabar almashadi, lekin yana ovoz bersin
+        renotify: Boolean(x.teg),
         lang: 'uz',
         data: { havola: x.havola || '/crm' },
       }),

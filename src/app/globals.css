@@ -32,6 +32,14 @@
   --color-accent-soft: #33280f;
   --color-accent-line: #5a4a22;
 
+  /* Medallar (woblar reytingi 1–3-o'rin) */
+  --color-oltin: #f2c14e;
+  --color-oltin-soft: #3a2e10;
+  --color-kumush: #c9d1d9;
+  --color-kumush-soft: #262a2e;
+  --color-bronza: #e0945a;
+  --color-bronza-soft: #3a2414;
+
   /* Lending: yo'nalishlar ranglari (har fan o'z rangida) */
   --color-osmon: #5cc8ff;
   --color-binafsha: #b39bff;
@@ -76,6 +84,18 @@
       --color-accent: #9e6412;
       --color-accent-soft: #fdf3d9;
       --color-accent-line: #ecd9a0;
+    --color-oltin: #b8860b;
+    --color-oltin-soft: #fdf1cc;
+    --color-kumush: #6b7682;
+    --color-kumush-soft: #eceff2;
+    --color-bronza: #a0522d;
+    --color-bronza-soft: #f8e4d6;
+      --color-oltin: #b8860b;
+      --color-oltin-soft: #fdf1cc;
+      --color-kumush: #6b7682;
+      --color-kumush-soft: #eceff2;
+      --color-bronza: #a0522d;
+      --color-bronza-soft: #f8e4d6;
       --color-ok: #2f9e68;
       --color-ok-soft: #dff2e6;
       --color-osmon: #0a78b8;

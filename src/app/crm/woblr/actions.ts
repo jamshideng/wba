@@ -1,12 +1,14 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabProfil, getUstoz, adminmi } from '@/lib/auth'
 import { matn, sonOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
 import type { WoblrReason } from '@/lib/types'
 import { woblarXato } from '@/lib/woblar-chegara'
+import { woblarXabariniYubor } from '@/lib/woblar-xabar'
 
 const SABABLAR: WoblrReason[] = ['faollik', 'uy_vazifasi', 'yordam', 'qoida', 'boshqa']
 
@@ -50,6 +52,9 @@ export async function woblrBer(fd: FormData) {
   })
 
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  // O'quvchiga telefon va Telegram xabari (sayt bildirishnomasini trigger yozdi, 0071)
+  after(() => woblarXabariniYubor(supabase, studentId!))
 
   revalidatePath('/crm/woblr')
   redirect(xabarliYol(yol, { ok: `${ball! > 0 ? '+' : ''}${ball} woblar yozildi.` }))

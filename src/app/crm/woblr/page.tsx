@@ -1,3 +1,4 @@
+import { IconMedal } from '@/components/icons'
 import Link from 'next/link'
 import { talabProfil, getUstoz, adminmi, staffmi } from '@/lib/auth'
 import { woblarChegara } from '@/lib/woblar-chegara'
@@ -15,6 +16,13 @@ import { xatoMatni } from '@/lib/kiritish'
 import type { LeaderboardRow } from '@/lib/types'
 
 export const metadata = { title: 'Woblar' }
+
+/** 1–3-o'rin raqam o'rniga medal (Jamshid, 16.10) */
+const MEDAL = [
+  { nom: 'oltin', sinf: 'bg-oltin-soft text-oltin' },
+  { nom: 'kumush', sinf: 'bg-kumush-soft text-kumush' },
+  { nom: 'bronza', sinf: 'bg-bronza-soft text-bronza' },
+] as const
 export const dynamic = 'force-dynamic'
 
 /**
@@ -165,13 +173,19 @@ export default async function Woblr({
                 key={r.student_id}
                 className={`flex items-center gap-3 px-5 py-3 ${r === men ? 'mt-1 border-t-2 border-dashed border-line bg-surface-2' : 'border-t border-line-soft'}`}
               >
-                <span
-                  className={`tnum flex size-9 shrink-0 items-center justify-center rounded-full font-[family-name:var(--font-display)] text-[14px] font-bold ${
-                    r.orin <= 3 ? 'bg-accent-soft text-accent' : 'bg-surface-2 text-ink-3'
-                  }`}
-                >
-                  {r.orin}
-                </span>
+                {r.orin <= 3 ? (
+                  <span
+                    className={`flex size-9 shrink-0 items-center justify-center rounded-full ${MEDAL[r.orin - 1].sinf}`}
+                    title={`${r.orin}-o‘rin · ${MEDAL[r.orin - 1].nom}`}
+                  >
+                    <IconMedal size={22} />
+                    <span className="sr-only">{r.orin}-o‘rin, {MEDAL[r.orin - 1].nom} medal</span>
+                  </span>
+                ) : (
+                  <span className="tnum flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-2 font-[family-name:var(--font-display)] text-[14px] font-bold text-ink-3">
+                    {r.orin}
+                  </span>
+                )}
                 {/* Profil faqat xodimga ochiq — ustoz va o'quvchiga oddiy ism */}
                 {!staffmi(profil.rol) ? (
                   <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold">

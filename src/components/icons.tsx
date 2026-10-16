@@ -67,6 +67,15 @@ export const IconWoblr = (p: P) => (
   </Svg>
 )
 
+/** Medal — woblar reytingining 1–3-o'rni (rangi className orqali: oltin/kumush/bronza) */
+export const IconMedal = (p: P) => (
+  <Svg {...p}>
+    <path d="M6 1.8l1.8 5M12 1.8l-1.8 5" />
+    <circle cx="9" cy="11.5" r="4.7" fill="currentColor" fillOpacity={0.22} />
+    <path d="M9 9.2l.7 1.4 1.5.2-1.1 1 .3 1.5L9 12.6l-1.4.7.3-1.5-1.1-1 1.5-.2z" fill="currentColor" strokeWidth={1} />
+  </Svg>
+)
+
 export const IconPayments = (p: P) => (
   <Svg {...p}>
     <rect x="2" y="4.5" width="14" height="10" rx="2" />
