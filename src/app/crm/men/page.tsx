@@ -6,6 +6,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Xabar } from '@/components/forma'
+import { TelegramTaklif } from '@/components/telegram-taklif'
 import { pul, sana, jadval, davrNomi, joriyDavr, bugunToshkent, vaqt, guruhQisqa } from '@/lib/format'
 import type { PaymentMethod, AttendanceStatus, KeyingiDars } from '@/lib/types'
 
@@ -177,6 +178,8 @@ export default async function MeningSahifam({
       />
 
       <Xabar ok={xabar.ok} xato={xabar.xato === 'huquq' ? 'Bu bo‘lim sizga ochiq emas.' : xabar.xato} />
+
+      <TelegramTaklif kim="oquvchi" />
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
         {jamiQarz === 0 && oldindan > 0 ? (

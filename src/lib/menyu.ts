@@ -91,6 +91,8 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
           { href: '/crm/qarzdorlar', nom: 'Qarzdorlar', Icon: IconDebt, tayyor: true },
           { href: '/crm/arxiv', nom: 'Arxiv', Icon: IconArxiv, tayyor: true },
           ...(admin ? [{ href: '/crm/oquvchilar/takroriy', nom: 'Takroriylar', Icon: IconStudents, tayyor: true }] : []),
+          // 0072 — kim botga ulangan, ulanmaganga taklif havolasi
+          { href: '/crm/telegram', nom: 'Telegram ulanishi', Icon: IconSend, tayyor: true },
         ]),
         ...guruh('Guruhlar', IconGroups, [
           { href: '/crm/guruhlar', nom: 'Guruhlar', Icon: IconGroups, tayyor: true, mobil: true },

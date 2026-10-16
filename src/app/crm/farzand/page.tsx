@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
+import { TelegramTaklif } from '@/components/telegram-taklif'
 import { pul, sana, jadval, davrNomi, joriyDavr, bugunToshkent, guruhQisqa } from '@/lib/format'
 import type { PaymentMethod } from '@/lib/types'
 
@@ -92,6 +93,8 @@ export default async function Farzand() {
         izoh={`Farzandingiz · ${sana(bugun)}`}
         amal={oquvchi.holat === 'faol' ? <Badge ton="ok">Faol</Badge> : <Badge ton="accent">{oquvchi.holat}</Badge>}
       />
+
+      <TelegramTaklif kim="ota_ona" />
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
         {jamiQarz === 0 && oldindan > 0 ? (

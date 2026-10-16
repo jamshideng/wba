@@ -888,6 +888,9 @@ export type Database = {
       push_ochir: { Args: { p_endpoint: string }; Returns: undefined }
       push_oluvchilar: { Args: { p_bildirishnoma: number }; Returns: { endpoint: string; p256dh: string; auth: string }[] }
       push_eskirgan: { Args: { p_endpoint: string }; Returns: undefined }
+      // 0072 — Telegram taklif havolasi va ulanish holati
+      telegram_taklif_ol: { Args: { p_student: string; p_kim: 'oquvchi' | 'ota_ona' }; Returns: string }
+      telegram_holati: { Args: Record<string, never>; Returns: unknown[] }
       // 0071 — woblar xabari va tarixi
       woblr_xabar_manzil: { Args: { p_student: string }; Returns: unknown }
       woblr_xabar_tg_saqla: { Args: { p_student: string; p_chat: number; p_msg: number }; Returns: undefined }
