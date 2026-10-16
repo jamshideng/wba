@@ -4,7 +4,7 @@
  * Bazadagi holatlar botdagi probniy holatlari bilan bir xil qoladi
  * (yangi · qongiroq · keldi · kelmadi · yozildi · rad). Kanban ustuni
  * holat + sinov_sana dan hisoblanadi: sinov kuni belgilangan lid
- * "Sinov darsi" ustunida turadi — Probniylar sahifasi bilan mos.
+ * "Sinov darsi" ustunida turadi (avvalgi Probniylar sahifasi shu yerga qo'shildi).
  */
 
 import type { LeadSource, LeadStatus } from '@/lib/types'

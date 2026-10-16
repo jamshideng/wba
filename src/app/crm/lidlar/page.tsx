@@ -20,6 +20,7 @@ export const dynamic = 'force-dynamic'
 const TEZ = {
   hammasi: 'Hammasi',
   bugun: 'Bugun aloqa',
+  sinov: 'Bugun sinov',
   kechikkan: 'Kechikkan',
   rejalangan: 'Rejalangan',
 } as const
@@ -68,6 +69,7 @@ export default async function Lidlar({
   const tezSoni = {
     hammasi: ochiqlar.length,
     bugun: ochiqlar.filter((l) => l.keyingi_aloqa === bugun).length,
+    sinov: ochiqlar.filter((l) => l.sinov_sana === bugun).length,
     kechikkan: ochiqlar.filter((l) => l.keyingi_aloqa !== null && l.keyingi_aloqa < bugun).length,
     rejalangan: ochiqlar.filter((l) => l.keyingi_aloqa !== null && l.keyingi_aloqa > bugun).length,
   }
@@ -76,6 +78,7 @@ export default async function Lidlar({
     if (manba && l.manba !== manba) return false
     if (q && ![l.ism, l.telefon, l.izoh ?? '', l.teglar.join(' ')].join(' ').toLowerCase().includes(q)) return false
     if (tez === 'bugun') return l.keyingi_aloqa === bugun
+    if (tez === 'sinov') return l.sinov_sana === bugun && ['yangi', 'boglanildi', 'sinov'].includes(bosqichi(l))
     if (tez === 'kechikkan') return l.keyingi_aloqa !== null && l.keyingi_aloqa < bugun
     if (tez === 'rejalangan') return l.keyingi_aloqa !== null && l.keyingi_aloqa > bugun
     return true
@@ -97,11 +100,6 @@ export default async function Lidlar({
       <Sarlavha
         nom="Lidlar"
         izoh="murojaatlarni o‘quvchiga aylantirish"
-        amal={
-          <Link href="/crm/probniylar" className="lbl underline-offset-4 hover:text-ink hover:underline">
-            Probniylar ro‘yxati →
-          </Link>
-        }
       />
       <Xabar ok={s.ok} xato={s.xato} />
 
@@ -134,6 +132,20 @@ export default async function Lidlar({
             </Maydon>
             <Maydon nom="Qachon bog‘lanish kerak" izoh="Shu kuni 09:00 da Vazifalarga eslatma tushadi">
               <input name="keyingi_aloqa" type="date" min={bugun} defaultValue={kunQosh(bugun, 1)} className={kirishKlass} />
+            </Maydon>
+            <Maydon nom="Sinov darsi kuni" izoh="Bo‘lsa — lid darhol “Sinov darsi” ustuniga tushadi">
+              <input name="sinov_sana" type="date" className={kirishKlass} />
+            </Maydon>
+            <Maydon nom="Guruh" izoh="O‘quvchi qilish uchun kerak">
+              <select name="group_id" defaultValue="" className={kirishKlass}>
+                <option value="">Hali tanlanmagan</option>
+                {(guruhlar ?? []).map((g) => (
+                  <option key={g.id} value={g.id}>{g.nom}</option>
+                ))}
+              </select>
+            </Maydon>
+            <Maydon nom="Tug‘ilgan sana">
+              <input name="tugilgan_sana" type="date" max={bugun} className={kirishKlass} />
             </Maydon>
             <Maydon nom="Teglar" izoh="Vergul bilan: issiq, ielts, chegirma">
               <input name="teglar" maxLength={200} className={kirishKlass} />

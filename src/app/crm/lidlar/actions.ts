@@ -28,7 +28,6 @@ function teglarOqi(v: FormDataEntryValue | null): string[] {
 
 function tugat(yol: string, ok: string): never {
   revalidatePath('/crm/lidlar')
-  revalidatePath('/crm/probniylar')
   revalidatePath('/crm/vazifalar')
   redirect(xabarliYol(yol, { ok }))
 }
@@ -50,6 +49,9 @@ export async function lidQosh(fd: FormData) {
     izoh: matn(fd.get('izoh')),
     teglar: teglarOqi(fd.get('teglar')),
     keyingi_aloqa: aloqaVaqtga(sanaOqi(fd.get('keyingi_aloqa'))),
+    sinov_sana: sanaOqi(fd.get('sinov_sana')),
+    group_id: matn(fd.get('group_id')),
+    tugilgan_sana: sanaOqi(fd.get('tugilgan_sana')),
     holat: 'yangi',
   })
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
@@ -155,7 +157,7 @@ export async function lidBoglanildi(fd: FormData) {
   tugat(yol, 'Aloqa yozildi.')
 }
 
-/** O'quvchi qilish — Probniylardagi bilan bir xil qoida (probniy_doimiy, 0030). */
+/** O'quvchi qilish — botdagi probniy → doimiy qoidasi (probniy_doimiy, 0030). */
 export async function lidOquvchi(fd: FormData) {
   await talabRol(...XODIM)
   const yol = qaytish(fd)

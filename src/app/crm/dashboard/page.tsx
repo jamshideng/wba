@@ -33,7 +33,7 @@ export default async function Dashboard() {
       // Botdagi "Bugun" / "Kunlik hisobot" — bitta so'rov, hisob bazada
       xodim ? supabase.rpc('tushum_hisobot', { p_dan: bugun, p_gacha: bugun }) : Promise.resolve({ data: null }),
       xodim
-        ? supabase.from('leads').select('id', { count: 'exact', head: true }).eq('sinov_sana', bugun).eq('holat', 'yangi')
+        ? supabase.from('leads').select('id', { count: 'exact', head: true }).eq('sinov_sana', bugun).is('student_id', null).in('holat', ['yangi', 'qongiroq', 'keldi'])
         : Promise.resolve({ count: 0 }),
       // Tanaffusdagilar — qaytish sanasi yaqinlari birinchi (0046)
       supabase
@@ -136,8 +136,8 @@ export default async function Dashboard() {
                 Icon={IconAttendance}
               />
             </Link>
-            <Link href="/crm/probniylar" className="contents">
-              <Stat label="Bugun sinov darsi" value={probniyBugun ?? 0} sub="probniy kutilmoqda" ton="accent" Icon={IconLeads} />
+            <Link href="/crm/lidlar?tez=sinov" className="contents">
+              <Stat label="Bugun sinov darsi" value={probniyBugun ?? 0} sub="lidlar · sinov kuni bugun" ton="accent" Icon={IconLeads} />
             </Link>
             <Stat
               label="Bugungi davomat"

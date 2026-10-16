@@ -149,7 +149,7 @@ async function arizaXabari(a: { ism: string; telefon: string; yonalish?: string;
     `Yo‘nalish: ${html(yonalish)}`,
     ...(a.izoh ? [`Izoh: ${html(a.izoh)}`] : []),
     '',
-    `Probniylar: ${saytManzil()}/crm/probniylar`,
+    `Lidlar: ${saytManzil()}/crm/lidlar`,
   ]
   const r = await xabar(Number(HISOBOT_GURUH), qatorlar.join('\n'))
   if (!r.ok) console.error('[ariza] guruhga xabar ketmadi', r.error_code, r.description)

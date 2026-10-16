@@ -102,7 +102,6 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
         ]),
         ...guruh('Lidlar', IconLeads, [
           { href: '/crm/lidlar', nom: 'Lidlar', Icon: IconLeads, tayyor: true },
-          { href: '/crm/probniylar', nom: 'Probniylar', Icon: IconLeads, tayyor: true },
           { href: '/crm/vazifalar', nom: 'Vazifalar', Icon: IconAlert, tayyor: true },
         ]),
         ...guruh('Moliya', IconPayments, [
