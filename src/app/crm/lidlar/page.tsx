@@ -65,6 +65,15 @@ export default async function Lidlar({
     ({ groups, ...l }) => ({ ...l, teglar: l.teglar ?? [], keyingi_aloqa: aloqaSanasi(l.keyingi_aloqa), guruh: groups?.nom ?? null }) as LidKarta,
   )
 
+  // Probniy woblari (0073): doimiy bo'lganda o'quvchiga ko'chadi, qolganlari shu yerda
+  const { data: pWoblar } = hammasi.length
+    ? await supabase.from('probniy_woblar').select('lead_id, ball').in('lead_id', hammasi.map((l) => l.id))
+    : { data: [] }
+  for (const w of (pWoblar ?? []) as { lead_id: string; ball: number }[]) {
+    const l = hammasi.find((x) => x.id === w.lead_id)
+    if (l) l.woblar = (l.woblar ?? 0) + Number(w.ball)
+  }
+
   const ochiqlar = hammasi.filter((l) => ['yangi', 'boglanildi', 'sinov'].includes(bosqichi(l)))
   const tezSoni = {
     hammasi: ochiqlar.length,

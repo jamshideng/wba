@@ -119,7 +119,7 @@ export default async function DavomatJurnali({
   const bugungiDars = dList.find((d) => d.sana === bugun)
   const talabalar = yList.map((y) => y.student_id)
 
-  const [{ data: belgilar }, { data: bugungiWoblar }, { data: balanslar }, { data: probniylar }] = await Promise.all([
+  const [{ data: belgilar }, { data: bugungiWoblar }, { data: balanslar }, { data: probniylar }, { data: probniyWoblar }] = await Promise.all([
     darsIdlar.length
       ? supabase.from('attendance').select('lesson_id, student_id, holat').in('lesson_id', darsIdlar)
       : Promise.resolve({ data: [] }),
@@ -131,7 +131,12 @@ export default async function DavomatJurnali({
       : Promise.resolve({ data: [] }),
     // Probniylar (0030) — ustozga ham faqat ism va belgilar, telefon yo'q
     supabase.rpc('jurnal_probniylar', { p_group: guruh, p_dan: oyBoshi, p_gacha: oyOxiri }),
+    // Probniy woblari (0073) — doimiy bo'lganda o'quvchiga ko'chadi
+    supabase.rpc('jurnal_probniy_woblar', { p_group: guruh, p_sana: bugun }),
   ])
+  const pWoblar = new Map(
+    ((probniyWoblar ?? []) as { lead_id: string; bugun: number; jami: number }[]).map((w) => [w.lead_id, w]),
+  )
 
   const belgiXaritasi = new Map<string, Record<string, AttendanceStatus>>()
   for (const b of (belgilar ?? []) as { lesson_id: string; student_id: string; holat: AttendanceStatus }[]) {
@@ -155,8 +160,8 @@ export default async function DavomatJurnali({
     tugadi: null,
     ketgan: false,
     belgilar: p.belgilar ?? {},
-    bugun: 0,
-    umumiy: 0,
+    bugun: Number(pWoblar.get(p.lead_id)?.bugun) || 0,
+    umumiy: Number(pWoblar.get(p.lead_id)?.jami) || 0,
   }))
 
   const qatorlar: JurnalQatori[] = yList

@@ -90,3 +90,25 @@ export async function woblarBer(guruhId: string, studentId: string, ball: number
   revalidatePath(`/crm/davomat/${guruhId}`) // oylik limit soni yangilansin (0064)
   return { ok: true, natija: Number(data) || 0 }
 }
+
+/**
+ * Probniyga woblar (0073) — lid'ga yoziladi, guruh limitidan ketadi.
+ * Doimiy bo'lsa o'quvchiga ko'chadi, yo'qotilsa lid bilan arxivda qoladi.
+ */
+export async function probniyWoblarBer(guruhId: string, leadId: string, ball: number): Promise<AmalNatijasi<number>> {
+  const xato = await ruxsat()
+  if (xato) return { ok: false, xato }
+  const chegaraXato = woblarXato(ball)
+  if (chegaraXato) return { ok: false, xato: chegaraXato }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('probniy_woblar_ber', {
+    p_group: guruhId,
+    p_lead: leadId,
+    p_ball: ball,
+  })
+  if (error) return { ok: false, xato: error.message }
+
+  revalidatePath(`/crm/davomat/${guruhId}`)
+  return { ok: true, natija: Number(data) || 0 }
+}

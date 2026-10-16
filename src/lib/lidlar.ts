@@ -78,4 +78,6 @@ export type LidKarta = {
   aloqa_soni: number
   oxirgi_aloqa: string | null
   created_at: string
+  /** Probniy davridagi woblar (0073) — yo'qotilsa lid bilan arxivda qoladi */
+  woblar?: number
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { davomatBelgila, probniyBelgila, woblarBer } from './actions'
+import { davomatBelgila, probniyBelgila, probniyWoblarBer, woblarBer } from './actions'
 import type { AttendanceStatus } from '@/lib/types'
 import { woblarChegara, woblarXato } from '@/lib/woblar-chegara'
 
@@ -175,7 +175,9 @@ export function Jurnal({
     setKutilayotgan((s) => new Set([...s, kalit]))
 
     boshla(async () => {
-      const javob = await woblarBer(guruhId, q.student_id, ball)
+      const javob = q.probniy
+        ? await probniyWoblarBer(guruhId, q.student_id, ball)
+        : await woblarBer(guruhId, q.student_id, ball)
       setKutilayotgan((s) => {
         const n = new Set(s)
         n.delete(kalit)
@@ -301,12 +303,12 @@ export function Jurnal({
                   )
                 })}
                 <td className="tnum px-2 text-center font-[family-name:var(--font-mono)] text-[13px] text-accent">
-                  {q.probniy ? <span className="text-ink-4">—</span> : q.bugun ? (q.bugun > 0 ? `+${q.bugun}` : q.bugun) : <span className="text-ink-4">0</span>}
+                  {q.bugun ? (q.bugun > 0 ? `+${q.bugun}` : q.bugun) : <span className="text-ink-4">0</span>}
                 </td>
-                <td className="tnum px-2 text-center font-[family-name:var(--font-mono)] text-[13px] font-semibold">{q.probniy ? <span className="text-ink-4">—</span> : q.umumiy}</td>
+                <td className="tnum px-2 text-center font-[family-name:var(--font-mono)] text-[13px] font-semibold">{q.umumiy}</td>
                 {ustunKeng && (
                   <td className="px-2 py-1">
-                    {!q.ketgan && !q.probniy && (
+                    {!q.ketgan && (
                       <span className="flex items-center justify-center gap-1.5">
                         <input
                           type="number"

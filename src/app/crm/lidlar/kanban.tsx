@@ -200,6 +200,9 @@ function Karta({
             {lid.holat === 'keldi' ? ' · keldi' : ''}
           </span>
         )}
+        {!!lid.woblar && (
+          <span className="tnum rounded-md bg-accent-soft px-1.5 py-0.5 font-semibold text-accent">{lid.woblar} woblar</span>
+        )}
         {lid.guruh && <span className="max-w-full truncate rounded-md bg-surface-2 px-1.5 py-0.5 text-ink-3">{lid.guruh}</span>}
         {lid.teglar.map((t) => (
           <span key={t} className="rounded-md border border-line px-1.5 py-0.5 text-ink-3">#{t}</span>
