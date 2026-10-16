@@ -165,6 +165,27 @@ function sheetsKorinishi(d: Tayyor) {
   return t
 }
 
+/* Saytda qo'lda birlashtirilgan bola ("Birlashtirildi → S014"), Sheets'da esa
+   qatori alohida qolgan (masalan, ketgan 2-fan qatori — Sheets ketganni
+   birlashtirmaydi). Sheets ko'rinishida ham bitta bola deb olinadi, aks holda
+   har yurishda "qo'lda" va "yo'qolgan" chiqadi. */
+function saytBirlashuvi(S: Record<Tur, Toplam>, x: SaytXom) {
+  const b = new Map<string, string>()
+  for (const s of x.students) {
+    const y = birlashganga(s.arxiv_sabab)
+    if (y) b.set(s.id, y)
+  }
+  const a = (id: string) => {
+    let k = id
+    for (let i = 0; i < 5 && b.has(k); i++) k = b.get(k)!
+    return k
+  }
+  for (const id of b.keys()) S.oquvchi.delete(id)
+  for (const t of ['yozilish', 'tolov', 'probniy'] as const) {
+    for (const [k, v] of S[t]) if (v.student_id) S[t].set(k, { ...v, student_id: a(String(v.student_id)) })
+  }
+}
+
 /** parse.ts dagi oy raqami (yil*12+oy) → "YYYY-MM" */
 function davrdanOy(oy: number): string {
   const y = Math.floor((oy - 1) / 12), m = oy - y * 12
@@ -766,6 +787,7 @@ async function ishga() {
   const baza = holatniOqi()
   const S = sheetsKorinishi(d)
   const x = await saytniOqi(db)
+  saytBirlashuvi(S, x)
   const { rejalar, juftliklar, alias, D } = rejaTuz(S, x, baza)
 
   /* ── To'xtatuvchilar ── */
