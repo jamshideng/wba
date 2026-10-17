@@ -1647,72 +1647,167 @@ reset role;
 reset request.jwt.claim.sub;
 
 -- ============================================================
---  0066 — ustoz maoshi (o'quvchi soni × stavka ± avans/bonus/jarima)
+--  0066/0075 — ustoz maoshi: stavka ÷ N × darslar, ketma-ket 3+ qoldirish,
+--  zamena, ustoz o'zinikini ko'radi, direktor tasdig'i → xarajat
 -- ============================================================
 \echo '--- ustoz maoshi ---'
 reset role;
 reset request.jwt.claim.sub;
-insert into teacher_salaries (teacher_id, qiymati) values ('U01', 50000)
+insert into teacher_salaries (teacher_id, qiymati) select id, 100000 from teachers on conflict (teacher_id) do nothing;
+insert into teacher_salaries (teacher_id, qiymati) values ('U01', 220000)
   on conflict (teacher_id) do update set qiymati = excluded.qiymati;
-create temp table _maosh_kutil as
-  select count(distinct e.id) as n
-  from invoices i join enrollments e on e.id = i.enrollment_id join groups g on g.id = e.group_id
-  where i.davr = '2026-10' and i.holat <> 'bekor' and g.teacher_id = 'U01';
-grant select on _maosh_kutil to authenticated;
+insert into groups (id, nom, subject_id, teacher_id, boshlanish, tugash, kun_turi, oylik_narx) values
+  ('NM1', 'Maosh test', 'ingliz-tili', 'U01', '12:00', '13:30', 'toq', 500000);
+insert into students (id, fish, qoshilgan_sana) values
+  ('SM1', 'Maosh Bir', '2026-08-01'), ('SM2', 'Maosh Ikki', '2026-08-01'),
+  ('SM3', 'Maosh Uch', '2026-08-01'), ('SM4', 'Maosh Tort', '2026-08-01');
+-- Avgustdagi birinchi 13 dars kuni
+create temp table _mk as
+  select row_number() over (order by k) as i, k::date as sana
+  from generate_series('2026-08-01'::date, '2026-08-31', '1 day') k, groups g
+  where g.id = 'NM1' and guruh_dars_kunimi(g.kunlar, k::date);
+delete from _mk where i > 13;
+insert into lessons (group_id, sana, otkazildi) select 'NM1', sana, true from _mk;
+insert into enrollments (student_id, group_id, boshlandi) values
+  ('SM1', 'NM1', '2026-08-01'), ('SM2', 'NM1', '2026-08-01'), ('SM4', 'NM1', '2026-08-01');
+-- SM3 — 4-darsdan qo'shilgan
+insert into enrollments (student_id, group_id, boshlandi) select 'SM3', 'NM1', sana from _mk where i = 4;
+-- SM2: 4-5-6 ketma-ket kelmadi (ayiriladi); SM4: 2, 4, 7-8 (seriya < 3 — ayirilmaydi)
+insert into attendance (lesson_id, student_id, holat)
+  select l.id, s.id, case
+    when s.id = 'SM2' and k.i in (4, 5, 6) then 'kelmadi'
+    when s.id = 'SM4' and k.i in (2, 4, 7, 8) then 'kelmadi'
+    else 'keldi' end::attendance_status
+  from _mk k join lessons l on l.group_id = 'NM1' and l.sana = k.sana
+  cross join (values ('SM1'), ('SM2'), ('SM3'), ('SM4')) s(id)
+  where not (s.id = 'SM3' and k.i < 4);
 
-set role authenticated;
-set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
-insert into maosh_harakatlar (teacher_id, davr, turi, summa, izoh) values
-  ('U01', '2026-10', 'avans', 30000, 'test'),
-  ('U01', '2026-10', 'bonus', 20000, 'test'),
-  ('U01', '2026-10', 'jarima', 10000, 'test');
 do $$
-declare r record; n bigint := (select n from _maosh_kutil);
+declare r record;
 begin
-  if n = 0 then raise exception 'XATO: test uchun U01 da 2026-10 fakturasi yo''q'; end if;
-  select * into r from ustoz_maosh('2026-10') where teacher_id = 'U01';
-  if r.oquvchilar <> n or r.hisob <> 50000 * n or r.yakuniy <> 50000 * n - 30000 + 20000 - 10000 then
-    raise exception 'XATO: maosh noto''g''ri: % o''quvchi, hisob %, yakuniy %', r.oquvchilar, r.hisob, r.yakuniy;
+  for r in select * from maosh_qatorlari('2026-08') where group_id = 'NM1' loop
+    if r.n <> 13 or r.summa <> (case r.student_id when 'SM1' then 220000 when 'SM4' then 220000 else 169231 end) then
+      raise exception 'XATO: % — N %, % dars, summa % (kutilgan 220000/13×…)', r.student_id, r.n, r.hisob_darslar, r.summa;
+    end if;
+  end loop;
+  if (select ayirildi from maosh_qatorlari('2026-08') where group_id = 'NM1' and student_id = 'SM2') <> 3 then
+    raise exception 'XATO: ketma-ket 3 qoldirish ayirilmadi';
   end if;
-  if (select hisob from ustoz_maosh('2026-10') where teacher_id = 'U02') is not null then
-    raise exception 'XATO: stavkasiz ustozga maosh hisoblandi';
+  -- 13-dars zamena: o'sha dars ulushi (U01 stavkasi bilan) U02 ga
+  update lessons set zamena_teacher_id = 'U02'
+   where group_id = 'NM1' and sana = (select sana from _mk where i = 13);
+  if (select sum(summa) from maosh_qatorlari('2026-08') where group_id = 'NM1' and teacher_id = 'U02') <> 4 * 16923
+     or (select summa from maosh_qatorlari('2026-08') where group_id = 'NM1' and teacher_id = 'U01' and student_id = 'SM1') <> 203077 then
+    raise exception 'XATO: zamena ulushi noto''g''ri';
   end if;
-  begin
-    update maosh_harakatlar set summa = 1 where turi = 'avans' and teacher_id = 'U01';
-    raise exception 'XATO: harakat summasi o''zgardi';
-  exception when others then if sqlerrm like 'XATO%' then raise; end if;
-  end;
-  update maosh_harakatlar set bekor = true, bekor_sabab = 'test' where turi = 'jarima' and teacher_id = 'U01';
-  if (select jarima from ustoz_maosh('2026-10') where teacher_id = 'U01') <> 0 then
-    raise exception 'XATO: bekor qilingan jarima hisobga kirdi';
-  end if;
-  raise notice 'OK: maosh — % o''quvchi × 50 000, avans/bonus/jarima, bekor', n;
+  raise notice 'OK: maosh — 220000÷13×10, ketma-ket 3 ayiriladi, 1–2 to''lanadi, oy o''rtasidan, zamena 1/13';
 end $$;
 
-set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana (U01)
+-- Bugungi dars — zamena huquqi
+insert into lessons (group_id, sana) values ('NM1', bugun_toshkent());
+insert into enrollments (student_id, group_id, boshlandi) values ('SM1', 'NM1', bugun_toshkent())
+  on conflict do nothing;
+
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- Diana (U01) — guruh ustozi
 do $$
 begin
+  perform zamena_belgila('NM1', bugun_toshkent(), 'U02', 'kasal');
   begin
-    perform ustoz_maosh('2026-10');
-    raise exception 'XATO: ustoz maoshni ko''rdi';
+    perform zamena_belgila('NM1', (select min(sana) from lessons where group_id = 'NM1'), 'U02', 'x');
+    raise exception 'XATO: ustoz o''tgan darsga zamena qo''ydi';
   exception when others then if sqlerrm like 'XATO%' then raise; end if;
   end;
-  if (select count(*) from teacher_salaries) > 0 or (select count(*) from maosh_harakatlar) > 0 then
-    raise exception 'XATO: ustoz stavka/harakatni ko''rdi';
+  if (select count(*) from ustoz_maosh('2026-08')) <> 1 or (select teacher_id from ustoz_maosh('2026-08')) <> 'U01' then
+    raise exception 'XATO: ustoz boshqalarning maoshini ko''rdi';
+  end if;
+  if jsonb_array_length(ustoz_maosh_tafsilot('2026-08', 'U01')) = 0 then
+    raise exception 'XATO: ustoz o''z maoshi tafsilotini ko''rmadi';
   end if;
   begin
-    insert into maosh_harakatlar (teacher_id, davr, turi, summa) values ('U01', '2026-10', 'bonus', 999);
+    perform ustoz_maosh_tafsilot('2026-08', 'U02');
+    raise exception 'XATO: ustoz boshqa ustoz tafsilotini ko''rdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    insert into maosh_harakatlar (teacher_id, davr, turi, summa) values ('U01', '2026-08', 'bonus', 999);
     raise exception 'XATO: ustoz o''ziga bonus yozdi';
   exception when others then if sqlerrm like 'XATO%' then raise; end if;
   end;
-  raise notice 'OK: maosh — ustozga to''liq yopiq (o''zinikini ham ko''rmaydi)';
+  raise notice 'OK: maosh — ustoz faqat o''zinikini ko''radi; zamenani bugunga qo''ya oladi, o''tganga yo''q';
+end $$;
+
+set request.jwt.claim.sub = '55555555-5555-5555-5555-555555555555';   -- Komila (U02) — o'rinbosar
+do $$
+begin
+  if not app_teaches_group('NM1') or (select count(*) from groups where id = 'NM1') <> 1 then
+    raise exception 'XATO: o''rinbosar zamena guruhini ko''rmadi';
+  end if;
+  begin
+    perform zamena_belgila('NM1', bugun_toshkent(), 'U03', 'x');
+    raise exception 'XATO: o''rinbosar zamenani o''zgartirdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    update lessons set zamena_teacher_id = 'U03' where group_id = 'NM1' and sana = bugun_toshkent();
+    if (select zamena_teacher_id from lessons where group_id = 'NM1' and sana = bugun_toshkent()) = 'U03' then
+      raise exception 'XATO: o''rinbosar to''g''ridan zamenani o''zgartirdi';
+    end if;
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: zamena — o''rinbosar guruhni bugun ko''radi, zamenani o''zgartira olmaydi';
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+insert into maosh_harakatlar (teacher_id, davr, turi, summa, izoh) values
+  ('U01', '2026-08', 'avans', 30000, 'test'),
+  ('U01', '2026-08', 'bonus', 20000, 'test'),
+  ('U01', '2026-08', 'jarima', 10000, 'test'),
+  ('U01', '2026-08', 'tuzatish', -5000, 'test xato');
+do $$
+declare r record;
+begin
+  select * into r from ustoz_maosh('2026-08') where teacher_id = 'U01';
+  if r.yakuniy <> r.hisob - 30000 + 20000 - 10000 - 5000 then
+    raise exception 'XATO: yakuniy noto''g''ri: hisob %, yakuniy %', r.hisob, r.yakuniy;
+  end if;
+  begin
+    perform maosh_tasdiqla('2026-08');
+    raise exception 'XATO: admin maoshni tasdiqladi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: maosh — avans/bonus/jarima/tuzatish; tasdiq faqat direktorda';
+end $$;
+
+set request.jwt.claim.sub = '66666666-6666-6666-6666-666666666666';   -- direktor
+do $$
+declare v_yak numeric; v_av numeric;
+begin
+  select yakuniy, avans into v_yak, v_av from ustoz_maosh('2026-08') where teacher_id = 'U01';
+  perform maosh_tasdiqla('2026-08');
+  if not exists (select 1 from xarajatlar where toifa = 'maosh' and summa = v_yak + v_av and izoh like 'Ustoz maoshi · 2026-08 · Diana%') then
+    raise exception 'XATO: tasdiqlangan maosh xarajatga tushmadi';
+  end if;
+  if not (select tasdiqlangan from ustoz_maosh('2026-08') where teacher_id = 'U01') then
+    raise exception 'XATO: oy tasdiqlangan ko''rinmadi';
+  end if;
+  begin
+    insert into maosh_harakatlar (teacher_id, davr, turi, summa) values ('U01', '2026-08', 'bonus', 1);
+    raise exception 'XATO: qulflangan oyga bonus yozildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  perform maosh_qayta_och('2026-08', 'test');
+  if exists (select 1 from xarajatlar where izoh like 'Ustoz maoshi · 2026-08%' and not bekor) then
+    raise exception 'XATO: qayta ochilganda xarajat bekor bo''lmadi';
+  end if;
+  raise notice 'OK: maosh — direktor tasdig''i → xarajat, oy qulfi, qayta ochish';
 end $$;
 
 set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi
 do $$
 begin
   begin
-    perform ustoz_maosh('2026-10');
+    perform ustoz_maosh('2026-08');
     raise exception 'XATO: o''quvchi maoshni ko''rdi';
   exception when others then if sqlerrm like 'XATO%' then raise; end if;
   end;
@@ -1723,6 +1818,8 @@ begin
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+-- Keyingi testlarga NM1 xalaqit bermasin
+update groups set holat = 'yopilgan' where id = 'NM1';
 
 -- ============================================================
 --  0067 — takroriy o'quvchilar va birlashtirish

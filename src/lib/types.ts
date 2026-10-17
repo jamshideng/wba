@@ -133,6 +133,9 @@ export type Lesson = {
   sana: string
   mavzu: string | null
   otkazildi: boolean
+  zamena_teacher_id: string | null
+  zamena_sabab: string | null
+  zamena_kiritdi: string | null
   created_at: string
 }
 
@@ -491,6 +494,8 @@ export type BugungiDars = {
   belgilangan: boolean
   oquvchilar: number
   kunlar: number[]
+  zamena_teacher_id: string | null
+  zamena_ism: string | null
 }
 
 /** 0029 · oyma-oy qo'lda ayirish */
@@ -534,7 +539,7 @@ export type MaoshHarakat = {
   id: number
   teacher_id: string
   davr: string
-  turi: 'avans' | 'bonus' | 'jarima'
+  turi: 'avans' | 'bonus' | 'jarima' | 'tuzatish'
   summa: number
   izoh: string | null
   kiritgan: string | null
@@ -544,17 +549,35 @@ export type MaoshHarakat = {
   updated_at: string
 }
 
-/** ustoz_maosh(davr) qatori. stavka null — maosh aniqlanmagan */
+/** ustoz_maosh(davr) qatori (0075). aniqmas — kimdir stavkasiz guruhda */
 export type UstozMaosh = {
   teacher_id: string
   ism: string
   stavka: number | null
   oquvchilar: number
-  hisob: number | null
+  hisob: number
   avans: number
   bonus: number
   jarima: number
-  yakuniy: number | null
+  tuzatish: number
+  yakuniy: number
+  aniqmas: boolean
+  tasdiqlangan: boolean
+}
+
+/** ustoz_maosh_tafsilot() elementi — bitta o'quvchi (qatnashuv) bo'yicha hisob */
+export type MaoshTafsilot = {
+  group_id: string
+  guruh: string
+  student_id: string
+  fish: string
+  stavka: number | null
+  n: number
+  darslar: number
+  ayirildi: number
+  hisob_darslar: number
+  summa: number | null
+  zamena: boolean
 }
 
 /** takroriy_oquvchilar() qatori (0067) — bitta odam ikki ID bilan bo'lishi mumkin */
@@ -772,6 +795,7 @@ export type Database = {
       xarajatlar: Table<Xarajat>
       teacher_salaries: Table<TeacherSalary>
       maosh_harakatlar: Table<MaoshHarakat>
+      maosh_oylar: Table<{ davr: string; holat: 'tasdiqlangan'; tasdiqladi: string | null; tasdiqlangan_at: string }>
       boshqa_xodimlar: Table<BoshqaXodim>
       oquvchi_takror_emas: Table<{ a: string; b: string; belgiladi: string | null; created_at: string }>
       dam_kunlar: Table<{ sana: string; sabab: string; kiritdi: string | null; created_at: string }>
@@ -864,6 +888,13 @@ export type Database = {
         Returns: { davr: string; tushum: number; xarajat: number; foyda: number; toifalar: { toifa: string; summa: number; soni: number }[] }
       }
       ustoz_maosh: { Args: { p_davr: string }; Returns: UstozMaosh[] }
+      ustoz_maosh_tafsilot: { Args: { p_davr: string; p_ustoz: string }; Returns: MaoshTafsilot[] }
+      maosh_tasdiqla: { Args: { p_davr: string }; Returns: number }
+      maosh_qayta_och: { Args: { p_davr: string; p_sabab: string }; Returns: number }
+      zamena_belgila: {
+        Args: { p_group: string; p_sana: string; p_ustoz: string | null; p_sabab?: string | null }
+        Returns: string | null
+      }
       takroriy_oquvchilar: { Args: Record<string, never>; Returns: TakroriyJuft[] }
       oquvchi_birlashtir: {
         Args: { p_asosiy: string; p_ikkinchi: string }

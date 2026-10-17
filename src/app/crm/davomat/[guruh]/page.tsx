@@ -3,14 +3,17 @@ import { notFound } from 'next/navigation'
 import { talabRol, getUstoz, adminmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
-import { Card, Empty } from '@/components/ui'
+import { Card, CardHeader, Empty, Badge } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
+import { Maydon, Xabar, kirishKlass } from '@/components/forma'
+import { Yuborish } from '@/components/yuborish'
 import { IconArrowLeft } from '@/components/icons'
-import { vaqt, bugunToshkent, kunlarNomi, haftaKuni, davrQisqa, HAFTA_KUNLARI, guruhQisqa } from '@/lib/format'
+import { sana as sanaFmt, vaqt, bugunToshkent, kunlarNomi, haftaKuni, davrQisqa, HAFTA_KUNLARI, guruhQisqa } from '@/lib/format'
 import { Jurnal, type JurnalQatori, type DarsKuni, type Huquq } from './jurnal'
 import type { AttendanceStatus } from '@/lib/types'
 import type { WoblarLimiti } from '@/lib/woblar-chegara'
 import { WoblarLimitKartasi } from '@/components/woblar-limit'
+import { zamenaSaqla } from './actions'
 
 export const metadata = { title: 'Davomat jurnali' }
 export const dynamic = 'force-dynamic'
@@ -47,7 +50,7 @@ export default async function DavomatJurnali({
   searchParams,
 }: {
   params: Promise<{ guruh: string }>
-  searchParams: Promise<{ oy?: string }>
+  searchParams: Promise<{ oy?: string; ok?: string; xato?: string }>
 }) {
   const [{ guruh }, s] = await Promise.all([params, searchParams])
   const profil = await talabRol('admin', 'direktor', 'qabulxona', 'ustoz')
@@ -89,7 +92,7 @@ export default async function DavomatJurnali({
       .select('student_id, boshlandi, tugadi, holat, students(fish)')
       .eq('group_id', guruh)
       .lte('boshlandi', oyOxiri),
-    supabase.from('lessons').select('id, sana').eq('group_id', guruh).gte('sana', oyBoshi).lte('sana', oyOxiri),
+    supabase.from('lessons').select('id, sana, zamena_teacher_id, zamena_sabab').eq('group_id', guruh).gte('sana', oyBoshi).lte('sana', oyOxiri),
     supabase.from('lessons').select('sana').eq('group_id', guruh).order('sana').limit(1).maybeSingle(),
   ])
 
@@ -102,7 +105,7 @@ export default async function DavomatJurnali({
   }
   // Shu oyda guruhda bo'lganlar: oy tugashidan oldin kelgan, oy boshlanishidan oldin ketmagan
   const yList = ((yozilishlar ?? []) as unknown as Yozilish[]).filter((y) => !y.tugadi || y.tugadi >= oyBoshi)
-  const dList = (darslar ?? []) as { id: string; sana: string }[]
+  const dList = (darslar ?? []) as { id: string; sana: string; zamena_teacher_id: string | null; zamena_sabab: string | null }[]
 
   /* Kanikul / bayram (0036) — ustun qoladi, lekin "dam": davomat so'ralmaydi */
   const { data: damlar } = await supabase.from('dam_kunlar').select('sana, sabab').gte('sana', oyBoshi).lte('sana', oyOxiri)
@@ -180,9 +183,12 @@ export default async function DavomatJurnali({
 
   /* Huquq: admin/direktor — o'tgan kunlar ham; guruh ustozi — faqat bugun;
      qabulxona — faqat ko'radi. Bazada ham xuddi shunday (davomat_belgila). */
+  /* 0075 — zamena: o'rinbosar ustoz bugungi darsni guruh ustozidek belgilaydi */
+  const zamenaBugun = Boolean(ustoz && bugungiDars?.zamena_teacher_id === ustoz.id)
+  const guruhUstozi = Boolean(ustoz && ustoz.id === guruhi.teacher_id)
   const huquq: Huquq = adminmi(profil.rol)
     ? 'hammasi'
-    : ustoz && ustoz.id === guruhi.teacher_id
+    : guruhUstozi || zamenaBugun
       ? 'bugun'
       : 'yoq'
 
@@ -197,11 +203,24 @@ export default async function DavomatJurnali({
   const bugunDarsKunimi = davr === joriy && kunlar.some((k) => k.sana === bugun && !k.dam)
 
   /* 0064 — guruh ustozining oylik woblar limiti (ustozning o'ziga va adminga ko'rinadi) */
-  const { data: limitXom } = huquq !== 'yoq' && guruhi.teacher_id
-    ? await supabase.rpc('ustoz_woblar_limiti', { p_ustoz: guruhi.teacher_id, p_davr: joriy })
+  const limitUstozi = zamenaBugun ? ustoz!.id : guruhi.teacher_id
+  const { data: limitXom } = huquq !== 'yoq' && limitUstozi
+    ? await supabase.rpc('ustoz_woblar_limiti', { p_ustoz: limitUstozi, p_davr: joriy })
     : { data: null }
   const limit = limitXom as WoblarLimiti | null
   const guruhLimit = limit?.guruhlar.find((x) => x.group_id === guruh) ?? null
+
+  /* Zamena (0075): guruh ustozi — bugungi va keyingi darslarga, admin — istalgan kunga */
+  const admin = adminmi(profil.rol)
+  const zamenaQoyadi = admin || guruhUstozi
+  const { data: ustozXom } = zamenaQoyadi
+    ? await supabase.from('teachers').select('id, ism').eq('holat', 'faol').order('ism')
+    : { data: null }
+  const barchaUstoz = (ustozXom ?? []) as { id: string; ism: string }[]
+  const ustozIsmi = new Map(barchaUstoz.map((u) => [u.id, u.ism]))
+  const zamenalar = dList.filter((d) => d.zamena_teacher_id).sort((a, b) => a.sana.localeCompare(b.sana))
+  const zamenaKunlari = kunlar.filter((k) => !k.dam && (admin || k.sana >= bugun))
+  const qaytish = davr === joriy ? `/crm/davomat/${guruh}` : `/crm/davomat/${guruh}?oy=${davr}`
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -231,6 +250,15 @@ export default async function DavomatJurnali({
           </div>
         </dl>
       </div>
+
+      <Xabar ok={s.ok} xato={s.xato} />
+
+      {zamenaBugun && (
+        <Card className="flex flex-wrap items-center gap-2 border-accent px-5 py-3.5 text-[13px]">
+          <Badge ton="accent">zamena</Badge>
+          Bugun bu darsni {guruhi.teachers?.ism ?? 'guruh ustozi'} o‘rniga siz o‘tasiz — davomat, woblar va maosh sizga yoziladi.
+        </Card>
+      )}
 
       <nav aria-label="Oylar" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
         {oylar.map((o) => {
@@ -286,6 +314,75 @@ export default async function DavomatJurnali({
           huquq={huquq}
           woblarOchiq={bugunDarsKunimi}
         />
+      )}
+
+      {(zamenaQoyadi || zamenalar.length > 0) && (
+        <Card className="flex flex-col">
+          <CardHeader title="Zamena" meta={`${zamenalar.length} ta dars`} />
+          {zamenalar.length > 0 && (
+            <ul className="flex flex-col">
+              {zamenalar.map((z) => (
+                <li key={z.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft px-5 py-3">
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="text-[13px] font-semibold">
+                      {sanaFmt(z.sana)} · {ustozIsmi.get(z.zamena_teacher_id!) ?? z.zamena_teacher_id}
+                    </span>
+                    {z.zamena_sabab && <span className="text-[11.5px] text-ink-3">{z.zamena_sabab}</span>}
+                  </span>
+                  {zamenaQoyadi && (admin || z.sana >= bugun) && (
+                    <form action={zamenaSaqla}>
+                      <input type="hidden" name="group_id" value={guruh} />
+                      <input type="hidden" name="sana" value={z.sana} />
+                      <input type="hidden" name="qaytish" value={qaytish} />
+                      <Yuborish tur="xavfli" kutish="…">
+                        Olib tashlash
+                      </Yuborish>
+                    </form>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {zamenaQoyadi && zamenaKunlari.length > 0 && (
+            <form action={zamenaSaqla} className="flex flex-wrap items-end gap-3 border-t border-line-soft px-5 py-4">
+              <input type="hidden" name="group_id" value={guruh} />
+              <input type="hidden" name="qaytish" value={qaytish} />
+              <Maydon nom="Dars kuni">
+                <select name="sana" required defaultValue="" className={kirishKlass}>
+                  <option value="" disabled>
+                    Tanlang…
+                  </option>
+                  {zamenaKunlari.map((k) => (
+                    <option key={k.sana} value={k.sana}>
+                      {sanaFmt(k.sana)} · {k.hafta}
+                    </option>
+                  ))}
+                </select>
+              </Maydon>
+              <Maydon nom="O‘rniga dars o‘tadi">
+                <select name="ustoz" required defaultValue="" className={kirishKlass}>
+                  <option value="" disabled>
+                    Ustozni tanlang…
+                  </option>
+                  {barchaUstoz
+                    .filter((u) => u.id !== guruhi.teacher_id)
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.ism}
+                      </option>
+                    ))}
+                </select>
+              </Maydon>
+              <Maydon nom="Sabab">
+                <input name="sabab" placeholder="Masalan: kasal" className={kirishKlass} />
+              </Maydon>
+              <Yuborish kutish="Saqlanmoqda…">Zamena qilish</Yuborish>
+            </form>
+          )}
+          <p className="border-t border-line-soft px-5 py-3 text-[11.5px] text-ink-3">
+            Zamena darsining maoshi, davomati, woblari va woblar limiti o‘rinbosar ustozga o‘tadi.
+          </p>
+        </Card>
       )}
 
       <p className="text-[12.5px] leading-relaxed text-ink-3">

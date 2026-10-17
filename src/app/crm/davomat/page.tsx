@@ -37,10 +37,12 @@ export default async function Davomat({
   // Oylik eksport uchun — RLS ustozga faqat o'z guruhlarini beradi
   const { data: guruhlar } = await supabase
     .from('groups')
-    .select('id, nom, boshlanish, tugash, kunlar')
+    .select('id, nom, boshlanish, tugash, kunlar, teacher_id')
     .eq('holat', 'faol')
     .order('nom')
-  const gList = (guruhlar ?? []) as { id: string; nom: string; boshlanish: string; tugash: string; kunlar: number[] }[]
+  // Bugungi zamena guruhi (0075) "Guruhlarim" ro'yxatiga kirmaydi — u faqat yuqorida
+  const gList = ((guruhlar ?? []) as { id: string; nom: string; boshlanish: string; tugash: string; kunlar: number[]; teacher_id: string | null }[])
+    .filter((g) => staffmi(profil.rol) || !ustoz || g.teacher_id === ustoz.id)
 
   /* Ustoz faqat o'z guruhlarini ko'radi — nomdagi o'z ismi va vaqt ortiqcha,
      telefonda "Beginner · Komila Bo…" bo'lib kesilardi. Xodimga to'liq nom. */
@@ -88,6 +90,11 @@ export default async function Davomat({
                   <span className="font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3">
                     {vaqt(d.boshlanish)}–{vaqt(d.tugash)} · {d.oquvchilar} o‘quvchi
                   </span>
+                  {d.zamena_teacher_id && (
+                    <span className="text-[11.5px] font-semibold text-accent">
+                      {ustoz && d.zamena_teacher_id === ustoz.id ? 'Zamena — bugun siz o‘tasiz' : `Zamena — ${d.zamena_ism ?? ''}`}
+                    </span>
+                  )}
                 </span>
 
                 <Badge ton={d.belgilangan ? 'ok' : 'accent'} nuqta>

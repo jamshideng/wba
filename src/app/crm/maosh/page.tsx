@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { talabRol } from '@/lib/auth'
+import { redirect } from 'next/navigation'
+import { talabProfil, adminmi, tasdiqlaydimi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Empty, Badge } from '@/components/ui'
@@ -9,35 +10,44 @@ import { Yuborish } from '@/components/yuborish'
 import { JonliForma } from '@/components/jonli-forma'
 import { pul, davrNomi, joriyDavr } from '@/lib/format'
 import type { MaoshHarakat, UstozMaosh } from '@/lib/types'
-import { stavkaSaqla, harakatQosh, harakatBekor } from './actions'
+import { stavkaSaqla, harakatQosh, harakatBekor, oyTasdiqla, oyQaytaOch } from './actions'
 
 export const metadata = { title: 'Maosh' }
 export const dynamic = 'force-dynamic'
 
-const TURLAR: Record<MaoshHarakat['turi'], string> = { avans: 'Avans', bonus: 'Bonus', jarima: 'Jarima' }
+const TURLAR: Record<MaoshHarakat['turi'], string> = { avans: 'Avans', bonus: 'Bonus', jarima: 'Jarima', tuzatish: 'Tuzatish' }
 
 const vaqtFmt = new Intl.DateTimeFormat('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit' })
 
+/** Harakatning maoshga ta'siri: avans/jarima −, bonus +, tuzatish o'z ishorasi bilan */
+function tasir(h: Pick<MaoshHarakat, 'turi' | 'summa'>): number {
+  const s = Number(h.summa)
+  return h.turi === 'avans' || h.turi === 'jarima' ? -s : s
+}
+
 /**
- * Ustoz maoshi (0066, SoffCRM'dan). Qoida (Jamshid, 13.10): oyda o'qigan
- * har bir o'quvchi (shu oy fakturasi bor qatnashuv) × ustoz stavkasi,
- * minus avans, plus bonus, minus jarima. Hisob bazada — ustoz_maosh().
+ * Ustoz maoshi (0075, Jamshid 17.10). Har o'quvchi uchun:
+ * stavka ÷ N (oydagi darslar, kamida 12) × hisobga olinadigan darslar —
+ * ketma-ket 3+ qoldirilgani ayiriladi. Zamena darsi o'rinbosarga.
+ * Ustiga avans (−), bonus (+), jarima (−), tuzatish (±). Hisob bazada.
  *
- * Faqat admin va direktor (Jamshid, 13.10: ustoz panelida ko'rinmaydi).
- * Ustoz o'z maoshini ham ko'rmaydi — huquq bazada ham yopiq.
+ * Admin/direktor — hamma ustoz. Ustoz o'zinikini /crm/maosh/men da ko'radi.
+ * Oy tugagach direktor tasdiqlaydi → xarajatlarga tushadi, oy qulflanadi.
  */
 export default async function Maosh({
   searchParams,
 }: {
   searchParams: Promise<{ davr?: string; ok?: string; xato?: string }>
 }) {
-  await talabRol('admin', 'direktor')
+  const profil = await talabProfil()
+  if (!adminmi(profil.rol)) redirect('/crm/maosh/men')
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Maosh" />
 
   const s = await searchParams
   const davr = /^\d{4}-(0[1-9]|1[0-2])$/.test(s.davr ?? '') ? s.davr! : joriyDavr()
-  const yozadi = true
   const joriy = `/crm/maosh?davr=${davr}`
+  const direktor = tasdiqlaydimi(profil.rol)
+  const tugagan = davr < joriyDavr()
 
   const supabase = await createClient()
   const [{ data: maoshXom, error: xato }, { data: harakatXom }] = await Promise.all([
@@ -51,16 +61,18 @@ export default async function Maosh({
 
   const qatorlar = (maoshXom ?? []) as UstozMaosh[]
   const harakatlar = (harakatXom ?? []) as MaoshHarakat[]
+  const tasdiqlangan = qatorlar.some((q) => q.tasdiqlangan)
+  const yozadi = !tasdiqlangan
   const ismi = new Map(qatorlar.map((q) => [q.teacher_id, q.ism]))
-  const jami = qatorlar.reduce((a, q) => a + (q.yakuniy === null ? 0 : Number(q.yakuniy)), 0)
+  const jami = qatorlar.reduce((a, q) => a + Number(q.yakuniy), 0)
   const jamiOquvchi = qatorlar.reduce((a, q) => a + Number(q.oquvchilar), 0)
-  const stavkasiz = qatorlar.filter((q) => q.stavka === null).length
+  const aniqmas = qatorlar.filter((q) => q.aniqmas).length
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha
         nom="Maosh"
-        izoh={`${davrNomi(davr)} · o‘quvchi soni × stavka`}
+        izoh={`${davrNomi(davr)} · stavka ÷ darslar × qatnashgan darslar`}
         amal={
           <JonliForma className="flex items-end gap-2">
             <input type="month" name="davr" defaultValue={davr} className={kirishKlass} aria-label="Oy" />
@@ -70,15 +82,55 @@ export default async function Maosh({
 
       <Xabar ok={s.ok} xato={s.xato ?? (xato ? 'Maoshni o‘qib bo‘lmadi.' : undefined)} />
 
+      <Card className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="flex items-center gap-2 text-[13.5px] font-semibold">
+            {tasdiqlangan ? <Badge ton="ok">tasdiqlangan</Badge> : <Badge ton="accent">hisoblanmoqda</Badge>}
+            {davrNomi(davr)}
+          </span>
+          <span className="text-[12px] text-ink-3">
+            {tasdiqlangan
+              ? 'Direktor tasdiqlagan, maoshlar xarajatlarga yozilgan. O‘zgartirish uchun direktor oyni qayta ochadi.'
+              : tugagan
+                ? 'Oy tugagan. Hisobni tekshiring, xato bo‘lsa tuzatish kiriting, keyin direktor tasdiqlaydi.'
+                : 'Har davomatdan keyin avtomatik yangilanadi. Oy tugagach direktor tasdiqlaydi.'}
+          </span>
+        </div>
+        {direktor && !tasdiqlangan && tugagan && (
+          <form action={oyTasdiqla}>
+            <input type="hidden" name="davr" value={davr} />
+            <input type="hidden" name="qaytish" value={joriy} />
+            <Yuborish tur="ok" kutish="Tasdiqlanmoqda…">
+              Tasdiqlash va xarajatga yozish
+            </Yuborish>
+          </form>
+        )}
+        {direktor && tasdiqlangan && (
+          <details>
+            <summary className="cursor-pointer text-[12.5px] text-ink-3 hover:text-ink">Oyni qayta ochish</summary>
+            <form action={oyQaytaOch} className="mt-2 flex flex-wrap items-end gap-2">
+              <input type="hidden" name="davr" value={davr} />
+              <input type="hidden" name="qaytish" value={joriy} />
+              <Maydon nom="Sabab">
+                <input name="sabab" required placeholder="Masalan: davomat xato edi" className={kirishKlass} />
+              </Maydon>
+              <Yuborish tur="xavfli" kutish="…">
+                Qayta ochish
+              </Yuborish>
+            </form>
+          </details>
+        )}
+      </Card>
+
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
         <Stat label={`${davrNomi(davr)} · jami`} value={pul(jami)} sub="to‘lanadigan maosh · so‘m" />
-        <Stat label="O‘quvchilar" value={jamiOquvchi} sub="shu oy fakturasi borlar" />
+        <Stat label="O‘quvchilar" value={jamiOquvchi} sub="hisobga kirgan qatnashuvlar" />
         <Stat
           label="Stavkasiz"
-          value={stavkasiz}
-          sub={stavkasiz ? 'maosh [ANIQLANMAGAN]' : 'hammasiga belgilangan'}
-          ton={stavkasiz ? 'brand' : 'ok'}
-          border={stavkasiz ? 'brand' : undefined}
+          value={aniqmas}
+          sub={aniqmas ? 'stavka belgilanmagan guruh bor' : 'hammasiga belgilangan'}
+          ton={aniqmas ? 'brand' : 'ok'}
+          border={aniqmas ? 'brand' : undefined}
         />
       </div>
 
@@ -95,47 +147,53 @@ export default async function Maosh({
                 <li key={q.teacher_id} className="flex flex-col gap-2.5 border-t border-line-soft px-5 py-3.5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex min-w-0 flex-col gap-1">
-                      <Link href={`/crm/ustozlar/${q.teacher_id}`} className="text-[13.5px] font-semibold hover:underline">
+                      <Link
+                        href={`/crm/maosh/${q.teacher_id}?davr=${davr}`}
+                        className="text-[13.5px] font-semibold hover:underline"
+                      >
                         {q.ism}
                       </Link>
                       <span className="tnum text-[12px] text-ink-3">
                         {q.stavka === null
                           ? `${q.oquvchilar} o‘quvchi · stavka belgilanmagan`
-                          : `${q.oquvchilar} o‘quvchi × ${pul(q.stavka)} = ${pul(q.hisob ?? 0)}`}
+                          : `${q.oquvchilar} o‘quvchi · stavka ${pul(q.stavka)} · hisob ${pul(q.hisob)}`}
                       </span>
-                      {(Number(q.avans) > 0 || Number(q.bonus) > 0 || Number(q.jarima) > 0) && (
+                      {(Number(q.avans) > 0 || Number(q.bonus) > 0 || Number(q.jarima) > 0 || Number(q.tuzatish) !== 0) && (
                         <span className="tnum flex flex-wrap gap-x-3 text-[12px]">
                           {Number(q.avans) > 0 && <span className="text-ink-2">avans −{pul(q.avans)}</span>}
                           {Number(q.bonus) > 0 && <span className="text-ok">bonus +{pul(q.bonus)}</span>}
                           {Number(q.jarima) > 0 && <span className="text-brand">jarima −{pul(q.jarima)}</span>}
+                          {Number(q.tuzatish) !== 0 && (
+                            <span className="text-ink-2">
+                              tuzatish {Number(q.tuzatish) > 0 ? '+' : '−'}
+                              {pul(Math.abs(Number(q.tuzatish)))}
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
-                    {q.yakuniy === null ? (
-                      <Badge>aniqlanmagan</Badge>
-                    ) : (
+                    <span className="flex items-center gap-2">
+                      {q.aniqmas && <Badge>aniqlanmagan</Badge>}
                       <span className="tnum font-[family-name:var(--font-mono)] text-[15px] font-semibold">{pul(q.yakuniy)}</span>
-                    )}
+                    </span>
                   </div>
-                  {yozadi && (
-                    <details>
-                      <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Stavkani o‘zgartirish</summary>
-                      <form action={stavkaSaqla} className="mt-2 flex flex-wrap items-end gap-2">
-                        <input type="hidden" name="teacher_id" value={q.teacher_id} />
-                        <input type="hidden" name="qaytish" value={joriy} />
-                        <Maydon nom="Bitta o‘quvchi uchun" izoh="Bo‘sh qoldirilsa — maosh hisoblanmaydi">
-                          <input
-                            name="qiymati"
-                            inputMode="numeric"
-                            defaultValue={q.stavka ?? ''}
-                            placeholder="Masalan: 50000"
-                            className={kirishKlass}
-                          />
-                        </Maydon>
-                        <Yuborish kutish="…">Saqlash</Yuborish>
-                      </form>
-                    </details>
-                  )}
+                  <details>
+                    <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Stavkani o‘zgartirish</summary>
+                    <form action={stavkaSaqla} className="mt-2 flex flex-wrap items-end gap-2">
+                      <input type="hidden" name="teacher_id" value={q.teacher_id} />
+                      <input type="hidden" name="qaytish" value={joriy} />
+                      <Maydon nom="Bitta o‘quvchi uchun (oyiga)" izoh="Bo‘sh qoldirilsa — maosh hisoblanmaydi">
+                        <input
+                          name="qiymati"
+                          inputMode="numeric"
+                          defaultValue={q.stavka ?? ''}
+                          placeholder="Masalan: 220000"
+                          className={kirishKlass}
+                        />
+                      </Maydon>
+                      <Yuborish kutish="…">Saqlash</Yuborish>
+                    </form>
+                  </details>
                 </li>
               ))}
             </ul>
@@ -145,7 +203,7 @@ export default async function Maosh({
         <div className="flex flex-col gap-4">
           {yozadi && qatorlar.length > 0 && (
             <Card className="flex flex-col">
-              <CardHeader title="Avans, bonus yoki jarima" meta={davrNomi(davr)} />
+              <CardHeader title="Avans, bonus, jarima yoki tuzatish" meta={davrNomi(davr)} />
               <form action={harakatQosh} className="flex flex-col gap-3 px-5 pb-5">
                 <input type="hidden" name="qaytish" value={joriy} />
                 <input type="hidden" name="davr" value={davr} />
@@ -169,13 +227,15 @@ export default async function Maosh({
                     <option value="avans">Avans (ayiriladi)</option>
                     <option value="bonus">Bonus (qo‘shiladi)</option>
                     <option value="jarima">Jarima (ayiriladi)</option>
+                    <option value="tuzatish_plus">Tuzatish — qo‘shish</option>
+                    <option value="tuzatish_minus">Tuzatish — ayirish</option>
                   </select>
                 </Maydon>
                 <Maydon nom="Summa" izoh="Masalan: 300000 yoki 300 ming">
                   <input name="summa" required inputMode="numeric" className={kirishKlass} />
                 </Maydon>
-                <Maydon nom="Izoh">
-                  <input name="izoh" placeholder="Masalan: darsga kech qoldi" className={kirishKlass} />
+                <Maydon nom="Izoh" izoh="Tuzatishda sabab majburiy">
+                  <input name="izoh" placeholder="Masalan: davomat xato belgilangan" className={kirishKlass} />
                 </Maydon>
                 <Yuborish kutish="Yozilmoqda…">Yozish</Yuborish>
               </form>
@@ -186,7 +246,7 @@ export default async function Maosh({
             <CardHeader title="Yozuvlar" meta={`${harakatlar.filter((h) => !h.bekor).length} ta`} />
             {harakatlar.length === 0 ? (
               <div className="px-5 pb-5">
-                <Empty>Bu oyda avans, bonus yoki jarima yo‘q.</Empty>
+                <Empty>Bu oyda avans, bonus, jarima yoki tuzatish yo‘q.</Empty>
               </div>
             ) : (
               <ul className="flex flex-col">
@@ -206,11 +266,11 @@ export default async function Maosh({
                       </span>
                       <span
                         className={`tnum font-[family-name:var(--font-mono)] text-[13px] font-semibold ${
-                          h.bekor ? 'text-ink-4 line-through' : h.turi === 'bonus' ? 'text-ok' : 'text-brand'
+                          h.bekor ? 'text-ink-4 line-through' : tasir(h) > 0 ? 'text-ok' : 'text-brand'
                         }`}
                       >
-                        {h.turi === 'bonus' ? '+' : '−'}
-                        {pul(h.summa)}
+                        {tasir(h) > 0 ? '+' : '−'}
+                        {pul(Math.abs(Number(h.summa)))}
                       </span>
                     </div>
                     {yozadi && !h.bekor && (

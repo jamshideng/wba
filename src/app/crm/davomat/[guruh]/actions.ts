@@ -1,7 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { after } from 'next/server'
+import { matn, xabarliYol, xatoMatni, ichkiYol } from '@/lib/kiritish'
 import { woblarXabariniYubor } from '@/lib/woblar-xabar'
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/auth'
@@ -111,4 +113,33 @@ export async function probniyWoblarBer(guruhId: string, leadId: string, ball: nu
 
   revalidatePath(`/crm/davomat/${guruhId}`)
   return { ok: true, natija: Number(data) || 0 }
+}
+
+/**
+ * Zamena (0075). Ustoz bo'sh — olib tashlash. Huquq bazada: guruh ustozi
+ * bugungi/keyingi darsga, admin istalgan kunga; oy maoshi tasdiqlangan bo'lsa yopiq.
+ */
+export async function zamenaSaqla(fd: FormData) {
+  const guruh = matn(fd.get('group_id'))
+  const sana = matn(fd.get('sana'))
+  const y = ichkiYol(fd.get('qaytish'))
+  const orqaga = guruh && y.startsWith(`/crm/davomat/${guruh}`) ? y : '/crm/davomat'
+
+  const xato = await ruxsat()
+  if (xato) redirect(xabarliYol(orqaga, { xato }))
+  if (!guruh || !sana || !/^\d{4}-\d{2}-\d{2}$/.test(sana)) redirect(xabarliYol(orqaga, { xato: 'Dars kunini tanlang.' }))
+
+  const ustoz = matn(fd.get('ustoz'))
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('zamena_belgila', {
+    p_group: guruh!,
+    p_sana: sana!,
+    p_ustoz: ustoz,
+    p_sabab: matn(fd.get('sabab')),
+  })
+  if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm/davomat')
+  revalidatePath('/crm/maosh')
+  redirect(xabarliYol(orqaga, { ok: ustoz ? 'Zamena belgilandi.' : 'Zamena olib tashlandi.' }))
 }

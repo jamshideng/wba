@@ -8,7 +8,13 @@ import { summaOqi, matn, xabarliYol, xatoMatni, ichkiYol } from '@/lib/kiritish'
 
 const YOL = '/crm/maosh'
 const DAVR = /^\d{4}-(0[1-9]|1[0-2])$/
-const TURLAR = { avans: 'Avans', bonus: 'Bonus', jarima: 'Jarima' } as const
+const TURLAR = {
+  avans: 'Avans',
+  bonus: 'Bonus',
+  jarima: 'Jarima',
+  tuzatish_plus: 'Tuzatish (+)',
+  tuzatish_minus: 'Tuzatish (−)',
+} as const
 type Turi = keyof typeof TURLAR
 
 /** Qaytish faqat shu sahifaga (oy bilan) — boshqa joyga yo'naltirib bo'lmasin. */
@@ -45,7 +51,8 @@ export async function stavkaSaqla(fd: FormData) {
   redirect(xabarliYol(orqaga, { ok: 'Stavka saqlandi.' }))
 }
 
-/** Avans / bonus / jarima — admin va direktor (RLS ham shuni talab qiladi). */
+/** Avans / bonus / jarima / tuzatish — admin va direktor (RLS ham shuni talab qiladi).
+ *  Tuzatish — hisob xato chiqsa (0075): + yoki −, sababi majburiy. */
 export async function harakatQosh(fd: FormData) {
   await talabRol('admin', 'direktor')
   const orqaga = qaytish(fd)
@@ -60,6 +67,7 @@ export async function harakatQosh(fd: FormData) {
     !davr || !DAVR.test(davr) ? 'Oy noto‘g‘ri.' :
     typeof turi !== 'string' || !(turi in TURLAR) ? 'Turini tanlang.' :
     !summa ? 'Summa noto‘g‘ri. Masalan: 300000 yoki 300 ming.' :
+    String(turi).startsWith('tuzatish') && !matn(fd.get('izoh')) ? 'Tuzatish sababini izohga yozing.' :
     null
   if (xato) redirect(xabarliYol(orqaga, { xato }))
 
@@ -67,8 +75,8 @@ export async function harakatQosh(fd: FormData) {
   const { error } = await supabase.from('maosh_harakatlar').insert({
     teacher_id: teacher!,
     davr: davr!,
-    turi: turi as Turi,
-    summa: summa!,
+    turi: String(turi).startsWith('tuzatish') ? 'tuzatish' : (turi as 'avans' | 'bonus' | 'jarima'),
+    summa: turi === 'tuzatish_minus' ? -summa! : summa!,
     izoh: matn(fd.get('izoh')),
   })
   if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
@@ -92,4 +100,38 @@ export async function harakatBekor(fd: FormData) {
 
   revalidatePath(YOL)
   redirect(xabarliYol(orqaga, { ok: `#${id} bekor qilindi.` }))
+}
+
+/** Direktor tasdig'i (0075): oy qulflanadi, har ustoz maoshi xarajatlarga tushadi. */
+export async function oyTasdiqla(fd: FormData) {
+  await talabRol('direktor')
+  const orqaga = qaytish(fd)
+  const davr = matn(fd.get('davr'))
+  if (!davr || !DAVR.test(davr)) redirect(orqaga)
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('maosh_tasdiqla', { p_davr: davr! })
+  if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+
+  revalidatePath(YOL)
+  revalidatePath('/crm/xarajatlar')
+  redirect(xabarliYol(orqaga, { ok: `Tasdiqlandi: ${data ?? 0} ustoz maoshi xarajatlarga yozildi.` }))
+}
+
+/** Tasdiqlangan oyni qayta ochish — faqat direktor, sababi bilan; xarajatlar bekor bo'ladi. */
+export async function oyQaytaOch(fd: FormData) {
+  await talabRol('direktor')
+  const orqaga = qaytish(fd)
+  const davr = matn(fd.get('davr'))
+  const sabab = matn(fd.get('sabab'))
+  if (!davr || !DAVR.test(davr)) redirect(orqaga)
+  if (!sabab) redirect(xabarliYol(orqaga, { xato: 'Qayta ochish sababini yozing.' }))
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('maosh_qayta_och', { p_davr: davr!, p_sabab: sabab! })
+  if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+
+  revalidatePath(YOL)
+  revalidatePath('/crm/xarajatlar')
+  redirect(xabarliYol(orqaga, { ok: 'Oy qayta ochildi — maosh xarajatlari bekor qilindi.' }))
 }

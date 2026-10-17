@@ -68,7 +68,10 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
       nom: 'Ustoz paneli',
       bandlar: xodim
         ? // Xodim-ustozda guruh, davomat, jadval, woblar "Boshqaruv"dagi guruhlarda bor
-          [{ href: '/crm/kechikishlarim', nom: 'Kechikishlarim', Icon: IconAttendance, tayyor: true }]
+          [
+            { href: '/crm/kechikishlarim', nom: 'Kechikishlarim', Icon: IconAttendance, tayyor: true },
+            { href: '/crm/maosh/men', nom: 'Maoshim', Icon: IconPayments, tayyor: true },
+          ]
         : [
             { href: '/crm/davomat', nom: 'Davomat', Icon: IconAttendance, tayyor: true, mobil: true },
             { href: '/crm/guruhlar', nom: 'Guruhlarim', Icon: IconGroups, tayyor: true, mobil: true },
@@ -77,6 +80,8 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
             { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true, mobil: true },
             // 0060 — o'z kechikishlari (faqat ko'rish)
             { href: '/crm/kechikishlarim', nom: 'Kechikishlarim', Icon: IconAttendance, tayyor: true },
+            // 0075 — o'z maoshi, har davomatdan keyin yangilanadi (Jamshid, 17.10)
+            { href: '/crm/maosh/men', nom: 'Maoshim', Icon: IconPayments, tayyor: true },
           ],
     })
   }
