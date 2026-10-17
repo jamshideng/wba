@@ -8,7 +8,7 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { kirishKlass } from '@/components/forma'
 import { JonliForma } from '@/components/jonli-forma'
 import { IconArrowLeft } from '@/components/icons'
-import { pul, davrNomi, joriyDavr, guruhQisqa } from '@/lib/format'
+import { pul, davrNomi, joriyDavr, guruhUstozsiz } from '@/lib/format'
 import type { MaoshHarakat, MaoshTafsilot, UstozMaosh } from '@/lib/types'
 
 export const metadata = { title: 'Maosh' }
@@ -123,7 +123,7 @@ export default async function UstozMaoshi({
           return (
             <Card key={k} className="flex flex-col">
               <CardHeader
-                title={admin ? g.nom : guruhQisqa(g.nom)}
+                title={admin ? g.nom : guruhUstozsiz(g.nom)}
                 meta={`${g.zamena ? 'zamena · ' : ''}${g.stavka === null ? 'stavka yo‘q' : `${pul(g.stavka)} ÷ ${g.n} dars`} · ${pul(jami)}`}
               />
               <div className="overflow-x-auto">
