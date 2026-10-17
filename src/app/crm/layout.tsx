@@ -8,6 +8,7 @@ import { talabProfil, getUstoz, ROL_NOMI, staffmi, tasdiqlaydimi } from '@/lib/a
 import { menyular, tekisBandlar, type MenyuBand } from '@/lib/menyu'
 import { MenyuGuruh, BolimTablari, type TabGuruh } from '@/components/menyu-guruh'
 import { MENYU_COOKIE } from '@/lib/menyu-holat'
+import { ROL_COOKIE, type FaolRol } from '@/lib/rol-holat'
 import { createClient } from '@/lib/supabase/server'
 import { chiqishdaPushniUz } from '@/lib/push'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
@@ -26,6 +27,14 @@ import { TezQidiruv } from '@/components/tez-qidiruv'
 import { IlovaOrnatish, YangilashTugma } from '@/components/ilova'
 import { XabarnomaYoqish } from '@/components/xabarnoma'
 import type { MeningBildirishnomam } from '@/lib/bildirishnoma'
+
+/** Ikki rolli odam rol tanlaydi (rol-holat.ts) — o'sha rolning paneliga o'tadi. */
+async function rolTanla(rol: FaolRol) {
+  'use server'
+  ;(await cookies()).set(ROL_COOKIE, rol, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax', httpOnly: true })
+  revalidatePath('/', 'layout')
+  redirect(rol === 'ustoz' ? '/crm/davomat' : '/crm/dashboard')
+}
 
 async function chiqish() {
   'use server'
@@ -113,7 +122,17 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   ])
   const bildirishnomalar = (Array.isArray(bildirish.data) ? bildirish.data : []) as MeningBildirishnomam[]
   const menyuYopiq = kuki.get(MENYU_COOKIE)?.value === 'yopiq'
-  const bolimlar = menyular(profil.rol, Boolean(ustoz))
+  /* Ikki rolli (xodim + ustoz): menyu tanlangan rolga qarab — ustoz rolida
+     faqat ustoz paneli, xodim rolida faqat boshqaruv (Jamshid, 17.10) */
+  const haqiqiyRol = profil.asl_rol ?? profil.rol
+  const ikkiRol = Boolean(ustoz) && staffmi(haqiqiyRol)
+  const bolimlar = menyular(profil.rol, Boolean(ustoz) && (!ikkiRol || profil.rol === 'ustoz'))
+  const rollar = ikkiRol
+    ? [
+        { kalit: 'xodim' as const, nom: ROL_NOMI[haqiqiyRol], faol: profil.rol !== 'ustoz' },
+        { kalit: 'ustoz' as const, nom: 'Ustoz', faol: profil.rol === 'ustoz' },
+      ]
+    : undefined
   const tasdiqlanmagan = tolovSoni.count ?? 0
   const marketKutilmoqda = marketSoni.count ?? 0
 
@@ -141,7 +160,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
 
   /* Kim ekani — botdagi menyuMatni() kabi: ikki rol bo'lsa ikkalasi ham. */
   const kim = [
-    ustoz ? `ustoz — ${ustoz.ism}` : null,
+    ustoz && (!ikkiRol || profil.rol === 'ustoz') ? `ustoz — ${ustoz.ism}` : null,
     tasdiqlaydimi(profil.rol) ? 'direktor' : null,
     profil.rol === 'admin' ? 'administrator' : null,
     profil.rol === 'qabulxona' ? 'qabulxona' : null,
@@ -214,6 +233,8 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
           rolMatn={(kim.length ? kim[0] : ROL_NOMI[profil.rol]).split(' — ')[0]}
           boshHarf={bosh(profil.ism)}
           chiqish={chiqish}
+          rollar={rollar}
+          rolTanla={rolTanla}
         />
       </header>
 
@@ -252,6 +273,8 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
             rolMatn={kim.length ? kim.join(' · ') : ROL_NOMI[profil.rol]}
             boshHarf={bosh(profil.ism)}
             chiqish={chiqish}
+            rollar={rollar}
+            rolTanla={rolTanla}
           />
         </header>
 

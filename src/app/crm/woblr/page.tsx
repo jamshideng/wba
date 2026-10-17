@@ -1,6 +1,6 @@
 import { IconMedal } from '@/components/icons'
 import Link from 'next/link'
-import { talabProfil, getUstoz, adminmi, staffmi } from '@/lib/auth'
+import { talabProfil, getUstoz, adminmi, staffmi, ustozRejimi } from '@/lib/auth'
 import { woblarChegara } from '@/lib/woblar-chegara'
 import { JonliForma } from '@/components/jonli-forma'
 import { createClient } from '@/lib/supabase/server'
@@ -56,7 +56,10 @@ export default async function Woblr({
     .select('id, nom, subject_id, teacher_id, subjects(nom)')
     .eq('holat', 'faol')
     .order('nom')
-  const gList = (guruhlar ?? []) as unknown as { id: string; nom: string; subject_id: string | null; teacher_id: string | null; subjects: { nom: string } | null }[]
+  const ustozIdsi = ustozRejimi(profil) ? (await getUstoz())?.id : undefined
+  const gList = ((guruhlar ?? []) as unknown as { id: string; nom: string; subject_id: string | null; teacher_id: string | null; subjects: { nom: string } | null }[])
+    // Xodim "Ustoz" rolida — faqat o'z guruhlari (RLS unga hammasini beradi)
+    .filter((g) => !ustozIdsi || g.teacher_id === ustozIdsi)
 
   const fanlar = new Map<string, string>()
   for (const g of gList) if (g.subject_id) fanlar.set(g.subject_id, g.subjects?.nom ?? g.subject_id)

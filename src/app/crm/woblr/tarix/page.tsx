@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { talabProfil, getUstoz, staffmi } from '@/lib/auth'
+import { talabProfil, getUstoz, staffmi, ustozRejimi } from '@/lib/auth'
 import { JonliForma } from '@/components/jonli-forma'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
@@ -44,7 +44,8 @@ export default async function WoblarTarixi({ searchParams }: { searchParams: Pro
     supabase.rpc('woblr_tarix', {
       p_dan: dan,
       p_gacha: gacha,
-      p_bergan: xodim && s.kim ? s.kim : null,
+      // Xodim "Ustoz" rolida — faqat o'zi bergan woblar (oddiy ustozga buni RLS qiladi)
+      p_bergan: xodim && s.kim ? s.kim : ustozRejimi(profil) ? profil.id : null,
       p_student: xodim && s.oquvchi ? s.oquvchi : null,
       p_group: (xodim || ustozmi) && s.guruh ? s.guruh : null,
       p_limit: 1000,
@@ -54,7 +55,9 @@ export default async function WoblarTarixi({ searchParams }: { searchParams: Pro
       : Promise.resolve({ data: [] }),
     xodim ? supabase.from('students').select('id, fish').eq('holat', 'faol').order('fish') : Promise.resolve({ data: [] }),
     xodim || ustozmi
-      ? supabase.from('groups').select('id, nom').eq('holat', 'faol').order('nom')
+      ? ustozRejimi(profil) && ustoz
+        ? supabase.from('groups').select('id, nom').eq('holat', 'faol').eq('teacher_id', ustoz.id).order('nom')
+        : supabase.from('groups').select('id, nom').eq('holat', 'faol').order('nom')
       : Promise.resolve({ data: [] }),
   ])
   const qatorlar = (data ?? []) as WoblrTarixQatori[]

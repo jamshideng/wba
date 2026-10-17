@@ -34,6 +34,8 @@ export type Profile = {
   holat: AccountStatus
   created_at: string
   updated_at: string
+  /** Ikki rolli xodim "Ustoz" rolini tanlaganda — haqiqiy roli (rol = 'ustoz') */
+  asl_rol?: UserRole
 }
 
 export type Subject = {

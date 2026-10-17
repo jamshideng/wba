@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { talabRol, getUstoz, staffmi } from '@/lib/auth'
+import { talabRol, getUstoz, staffmi, ustozRejimi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Badge, Empty } from '@/components/ui'
@@ -23,7 +23,10 @@ export default async function DarsJadvali() {
   const ustoz = await getUstoz()
   const supabase = await createClient()
   const [{ data: guruhlar }, { data: yozilishlar }] = await Promise.all([
-    supabase.from('groups').select('id, nom, kunlar, boshlanish, tugash, teacher_id, teachers(ism)').eq('holat', 'faol'),
+    // Xodim "Ustoz" rolida — faqat o'z guruhlari
+    ustozRejimi(profil) && ustoz
+      ? supabase.from('groups').select('id, nom, kunlar, boshlanish, tugash, teacher_id, teachers(ism)').eq('holat', 'faol').eq('teacher_id', ustoz.id)
+      : supabase.from('groups').select('id, nom, kunlar, boshlanish, tugash, teacher_id, teachers(ism)').eq('holat', 'faol'),
     supabase.from('enrollments').select('group_id').neq('holat', 'tugagan'),
   ])
 

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { talabRol, staffmi, adminmi } from '@/lib/auth'
+import { talabRol, staffmi, adminmi, getUstoz, ustozRejimi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty, Button } from '@/components/ui'
@@ -42,11 +42,13 @@ export default async function GuruhProfil({
 
   const { data: guruh } = await supabase
     .from('groups')
-    .select('id, nom, boshlanish, tugash, kunlar, oylik_narx, sigim, holat, teachers(id, ism)')
+    .select('id, nom, boshlanish, tugash, kunlar, oylik_narx, sigim, holat, teacher_id, teachers(id, ism)')
     .eq('id', id)
     .maybeSingle()
 
   if (!guruh) notFound()
+  // Xodim "Ustoz" rolida — boshqa ustozning guruhi yopiq
+  if (ustozRejimi(profil) && (guruh as { teacher_id: string | null }).teacher_id !== (await getUstoz())?.id) notFound()
 
   type Guruh = {
     id: string

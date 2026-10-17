@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { talabRol, getUstoz, adminmi } from '@/lib/auth'
+import { talabRol, getUstoz, adminmi, ustozRejimi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Empty, Badge } from '@/components/ui'
@@ -186,6 +186,7 @@ export default async function DavomatJurnali({
   /* 0075 — zamena: o'rinbosar ustoz bugungi darsni guruh ustozidek belgilaydi */
   const zamenaBugun = Boolean(ustoz && bugungiDars?.zamena_teacher_id === ustoz.id)
   const guruhUstozi = Boolean(ustoz && ustoz.id === guruhi.teacher_id)
+  if (ustozRejimi(profil) && !guruhUstozi && !zamenaBugun) notFound()
   const huquq: Huquq = adminmi(profil.rol)
     ? 'hammasi'
     : guruhUstozi || zamenaBugun

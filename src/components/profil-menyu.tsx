@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { IconLogout, IconSettings, IconChevronDown } from '@/components/icons'
+import { IconLogout, IconSettings, IconChevronDown, IconCheck } from '@/components/icons'
 
 /**
  * Yuqori o'ng burchak: ism (yoki telefonda — bosh harflar) bosilganda
@@ -15,12 +15,17 @@ export function ProfilMenyu({
   rolMatn,
   boshHarf,
   chiqish,
+  rollar,
+  rolTanla,
   ixcham = false,
 }: {
   ism: string
   rolMatn: string
   boshHarf: string
   chiqish: () => Promise<void>
+  /** Ikki rolli odam (xodim + ustoz) — rolni almashtirish */
+  rollar?: { kalit: 'xodim' | 'ustoz'; nom: string; faol: boolean }[]
+  rolTanla?: (rol: 'xodim' | 'ustoz') => Promise<void>
   /** Telefon sarlavhasi — faqat doira va rol */
   ixcham?: boolean
 }) {
@@ -72,6 +77,27 @@ export function ProfilMenyu({
             <span className="truncate text-[13.5px] font-semibold">{ism}</span>
             <span className="truncate text-[10.5px] uppercase tracking-[0.08em] opacity-85">{rolMatn}</span>
           </span>
+          {rollar && rolTanla && (
+            <div className="flex flex-col border-b border-line-soft py-1">
+              <span className="lbl px-4 pb-1 pt-2 text-[9.5px]">Rol</span>
+              {rollar.map((r) => (
+                <form key={r.kalit} action={rolTanla.bind(null, r.kalit)}>
+                  <button
+                    role="menuitemradio"
+                    aria-checked={r.faol}
+                    type="submit"
+                    disabled={r.faol}
+                    className={`flex min-h-11 w-full items-center gap-3 px-4 text-[13.5px] transition ${
+                      r.faol ? 'font-semibold text-ink' : 'text-ink-2 hover:bg-surface-2 hover:text-ink'
+                    }`}
+                  >
+                    <span className="flex size-4 items-center justify-center">{r.faol && <IconCheck size={15} />}</span>
+                    {r.nom}
+                  </button>
+                </form>
+              ))}
+            </div>
+          )}
           <Link
             role="menuitem"
             href="/crm/profil"

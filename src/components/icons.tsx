@@ -278,3 +278,9 @@ export const IconYangilash = (p: P) => (
     <path d="M15 2.5v3.5h-3.5" />
   </Svg>
 )
+
+export const IconCheck = (p: P) => (
+  <Svg {...p}>
+    <path d="M3.5 9.5l3.5 3.5 7.5-8" />
+  </Svg>
+)

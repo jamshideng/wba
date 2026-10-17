@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { talabProfil, getUstoz, ROL_NOMI } from '@/lib/auth'
+import { talabProfil, getUstoz, ROL_NOMI, staffmi } from '@/lib/auth'
 import { menyular } from '@/lib/menyu'
 import { createClient } from '@/lib/supabase/server'
 import { chiqishdaPushniUz } from '@/lib/push'
@@ -28,7 +28,9 @@ async function chiqish() {
 export default async function Menyu() {
   const profil = await talabProfil()
   const ustoz = await getUstoz()
-  const bolimlar = menyular(profil.rol, Boolean(ustoz))
+  // Ikki rolli — tanlangan rol bo'limlari (layout.tsx bilan bir xil)
+  const ikkiRol = Boolean(ustoz) && staffmi(profil.asl_rol ?? profil.rol)
+  const bolimlar = menyular(profil.rol, Boolean(ustoz) && (!ikkiRol || profil.rol === 'ustoz'))
 
   return (
     <div className="flex flex-col gap-5 px-5 py-5">

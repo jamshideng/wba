@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { talabRol, getUstoz, staffmi } from '@/lib/auth'
+import { talabRol, getUstoz, staffmi, ustozRejimi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Badge, Empty, Button } from '@/components/ui'
@@ -32,7 +32,10 @@ export default async function Davomat({
     .select('*')
     .order('boshlanish')
 
-  const dList = (darslar ?? []) as unknown as BugungiDars[]
+  /* Xodim "Ustoz" rolida (rol-holat.ts): RLS hammasini beradi — o'zinikiga cheklaymiz */
+  const dList = ((darslar ?? []) as unknown as BugungiDars[]).filter(
+    (d) => !ustozRejimi(profil) || d.teacher_id === ustoz?.id || d.zamena_teacher_id === ustoz?.id,
+  )
 
   // Oylik eksport uchun — RLS ustozga faqat o'z guruhlarini beradi
   const { data: guruhlar } = await supabase

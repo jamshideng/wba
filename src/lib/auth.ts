@@ -1,5 +1,7 @@
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { ROL_COOKIE } from '@/lib/rol-holat'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import type { Profile, UserRole } from '@/lib/types'
@@ -20,9 +22,21 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
   if (!userId) return null
 
   const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+  if (!data) return null
 
-  return data ?? null
+  /* Ikki rolli xodim "Ustoz" rolini tanlagan bo'lsa — sayt uni oddiy ustozdek
+     ko'rsatadi (rol-holat.ts). asl_rol — haqiqiy roli, almashtirish menyusi uchun. */
+  if (staffmi(data.rol) && (await cookies()).get(ROL_COOKIE)?.value === 'ustoz') {
+    const { data: t } = await supabase.from('teachers').select('id').eq('profile_id', data.id).maybeSingle()
+    if (t) return { ...data, rol: 'ustoz', asl_rol: data.rol }
+  }
+  return data
 })
+
+/** Ikki rolli xodim hozir "Ustoz" rolida — sahifalar o'z guruhlari bilan cheklanadi. */
+export function ustozRejimi(profil: Profile): boolean {
+  return Boolean(profil.asl_rol)
+}
 
 /**
  * Shu odam ustozmi.

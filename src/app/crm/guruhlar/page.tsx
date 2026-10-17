@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { talabRol, getUstoz, staffmi, adminmi } from '@/lib/auth'
+import { talabRol, getUstoz, staffmi, adminmi, ustozRejimi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, Badge, Empty, Button } from '@/components/ui'
@@ -19,11 +19,14 @@ export default async function Guruhlar() {
 
   /* RLS ustozga faqat o'z guruhlarini beradi — bu yerda qo'shimcha
      filtr shart emas, sarlavha esa kimligiga qarab o'zgaradi. */
-  const { data: guruhlar } = await supabase
+  let sorov = supabase
     .from('groups')
     .select('id, nom, boshlanish, tugash, kunlar, oylik_narx, holat, teachers(ism)')
     .order('holat')
     .order('nom')
+  // Xodim "Ustoz" rolida — faqat o'z guruhlari (RLS unga hammasini beradi)
+  if (ustozRejimi(profil) && ustoz) sorov = sorov.eq('teacher_id', ustoz.id)
+  const { data: guruhlar } = await sorov
 
   type Guruh = {
     id: string
