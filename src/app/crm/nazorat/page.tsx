@@ -1,4 +1,4 @@
-import { talabRol } from '@/lib/auth'
+import { talabRol, tasdiqlaydimi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Empty, Badge } from '@/components/ui'
@@ -7,7 +7,7 @@ import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { sana as sanaFmt, joriyDavr, davrNomi } from '@/lib/format'
 import { NAZORAT_TURLAR, ogohlantirishMatni, type NazoratHodisa } from '@/lib/nazorat'
-import { ogohlantir, hodisaYop, jarimaQol, tekshir } from './actions'
+import { ogohlantir, hodisaYop, jarimaQol, tekshir, direktorgaAlmashtir } from './actions'
 
 export const metadata = { title: 'Nazorat' }
 export const dynamic = 'force-dynamic'
@@ -23,7 +23,7 @@ export default async function Nazorat({
 }: {
   searchParams: Promise<{ holat?: string; ok?: string; xato?: string }>
 }) {
-  await talabRol('manager', 'direktor')
+  const profil = await talabRol('manager', 'direktor')
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Nazorat" />
 
   const s = await searchParams
@@ -39,11 +39,13 @@ export default async function Nazorat({
     .limit(200)
   if (!hammasi) sorov = sorov.eq('holat', 'yangi')
 
-  const [{ data: hXom }, { data: oXom }, { data: uXom }, { data: xXom }] = await Promise.all([
+  const direktor = tasdiqlaydimi(profil.rol)
+  const [{ data: hXom }, { data: oXom }, { data: uXom }, { data: xXom }, { data: menga }] = await Promise.all([
     sorov,
     supabase.from('ogohlantirishlar').select('teacher_id, profile_id').eq('davr', davr).eq('bekor', false),
     supabase.from('teachers').select('id, ism').eq('holat', 'faol').order('ism'),
     supabase.from('profiles').select('id, ism, rol').in('rol', ['admin', 'qabulxona', 'manager']).eq('holat', 'faol').order('ism'),
+    direktor ? supabase.rpc('nazorat_direktorga') : Promise.resolve({ data: false }),
   ])
 
   const hodisalar = (hXom ?? []) as unknown as NazoratHodisa[]
@@ -98,6 +100,36 @@ export default async function Nazorat({
       />
 
       <Xabar ok={s.ok} xato={s.xato} />
+
+      {/* 0078 — direktorga nazorat xabarlari: standart o'chiq, faqat direktor yoqadi */}
+      {direktor && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-[13.5px] font-semibold">Nazorat xabarlari menga ham kelsin</span>
+            <span className="text-[12px] text-ink-3">Saytda va Telegram'da. O‘chiq bo‘lsa — faqat managerga boradi.</span>
+          </span>
+          <form action={direktorgaAlmashtir}>
+            <input type="hidden" name="qaytish" value={joriy} />
+            <input type="hidden" name="yoq" value={menga ? '0' : '1'} />
+            <button
+              type="submit"
+              role="switch"
+              aria-checked={Boolean(menga)}
+              aria-label="Nazorat xabarlari menga ham kelsin"
+              className="flex min-h-11 items-center gap-2.5 px-1"
+            >
+              <span
+                className={`relative h-6 w-11 rounded-full transition ${menga ? 'bg-ok' : 'bg-line'}`}
+              >
+                <span
+                  className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition-all ${menga ? 'left-[22px]' : 'left-0.5'}`}
+                />
+              </span>
+              <span className="w-9 text-left text-[12.5px] font-semibold text-ink-2">{menga ? 'Yoniq' : 'O‘chiq'}</span>
+            </button>
+          </form>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
         <Stat label="Yangi hodisalar" value={yangi} sub="ko‘rib chiqilmagan" ton={yangi ? 'brand' : 'ok'} />

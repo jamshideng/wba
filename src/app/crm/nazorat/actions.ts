@@ -103,3 +103,15 @@ export async function tekshir(fd: FormData) {
   revalidatePath(YOL)
   redirect(xabarliYol(orqaga, { ok: data ? `${data} ta yangi hodisa topildi.` : 'Yangi hodisa yo‘q.' }))
 }
+
+/** Direktor: nazorat xabarlari (sayt + Telegram) menga ham kelsinmi — standart o'chiq (0078) */
+export async function direktorgaAlmashtir(fd: FormData) {
+  await talabRol('direktor')
+  const orqaga = qaytish(fd)
+  const yoq = fd.get('yoq') === '1'
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('nazorat_direktorga_ozgartir', { p_yoq: yoq })
+  if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+  revalidatePath(YOL)
+  redirect(xabarliYol(orqaga, { ok: yoq ? 'Nazorat xabarlari endi sizga ham keladi.' : 'Nazorat xabarlari sizga kelmaydi.' }))
+}

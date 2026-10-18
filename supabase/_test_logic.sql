@@ -2118,3 +2118,34 @@ begin
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+
+-- 0078 — nazorat xabarlari direktorga faqat yoqsa
+set role authenticated;
+set request.jwt.claim.sub = '66666666-6666-6666-6666-666666666666';   -- direktor
+do $$
+begin
+  if bildirishnoma_menga(array['xodim'], '{"rol":"manager"}') then
+    raise exception 'XATO: o''chiq turganda direktorga nazorat xabari chiqdi';
+  end if;
+  perform nazorat_direktorga_ozgartir(true);
+  if not bildirishnoma_menga(array['xodim'], '{"rol":"manager"}') then
+    raise exception 'XATO: yoqilganda direktorga nazorat xabari chiqmadi';
+  end if;
+  perform nazorat_direktorga_ozgartir(false);
+  raise notice 'OK: 0078 — direktorga nazorat xabari faqat yoqsa';
+end $$;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+begin
+  begin
+    perform nazorat_direktorga_ozgartir(true);
+    raise exception 'XATO: admin direktor sozlamasini o''zgartirdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  if bildirishnoma_menga(array['xodim'], '{"rol":"manager"}') then
+    raise exception 'XATO: adminga nazorat xabari chiqdi';
+  end if;
+  raise notice 'OK: 0078 — admin o''zgartira olmaydi, unga chiqmaydi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
