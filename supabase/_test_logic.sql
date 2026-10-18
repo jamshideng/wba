@@ -2149,3 +2149,69 @@ begin
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+
+-- ============================================================
+--  0079 — darsni boshqa kunga ko'chirish
+-- ============================================================
+\echo '--- dars ko''chirish ---'
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- Diana — N01 ustozi
+do $$
+declare
+  v_eski  date := (select min(k::date) from generate_series(bugun_toshkent() + 1, bugun_toshkent() + 14, '1 day') k, groups g
+                   where g.id = 'N01' and guruh_dars_kunimi(g.kunlar, k::date)
+                     and not exists (select 1 from lessons l where l.group_id = 'N01' and l.sana = k::date));
+  v_yangi date := (select min(k::date) from generate_series(bugun_toshkent() + 1, bugun_toshkent() + 14, '1 day') k, groups g
+                   where g.id = 'N01' and not guruh_dars_kuni('N01', k::date)
+                     and not exists (select 1 from dam_kunlar d where d.sana = k::date)
+                     and not exists (select 1 from lessons l where l.group_id = 'N01' and l.sana = k::date));
+begin
+  perform dars_kochir('N01', v_eski, v_yangi, 'test');
+  if guruh_dars_kuni('N01', v_eski) or not guruh_dars_kuni('N01', v_yangi) then
+    raise exception 'XATO: ko''chirishdan keyin dars kunlari noto''g''ri';
+  end if;
+  begin
+    perform davomat_belgila('N01', v_eski, '{}'::jsonb);
+    raise exception 'XATO: ko''chirilgan kunga davomat qo''yildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    perform dars_kochir('N01', bugun_toshkent() - 7, v_yangi + 1, 'x');
+    raise exception 'XATO: ustoz o''tgan darsni ko''chirdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  perform dars_kochir('N01', v_eski, null);
+  if not guruh_dars_kuni('N01', v_eski) or guruh_dars_kuni('N01', v_yangi) then
+    raise exception 'XATO: bekor qilingach dars kunlari tiklanmadi';
+  end if;
+  raise notice 'OK: 0079 — dars ko''chirildi, eski kun yopiq, bekor qilish tiklaydi';
+end $$;
+set request.jwt.claim.sub = '55555555-5555-5555-5555-555555555555';   -- Komila — boshqa ustoz
+do $$
+begin
+  begin
+    perform dars_kochir('N01', bugun_toshkent() + 1, bugun_toshkent() + 2, 'x');
+    raise exception 'XATO: begona ustoz darsni ko''chirdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: 0079 — begona ustoz ko''chira olmaydi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+do $$
+declare v_eski date; v_yangi date;
+begin
+  select min(k::date) into v_eski from generate_series(bugun_toshkent() + 1, bugun_toshkent() + 14, '1 day') k, groups g
+   where g.id = 'N01' and guruh_dars_kunimi(g.kunlar, k::date) and not exists (select 1 from lessons l where l.group_id = 'N01' and l.sana = k::date);
+  select min(k::date) into v_yangi from generate_series(bugun_toshkent() + 1, bugun_toshkent() + 14, '1 day') k
+   where not guruh_dars_kuni('N01', k::date) and not exists (select 1 from dam_kunlar d where d.sana = k::date)
+     and not exists (select 1 from lessons l where l.group_id = 'N01' and l.sana = k::date);
+  perform dars_kochir('N01', v_eski, v_yangi, 'test');
+  begin
+    update lessons set otkazildi = true where group_id = 'N01' and sana = v_eski;
+    raise exception 'XATO: ko''chirilgan kunga dars o''tildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  perform dars_kochir('N01', v_eski, null);
+  raise notice 'OK: 0079 — ko''chirilgan kun qulfi (trigger)';
+end $$;

@@ -138,6 +138,10 @@ export type Lesson = {
   zamena_teacher_id: string | null
   zamena_sabab: string | null
   zamena_kiritdi: string | null
+  /** 0079 — bu dars shu sanaga ko'chirilgan / shu sanadan ko'chirib kelingan */
+  kochirildi_ga: string | null
+  kochirilgan_dan: string | null
+  kochirish_sabab: string | null
   created_at: string
 }
 
@@ -498,6 +502,7 @@ export type BugungiDars = {
   kunlar: number[]
   zamena_teacher_id: string | null
   zamena_ism: string | null
+  kochirilgan_dan: string | null
 }
 
 /** 0029 · oyma-oy qo'lda ayirish */
@@ -927,6 +932,7 @@ export type Database = {
       ogohlantir: { Args: { p_hodisa: number | null; p_teacher: string | null; p_profile: string | null; p_matn: string }; Returns: number }
       nazorat_jarima: { Args: { p_teacher: string | null; p_profile: string | null; p_summa: number; p_sabab: string }; Returns: number }
       maosh_qayta_och: { Args: { p_davr: string; p_sabab: string }; Returns: number }
+      dars_kochir: { Args: { p_group: string; p_eski: string; p_yangi: string | null; p_sabab?: string | null }; Returns: string | null }
       zamena_belgila: {
         Args: { p_group: string; p_sana: string; p_ustoz: string | null; p_sabab?: string | null }
         Returns: string | null

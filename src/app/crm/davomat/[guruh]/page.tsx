@@ -13,7 +13,7 @@ import { Jurnal, type JurnalQatori, type DarsKuni, type Huquq } from './jurnal'
 import type { AttendanceStatus } from '@/lib/types'
 import type { WoblarLimiti } from '@/lib/woblar-chegara'
 import { WoblarLimitKartasi } from '@/components/woblar-limit'
-import { zamenaSaqla } from './actions'
+import { zamenaSaqla, darsKochir } from './actions'
 
 export const metadata = { title: 'Davomat jurnali' }
 export const dynamic = 'force-dynamic'
@@ -92,7 +92,7 @@ export default async function DavomatJurnali({
       .select('student_id, boshlandi, tugadi, holat, students(fish)')
       .eq('group_id', guruh)
       .lte('boshlandi', oyOxiri),
-    supabase.from('lessons').select('id, sana, zamena_teacher_id, zamena_sabab').eq('group_id', guruh).gte('sana', oyBoshi).lte('sana', oyOxiri),
+    supabase.from('lessons').select('id, sana, otkazildi, zamena_teacher_id, zamena_sabab, kochirildi_ga, kochirilgan_dan, kochirish_sabab').eq('group_id', guruh).gte('sana', oyBoshi).lte('sana', oyOxiri),
     supabase.from('lessons').select('sana').eq('group_id', guruh).order('sana').limit(1).maybeSingle(),
   ])
 
@@ -105,11 +105,22 @@ export default async function DavomatJurnali({
   }
   // Shu oyda guruhda bo'lganlar: oy tugashidan oldin kelgan, oy boshlanishidan oldin ketmagan
   const yList = ((yozilishlar ?? []) as unknown as Yozilish[]).filter((y) => !y.tugadi || y.tugadi >= oyBoshi)
-  const dList = (darslar ?? []) as { id: string; sana: string; zamena_teacher_id: string | null; zamena_sabab: string | null }[]
+  const dList = (darslar ?? []) as {
+    id: string
+    sana: string
+    otkazildi: boolean
+    zamena_teacher_id: string | null
+    zamena_sabab: string | null
+    kochirildi_ga: string | null
+    kochirilgan_dan: string | null
+    kochirish_sabab: string | null
+  }[]
 
   /* Kanikul / bayram (0036) — ustun qoladi, lekin "dam": davomat so'ralmaydi */
   const { data: damlar } = await supabase.from('dam_kunlar').select('sana, sabab').gte('sana', oyBoshi).lte('sana', oyOxiri)
   const dam = new Map(((damlar ?? []) as { sana: string; sabab: string }[]).map((d) => [d.sana, d.sabab]))
+  // 0079 — boshqa kunga ko'chirilgan dars: ustun qoladi, lekin davomat so'ralmaydi
+  for (const d of dList) if (d.kochirildi_ga) dam.set(d.sana, `Ko‘chirildi → ${d.kochirildi_ga.slice(8, 10)}.${d.kochirildi_ga.slice(5, 7)}`)
 
   /* Ustunlar: guruh kunlariga tushgan sanalar + shu oyda ochilgan darslar */
   const darsSanalari = new Set(dList.map((d) => d.sana))
@@ -222,6 +233,21 @@ export default async function DavomatJurnali({
   const zamenalar = dList.filter((d) => d.zamena_teacher_id).sort((a, b) => a.sana.localeCompare(b.sana))
   const zamenaKunlari = kunlar.filter((k) => !k.dam && (admin || k.sana >= bugun))
   const qaytish = davr === joriy ? `/crm/davomat/${guruh}` : `/crm/davomat/${guruh}?oy=${davr}`
+
+  /* 0079 — darsni ko'chirish: guruh ustozi (bugun va keyin) yoki admin */
+  const kochiradi = admin || guruhUstozi
+  const qisqaSana = (x: string) => `${x.slice(8, 10)}.${x.slice(5, 7)}`
+  const kochirishlar = new Map<string, { eski: string; yangi: string; sabab: string | null }>()
+  for (const d of dList) {
+    if (d.kochirildi_ga) kochirishlar.set(d.sana, { eski: d.sana, yangi: d.kochirildi_ga, sabab: d.kochirish_sabab })
+    if (d.kochirilgan_dan) kochirishlar.set(d.kochirilgan_dan, { eski: d.kochirilgan_dan, yangi: d.sana, sabab: d.kochirish_sabab })
+  }
+  const kochirishRoyxati = [...kochirishlar.values()].sort((a, b) => a.eski.localeCompare(b.eski))
+  const darsBy = new Map(dList.map((d) => [d.sana, d]))
+  const kochiriladiganKunlar = oyKunlari(davr).filter((x) => {
+    const d = darsBy.get(x)
+    return guruhi.kunlar.includes(haftaKuni(x)) && !d?.otkazildi && !d?.kochirildi_ga && !d?.kochirilgan_dan && (admin || x >= bugun)
+  })
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -382,6 +408,65 @@ export default async function DavomatJurnali({
           )}
           <p className="border-t border-line-soft px-5 py-3 text-[11.5px] text-ink-3">
             Zamena darsining maoshi, davomati, woblari va woblar limiti o‘rinbosar ustozga o‘tadi.
+          </p>
+        </Card>
+      )}
+
+      {(kochiradi || kochirishRoyxati.length > 0) && (
+        <Card className="flex flex-col">
+          <CardHeader title="Darsni ko‘chirish" meta={`${kochirishRoyxati.length} ta`} />
+          {kochirishRoyxati.length > 0 && (
+            <ul className="flex flex-col">
+              {kochirishRoyxati.map((k) => (
+                <li key={k.eski} className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft px-5 py-3">
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="tnum text-[13px] font-semibold">
+                      {sanaFmt(k.eski)} → {sanaFmt(k.yangi)}
+                    </span>
+                    {k.sabab && <span className="text-[11.5px] text-ink-3">{k.sabab}</span>}
+                  </span>
+                  {kochiradi && (admin || k.yangi >= bugun) && !darsBy.get(k.yangi)?.otkazildi && (
+                    <form action={darsKochir}>
+                      <input type="hidden" name="group_id" value={guruh} />
+                      <input type="hidden" name="eski" value={k.eski} />
+                      <input type="hidden" name="qaytish" value={qaytish} />
+                      <Yuborish tur="xavfli" kutish="…">
+                        Bekor qilish
+                      </Yuborish>
+                    </form>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {kochiradi && kochiriladiganKunlar.length > 0 && (
+            <form action={darsKochir} className="flex flex-wrap items-end gap-3 border-t border-line-soft px-5 py-4">
+              <input type="hidden" name="group_id" value={guruh} />
+              <input type="hidden" name="qaytish" value={qaytish} />
+              <Maydon nom="Qaysi dars">
+                <select name="eski" required defaultValue="" className={kirishKlass}>
+                  <option value="" disabled>
+                    Tanlang…
+                  </option>
+                  {kochiriladiganKunlar.map((x) => (
+                    <option key={x} value={x}>
+                      {sanaFmt(x)} · {HAFTA_KUNLARI[haftaKuni(x) - 1].qisqa}
+                      {dam.get(x) ? ` · ${dam.get(x)}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </Maydon>
+              <Maydon nom="Qaysi kunga">
+                <input type="date" name="yangi" required min={admin ? undefined : bugun} className={kirishKlass} />
+              </Maydon>
+              <Maydon nom="Sabab">
+                <input name="sabab" placeholder="Masalan: bayram kuni" className={kirishKlass} />
+              </Maydon>
+              <Yuborish kutish="Ko‘chirilmoqda…">Ko‘chirish</Yuborish>
+            </form>
+          )}
+          <p className="border-t border-line-soft px-5 py-3 text-[11.5px] text-ink-3">
+            Oyda kamida 12 dars bo‘lishi kerak. Ko‘chirilgan kuni davomat yopiladi, dars yangi kunda o‘tiladi — maosh va woblar o‘sha kunga yoziladi. {qisqaSana(bugun)} dan oldingi kunlarni faqat admin o‘zgartiradi.
           </p>
         </Card>
       )}

@@ -143,3 +143,35 @@ export async function zamenaSaqla(fd: FormData) {
   revalidatePath('/crm/maosh')
   redirect(xabarliYol(orqaga, { ok: ustoz ? 'Zamena belgilandi.' : 'Zamena olib tashlandi.' }))
 }
+
+/**
+ * Darsni boshqa kunga ko'chirish (0079). "yangi" bo'sh — bekor qilish.
+ * Huquq bazada: guruh ustozi bugungi/keyingi darslarni, admin istalganini.
+ */
+export async function darsKochir(fd: FormData) {
+  const guruh = matn(fd.get('group_id'))
+  const eski = matn(fd.get('eski'))
+  const yangi = matn(fd.get('yangi'))
+  const y = ichkiYol(fd.get('qaytish'))
+  const orqaga = guruh && y.startsWith(`/crm/davomat/${guruh}`) ? y : '/crm/davomat'
+  const SANA = /^\d{4}-\d{2}-\d{2}$/
+
+  const xato = await ruxsat()
+  if (xato) redirect(xabarliYol(orqaga, { xato }))
+  if (!guruh || !eski || !SANA.test(eski) || (yangi && !SANA.test(yangi))) {
+    redirect(xabarliYol(orqaga, { xato: 'Sanani tanlang.' }))
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('dars_kochir', {
+    p_group: guruh!,
+    p_eski: eski!,
+    p_yangi: yangi,
+    p_sabab: matn(fd.get('sabab')),
+  })
+  if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm/davomat')
+  revalidatePath('/crm/maosh')
+  redirect(xabarliYol(orqaga, { ok: yangi ? 'Dars ko‘chirildi.' : 'Ko‘chirish bekor qilindi.' }))
+}
