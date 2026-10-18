@@ -4,7 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, Badge, Empty, Button } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
-import { pul, jadval, guruhQisqa } from '@/lib/format'
+import { pul, jadval, vaqt, kunlarNomi, KUN_NOMI, guruhQisqa } from '@/lib/format'
+import type { DayType } from '@/lib/types'
 
 export const metadata = { title: 'Guruhlar' }
 export const dynamic = 'force-dynamic'
@@ -53,6 +54,9 @@ export default async function Guruhlar() {
     ]),
   )
 
+  /* Ustoz paneli: fan nomi katta, ism yo'q (o'ziniki), vaqt va kunlar pastda katta */
+  const ustozKarta = !pulKoradi || ustozRejimi(profil)
+
   const faol = gList.filter((g) => g.holat === 'faol').length
 
   return (
@@ -76,6 +80,36 @@ export default async function Guruhlar() {
           {gList.map((g) => {
             const s = sMap.get(g.id)
             const qarz = Number(s?.qarz ?? 0)
+            if (ustozKarta) {
+              const kun = Array.isArray(g.kunlar) ? kunlarNomi(g.kunlar) : KUN_NOMI[(g.kunlar as DayType | null) ?? 'har_kuni']
+              return (
+                <li key={g.id}>
+                  <Link
+                    href={`/crm/guruhlar/${g.id}`}
+                    className="flex h-full flex-col gap-4 rounded-[12px] border border-line bg-surface p-5 transition hover:border-ink-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="min-w-0 truncate font-[family-name:var(--font-display)] text-[20px] font-bold leading-tight">
+                        {guruhQisqa(g.nom)}
+                      </span>
+                      {g.holat !== 'faol' && <Badge ton="jim">Yopilgan</Badge>}
+                    </div>
+
+                    <span className="flex items-baseline gap-1.5 text-ink-2">
+                      <span className="tnum text-[15px] font-semibold text-ink">{Number(s?.oquvchilar ?? 0)}</span>
+                      <span className="text-[13px]">o‘quvchi</span>
+                    </span>
+
+                    <div className="mt-auto flex flex-col gap-1 border-t border-line-soft pt-3.5">
+                      <span className="tnum font-[family-name:var(--font-mono)] text-[18px] font-semibold">
+                        {g.boshlanish && g.tugash ? `${vaqt(g.boshlanish)}–${vaqt(g.tugash)}` : '—'}
+                      </span>
+                      <span className="text-[14px] text-ink-2">{kun}</span>
+                    </div>
+                  </Link>
+                </li>
+              )
+            }
             return (
               <li key={g.id}>
                 <Link

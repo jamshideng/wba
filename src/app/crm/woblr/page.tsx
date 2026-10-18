@@ -1,11 +1,11 @@
-import { IconMedal } from '@/components/icons'
+import { IconMedal, IconTanga } from '@/components/icons'
 import Link from 'next/link'
 import { talabProfil, getUstoz, adminmi, staffmi, ustozRejimi } from '@/lib/auth'
 import { woblarChegara } from '@/lib/woblar-chegara'
 import { JonliForma } from '@/components/jonli-forma'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
-import { Card, CardHeader, Badge, Empty } from '@/components/ui'
+import { Card, CardHeader, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { WoblarBerishForma, type BerishOquvchi } from './berish-forma'
@@ -164,7 +164,15 @@ export default async function Woblr({
       </JonliForma>
 
       <Card className="flex flex-col">
-        <CardHeader title="Reyting" meta={yopiq ? 'eng yaxshi 10 ta' : `${reyting.length} o‘quvchi`} />
+        <CardHeader
+          title={yopiq ? 'Reyting · eng yaxshi 10 ta' : 'Reyting'}
+          action={
+            <span className="flex size-8 items-center justify-center text-accent" title="Woblar">
+              <IconTanga size={24} />
+              <span className="sr-only">Woblar</span>
+            </span>
+          }
+        />
         {reyting.length === 0 ? (
           <div className="px-5 pb-5">
             <Empty>Hali woblar berilmagan. Woblar davomat ekranida yoki pastdagi bo‘limda beriladi.</Empty>
@@ -200,9 +208,11 @@ export default async function Woblr({
                     {r.fish}
                   </Link>
                 )}
-                <Badge ton={r.ball > 0 ? 'accent' : 'brand'}>
-                  {r.ball} W
-                </Badge>
+                <span
+                  className={`tnum w-16 shrink-0 text-right font-[family-name:var(--font-display)] text-[19px] font-extrabold ${r.ball > 0 ? 'text-accent' : 'text-brand'}`}
+                >
+                  {r.ball}
+                </span>
               </li>
             ))}
           </ol>

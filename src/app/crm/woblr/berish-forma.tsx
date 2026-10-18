@@ -79,9 +79,18 @@ export function WoblarBerishForma({
           ))}
         </select>
       </Maydon>
-      <Maydon nom="Woblar" izoh={admin ? 'Chegara yo‘q (admin)' : `−${chegara}…+${chegara}`}>
-        <input name="ball" type="number" min={-chegara} max={chegara} step={1} defaultValue={1} required className={kirishKlass} />
-      </Maydon>
+      {/* Chegara matni ostida turmaydi (boshqa maydonlar bilan tekis) — sichqoncha kelganda chiqadi */}
+      <div className="group relative">
+        <Maydon nom="Woblar">
+          <input name="ball" type="number" min={-chegara} max={chegara} step={1} defaultValue={1} required className={kirishKlass} />
+        </Maydon>
+        <div
+          role="tooltip"
+          className="pointer-events-none absolute top-full left-0 z-20 mt-1.5 w-max max-w-56 translate-y-1 rounded-[8px] border border-line bg-surface px-3 py-2 text-[12px] leading-snug text-ink-2 opacity-0 shadow-lg transition duration-150 group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:translate-y-0 group-hover:opacity-100"
+        >
+          {admin ? 'Chegara yo‘q (admin)' : `Bir martada −${chegara} dan +${chegara} gacha`}. Minus — woblar ayiriladi.
+        </div>
+      </div>
       <Maydon nom="Sabab">
         <select name="sabab" defaultValue="faollik" className={kirishKlass}>
           <option value="faollik">Faollik</option>
@@ -94,7 +103,7 @@ export function WoblarBerishForma({
       <Maydon nom="Izoh">
         <input name="izoh" placeholder="Ixtiyoriy" className={kirishKlass} />
       </Maydon>
-      <Yuborish>Berish</Yuborish>
+      <Yuborish tur="yorqin">Berish</Yuborish>
       {limit && (
         <p className="text-[12.5px] text-ink-2 sm:col-span-full">
           Oylik limit:{' '}

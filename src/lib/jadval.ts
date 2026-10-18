@@ -50,3 +50,40 @@ export function haftalikJadval(guruhlar: JadvalGuruh[]): JadvalKuni[] {
     }
   })
 }
+
+/**
+ * Setka uchun: bir kunda vaqti ustma-ust tushgan darslar yonma-yon turadi.
+ * Har darsga ustun raqami (yolak) va shu to'dadagi ustunlar soni beriladi.
+ */
+export function yolaklar<T extends JadvalGuruh>(darslar: T[]): (T & { yolak: number; yolaklar: number; bosh: number; oxir: number })[] {
+  const vaqtli = darslar
+    .map((d) => {
+      const bosh = daqiqa(d.boshlanish)
+      return bosh === null ? null : { d, bosh, oxir: daqiqa(d.tugash) ?? bosh + 90 }
+    })
+    .filter((x): x is { d: T; bosh: number; oxir: number } => x !== null)
+    .sort((a, b) => a.bosh - b.bosh || b.oxir - a.oxir)
+
+  const natija: (T & { yolak: number; yolaklar: number; bosh: number; oxir: number })[] = []
+  let toda: typeof natija = []
+  let todaOxiri = -1
+  let ustunOxiri: number[] = []
+  const yop = () => {
+    for (const x of toda) x.yolaklar = ustunOxiri.length
+    natija.push(...toda)
+  }
+  for (const x of vaqtli) {
+    if (x.bosh >= todaOxiri && toda.length) {
+      yop()
+      toda = []
+      ustunOxiri = []
+    }
+    let yolak = ustunOxiri.findIndex((o) => o <= x.bosh)
+    if (yolak === -1) yolak = ustunOxiri.push(0) - 1
+    ustunOxiri[yolak] = x.oxir
+    toda.push({ ...x.d, yolak, yolaklar: 1, bosh: x.bosh, oxir: x.oxir })
+    todaOxiri = Math.max(todaOxiri, x.oxir)
+  }
+  if (toda.length) yop()
+  return natija
+}

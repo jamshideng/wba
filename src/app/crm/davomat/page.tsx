@@ -141,12 +141,12 @@ export default async function Davomat({
       {gList.length > 0 && (
         <Card className="flex flex-col">
           <CardHeader title={staffmi(profil.rol) ? 'Barcha guruhlar — jurnal' : 'Guruhlarim — jurnal'} meta={`${gList.length} ta guruh`} />
-          <ul className="flex flex-col px-2 pb-2">
+          <ul className="flex flex-col gap-1.5 px-3 pb-3">
             {gList.map((g) => (
               <li key={g.id}>
                 <Link
                   href={`/crm/davomat/${g.id}`}
-                  className="flex min-h-11 items-center justify-between gap-3 rounded-[9px] px-3 py-2 transition hover:bg-surface-2"
+                  className="flex min-h-11 items-center justify-between gap-3 rounded-[9px] bg-surface-2 px-3 py-2 transition hover:bg-line-soft hover:ring-1 hover:ring-line"
                 >
                   <span className="min-w-0 truncate text-[13.5px] font-semibold">{ozimniki ? guruhQisqa(g.nom) : g.nom}</span>
                   <span className="shrink-0 font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3">
