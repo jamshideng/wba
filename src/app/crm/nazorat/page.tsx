@@ -106,7 +106,7 @@ export default async function Nazorat({
         <Card className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
           <span className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[13.5px] font-semibold">Nazorat xabarlari menga ham kelsin</span>
-            <span className="text-[12px] text-ink-3">Saytda va Telegram'da. O‘chiq bo‘lsa — faqat managerga boradi.</span>
+            <span className="text-[12px] text-ink-3">Saytda va Telegram’da. O‘chiq bo‘lsa — faqat managerga boradi.</span>
           </span>
           <form action={direktorgaAlmashtir}>
             <input type="hidden" name="qaytish" value={joriy} />
