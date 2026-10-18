@@ -51,6 +51,10 @@ export default async function Davomat({
      telefonda "Beginner · Komila Bo…" bo'lib kesilardi. Xodimga to'liq nom. */
   const ozimniki = !staffmi(profil.rol)
 
+  /* 0082 — o'rinbosar sifatida kelgusi darslarim (jurnal o'sha kuni ochiladi) */
+  const { data: zXom } = ustoz ? await supabase.rpc('mening_zamenalarim') : { data: [] }
+  const zamenalarim = (zXom ?? []) as { sana: string; group_id: string; guruh: string; boshlanish: string; tugash: string; kimning_orniga: string | null; sabab: string | null }[]
+
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha
@@ -66,6 +70,31 @@ export default async function Davomat({
       />
 
       <Xabar ok={xabar.ok} xato={xabar.xato === 'huquq' ? 'Bu bo‘lim sizga ochiq emas.' : xabar.xato} />
+
+      {zamenalarim.length > 0 && (
+        <Card className="flex flex-col">
+          <CardHeader title="Zamenalarim" meta={`${zamenalarim.length} ta dars`} />
+          <ul className="flex flex-col">
+            {zamenalarim.map((z) => (
+              <li key={`${z.group_id}-${z.sana}`} className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft px-5 py-3">
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-[13.5px] font-semibold">
+                    {sana(z.sana)} · {vaqt(z.boshlanish)}–{vaqt(z.tugash)}
+                  </span>
+                  <span className="truncate text-[12px] text-ink-2">
+                    {guruhUstozsiz(z.guruh)} — {z.kimning_orniga ?? 'ustoz'} o‘rniga{z.sabab ? ` · ${z.sabab}` : ''}
+                  </span>
+                </span>
+                {z.sana === bugun ? (
+                  <Button href={`/crm/davomat/${z.group_id}`}>Jurnal</Button>
+                ) : (
+                  <Badge ton="jim">jurnal {sana(z.sana)} kuni ochiladi</Badge>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {dList.length === 0 ? (
         <Card className="p-5">

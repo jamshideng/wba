@@ -927,6 +927,10 @@ export type Database = {
       maosh_tasdiqla: { Args: { p_davr: string }; Returns: number }
       xodim_maosh: { Args: { p_davr: string }; Returns: XodimMaosh[] }
       nazorat_yig: { Args: Record<string, never>; Returns: number }
+      mening_zamenalarim: {
+        Args: Record<string, never>
+        Returns: { sana: string; group_id: string; guruh: string; boshlanish: string; tugash: string; kimning_orniga: string | null; sabab: string | null }[]
+      }
       dars_kam_tekshir: { Args: Record<string, never>; Returns: number }
       kochirish_takliflari: { Args: { p_group: string; p_davr: string }; Returns: { eski: string; taklif: string | null; sabab: string | null }[] }
       nazorat_direktorga: { Args: Record<string, never>; Returns: boolean }

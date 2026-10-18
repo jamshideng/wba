@@ -2231,3 +2231,29 @@ begin
   end if;
   raise notice 'OK: 0081 — 12 dars eslatmasi va ko''chirish taklifi';
 end $$;
+
+-- 0082 — kelgusi zamenalarim: o'rinbosar oldindan ko'radi, begona ko'rmaydi
+reset role;
+insert into lessons (group_id, sana, zamena_teacher_id) values ('N01', bugun_toshkent() + 20, 'U02')
+  on conflict (group_id, sana) do update set zamena_teacher_id = 'U02';
+set role authenticated;
+set request.jwt.claim.sub = '55555555-5555-5555-5555-555555555555';   -- Komila (U02)
+do $$
+begin
+  if not exists (select 1 from mening_zamenalarim() where group_id = 'N01' and sana = bugun_toshkent() + 20) then
+    raise exception 'XATO: o''rinbosar kelgusi zamenasini ko''rmadi';
+  end if;
+  if app_teaches_group('N01') and not app_zamena_bugun('N01') and (select teacher_id from groups where id = 'N01') <> 'U02' then
+    raise exception 'XATO: kelgusi zamena guruhni oldindan ochib qo''ydi';
+  end if;
+  raise notice 'OK: 0082 — kelgusi zamena ro''yxatda, guruh oldindan ochilmaydi';
+end $$;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- Diana
+do $$
+begin
+  if exists (select 1 from mening_zamenalarim() where sana = bugun_toshkent() + 20) then
+    raise exception 'XATO: begona ustoz zamenani ko''rdi';
+  end if;
+end $$;
+reset role;
+reset request.jwt.claim.sub;
