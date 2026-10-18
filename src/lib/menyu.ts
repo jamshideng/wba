@@ -95,6 +95,8 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
           { href: '/crm/oquvchilar', nom: 'O‘quvchilar', Icon: IconStudents, tayyor: true, mobil: true },
           { href: '/crm/qarzdorlar', nom: 'Qarzdorlar', Icon: IconDebt, tayyor: true },
           { href: '/crm/arxiv', nom: 'Arxiv', Icon: IconArxiv, tayyor: true },
+          // 0083 — ketish sabablari tahlili
+          { href: '/crm/oquvchilar/ketish', nom: 'Ketish tahlili', Icon: IconReports, tayyor: true },
           ...(admin ? [{ href: '/crm/oquvchilar/takroriy', nom: 'Takroriylar', Icon: IconStudents, tayyor: true }] : []),
           // 0072 — kim botga ulangan, ulanmaganga taklif havolasi
           { href: '/crm/telegram', nom: 'Telegram ulanishi', Icon: IconSend, tayyor: true },

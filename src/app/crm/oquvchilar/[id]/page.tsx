@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { KETISH_SABABLARI, ketishNomi } from '@/lib/ketish'
 import { notFound } from 'next/navigation'
 import { talabRol, staffmi, adminmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
@@ -73,7 +74,7 @@ export default async function OquvchiProfil({
 
   const { data: oquvchi } = await supabase
     .from('students')
-    .select('id, fish, tugilgan_sana, ota_tel, ona_tel, shaxsiy_tel, qoshilgan_sana, holat, izoh, profile_id, arxiv_sana, arxiv_sabab')
+    .select('id, fish, tugilgan_sana, ota_tel, ona_tel, shaxsiy_tel, qoshilgan_sana, holat, izoh, profile_id, arxiv_sana, arxiv_sabab, ketish_sababi')
     .eq('id', id)
     .maybeSingle()
 
@@ -252,6 +253,7 @@ export default async function OquvchiProfil({
           <span className="text-[13px]">
             <b>Arxivda</b>
             {oquvchi.arxiv_sana ? ` · ${sana(oquvchi.arxiv_sana)} dan` : ''}
+            {oquvchi.ketish_sababi ? ` · ${ketishNomi(oquvchi.ketish_sababi)}` : ''}
             {oquvchi.arxiv_sabab ? ` · ${oquvchi.arxiv_sabab}` : ''} — qarzi saqlanadi.
           </span>
           {pulKoradi && (
@@ -533,8 +535,20 @@ export default async function OquvchiProfil({
                   <Maydon nom="Oxirgi kuni">
                     <input type="date" name="sana" required defaultValue={bugunToshkent()} className={kirishKlass} />
                   </Maydon>
-                  <Maydon nom="Sabab">
-                    <input name="sabab" placeholder="Masalan: ko‘chib ketdi" className={kirishKlass} />
+                  <Maydon nom="Ketish sababi">
+                    <select name="turi" required defaultValue="" className={kirishKlass}>
+                      <option value="" disabled>
+                        Tanlang…
+                      </option>
+                      {Object.entries(KETISH_SABABLARI).map(([k, v]) => (
+                        <option key={k} value={k}>
+                          {v}
+                        </option>
+                      ))}
+                    </select>
+                  </Maydon>
+                  <Maydon nom="Izoh" izoh="“Boshqa” bo‘lsa — majburiy">
+                    <input name="sabab" placeholder="Masalan: Chilonzorga ko‘chdi" className={kirishKlass} />
                   </Maydon>
                   <Yuborish tur="xavfli" kutish="…">Arxivga</Yuborish>
                   <p className="w-full text-[11.5px] text-ink-3">

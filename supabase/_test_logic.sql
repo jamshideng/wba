@@ -2257,3 +2257,37 @@ begin
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+
+-- ============================================================
+--  0083 — ketish sabablari
+-- ============================================================
+\echo '--- ketish sabablari ---'
+reset role;
+insert into students (id, fish, qoshilgan_sana) values ('SK1', 'Ketish Test', bugun_toshkent() - 60) on conflict do nothing;
+set role authenticated;
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';   -- qabulxona
+do $$
+declare v jsonb;
+begin
+  begin
+    perform oquvchi_arxivla('SK1', bugun_toshkent(), null, 'boshqa');
+    raise exception 'XATO: "Boshqa" izohsiz o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  perform oquvchi_arxivla('SK1', bugun_toshkent(), 'Chilonzorga', 'kochdi');
+  if (select ketish_sababi from students where id = 'SK1') <> 'kochdi' then
+    raise exception 'XATO: ketish sababi yozilmadi';
+  end if;
+  v := ketish_tahlili(bugun_toshkent() - 1, bugun_toshkent());
+  if not exists (select 1 from jsonb_array_elements(v -> 'sabablar') x where x ->> 'sabab' = 'kochdi') then
+    raise exception 'XATO: tahlilda sabab yo''q: %', v;
+  end if;
+  perform ketish_sababi_belgila('SK1', 'narx', null);
+  perform oquvchi_arxivdan('SK1');
+  if (select ketish_sababi from students where id = 'SK1') is not null then
+    raise exception 'XATO: arxivdan qaytganda sabab qoldi';
+  end if;
+  raise notice 'OK: 0083 — sabab majburiy, tahlil, o''zgartirish, qaytarishda tozalanadi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;

@@ -82,6 +82,8 @@ export type Student = {
   /** Arxivga o'tgan kun va sabab (0030) */
   arxiv_sana: string | null
   arxiv_sabab: string | null
+  /** 0083 — ketish sababi turi (lib/ketish.ts) */
+  ketish_sababi: string | null
   /** 0046 — tanaffusdagi o'quvchi qachon qaytadi va nega */
   qaytish_sana: string | null
   tanaffus_sabab: string | null
@@ -849,7 +851,7 @@ export type Database = {
       v_monthly_income: View<MonthlyIncome>
       v_bugungi_darslar: View<BugungiDars>
       v_ustoz_kechikish_oylik: View<UstozKechikishOylik>
-      v_arxiv_oquvchilar: View<{ student_id: string; fish: string; arxiv_sana: string | null; arxiv_sabab: string | null; qarz: number; guruhlar: string | null }>
+      v_arxiv_oquvchilar: View<{ student_id: string; fish: string; arxiv_sana: string | null; arxiv_sabab: string | null; qarz: number; guruhlar: string | null; ketish_sababi: string | null }>
     }
     Functions: {
       woblr_leaderboard: {
@@ -911,7 +913,9 @@ export type Database = {
         Returns: undefined
       }
       vip_ozgartir: { Args: { p_enrollment: string; p_vip: boolean; p_dan?: string | null }; Returns: number }
-      oquvchi_arxivla: { Args: { p_student: string; p_sana?: string | null; p_sabab?: string | null }; Returns: number }
+      oquvchi_arxivla: { Args: { p_student: string; p_sana?: string | null; p_sabab?: string | null; p_turi?: string | null }; Returns: number }
+      ketish_sababi_belgila: { Args: { p_student: string; p_turi: string; p_izoh?: string | null }; Returns: undefined }
+      ketish_tahlili: { Args: { p_dan: string; p_gacha: string }; Returns: import('./ketish').KetishTahlili }
       oquvchi_arxivdan: { Args: { p_student: string }; Returns: undefined }
       yozilish_oylari: {
         Args: { p_student: string }

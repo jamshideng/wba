@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabRol } from '@/lib/auth'
-import { matn, sanaOqi, sonOqi, summaOqi, telefonOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
+import { matn, sanaOqi, sonOqi, summaOqi, telefonOqi, xabarliYol, xatoMatni, ichkiYol } from '@/lib/kiritish'
+import { KETISH_SABABLARI } from '@/lib/ketish'
 
 /**
  * Chegirma maydonlari — Qatnashuvdagidek ikki bosqich.
@@ -269,11 +270,17 @@ export async function oquvchiArxivla(fd: FormData) {
   const yol = `/crm/oquvchilar/${studentId}`
   if (!studentId) redirect('/crm/oquvchilar')
 
+  // 0083 — sabab ro'yxatdan majburiy; "Boshqa" bo'lsa izoh ham
+  const turi = matn(fd.get('turi'))
+  if (!turi || !(turi in KETISH_SABABLARI)) redirect(xabarliYol(yol, { xato: 'Ketish sababini tanlang.' }))
+  if (turi === 'boshqa' && !matn(fd.get('sabab'))) redirect(xabarliYol(yol, { xato: '“Boshqa” tanlansa, sababini yozing.' }))
+
   const supabase = await createClient()
   const { error } = await supabase.rpc('oquvchi_arxivla', {
     p_student: studentId!,
     p_sana: sanaOqi(fd.get('sana')),
     p_sabab: matn(fd.get('sabab')),
+    p_turi: turi,
   })
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
 
@@ -293,4 +300,21 @@ export async function oquvchiArxivdan(fd: FormData) {
 
   revalidatePath('/crm', 'layout')
   redirect(xabarliYol(yol, { ok: 'Arxivdan qaytarildi (shu ID bilan). Endi guruhga biriktiring.' }))
+}
+
+/** Arxivdagi o'quvchiga ketish sababini qo'yish yoki o'zgartirish (0083) */
+export async function ketishSababiBelgila(fd: FormData) {
+  await talabRol('admin', 'direktor', 'qabulxona')
+  const studentId = matn(fd.get('student_id'))
+  const turi = matn(fd.get('turi'))
+  const y = ichkiYol(fd.get('qaytish'))
+  const orqaga = y.startsWith('/crm/') ? y : '/crm/arxiv'
+  if (!studentId || !turi || !(turi in KETISH_SABABLARI)) redirect(xabarliYol(orqaga, { xato: 'Sababni tanlang.' }))
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('ketish_sababi_belgila', { p_student: studentId!, p_turi: turi!, p_izoh: matn(fd.get('izoh')) })
+  if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+  revalidatePath('/crm/arxiv')
+  revalidatePath('/crm/oquvchilar/ketish')
+  redirect(xabarliYol(orqaga, { ok: 'Sabab saqlandi.' }))
 }
