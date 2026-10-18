@@ -1,4 +1,4 @@
-import { talabRol, tasdiqlaydimi, ROL_NOMI } from '@/lib/auth'
+import { talabRol, tasdiqlaydimi, managermi, ROL_NOMI } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Badge, Empty } from '@/components/ui'
@@ -12,9 +12,10 @@ import type { UserRole } from '@/lib/types'
 export const metadata = { title: 'Xodimlar' }
 export const dynamic = 'force-dynamic'
 
-const LAVOZIM: { rol: 'qabulxona' | 'admin' | 'direktor'; izoh: string }[] = [
+const LAVOZIM: { rol: 'qabulxona' | 'admin' | 'manager' | 'direktor'; izoh: string }[] = [
   { rol: 'qabulxona', izoh: 'O‘quvchi, to‘lov, probniy kiritadi; tasdiqlamaydi, sozlamalarga kirmaydi' },
   { rol: 'admin', izoh: 'Hamma bo‘lim, xodim va ustoz hisoblari; to‘lovni tasdiqlamaydi' },
+  { rol: 'manager', izoh: 'Admin huquqlari + admin va ustozlar nazorati, ogohlantirish, jarima, admin maoshi' },
   { rol: 'direktor', izoh: 'Admin huquqlari + to‘lovni tasdiqlash (faqat direktor)' },
 ]
 
@@ -30,7 +31,7 @@ export default async function Xodimlar({ searchParams }: { searchParams: Promise
   const xabar = await searchParams
   const supabase = await createClient()
   const [{ data: xodimlar }, { data: ustozlar }] = await Promise.all([
-    supabase.from('profiles').select('id, ism, rol, email, holat').in('rol', ['qabulxona', 'admin', 'direktor']).order('rol').order('ism'),
+    supabase.from('profiles').select('id, ism, rol, email, holat').in('rol', ['qabulxona', 'admin', 'manager', 'direktor']).order('rol').order('ism'),
     supabase.from('teachers').select('id, ism, profile_id').eq('holat', 'faol').order('ism'),
   ])
   const uList = (ustozlar ?? []) as { id: string; ism: string; profile_id: string | null }[]
@@ -38,11 +39,12 @@ export default async function Xodimlar({ searchParams }: { searchParams: Promise
   const xList = (xodimlar ?? []) as { id: string; ism: string; rol: UserRole; email: string | null; holat: string }[]
   const direktorman = tasdiqlaydimi(men.rol)
   // Direktor lavozimini faqat direktor beradi/oladi
-  const beraOladi = LAVOZIM.filter((l) => l.rol !== 'direktor' || direktorman)
+  // Manager lavozimini — direktor yoki manager (0077)
+  const beraOladi = LAVOZIM.filter((l) => (l.rol !== 'direktor' || direktorman) && (l.rol !== 'manager' || managermi(men.rol)))
 
   return (
     <div className="flex max-w-4xl flex-col gap-4 px-5 py-5 lg:px-7">
-      <Sarlavha nom="Xodimlar" izoh="qabulxona · admin · direktor — ustoz bo‘lmagan hisoblar" />
+      <Sarlavha nom="Xodimlar" izoh="qabulxona · admin · manager · direktor — ustoz bo‘lmagan hisoblar" />
       <Xabar ok={xabar.ok} xato={xabar.xato} />
 
       <Card className="flex flex-col">
@@ -54,7 +56,7 @@ export default async function Xodimlar({ searchParams }: { searchParams: Promise
             {xList.map((x) => {
               const ozim = x.id === men.id
               const direktorQatori = x.rol === 'direktor'
-              const tegsaBoladi = !ozim && (!direktorQatori || direktorman)
+              const tegsaBoladi = !ozim && (!direktorQatori || direktorman) && (x.rol !== 'manager' || managermi(men.rol))
               return (
                 <li key={x.id} className="flex flex-col gap-2 border-b border-line-soft px-5 py-3 last:border-0">
                   <div className="flex flex-wrap items-center justify-between gap-2">

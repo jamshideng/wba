@@ -16,7 +16,7 @@
  */
 
 import type { UserRole } from '@/lib/types'
-import { adminmi, staffmi, tasdiqlaydimi } from '@/lib/auth'
+import { adminmi, staffmi, tasdiqlaydimi, managermi } from '@/lib/auth'
 import {
   IconDashboard, IconStudents, IconGroups, IconTeacher, IconAttendance,
   IconWoblr, IconPayments, IconDebt, IconLeads, IconReports, IconSettings, IconSend, IconAlert, IconArxiv, IconXarajat, IconAudit,
@@ -132,6 +132,8 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
               ]
             : []),
           { href: '/crm/ustoz-davomati', nom: 'Ustozlar davomati', Icon: IconTeacher, tayyor: true },
+          // 0077 — admin va ustozlar nazorati: manager va direktor
+          ...(managermi(rol) ? [{ href: '/crm/nazorat', nom: 'Nazorat', Icon: IconAlert, tayyor: true }] : []),
           ...(admin ? [{ href: '/crm/boshqa-xodimlar', nom: 'Boshqa xodimlar', Icon: IconStudents, tayyor: true }] : []),
         ]),
         ...(admin

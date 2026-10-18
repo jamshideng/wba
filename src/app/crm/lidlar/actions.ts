@@ -8,7 +8,7 @@ import { matn, sanaOqi, telefonOqi, xabarliYol, xatoMatni } from '@/lib/kiritish
 import { MANBALAR, aloqaVaqtga, type Bosqich } from '@/lib/lidlar'
 import type { Lead, LeadSource } from '@/lib/types'
 
-const XODIM = ['admin', 'direktor', 'qabulxona'] as const
+const XODIM = ['admin', 'direktor', 'manager', 'qabulxona'] as const
 
 function qaytish(fd: FormData): string {
   const y = String(fd.get('qaytish') ?? '')

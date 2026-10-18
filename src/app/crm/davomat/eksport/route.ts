@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
      qatorini berardi, lekin guruh jurnali unga umuman kerak emas. */
   const profil = await getProfile()
   if (!profil) return new NextResponse('Tizimga kiring', { status: 401 })
-  if (!['admin', 'direktor', 'qabulxona', 'ustoz'].includes(profil.rol)) {
+  if (!['admin', 'direktor', 'manager', 'qabulxona', 'ustoz'].includes(profil.rol)) {
     return new NextResponse('Bu fayl sizga ochiq emas', { status: 403 })
   }
 

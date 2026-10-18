@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { talabProfil, adminmi, tasdiqlaydimi } from '@/lib/auth'
+import { talabProfil, adminmi, tasdiqlaydimi, managermi, ROL_NOMI } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Empty, Badge } from '@/components/ui'
@@ -9,8 +9,8 @@ import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { JonliForma } from '@/components/jonli-forma'
 import { pul, davrNomi, joriyDavr } from '@/lib/format'
-import type { MaoshHarakat, UstozMaosh } from '@/lib/types'
-import { stavkaSaqla, harakatQosh, harakatBekor, oyTasdiqla, oyQaytaOch } from './actions'
+import type { MaoshHarakat, UstozMaosh, XodimMaosh } from '@/lib/types'
+import { stavkaSaqla, harakatQosh, harakatBekor, oyTasdiqla, oyQaytaOch, xodimOylikSaqla } from './actions'
 
 export const metadata = { title: 'Maosh' }
 export const dynamic = 'force-dynamic'
@@ -50,20 +50,27 @@ export default async function Maosh({
   const tugagan = davr < joriyDavr()
 
   const supabase = await createClient()
-  const [{ data: maoshXom, error: xato }, { data: harakatXom }] = await Promise.all([
+  const manager = managermi(profil.rol)
+  const [{ data: maoshXom, error: xato }, { data: harakatXom }, { data: xodimXom }] = await Promise.all([
     supabase.rpc('ustoz_maosh', { p_davr: davr }),
     supabase
       .from('maosh_harakatlar')
-      .select('id, teacher_id, davr, turi, summa, izoh, bekor, bekor_sabab, created_at')
+      .select('id, teacher_id, profile_id, davr, turi, summa, izoh, bekor, bekor_sabab, created_at')
       .eq('davr', davr)
       .order('id', { ascending: false }),
+    manager ? supabase.rpc('xodim_maosh', { p_davr: davr }) : Promise.resolve({ data: [] }),
   ])
 
   const qatorlar = (maoshXom ?? []) as UstozMaosh[]
   const harakatlar = (harakatXom ?? []) as MaoshHarakat[]
   const tasdiqlangan = qatorlar.some((q) => q.tasdiqlangan)
   const yozadi = !tasdiqlangan
-  const ismi = new Map(qatorlar.map((q) => [q.teacher_id, q.ism]))
+  // 0077 — admin/qabulxona/manager oyligi: faqat manager va direktorga
+  const xodimlar = (xodimXom ?? []) as XodimMaosh[]
+  const ismi = new Map<string, string>([
+    ...qatorlar.map((q) => [q.teacher_id, q.ism] as [string, string]),
+    ...xodimlar.map((x) => [`p:${x.profile_id}`, x.ism] as [string, string]),
+  ])
   const jami = qatorlar.reduce((a, q) => a + Number(q.yakuniy), 0)
   const jamiOquvchi = qatorlar.reduce((a, q) => a + Number(q.oquvchilar), 0)
   const aniqmas = qatorlar.filter((q) => q.aniqmas).length
@@ -198,6 +205,44 @@ export default async function Maosh({
               ))}
             </ul>
           )}
+
+          {/* 0077 — admin, qabulxona, manager oyligi (faqat manager va direktor ko'radi) */}
+          {manager && (
+            <>
+              <CardHeader title="Xodimlar oyligi" meta="admin · qabulxona · manager" />
+              <ul className="flex flex-col">
+                {xodimlar.map((x) => (
+                  <li key={x.profile_id} className="flex flex-col gap-2.5 border-t border-line-soft px-5 py-3.5">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <span className="flex min-w-0 flex-col gap-1">
+                        <span className="text-[13.5px] font-semibold">{x.ism}</span>
+                        <span className="tnum text-[12px] text-ink-3">
+                          {ROL_NOMI[x.rol]} · {x.oylik === null ? 'oylik belgilanmagan' : `oylik ${pul(x.oylik)}`}
+                          {Number(x.avans) > 0 && ` · avans −${pul(x.avans)}`}
+                          {Number(x.bonus) > 0 && ` · bonus +${pul(x.bonus)}`}
+                          {Number(x.jarima) > 0 && ` · jarima −${pul(x.jarima)}`}
+                        </span>
+                      </span>
+                      <span className="tnum font-[family-name:var(--font-mono)] text-[15px] font-semibold">{pul(x.yakuniy)}</span>
+                    </div>
+                    {yozadi && (
+                      <details>
+                        <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Oylikni o‘zgartirish</summary>
+                        <form action={xodimOylikSaqla} className="mt-2 flex flex-wrap items-end gap-2">
+                          <input type="hidden" name="profile_id" value={x.profile_id} />
+                          <input type="hidden" name="qaytish" value={joriy} />
+                          <Maydon nom="Oylik (so‘m)" izoh="Bo‘sh qoldirilsa — olib tashlanadi">
+                            <input name="summa" inputMode="numeric" defaultValue={x.oylik ?? ''} placeholder="Masalan: 3000000" className={kirishKlass} />
+                          </Maydon>
+                          <Yuborish kutish="…">Saqlash</Yuborish>
+                        </form>
+                      </details>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </Card>
 
         <div className="flex flex-col gap-4">
@@ -212,11 +257,22 @@ export default async function Maosh({
                     <option value="" disabled>
                       Tanlang…
                     </option>
-                    {qatorlar.map((q) => (
-                      <option key={q.teacher_id} value={q.teacher_id}>
-                        {q.ism}
-                      </option>
-                    ))}
+                    <optgroup label="Ustozlar">
+                      {qatorlar.map((q) => (
+                        <option key={q.teacher_id} value={q.teacher_id}>
+                          {q.ism}
+                        </option>
+                      ))}
+                    </optgroup>
+                    {manager && xodimlar.length > 0 && (
+                      <optgroup label="Xodimlar">
+                        {xodimlar.map((x) => (
+                          <option key={x.profile_id} value={`p:${x.profile_id}`}>
+                            {x.ism}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </Maydon>
                 <Maydon nom="Turi">
@@ -259,7 +315,7 @@ export default async function Maosh({
                           {h.bekor && <Badge>bekor</Badge>}
                         </span>
                         <span className="truncate text-[11.5px] text-ink-3">
-                          {ismi.get(h.teacher_id) ?? h.teacher_id} · {vaqtFmt.format(new Date(h.created_at))}
+                          {(h.teacher_id ? ismi.get(h.teacher_id) : ismi.get(`p:${h.profile_id}`)) ?? h.teacher_id ?? 'xodim'} · {vaqtFmt.format(new Date(h.created_at))}
                           {h.izoh ? ` · ${h.izoh}` : ''}
                         </span>
                         {h.bekor && h.bekor_sabab && <span className="text-[11.5px] text-ink-3">Sabab: {h.bekor_sabab}</span>}

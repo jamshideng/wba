@@ -12,7 +12,7 @@ import type { AttendanceStatus } from '@/lib/types'
 
 export type AmalNatijasi<T> = { ok: true; natija: T } | { ok: false; xato: string }
 
-const ROLLAR = ['admin', 'direktor', 'qabulxona', 'ustoz']
+const ROLLAR = ['admin', 'direktor', 'manager', 'qabulxona', 'ustoz']
 
 /* Kirmagan odam bu amallarni bajara olmaydi. Asosiy tekshiruv bazada
    (davomat_belgila, woblar_ber — o'z guruhi yoki admin, Q5), lekin kodda

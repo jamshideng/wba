@@ -51,7 +51,7 @@ export default async function WoblarTarixi({ searchParams }: { searchParams: Pro
       p_limit: 1000,
     }),
     xodim
-      ? supabase.from('profiles').select('id, ism, rol').in('rol', ['admin', 'direktor', 'ustoz']).eq('holat', 'faol').order('ism')
+      ? supabase.from('profiles').select('id, ism, rol').in('rol', ['admin', 'direktor', 'manager', 'ustoz']).eq('holat', 'faol').order('ism')
       : Promise.resolve({ data: [] }),
     xodim ? supabase.from('students').select('id, fish').eq('holat', 'faol').order('fish') : Promise.resolve({ data: [] }),
     xodim || ustozmi

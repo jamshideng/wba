@@ -6,7 +6,7 @@
  * Hozircha 0001–0004 migratsiyalariga qo'lda mos yozilgan.
  */
 
-export type UserRole = 'admin' | 'direktor' | 'qabulxona' | 'ustoz' | 'oquvchi' | 'ota_ona'
+export type UserRole = 'admin' | 'direktor' | 'manager' | 'qabulxona' | 'ustoz' | 'oquvchi' | 'ota_ona'
 export type AccountStatus = 'faol' | 'bloklangan'
 export type StudentStatus = 'faol' | 'tanaffus' | 'ketgan'
 export type GroupStatus = 'faol' | 'yopilgan'
@@ -539,7 +539,9 @@ export type TeacherSalary = {
 /** Maoshga qo'lda: avans (−), bonus (+), jarima (−). O'chirilmaydi — bekor qilinadi */
 export type MaoshHarakat = {
   id: number
-  teacher_id: string
+  teacher_id: string | null
+  /** Xodim (admin) yozuvi — 0077; teacher_id bilan bittasi */
+  profile_id: string | null
   davr: string
   turi: 'avans' | 'bonus' | 'jarima' | 'tuzatish'
   summa: number
@@ -564,6 +566,20 @@ export type UstozMaosh = {
   tuzatish: number
   yakuniy: number
   aniqmas: boolean
+  tasdiqlangan: boolean
+}
+
+/** xodim_maosh(davr) qatori (0077) — admin/qabulxona/manager oyligi */
+export type XodimMaosh = {
+  profile_id: string
+  ism: string
+  rol: UserRole
+  oylik: number | null
+  avans: number
+  bonus: number
+  jarima: number
+  tuzatish: number
+  yakuniy: number
   tasdiqlangan: boolean
 }
 
@@ -624,7 +640,7 @@ export type Bildirishnoma = {
   havola: string | null
   havola_matn: string | null
   kimga: TelegramKim[]
-  filtr: ElonFiltr & { oquvchi?: string; ustoz?: string } // oquvchi — 0056, ustoz — 0058, faqat bildirishnomada
+  filtr: ElonFiltr & { oquvchi?: string; ustoz?: string; profil?: string; rol?: 'manager' } // oquvchi — 0056, ustoz — 0058, profil/rol — 0077; faqat bildirishnomada
   muhim: boolean
   kop_tanlov: boolean
   natija_ochiq: boolean
@@ -797,6 +813,17 @@ export type Database = {
       xarajatlar: Table<Xarajat>
       teacher_salaries: Table<TeacherSalary>
       maosh_harakatlar: Table<MaoshHarakat>
+      xodim_oylik: Table<{ profile_id: string; summa: number; updated_at: string }>
+      nazorat_hodisalar: Table<{
+        id: number; turi: string; sana: string; teacher_id: string | null; profile_id: string | null
+        group_id: string | null; student_id: string | null; lead_id: string | null; vazifa_id: string | null
+        payment_id: number | null; tafsilot: string; kalit: string; holat: 'yangi' | 'ogohlantirildi' | 'yopildi'
+        yopdi: string | null; yopish_izoh: string | null; yuborildi: boolean; created_at: string
+      }>
+      ogohlantirishlar: Table<{
+        id: number; hodisa_id: number | null; teacher_id: string | null; profile_id: string | null
+        davr: string; matn: string; berdi: string | null; bekor: boolean; created_at: string
+      }>
       maosh_oylar: Table<{ davr: string; holat: 'tasdiqlangan'; tasdiqladi: string | null; tasdiqlangan_at: string }>
       boshqa_xodimlar: Table<BoshqaXodim>
       oquvchi_takror_emas: Table<{ a: string; b: string; belgiladi: string | null; created_at: string }>
@@ -892,6 +919,11 @@ export type Database = {
       ustoz_maosh: { Args: { p_davr: string }; Returns: UstozMaosh[] }
       ustoz_maosh_tafsilot: { Args: { p_davr: string; p_ustoz: string }; Returns: MaoshTafsilot[] }
       maosh_tasdiqla: { Args: { p_davr: string }; Returns: number }
+      xodim_maosh: { Args: { p_davr: string }; Returns: XodimMaosh[] }
+      nazorat_yig: { Args: Record<string, never>; Returns: number }
+      nazorat_chatlar: { Args: { p_teacher: string | null; p_profile: string | null }; Returns: number[] }
+      ogohlantir: { Args: { p_hodisa: number | null; p_teacher: string | null; p_profile: string | null; p_matn: string }; Returns: number }
+      nazorat_jarima: { Args: { p_teacher: string | null; p_profile: string | null; p_summa: number; p_sabab: string }; Returns: number }
       maosh_qayta_och: { Args: { p_davr: string; p_sabab: string }; Returns: number }
       zamena_belgila: {
         Args: { p_group: string; p_sana: string; p_ustoz: string | null; p_sabab?: string | null }

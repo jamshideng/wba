@@ -20,7 +20,7 @@ import { loginEmail, loginNomi, LOGIN_QOIDASI } from '@/lib/login'
  */
 
 const YOL = '/crm/xodimlar'
-const ROLLAR = ['qabulxona', 'admin', 'direktor'] as const
+const ROLLAR = ['qabulxona', 'admin', 'manager', 'direktor'] as const
 type XodimRol = (typeof ROLLAR)[number]
 
 function rolOqi(fd: FormData): XodimRol | null {

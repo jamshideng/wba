@@ -163,6 +163,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
     ustoz && (!ikkiRol || profil.rol === 'ustoz') ? `ustoz — ${ustoz.ism}` : null,
     tasdiqlaydimi(profil.rol) ? 'direktor' : null,
     profil.rol === 'admin' ? 'administrator' : null,
+    profil.rol === 'manager' ? 'manager' : null,
     profil.rol === 'qabulxona' ? 'qabulxona' : null,
   ].filter((x): x is string => Boolean(x))
 
@@ -264,7 +265,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
             </span>
           )}
           <span className="flex-1" />
-          {xodim && <Yaratish direktor={profil.rol === 'admin' || tasdiqlaydimi(profil.rol)} />}
+          {xodim && <Yaratish direktor={profil.rol === 'admin' || profil.rol === 'manager' || tasdiqlaydimi(profil.rol)} />}
           <YangilashTugma />
           <TemaTugma />
           <BildirishnomaJoyi joy="kompyuter" royxat={bildirishnomalar} />

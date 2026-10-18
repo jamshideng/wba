@@ -2030,3 +2030,91 @@ begin
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+
+-- ============================================================
+--  0076/0077 — manager: rol, nazorat, ogohlantirish, jarima, admin maoshi
+-- ============================================================
+\echo '--- manager ---'
+reset role;
+reset request.jwt.claim.sub;
+insert into auth.users (id, email) values ('abcdef00-0000-4000-8000-000000000077', 'manager@wba.uz');
+update profiles set ism = 'Menejer' where id = 'abcdef00-0000-4000-8000-000000000077';
+
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+begin
+  begin
+    update profiles set rol = 'manager' where id = 'abcdef00-0000-4000-8000-000000000077';
+    raise exception 'XATO: admin manager rolini berdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    insert into maosh_harakatlar (profile_id, davr, turi, summa) values ('22222222-2222-2222-2222-222222222222', '2026-10', 'jarima', 1000);
+    raise exception 'XATO: admin xodimga jarima yozdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    perform ogohlantir(null, 'U01', null, 'test');
+    raise exception 'XATO: admin ogohlantirish berdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: manager — admin manager bera olmaydi, xodimga jarima va ogohlantirish yo''q';
+end $$;
+
+set request.jwt.claim.sub = '66666666-6666-6666-6666-666666666666';   -- direktor
+update profiles set rol = 'manager' where id = 'abcdef00-0000-4000-8000-000000000077';
+
+set request.jwt.claim.sub = 'abcdef00-0000-4000-8000-000000000077';   -- manager
+do $$
+begin
+  if not app_is_admin() or not app_is_staff() or not app_is_manager() or app_is_direktor() then
+    raise exception 'XATO: manager huquqlari noto''g''ri';
+  end if;
+  perform nazorat_yig();
+  perform ogohlantir(null, 'U01', null, 'Kechikdingiz');
+  perform ogohlantir(null, 'U01', null, 'Davomat qilinmadi');
+  begin
+    perform nazorat_jarima('U01', null, 50000, 'test');
+    raise exception 'XATO: 2 ta ogohlantirishda jarima o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  if ogohlantir(null, 'U01', null, 'Woblar berilmadi') <> 3 then
+    raise exception 'XATO: ogohlantirish soni 3 emas';
+  end if;
+  perform nazorat_jarima('U01', null, 50000, '3 ogohlantirish');
+  insert into xodim_oylik (profile_id, summa) values ('22222222-2222-2222-2222-222222222222', 3000000);
+  insert into maosh_harakatlar (profile_id, davr, turi, summa, izoh)
+    values ('22222222-2222-2222-2222-222222222222', to_char(bugun_toshkent(), 'YYYY-MM'), 'jarima', 100000, 'kech');
+  if (select yakuniy from xodim_maosh(to_char(bugun_toshkent(), 'YYYY-MM'))
+      where profile_id = '22222222-2222-2222-2222-222222222222') <> 2900000 then
+    raise exception 'XATO: xodim maoshi noto''g''ri';
+  end if;
+  raise notice 'OK: manager — nazorat, 3 ogohlantirish → jarima, xodim oyligi';
+end $$;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- Diana (U01)
+do $$
+begin
+  if (select count(*) from ogohlantirishlar) <> 3 then
+    raise exception 'XATO: ustoz o''z ogohlantirishlarini ko''rmadi';
+  end if;
+  if (select count(*) from nazorat_hodisalar) > 0 or (select count(*) from xodim_oylik) > 0 then
+    raise exception 'XATO: ustoz nazorat yoki xodim oyligini ko''rdi';
+  end if;
+  if not exists (select 1 from maosh_harakatlar where teacher_id = 'U01' and izoh like 'Nazorat:%') then
+    raise exception 'XATO: nazorat jarimasi ustoz maoshiga tushmadi';
+  end if;
+  raise notice 'OK: manager — ustoz o''z ogohlantirish va jarimasini ko''radi, nazorat yopiq';
+end $$;
+
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';   -- qabulxona
+do $$
+begin
+  if (select count(*) from xodim_oylik) <> 1 or (select count(*) from xodim_maosh(to_char(bugun_toshkent(), 'YYYY-MM'))) <> 1 then
+    raise exception 'XATO: xodim faqat o''z oyligini ko''rishi kerak';
+  end if;
+  raise notice 'OK: manager — xodim faqat o''z oyligini ko''radi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;

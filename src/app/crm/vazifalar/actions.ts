@@ -7,7 +7,7 @@ import { talabRol } from '@/lib/auth'
 import { matn, xabarliYol, xatoMatni } from '@/lib/kiritish'
 import type { VazifaHolat, VazifaMuhimlik, VazifaTuri } from '@/lib/types'
 
-const XODIM = ['admin', 'direktor', 'qabulxona'] as const
+const XODIM = ['admin', 'direktor', 'manager', 'qabulxona'] as const
 const TURLAR: VazifaTuri[] = ['qongiroq', 'tolov_eslatish', 'sinov_chaqirish', 'boshqa']
 const MUHIM: VazifaMuhimlik[] = ['past', 'orta', 'yuqori']
 const HOLATLAR: VazifaHolat[] = ['yangi', 'jarayonda', 'bajarildi', 'bekor']

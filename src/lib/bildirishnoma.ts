@@ -97,7 +97,7 @@ export function havolaToza(xom: string | null): string | null {
  * "oquvchi:S016" faqat shu yerda o'qiladi — Telegram e'loni (filtrOqi /
  * elon_oluvchilar) uni bilmaydi va hammaga yuborib yubormasin.
  */
-export type BildirishnomaFiltr = ElonFiltr & { oquvchi?: string; ustoz?: string }
+export type BildirishnomaFiltr = ElonFiltr & { oquvchi?: string; ustoz?: string; profil?: string; rol?: 'manager' }
 
 export function bildirishnomaFiltri(f: string): BildirishnomaFiltr {
   const [tur, qiymat] = f.split(':')

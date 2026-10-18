@@ -7,7 +7,7 @@ import { talabRol } from '@/lib/auth'
 import { matn, sanaOqi, sonOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
 import { bugunToshkent } from '@/lib/format'
 
-const XODIM = ['admin', 'direktor', 'qabulxona'] as const
+const XODIM = ['admin', 'direktor', 'manager', 'qabulxona'] as const
 
 function qaytish(fd: FormData): string {
   const y = String(fd.get('qaytish') ?? '')

@@ -104,7 +104,7 @@ export default async function Vazifalar({
       supabase.from('leads').select('id, ism').is('student_id', null).in('holat', ['yangi', 'qongiroq', 'keldi']).order('ism').limit(300),
       supabase.from('v_qarzdorlar').select('student_id, fish, qarz').order('qarz', { ascending: false }).limit(100),
       supabase.from('students').select('id, fish').eq('holat', 'faol').order('fish').limit(500),
-      supabase.from('profiles').select('id, ism').in('rol', ['admin', 'direktor', 'qabulxona']).eq('holat', 'faol').order('ism'),
+      supabase.from('profiles').select('id, ism').in('rol', ['admin', 'direktor', 'manager', 'qabulxona']).eq('holat', 'faol').order('ism'),
     ])
 
   const royxat = (data ?? []) as unknown as Qator[]

@@ -91,22 +91,30 @@ export function panelYoli(rol: UserRole): string {
  */
 export async function talabRol(...rollar: UserRole[]): Promise<Profile> {
   const profil = await talabProfil()
-  if (!rollar.includes(profil.rol)) redirect(`${panelYoli(profil.rol)}?xato=huquq`)
+  // Manager (0077) admin ochiq bo'lgan hamma joyga kiradi
+  const ruxsat = rollar.includes(profil.rol) || (profil.rol === 'manager' && rollar.includes('admin'))
+  if (!ruxsat) redirect(`${panelYoli(profil.rol)}?xato=huquq`)
   return profil
 }
 
 export const ROL_NOMI: Record<UserRole, string> = {
   admin: 'Admin',
   direktor: 'Direktor',
+  manager: 'Manager',
   qabulxona: 'Qabulxona',
   ustoz: 'O‘qituvchi',
   oquvchi: 'O‘quvchi',
   ota_ona: 'Ota-ona',
 }
 
-/** Boshqaruv huquqi. Direktor bu yerda admin bilan teng. */
+/** Boshqaruv huquqi. Direktor va manager bu yerda admin bilan teng. */
 export function adminmi(rol: UserRole): boolean {
-  return rol === 'admin' || rol === 'direktor'
+  return rol === 'admin' || rol === 'direktor' || rol === 'manager'
+}
+
+/** Admin va ustozlar ustidan nazorat (0077): manager va direktor. */
+export function managermi(rol: UserRole): boolean {
+  return rol === 'manager' || rol === 'direktor'
 }
 
 /** Pul ko'radigan xodimlar. */

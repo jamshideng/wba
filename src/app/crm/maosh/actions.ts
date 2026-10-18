@@ -57,13 +57,16 @@ export async function harakatQosh(fd: FormData) {
   await talabRol('admin', 'direktor')
   const orqaga = qaytish(fd)
 
-  const teacher = matn(fd.get('teacher_id'))
+  // "p:<uuid>" — xodim (admin) yozuvi (0077, faqat manager/direktor — RLS), aks holda ustoz ID
+  const kim = matn(fd.get('teacher_id'))
+  const xodim = kim?.startsWith('p:') ? kim.slice(2) : null
+  const teacher = xodim ? null : kim
   const davr = matn(fd.get('davr'))
   const turi = fd.get('turi')
   const summa = summaOqi(fd.get('summa'))
 
   const xato =
-    !teacher ? 'Ustozni tanlang.' :
+    !teacher && !xodim ? 'Kimligini tanlang.' :
     !davr || !DAVR.test(davr) ? 'Oy noto‘g‘ri.' :
     typeof turi !== 'string' || !(turi in TURLAR) ? 'Turini tanlang.' :
     !summa ? 'Summa noto‘g‘ri. Masalan: 300000 yoki 300 ming.' :
@@ -73,7 +76,8 @@ export async function harakatQosh(fd: FormData) {
 
   const supabase = await createClient()
   const { error } = await supabase.from('maosh_harakatlar').insert({
-    teacher_id: teacher!,
+    teacher_id: teacher,
+    profile_id: xodim,
     davr: davr!,
     turi: String(turi).startsWith('tuzatish') ? 'tuzatish' : (turi as 'avans' | 'bonus' | 'jarima'),
     summa: turi === 'tuzatish_minus' ? -summa! : summa!,
@@ -134,4 +138,30 @@ export async function oyQaytaOch(fd: FormData) {
   revalidatePath(YOL)
   revalidatePath('/crm/xarajatlar')
   redirect(xabarliYol(orqaga, { ok: 'Oy qayta ochildi — maosh xarajatlari bekor qilindi.' }))
+}
+
+/** Xodim (admin, qabulxona, manager) oyligi — faqat manager va direktor (0077). Bo'sh — olib tashlanadi. */
+export async function xodimOylikSaqla(fd: FormData) {
+  await talabRol('manager', 'direktor')
+  const orqaga = qaytish(fd)
+  const profil = matn(fd.get('profile_id'))
+  if (!profil) redirect(orqaga)
+
+  const supabase = await createClient()
+  const xom = matn(fd.get('summa'))
+  if (!xom) {
+    const { error } = await supabase.from('xodim_oylik').delete().eq('profile_id', profil!)
+    if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+    revalidatePath(YOL)
+    redirect(xabarliYol(orqaga, { ok: 'Oylik olib tashlandi.' }))
+  }
+  const summa = summaOqi(xom)
+  if (!summa) redirect(xabarliYol(orqaga, { xato: 'Oylik noto‘g‘ri. Masalan: 3000000 yoki 3 mln.' }))
+
+  const { error } = await supabase
+    .from('xodim_oylik')
+    .upsert({ profile_id: profil!, summa: summa!, updated_at: new Date().toISOString() })
+  if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+  revalidatePath(YOL)
+  redirect(xabarliYol(orqaga, { ok: 'Oylik saqlandi.' }))
 }
