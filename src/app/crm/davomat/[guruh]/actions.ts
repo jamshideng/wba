@@ -161,6 +161,8 @@ export async function darsKochir(fd: FormData) {
   if (!guruh || !eski || !SANA.test(eski) || (yangi && !SANA.test(yangi))) {
     redirect(xabarliYol(orqaga, { xato: 'Sanani tanlang.' }))
   }
+  // Ko'chirishda sabab majburiy (bekor qilishda — yo'q)
+  if (yangi && !matn(fd.get('sabab'))) redirect(xabarliYol(orqaga, { xato: 'Ko‘chirish sababini yozing.' }))
 
   const supabase = await createClient()
   const { error } = await supabase.rpc('dars_kochir', {

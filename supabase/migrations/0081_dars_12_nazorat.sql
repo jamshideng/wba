@@ -104,16 +104,16 @@ grant execute on function dars_kam_tekshir() to authenticated, service_role;
 
 /*
  * Ko'chirish takliflari: shu oyda dam kuniga tushgan (hali ko'chirilmagan)
- * darslar va eng yaqin bo'sh kun — guruhning darsi yo'q, dam emas, yakshanba
- * emas. Masalan toq guruhning dushanba darsi → seshanba (juft kun).
+ * darslar va eng yaqin bo'sh kun — guruhning darsi yo'q, dam emas (yakshanba
+ * ham bo'lishi mumkin — Jamshid, 18.10). Masalan toq guruhning dushanba
+ * darsi → seshanba (juft kun). Ustozga ma'qul bo'lmasa — boshqa kun + sabab.
  */
 create or replace function kochirish_takliflari(p_group text, p_davr text)
 returns table (eski date, taklif date, sabab text)
 language sql stable security definer set search_path = public as $$
   select k::date, (
            select min(t::date) from generate_series(k + interval '1 day', k + interval '10 days', interval '1 day') t
-           where extract(isodow from t) <> 7
-             and not guruh_dars_kuni(p_group, t::date)
+           where not guruh_dars_kuni(p_group, t::date)
              and not exists (select 1 from dam_kunlar d where d.sana = t::date)
              and not exists (select 1 from lessons l where l.group_id = p_group and l.sana = t::date)
          ), dk.sabab

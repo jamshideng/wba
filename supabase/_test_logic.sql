@@ -2225,8 +2225,9 @@ begin
     raise exception 'XATO: dam olish guruhiga 12 dars eslatmasi chiqdi';
   end if;
   if exists (select 1 from groups g, kochirish_takliflari(g.id, v_davr) t
-             where t.taklif is not null and (guruh_dars_kuni(g.id, t.taklif) or extract(isodow from t.taklif) = 7)) then
-    raise exception 'XATO: taklif guruhning dars kuniga yoki yakshanbaga tushdi';
+             where t.taklif is not null and (guruh_dars_kuni(g.id, t.taklif)
+                    or exists (select 1 from dam_kunlar d where d.sana = t.taklif))) then
+    raise exception 'XATO: taklif guruhning dars kuniga yoki dam kuniga tushdi';
   end if;
   raise notice 'OK: 0081 — 12 dars eslatmasi va ko''chirish taklifi';
 end $$;

@@ -457,7 +457,7 @@ export default async function DavomatJurnali({
                   {sanaFmt(t.eski)} — {t.sabab ?? 'dam kuni'}
                 </span>
                 <span className="text-[11.5px] text-ink-3">
-                  Taklif: {sanaFmt(t.taklif!)} ({HAFTA_KUNLARI[haftaKuni(t.taklif!) - 1].qisqa}) — guruhning bo‘sh kuni
+                  Taklif: {sanaFmt(t.taklif!)} ({HAFTA_KUNLARI[haftaKuni(t.taklif!) - 1].qisqa}) — eng yaqin bo‘sh kun. Ma’qul bo‘lmasa, pastda boshqa kun va sababini kiriting.
                 </span>
               </span>
               <Yuborish kutish="…">{`${qisqaSana(t.taklif!)} ga ko‘chirish`}</Yuborish>
@@ -483,8 +483,8 @@ export default async function DavomatJurnali({
               <Maydon nom="Qaysi kunga">
                 <input type="date" name="yangi" required min={admin ? undefined : bugun} className={kirishKlass} />
               </Maydon>
-              <Maydon nom="Sabab">
-                <input name="sabab" placeholder="Masalan: bayram kuni" className={kirishKlass} />
+              <Maydon nom="Sabab" izoh="Majburiy">
+                <input name="sabab" required placeholder="Masalan: bayram kuni, ertasi juft kun" className={kirishKlass} />
               </Maydon>
               <Yuborish kutish="Ko‘chirilmoqda…">Ko‘chirish</Yuborish>
             </form>
