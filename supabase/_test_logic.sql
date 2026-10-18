@@ -2215,3 +2215,18 @@ begin
   perform dars_kochir('N01', v_eski, null);
   raise notice 'OK: 0079 — ko''chirilgan kun qulfi (trigger)';
 end $$;
+
+-- 0081 — oyda 12 dars: dam olish guruhi chiqmaydi, taklif bo'sh kunga
+do $$
+declare v_davr text := to_char(bugun_toshkent(), 'YYYY-MM');
+begin
+  perform dars_kam_tekshir();
+  if exists (select 1 from dars_kam_eslatma e join groups g on g.id = e.group_id where g.kun_turi = 'dam_olish') then
+    raise exception 'XATO: dam olish guruhiga 12 dars eslatmasi chiqdi';
+  end if;
+  if exists (select 1 from groups g, kochirish_takliflari(g.id, v_davr) t
+             where t.taklif is not null and (guruh_dars_kuni(g.id, t.taklif) or extract(isodow from t.taklif) = 7)) then
+    raise exception 'XATO: taklif guruhning dars kuniga yoki yakshanbaga tushdi';
+  end if;
+  raise notice 'OK: 0081 — 12 dars eslatmasi va ko''chirish taklifi';
+end $$;

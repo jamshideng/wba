@@ -14,6 +14,7 @@ export const NAZORAT_TURLAR = {
   qarzdor_eslatilmadi: { nom: 'Qarzdorga eslatilmadi', kim: 'xodim', shablon: 'qarzdor o‘quvchiga oy davomida to‘lovni eslatmadingiz' },
   tolov_kech: { nom: 'To‘lov kech kiritildi', kim: 'xodim', shablon: 'to‘lovni kech kiritdingiz' },
   tolov_tasdiqlanmadi: { nom: 'To‘lov tasdiqlanmagan', kim: 'xodim', shablon: 'to‘lov uzoq vaqt tasdiqlanmay turibdi' },
+  darslar_kam: { nom: 'Oyda 12 dars yo‘q', kim: 'ustoz', shablon: 'dam kuniga tushgan darsni boshqa kunga ko‘chirib, oyda 12 ta darsni to‘ldirmadingiz' },
 } as const
 
 export type NazoratTuri = keyof typeof NAZORAT_TURLAR

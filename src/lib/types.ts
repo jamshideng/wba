@@ -818,6 +818,7 @@ export type Database = {
       xarajatlar: Table<Xarajat>
       teacher_salaries: Table<TeacherSalary>
       maosh_harakatlar: Table<MaoshHarakat>
+      dars_kam_eslatma: Table<{ group_id: string; davr: string; soni: number; teacher_id: string | null; yuborildi: boolean; created_at: string }>
       xodim_oylik: Table<{ profile_id: string; summa: number; updated_at: string }>
       nazorat_hodisalar: Table<{
         id: number; turi: string; sana: string; teacher_id: string | null; profile_id: string | null
@@ -926,6 +927,8 @@ export type Database = {
       maosh_tasdiqla: { Args: { p_davr: string }; Returns: number }
       xodim_maosh: { Args: { p_davr: string }; Returns: XodimMaosh[] }
       nazorat_yig: { Args: Record<string, never>; Returns: number }
+      dars_kam_tekshir: { Args: Record<string, never>; Returns: number }
+      kochirish_takliflari: { Args: { p_group: string; p_davr: string }; Returns: { eski: string; taklif: string | null; sabab: string | null }[] }
       nazorat_direktorga: { Args: Record<string, never>; Returns: boolean }
       nazorat_direktorga_ozgartir: { Args: { p_yoq: boolean }; Returns: boolean }
       nazorat_chatlar: { Args: { p_teacher: string | null; p_profile: string | null }; Returns: number[] }

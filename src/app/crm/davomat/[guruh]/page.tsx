@@ -244,6 +244,12 @@ export default async function DavomatJurnali({
   }
   const kochirishRoyxati = [...kochirishlar.values()].sort((a, b) => a.eski.localeCompare(b.eski))
   const darsBy = new Map(dList.map((d) => [d.sana, d]))
+  const { data: taklifXom } = kochiradi
+    ? await supabase.rpc('kochirish_takliflari', { p_group: guruh, p_davr: davr })
+    : { data: [] }
+  // Dam kuniga tushgan darslar va eng yaqin bo'sh kun (0081) — bir bosishda ko'chirish
+  const takliflar = ((taklifXom ?? []) as { eski: string; taklif: string | null; sabab: string | null }[])
+    .filter((t) => t.taklif && (admin || t.eski >= bugun || t.taklif >= bugun))
   const kochiriladiganKunlar = oyKunlari(davr).filter((x) => {
     const d = darsBy.get(x)
     return guruhi.kunlar.includes(haftaKuni(x)) && !d?.otkazildi && !d?.kochirildi_ga && !d?.kochirilgan_dan && (admin || x >= bugun)
@@ -439,6 +445,24 @@ export default async function DavomatJurnali({
               ))}
             </ul>
           )}
+          {takliflar.map((t) => (
+            <form key={t.eski} action={darsKochir} className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft bg-accent-soft/40 px-5 py-3">
+              <input type="hidden" name="group_id" value={guruh} />
+              <input type="hidden" name="eski" value={t.eski} />
+              <input type="hidden" name="yangi" value={t.taklif!} />
+              <input type="hidden" name="sabab" value={t.sabab ?? 'Dam kuni'} />
+              <input type="hidden" name="qaytish" value={qaytish} />
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="text-[13px] font-semibold">
+                  {sanaFmt(t.eski)} — {t.sabab ?? 'dam kuni'}
+                </span>
+                <span className="text-[11.5px] text-ink-3">
+                  Taklif: {sanaFmt(t.taklif!)} ({HAFTA_KUNLARI[haftaKuni(t.taklif!) - 1].qisqa}) — guruhning bo‘sh kuni
+                </span>
+              </span>
+              <Yuborish kutish="…">{`${qisqaSana(t.taklif!)} ga ko‘chirish`}</Yuborish>
+            </form>
+          ))}
           {kochiradi && kochiriladiganKunlar.length > 0 && (
             <form action={darsKochir} className="flex flex-wrap items-end gap-3 border-t border-line-soft px-5 py-4">
               <input type="hidden" name="group_id" value={guruh} />
