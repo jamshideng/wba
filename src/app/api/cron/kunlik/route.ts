@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { xabar } from '@/lib/telegram'
 import { bugunToshkent } from '@/lib/format'
-import { kunlikHisobotMatn } from '@/lib/kunlik-hisobot'
+import { kunlikHisobotMatn, ertangiMaslahatMatn } from '@/lib/kunlik-hisobot'
 
 /**
  * 19:40 — kunlik hisobot "WBA Hisobot" guruhiga (TELEGRAM_GROUP_ID).
@@ -49,7 +49,12 @@ export async function POST(req: NextRequest) {
     if (!band) return NextResponse.json({ ok: true, sabab: 'bugun yuborilgan' })
   }
 
-  const r = await xabar(chat, SAYT_BELGISI + (await kunlikHisobotMatn()))
+  // Sheets muzlatilgan (0084) — Apps Script hisoboti ketmaydi, belgi ham kerak emas
+  const { data: muzlatilgan } = await db.rpc('sheets_muzlatilganmi')
+  const r = await xabar(chat, (muzlatilgan ? '' : SAYT_BELGISI) + (await kunlikHisobotMatn()))
   if (!r.ok) return NextResponse.json({ ok: false, sabab: r.description }, { status: 502 })
-  return NextResponse.json({ ok: true, chat, kun })
+
+  // 0084 — ertangi kun maslahati (Apps Script'dagi BOT_Maslahat o'rniga), alohida xabar
+  const m = await xabar(chat, await ertangiMaslahatMatn(kun))
+  return NextResponse.json({ ok: true, chat, kun, maslahat: m.ok })
 }

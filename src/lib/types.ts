@@ -916,6 +916,10 @@ export type Database = {
       oquvchi_arxivla: { Args: { p_student: string; p_sana?: string | null; p_sabab?: string | null; p_turi?: string | null }; Returns: number }
       ketish_sababi_belgila: { Args: { p_student: string; p_turi: string; p_izoh?: string | null }; Returns: undefined }
       ketish_tahlili: { Args: { p_dan: string; p_gacha: string }; Returns: import('./ketish').KetishTahlili }
+      kunlik_qoshimcha: { Args: { p_kun: string }; Returns: Record<string, unknown> }
+      ertangi_maslahat: { Args: { p_kun: string }; Returns: Record<string, unknown> }
+      sheets_muzlatilganmi: { Args: Record<string, never>; Returns: boolean }
+      sheets_muzlat: { Args: { p_muzlat: boolean }; Returns: boolean }
       oquvchi_arxivdan: { Args: { p_student: string }; Returns: undefined }
       yozilish_oylari: {
         Args: { p_student: string }

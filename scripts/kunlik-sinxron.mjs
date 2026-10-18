@@ -41,6 +41,30 @@ async function xabar(matn) {
   } catch (e) { log('telegram xato: ' + e) }
 }
 
+/* 0084 — Sheets integratsiyasi muzlatilgan bo'lsa (sayt → Sozlamalar) hech narsa
+   qilinmaydi: na kechikish ko'chiriladi, na sinxron yuradi. Vazifa o'chirilmagan —
+   "Qaytarish" bosilsa keyingi yurishdan yana ishlaydi. Bayroqni o'qib bo'lmasa —
+   xavfsiz tomon: yurmaydi va xabar beradi. */
+try {
+  const r = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/sheets_muzlatilganmi`, {
+    method: 'POST',
+    headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, 'content-type': 'application/json' },
+    body: '{}',
+  })
+  const muzlatilgan = r.ok ? await r.json() : null
+  if (muzlatilgan !== false) {
+    log(`
+===== ${vaqt} ${muzlatilgan === true ? 'MUZLATILGAN — sinxron yurmadi' : `bayroq o'qilmadi (HTTP ${r.status}) — yurmadi`} =====`)
+    if (muzlatilgan !== true) await xabar(`⚠️ Sinxron (${vaqt}) yurmadi: muzlatish bayrog'ini o'qib bo'lmadi (HTTP ${r.status}).`)
+    process.exit(0)
+  }
+} catch (e) {
+  log(`
+===== ${vaqt} bayroq xatosi: ${e} — yurmadi =====`)
+  await xabar(`⚠️ Sinxron (${vaqt}) yurmadi: muzlatish bayrog'ini o'qib bo'lmadi (${e}).`)
+  process.exit(0)
+}
+
 /* Ustozlar kechikishi — mustaqil (06.10), xato bersa faqat xabar */
 if (existsSync(join(ROOT, 'scripts', 'kechikish-kochir.ts'))) {
   const k = yurgiz('scripts/kechikish-kochir.ts', ['--tasdiq'], 5)

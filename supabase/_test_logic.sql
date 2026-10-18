@@ -2291,3 +2291,35 @@ begin
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+
+-- 0084 — muzlatish bayrog'i (faqat admin), hisobot funksiyalari
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  begin
+    perform sheets_muzlat(true);
+    raise exception 'XATO: ustoz Sheets''ni muzlatdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: 0084 — muzlatishni ustoz qila olmaydi';
+end $$;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+begin
+  perform sheets_muzlat(true);
+  if not sheets_muzlatilganmi() then raise exception 'XATO: muzlatilmadi'; end if;
+  perform sheets_muzlat(false);
+  if sheets_muzlatilganmi() then raise exception 'XATO: qaytarilmadi'; end if;
+  raise notice 'OK: 0084 — admin muzlatadi va qaytaradi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+do $$
+declare k jsonb := kunlik_qoshimcha(bugun_toshkent()); m jsonb := ertangi_maslahat(bugun_toshkent());
+begin
+  if k ->> 'rasmiy' is null or m -> 'qarzdorlar' is null then
+    raise exception 'XATO: hisobot funksiyalari bo''sh: % %', k, m;
+  end if;
+  raise notice 'OK: 0084 — kunlik_qoshimcha va ertangi_maslahat ishlaydi';
+end $$;

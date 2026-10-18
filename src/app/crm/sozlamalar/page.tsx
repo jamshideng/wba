@@ -6,7 +6,7 @@ import { Card, CardHeader } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { sozlamaSaqla } from './actions'
+import { sozlamaSaqla, sheetsMuzlat } from './actions'
 import type { Setting } from '@/lib/types'
 
 export const metadata = { title: 'Sozlamalar' }
@@ -32,7 +32,11 @@ export default async function Sozlamalar({
 
   const { data: sozlamalar } = await supabase.from('settings').select('*').order('kalit')
 
-  const sList = (sozlamalar ?? []) as Setting[]
+  // Maxsus tugmasi bor sozlamalar ro'yxatda qo'lda o'zgartirilmaydi (0078, 0084)
+  const MAXSUS = ['sheets.muzlatilgan', 'nazorat.direktorga']
+  const hamma = (sozlamalar ?? []) as Setting[]
+  const muzlatilgan = hamma.find((x) => x.kalit === 'sheets.muzlatilgan')?.qiymat === true
+  const sList = hamma.filter((x) => !MAXSUS.includes(x.kalit))
   const aniqlanmagan = sList.filter((x) => x.qiymat === null)
 
   return (
@@ -51,6 +55,29 @@ export default async function Sozlamalar({
         Xodim hisoblari (ochish, parol, lavozim, ustozga bog‘lash, bloklash) —{' '}
         <Link href="/crm/xodimlar" className="font-semibold text-accent hover:text-brand">Xodimlar</Link> bo‘limida.
       </p>
+
+      {/* 0084 — Sheets integratsiyasi: o'chirilmaydi, muzlatiladi; bitta tugma bilan qaytariladi */}
+      <Card className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+        <span className="flex min-w-0 max-w-2xl flex-col gap-1">
+          <span className="flex items-center gap-2 text-[14px] font-semibold">
+            Sheets integratsiyasi
+            <span className={`rounded-md px-2 py-0.5 text-[11.5px] font-semibold ${muzlatilgan ? 'bg-accent-soft text-accent' : 'bg-ok-soft text-ok'}`}>
+              {muzlatilgan ? 'muzlatilgan' : 'ishlayapti'}
+            </span>
+          </span>
+          <span className="text-[12.5px] leading-relaxed text-ink-3">
+            {muzlatilgan
+              ? 'Ish faqat saytda. Students_wba ning eski varaqlari himoyada (faqat ko‘rish), sinxron va Apps Script hisobotlari to‘xtab turibdi. Ko‘zgu (BAZA_ varaqlari) ishlayapti. Hech narsa o‘chirilmagan.'
+              : 'Sheets ↔ sayt sinxroni kuniga 6 marta, Apps Script 19:40 hisobotini Sheets’dan yuboradi. Muzlatilsa — hammasi to‘xtaydi, lekin o‘chmaydi; shu tugma bilan qaytariladi.'}
+          </span>
+        </span>
+        <form action={sheetsMuzlat}>
+          <input type="hidden" name="muzlat" value={muzlatilgan ? '0' : '1'} />
+          <Yuborish tur={muzlatilgan ? 'ok' : 'xavfli'} kutish={muzlatilgan ? 'Qaytarilmoqda…' : 'Muzlatilmoqda…'}>
+            {muzlatilgan ? 'Qaytarish' : 'Muzlatish'}
+          </Yuborish>
+        </form>
+      </Card>
 
       <Card className="flex flex-col">
         <CardHeader title="Markaz qiymatlari" meta="bo‘sh qoldirilsa — [ANIQLANMAGAN]" />
