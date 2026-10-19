@@ -8,6 +8,8 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { IconAttendance } from '@/components/icons'
 import { sana, vaqt, jadval, bugunToshkent, joriyDavr, guruhQisqa, guruhUstozsiz } from '@/lib/format'
 import type { BugungiDars } from '@/lib/types'
+import { GuruhFiltri } from '@/components/guruh-filtri'
+import { filtrFaolmi, guruhMos, type GuruhSorov } from '@/lib/guruh-filtr'
 
 export const metadata = { title: 'Davomat' }
 export const dynamic = 'force-dynamic'
@@ -15,7 +17,7 @@ export const dynamic = 'force-dynamic'
 export default async function Davomat({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; xato?: string }>
+  searchParams: Promise<{ ok?: string; xato?: string } & GuruhSorov>
 }) {
   const xabar = await searchParams
   const profil = await talabRol('admin', 'direktor', 'qabulxona', 'ustoz')
@@ -38,14 +40,26 @@ export default async function Davomat({
   )
 
   // Oylik eksport uchun — RLS ustozga faqat o'z guruhlarini beradi
-  const { data: guruhlar } = await supabase
-    .from('groups')
-    .select('id, nom, boshlanish, tugash, kunlar, teacher_id')
-    .eq('holat', 'faol')
-    .order('nom')
+  const [{ data: guruhlar }, { data: fanlar }] = await Promise.all([
+    supabase
+      .from('groups')
+      .select('id, nom, subject_id, boshlanish, tugash, kunlar, teacher_id, teachers(ism)')
+      .eq('holat', 'faol')
+      .order('nom'),
+    supabase.from('subjects').select('id, nom').order('tartib'),
+  ])
+  type G = { id: string; nom: string; subject_id: string | null; boshlanish: string; tugash: string; kunlar: number[]; teacher_id: string | null; teachers: { ism: string } | null }
+  const barchaG = (guruhlar ?? []) as unknown as G[]
   // Bugungi zamena guruhi (0075) "Guruhlarim" ro'yxatiga kirmaydi — u faqat yuqorida
-  const gList = ((guruhlar ?? []) as { id: string; nom: string; boshlanish: string; tugash: string; kunlar: number[]; teacher_id: string | null }[])
-    .filter((g) => staffmi(profil.rol) || !ustoz || g.teacher_id === ustoz.id)
+  const ozGList = barchaG.filter((g) => staffmi(profil.rol) || !ustoz || g.teacher_id === ustoz.id)
+  // Filtr (guruh-filtr.ts): jurnal ro'yxati va bugungi darslar shu bo'yicha saralanadi
+  const filtr = filtrFaolmi(xabar)
+  const gList = ozGList.filter((g) => guruhMos(g, xabar))
+  const gById = new Map(barchaG.map((g) => [g.id, g]))
+  const bugungi = filtr ? dList.filter((d) => {
+    const g = gById.get(d.group_id)
+    return g ? guruhMos(g, xabar) : true
+  }) : dList
 
   /* Ustoz faqat o'z guruhlarini ko'radi — nomdagi o'z ismi va vaqt ortiqcha,
      telefonda "Beginner · Komila Bo…" bo'lib kesilardi. Xodimga to'liq nom. */
@@ -96,7 +110,21 @@ export default async function Davomat({
         </Card>
       )}
 
-      {dList.length === 0 ? (
+      {ozGList.length > 1 && (
+        <GuruhFiltri
+          yol="/crm/davomat"
+          guruhlar={ozGList}
+          fanlar={(fanlar ?? []) as { id: string; nom: string }[]}
+          s={xabar}
+          ustozTanlovi={staffmi(profil.rol) && !ustozRejimi(profil)}
+        />
+      )}
+
+      {bugungi.length === 0 && filtr && dList.length > 0 ? (
+        <Card className="p-5">
+          <Empty>Bugungi darslar orasida shu shartlarga mosi yo‘q.</Empty>
+        </Card>
+      ) : bugungi.length === 0 ? (
         <Card className="p-5">
           <Empty>
             Bugun dars yo‘q.
@@ -107,7 +135,7 @@ export default async function Davomat({
         </Card>
       ) : (
         <ul className="flex flex-col gap-3">
-          {dList.map((d) => (
+          {bugungi.map((d) => (
             <li key={d.group_id}>
               <Link
                 href={`/crm/davomat/${d.group_id}`}
@@ -138,9 +166,10 @@ export default async function Davomat({
         </ul>
       )}
 
-      {gList.length > 0 && (
+      {ozGList.length > 0 && (
         <Card className="flex flex-col">
-          <CardHeader title={staffmi(profil.rol) ? 'Barcha guruhlar — jurnal' : 'Guruhlarim — jurnal'} meta={`${gList.length} ta guruh`} />
+          <CardHeader title={staffmi(profil.rol) ? 'Barcha guruhlar — jurnal' : 'Guruhlarim — jurnal'} meta={filtr ? `${gList.length} / ${ozGList.length} ta guruh` : `${gList.length} ta guruh`} />
+          {gList.length === 0 && <p className="px-5 pb-4 text-[13px] text-ink-3">Shu shartlarga mos guruh topilmadi.</p>}
           <ul className="flex flex-col gap-1.5 px-3 pb-3">
             {gList.map((g) => (
               <li key={g.id}>
@@ -159,13 +188,13 @@ export default async function Davomat({
         </Card>
       )}
 
-      {gList.length > 0 && (
+      {ozGList.length > 0 && (
         <Card className="flex flex-col">
           <CardHeader title="Oylik davomat (Excel)" meta="Excel ochadigan fayl" />
           <form action="/crm/davomat/eksport" className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
             <Maydon nom="Guruh">
               <select name="guruh" required className={kirishKlass}>
-                {gList.map((g) => (
+                {(gList.length ? gList : ozGList).map((g) => (
                   <option key={g.id} value={g.id}>{ozimniki ? guruhUstozsiz(g.nom) : g.nom}</option>
                 ))}
               </select>

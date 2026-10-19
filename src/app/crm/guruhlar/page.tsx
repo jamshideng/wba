@@ -6,11 +6,14 @@ import { Card, Badge, Empty, Button } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { pul, jadval, vaqt, kunlarNomi, KUN_NOMI, guruhQisqa } from '@/lib/format'
 import type { DayType } from '@/lib/types'
+import { GuruhFiltri } from '@/components/guruh-filtri'
+import { filtrFaolmi, guruhMos, type GuruhSorov } from '@/lib/guruh-filtr'
 
 export const metadata = { title: 'Guruhlar' }
 export const dynamic = 'force-dynamic'
 
-export default async function Guruhlar() {
+export default async function Guruhlar({ searchParams }: { searchParams: Promise<GuruhSorov> }) {
+  const sorovlar = await searchParams
   const profil = await talabRol('admin', 'direktor', 'qabulxona', 'ustoz')
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Guruhlar" />
 
@@ -22,16 +25,21 @@ export default async function Guruhlar() {
      filtr shart emas, sarlavha esa kimligiga qarab o'zgaradi. */
   let sorov = supabase
     .from('groups')
-    .select('id, nom, boshlanish, tugash, kunlar, oylik_narx, holat, teachers(ism)')
+    .select('id, nom, subject_id, teacher_id, boshlanish, tugash, kunlar, oylik_narx, holat, teachers(ism)')
     .order('holat')
     .order('nom')
   // Xodim "Ustoz" rolida — faqat o'z guruhlari (RLS unga hammasini beradi)
   if (ustozRejimi(profil) && ustoz) sorov = sorov.eq('teacher_id', ustoz.id)
-  const { data: guruhlar } = await sorov
+  const [{ data: guruhlar }, { data: fanlar }] = await Promise.all([
+    sorov,
+    supabase.from('subjects').select('id, nom').order('tartib'),
+  ])
 
   type Guruh = {
     id: string
     nom: string
+    subject_id: string | null
+    teacher_id: string | null
     boshlanish: string
     tugash: string
     kunlar: number[]
@@ -40,7 +48,8 @@ export default async function Guruhlar() {
     teachers: { ism: string } | null
   }
 
-  const gList = (guruhlar ?? []) as unknown as Guruh[]
+  const hammasi = (guruhlar ?? []) as unknown as Guruh[]
+  const gList = hammasi.filter((g) => guruhMos(g, sorovlar))
   const idlar = gList.map((g) => g.id)
 
   const { data: stats } = idlar.length
@@ -57,20 +66,33 @@ export default async function Guruhlar() {
   /* Ustoz paneli: fan nomi katta, ism yo'q (o'ziniki), vaqt va kunlar pastda katta */
   const ustozKarta = !pulKoradi || ustozRejimi(profil)
 
-  const faol = gList.filter((g) => g.holat === 'faol').length
+  const faol = hammasi.filter((g) => g.holat === 'faol').length
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha
         nom={ustoz && !pulKoradi ? 'Guruhlarim' : 'Guruhlar'}
-        izoh={`${faol} ta faol guruh${gList.length > faol ? ` · ${gList.length - faol} ta yopilgan` : ''}`}
+        izoh={`${faol} ta faol guruh${hammasi.length > faol ? ` · ${hammasi.length - faol} ta yopilgan` : ''}${filtrFaolmi(sorovlar) ? ` · topildi ${gList.length}` : ''}`}
         amal={adminmi(profil.rol) ? <Button href="/crm/guruhlar/yangi">Guruh ochish</Button> : undefined}
       />
+
+      {hammasi.length > 1 && (
+        <GuruhFiltri
+          yol="/crm/guruhlar"
+          guruhlar={hammasi}
+          fanlar={(fanlar ?? []) as { id: string; nom: string }[]}
+          s={sorovlar}
+          ustozTanlovi={!ustozKarta}
+          holatTanlovi={hammasi.length > faol}
+        />
+      )}
 
       {gList.length === 0 ? (
         <Card className="p-5">
           <Empty>
-            {ustoz
+            {filtrFaolmi(sorovlar)
+              ? 'Shu shartlarga mos guruh topilmadi.'
+              : ustoz
               ? 'Sizga hali guruh biriktirilmagan.'
               : 'Hali guruh yo‘q. Ko‘chirish skripti ishga tushirilsa shu yerda ko‘rinadi.'}
           </Empty>
