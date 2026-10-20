@@ -22,5 +22,6 @@ export type WoblarLimiti = {
   davr: string
   stavka: number
   jami: { limit: number; berilgan: number; qoldi: number }
-  guruhlar: { group_id: string; nom: string; limit: number; berilgan: number; qoldi: number; zamena?: boolean }[]
+  /** qoldi >= 0; guruh limitidan ortig'i — jamidan (0086) */
+  guruhlar: { group_id: string; nom: string; limit: number; berilgan: number; qoldi: number; jamidan?: number; zamena?: boolean }[]
 }

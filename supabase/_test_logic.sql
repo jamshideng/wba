@@ -1157,22 +1157,38 @@ reset role;
 
 \echo '--- 0037/0038: woblar chegarasi, kunlik hisobot bir marta ---'
 reset role;
--- 0064: "bir darsda eng ko'pi" va ±10 yo'q — ustozni OYLIK guruh limiti cheklaydi
-create temp table limit_t (qoldi int);
+-- 0064: "bir darsda eng ko'pi" va ±10 yo'q — ustozni OYLIK limit cheklaydi
+-- 0086: guruh limiti tugasa — jami (barcha guruhlar) limitidan ketadi
+create temp table limit_t (guruh int, jami int);
 grant all on limit_t to authenticated;
 insert into limit_t
-select guruh_woblar_limiti('NX', to_char(bugun_toshkent(), 'YYYY-MM'))
-     - guruh_woblar_sarfi('NX', to_char(bugun_toshkent(), 'YYYY-MM'));
+select (select (x ->> 'qoldi')::int from jsonb_array_elements(l -> 'guruhlar') x where x ->> 'group_id' = 'NX'),
+       (l -> 'jami' ->> 'qoldi')::int
+from ustoz_woblar_limiti((select teacher_id from groups where id = 'NX'), to_char(bugun_toshkent(), 'YYYY-MM')) l;
 set role authenticated;
 set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana (NX)
 do $$
-declare v_q int := (select qoldi from limit_t);
+declare
+  v_g int := (select guruh from limit_t);
+  v_j int := (select jami from limit_t);
+  v_nx jsonb;
 begin
-  if v_q <= 1 then raise exception 'XATO: test uchun NX limitida joy yo''q (%).', v_q; end if;
+  if v_g <= 1 then raise exception 'XATO: test uchun NX limitida joy yo''q (%).', v_g; end if;
   -- Bir martada 10 dan ko'p — endi mumkin (limit ichida)
-  perform woblar_ber('NX', 'S002', v_q);
+  perform woblar_ber('NX', 'S002', v_g);
   if (ustoz_woblar_limiti() -> 'guruhlar' -> 0 ->> 'qoldi')::int is null then
     raise exception 'XATO: ustoz_woblar_limiti guruhlarni qaytarmadi';
+  end if;
+  -- Guruh limiti tugadi — jamidan olinadi, guruh qoldig'i 0 da qoladi
+  if v_j > v_g then
+    perform woblar_ber('NX', 'S002', v_j - v_g);
+    select x into v_nx from jsonb_array_elements(ustoz_woblar_limiti() -> 'guruhlar') x where x ->> 'group_id' = 'NX';
+    if (v_nx ->> 'qoldi')::int <> 0 or (v_nx ->> 'jamidan')::int <> v_j - v_g then
+      raise exception 'XATO: guruh qoldi/jamidan noto''g''ri: %', v_nx;
+    end if;
+    raise notice 'OK: 0086 — guruh limiti tugadi, % woblar jamidan', v_j - v_g;
+  else
+    raise notice 'DIQQAT: Diana''da boshqa guruh limiti yo''q — jamidan olish sinalmadi';
   end if;
   begin
     perform woblar_ber('NX', 'S002', 1);

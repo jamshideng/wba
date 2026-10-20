@@ -112,7 +112,7 @@ export function WoblarBerishForma({
               shu guruh uchun <b className="tnum">{limit.guruhlar[boshqaGuruh] ?? 0}</b> qoldi ·{' '}
             </>
           ) : null}
-          jami <b className="tnum">{limit.jami}</b> qoldi. O‘quvchining guruhi avtomatik topiladi — woblar o‘sha guruh limitidan ham ayriladi.
+          jami <b className="tnum">{limit.jami}</b> qoldi. O‘quvchining guruhi avtomatik topiladi — woblar o‘sha guruh limitidan, u tugasa — jami limitdan ayriladi.
         </p>
       )}
     </form>
