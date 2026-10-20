@@ -7,7 +7,7 @@ import { IconAlert, IconPayments, IconAttendance, IconLeads, IconStudents, IconD
 import { pul, davrNomi, joriyDavr, sana, bugunToshkent, telefon } from '@/lib/format'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Ulanmagan } from '@/components/crm'
-import type { DashboardStats, Qarzdor, TeacherStats, Hisobot } from '@/lib/types'
+import type { DashboardStats, Qarzdor, TeacherMonthlyIncome, Hisobot } from '@/lib/types'
 import { QaytishKutilmoqda, type Tanaffusdagi } from './qaytish'
 
 export const metadata = { title: 'Boshqaruv paneli' }
@@ -26,7 +26,8 @@ export default async function Dashboard() {
     await Promise.all([
       supabase.from('v_dashboard').select('*').single(),
       supabase.from('v_qarzdorlar').select('*').limit(6),
-      supabase.from('v_teacher_stats').select('*').order('tushum', { ascending: false }),
+      // O'qituvchi bo'yicha tushum — shu oy (to'lov davri), yuqoridagi oy tushumi bilan teng (0087)
+      supabase.from('v_teacher_monthly_income').select('*').eq('davr', davr).order('tushum', { ascending: false }),
       // Tushum dinamikasi — kelasi oylarsiz (joriygacha), oxirgi 6 oy.
       // Kamayish tartibida: o'sish tartibida limit ENG ESKI oylarni qaytarardi.
       supabase.from('v_monthly_income').select('davr, tushum').lte('davr', davr).order('davr', { ascending: false }).limit(6),
@@ -60,7 +61,7 @@ export default async function Dashboard() {
 
   const s = (stats ?? null) as DashboardStats | null
   const qList = (qarzdorlar ?? []) as Qarzdor[]
-  const uList = (ustozlar ?? []) as TeacherStats[]
+  const uList = (ustozlar ?? []) as TeacherMonthlyIncome[]
   const maxTushum = Math.max(1, ...uList.map((u) => Number(u.tushum)))
   const jamiTushum = uList.reduce((a, u) => a + Number(u.tushum), 0)
 
@@ -200,7 +201,7 @@ export default async function Dashboard() {
           <CardHeader title="O‘qituvchi bo‘yicha tushum" meta={`${davrNomi(davr)} · so‘m`} />
           <div className="flex flex-col px-5 pb-4">
             {uList.length === 0 ? (
-              <Empty>Hali to‘lov yozilmagan.</Empty>
+              <Empty>Bu oy hali to‘lov yozilmagan.</Empty>
             ) : (
               uList.map((u) => (
                 <BarRow

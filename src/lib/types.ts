@@ -364,6 +364,14 @@ export type TeacherStats = {
   qarz: number
 }
 
+export type TeacherMonthlyIncome = {
+  teacher_id: string
+  ism: string
+  davr: string
+  tushum: number
+  tolovlar: number
+}
+
 export type GroupStats = {
   group_id: string
   nom: string
@@ -845,6 +853,7 @@ export type Database = {
       v_qarzdorlar: View<Qarzdor>
       v_dashboard: View<DashboardStats>
       v_teacher_stats: View<TeacherStats>
+      v_teacher_monthly_income: View<TeacherMonthlyIncome>
       v_group_stats: View<GroupStats>
       v_attendance_monthly: View<AttendanceMonthly>
       v_woblr_balance: View<WoblrBalance>
