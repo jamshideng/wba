@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, Badge, Empty } from '@/components/ui'
 import { kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { TAKLIF_HOLATLARI, TAKLIF_HOLAT_NOMI, TAKLIF_HOLAT_TONI, sanaVaqt, type Taklif, type TaklifHolati } from '@/lib/market'
+import { TAKLIF_HOLATLARI, TAKLIF_HOLAT_NOMI, TAKLIF_HOLAT_TONI, TAKLIF_QACHON_NOMI, sanaVaqt, type Taklif, type TaklifHolati } from '@/lib/market'
 import { taklifHolati } from '../actions'
 
 /**
@@ -65,7 +65,7 @@ export async function TakliflarBolimi({ holat, admin }: { holat?: string; admin:
                   </div>
                   <span className="text-[12px] text-ink-3">
                     <Link href={`/crm/oquvchilar/${t.student_id}`} className="font-semibold text-ink-2 hover:text-brand">{ism.get(t.student_id) ?? t.student_id}</Link>
-                    {' · '}{t.qachon === 'keyingi_bozor' ? 'keyingi bozorga' : 'umumiy'} · {sanaVaqt(t.created_at)}
+                    {' · '}{TAKLIF_QACHON_NOMI[t.qachon].toLowerCase()} · {sanaVaqt(t.created_at)}
                     {t.taxminiy_narx ? ` · ~${t.taxminiy_narx} woblar` : ''}
                   </span>
                   {t.tavsif && <p className="text-[13px] leading-relaxed whitespace-pre-line text-ink-2">{t.tavsif}</p>}
@@ -94,7 +94,15 @@ export async function TakliflarBolimi({ holat, admin }: { holat?: string; admin:
                   <input name="admin_javob" maxLength={500} defaultValue={t.admin_javob ?? ''} placeholder="Ixtiyoriy" className={kirishKlass} />
                 </label>
                 <Yuborish tur="ikkilamchi">Saqlash</Yuborish>
-                {admin && (
+                {admin && t.qachon === 'tugagan' && t.mahsulot_id && (
+                  <Link
+                    href={`/crm/market/boshqaruv/mahsulot/${t.mahsulot_id}`}
+                    className="flex min-h-11 items-center rounded-[10px] border border-line px-3.5 text-[13px] font-semibold text-ink-2 hover:border-ink-3 hover:text-ink"
+                  >
+                    Mahsulotni ochish
+                  </Link>
+                )}
+                {admin && t.qachon !== 'tugagan' && (
                   <Link
                     href={`/crm/market/boshqaruv/mahsulot/yangi?taklif=${t.id}`}
                     className="flex min-h-11 items-center rounded-[10px] border border-line px-3.5 text-[13px] font-semibold text-ink-2 hover:border-ink-3 hover:text-ink"

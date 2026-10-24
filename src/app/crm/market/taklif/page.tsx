@@ -6,7 +6,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Badge, Button, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Xabar } from '@/components/forma'
-import { TAKLIF_HOLAT_NOMI, TAKLIF_HOLAT_TONI, kunOy, nechaKunQoldi, sanaVaqt, type Taklif } from '@/lib/market'
+import { TAKLIF_HOLAT_NOMI, TAKLIF_HOLAT_TONI, TAKLIF_QACHON_NOMI, kunOy, nechaKunQoldi, sanaVaqt, type Taklif } from '@/lib/market'
 import { bugunToshkent } from '@/lib/format'
 import { bozorKuni } from '../bozor'
 import { TaklifForma } from './forma'
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 
 /**
  * O'quvchi taklifi (0065): Marketda yo'q narsani so'raydi — keyingi bozorga
- * yoki umuman. Pastda — o'z takliflari va admin javobi.
+ * yoki umuman, yoki vitrinadagi tugagan mahsulotni qayta so'raydi (0089). Pastda — o'z takliflari va admin javobi.
  */
 export default async function TaklifSahifasi({ searchParams }: { searchParams: Promise<{ ok?: string; xato?: string }> }) {
   const profil = await talabProfil()
@@ -25,9 +25,12 @@ export default async function TaklifSahifasi({ searchParams }: { searchParams: P
 
   const s = await searchParams
   const supabase = await createClient()
-  const [{ data: takliflar }, bozor] = await Promise.all([
+  const [{ data: takliflar }, bozor, { data: tugaganlar }] = await Promise.all([
     supabase.from('woblr_takliflar').select('*').order('created_at', { ascending: false }).limit(50),
     bozorKuni(supabase),
+    // 0089 — vitrinada turgan, lekin tugagan mahsulotlar (qayta so'rash uchun)
+    supabase.from('woblr_rewards').select('id, nom, rasm_url, narx_ball')
+      .eq('holat', 'faol').eq('cheksiz', false).lte('qolgan_soni', 0).order('nom'),
   ])
   const bozorOldinda = bozor && nechaKunQoldi(bozor, bugunToshkent()) >= 0 ? bozor : null
   const royxat = (takliflar ?? []) as Taklif[]
@@ -46,7 +49,7 @@ export default async function TaklifSahifasi({ searchParams }: { searchParams: P
           Marketda yo‘q, lekin olishni istagan narsangizni yozing. Admin ko‘rib chiqadi — olib kelinsa, sizga xabar beramiz
           va u Marketda paydo bo‘ladi. Taklif uchun woblar yechilmaydi.
         </p>
-        <TaklifForma uid={profil.id} bozorBor={Boolean(bozorOldinda)} />
+        <TaklifForma uid={profil.id} bozorBor={Boolean(bozorOldinda)} tugaganlar={tugaganlar ?? []} />
       </Card>
 
       <Card className="flex flex-col">
@@ -62,7 +65,7 @@ export default async function TaklifSahifasi({ searchParams }: { searchParams: P
                   <Badge ton={TAKLIF_HOLAT_TONI[t.holat]} nuqta>{TAKLIF_HOLAT_NOMI[t.holat]}</Badge>
                 </div>
                 <span className="text-[12px] text-ink-3">
-                  {t.qachon === 'keyingi_bozor' ? 'Keyingi bozorga' : 'Umumiy taklif'} · {sanaVaqt(t.created_at)}
+                  {TAKLIF_QACHON_NOMI[t.qachon]} · {sanaVaqt(t.created_at)}
                   {t.taxminiy_narx ? ` · ~${t.taxminiy_narx} woblar` : ''}
                 </span>
                 {t.admin_javob && <span className="text-[13px] text-ink-2"><b>Admin:</b> {t.admin_javob}</span>}

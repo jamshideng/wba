@@ -137,12 +137,20 @@ export type Taklif = {
   havola: string | null
   rasm_url: string | null
   taxminiy_narx: number | null
-  qachon: 'keyingi_bozor' | 'umumiy'
+  qachon: 'keyingi_bozor' | 'umumiy' | 'tugagan'
+  /** 0089 — tugagan mahsulotni qayta so'rash */
+  mahsulot_id: string | null
   izoh: string | null
   holat: TaklifHolati
   admin_javob: string | null
   created_at: string
   updated_at: string
+}
+
+export const TAKLIF_QACHON_NOMI: Record<Taklif['qachon'], string> = {
+  keyingi_bozor: 'Keyingi bozorga',
+  umumiy: 'Umumiy taklif',
+  tugagan: 'Tugagan mahsulot',
 }
 
 export const TAKLIF_HOLATLARI: TaklifHolati[] = ['yangi', 'korib_chiqamiz', 'olib_kelindi', 'rad_etildi']

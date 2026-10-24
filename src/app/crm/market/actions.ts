@@ -393,6 +393,8 @@ export async function taklifYubor(fd: FormData) {
   const yol = '/crm/market/taklif'
   if (profil.rol !== 'oquvchi') redirect(xabarliYol(yol, { xato: 'Taklifni o‘quvchi yuboradi.' }))
 
+  if (fd.get('qachon') === 'tugagan') return tugaganTaklif(profil.ism, matn(fd.get('mahsulot_id')))
+
   const nom = matn(fd.get('nom'))
   if (!nom || nom.length < 2) redirect(xabarliYol(yol, { xato: 'Nima istashingizni yozing.' }))
   const havola = matn(fd.get('havola'))
@@ -431,6 +433,48 @@ export async function taklifYubor(fd: FormData) {
 
   revalidatePath('/crm/market', 'layout')
   redirect(xabarliYol(yol, { ok: 'Taklifingiz yuborildi! Admin ko‘rib chiqadi.' }))
+}
+
+/**
+ * Tugagan mahsulotni qayta so'rash (0089): o'quvchi faqat vitrinadagi tugagan
+ * mahsulotni tanlaydi — nom va rasm mahsulotdan olinadi, boshqa maydon yo'q.
+ */
+async function tugaganTaklif(ism: string, mahsulotId: string | null) {
+  const yol = '/crm/market/taklif'
+  if (!mahsulotId) redirect(xabarliYol(yol, { xato: 'Tugagan mahsulotni tanlang.' }))
+
+  const supabase = await createClient()
+  const [{ data: men }, { data: m }] = await Promise.all([
+    supabase.from('students').select('id').eq('profile_id', (await talabProfil()).id).maybeSingle(),
+    supabase.from('woblr_rewards').select('id, nom, rasm_url, holat, cheksiz, qolgan_soni').eq('id', mahsulotId!).maybeSingle(),
+  ])
+  if (!men) redirect(xabarliYol(yol, { xato: 'O‘quvchi hisobingiz topilmadi.' }))
+  if (!m || m.holat !== 'faol' || m.cheksiz || m.qolgan_soni > 0) {
+    redirect(xabarliYol(yol, { xato: 'Bu mahsulot tugaganlar ro‘yxatida yo‘q.' }))
+  }
+
+  const { error } = await supabase.from('woblr_takliflar').insert({
+    student_id: men!.id,
+    nom: m!.nom.slice(0, 120),
+    rasm_url: m!.rasm_url,
+    qachon: 'tugagan',
+    mahsulot_id: m!.id,
+  })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  if (xabarYoqilgan()) after(async () => {
+    await xabar(
+      Number(HISOBOT_GURUH),
+      [
+        '<b>[SAYT] WOBLAR MARKET — tugagan mahsulot so‘raldi</b>',
+        `${html(ism)}: <b>${html(m!.nom)}</b> (qayta keltirish)`,
+        `Ko‘rish: ${SAYT}/crm/market/boshqaruv?bolim=taklif`,
+      ].join('\n'),
+    )
+  })
+
+  revalidatePath('/crm/market', 'layout')
+  redirect(xabarliYol(yol, { ok: 'So‘rovingiz yuborildi! Admin mahsulotni qayta keltirishni ko‘rib chiqadi.' }))
 }
 
 /** Xodim: taklif holati va javobi. O'quvchiga Telegram xabari (holat o'zgarsa). */
