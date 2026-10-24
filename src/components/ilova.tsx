@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { IconOrnatish, IconUlashish, IconYangilash } from '@/components/icons'
 import { createClient } from '@/lib/supabase/client'
 
@@ -41,8 +41,13 @@ if (typeof window !== 'undefined') {
 }
 
 export function IlovaSW() {
+  const yol = usePathname()
+  // Kirish sahifasidan CRM'ga o'tilganda ham tekshirilsin (root layout qayta chizilmaydi)
   useEffect(() => {
     ilovaBelgi()
+  }, [yol])
+
+  useEffect(() => {
     if (!('serviceWorker' in navigator) || process.env.NODE_ENV !== 'production') return
     // Har ochilishda yangi versiya bormi — tekshiriladi (iPhone ilovasi uzoq "uxlab" turadi)
     navigator.serviceWorker.register('/sw.js').then((r) => r.update()).catch(() => {})
@@ -55,25 +60,30 @@ const BELGI_KALIT = 'wba-ilova-belgi'
 
 /**
  * Ilova o'rnatilgan holda ochilgan bo'lsa — bazaga belgi (0092), kuniga
- * ko'pi bilan bir marta. Kirmagan bo'lsa baza false qaytaradi — keyingi
- * ochilishda yana uriniladi.
+ * ko'pi bilan bir marta. Kirmagan bo'lsa so'rov yuborilmaydi — kirgandan
+ * keyingi sahifada (yoki keyingi ochilishda) yuboriladi.
  */
-function ilovaBelgi() {
+let belgiKetmoqda = false
+async function ilovaBelgi() {
   try {
-    if (!ilovaIchidami()) return
+    if (belgiKetmoqda || !ilovaIchidami()) return
     if (Date.now() - Number(localStorage.getItem(BELGI_KALIT) ?? 0) < 86_400_000) return
+    belgiKetmoqda = true
+    const supabase = createClient()
+    const { data: sessiya } = await supabase.auth.getSession()
+    if (!sessiya.session) return
     let qurilma = localStorage.getItem(QURILMA_KALIT)
     if (!qurilma) {
       qurilma = crypto.randomUUID()
       localStorage.setItem(QURILMA_KALIT, qurilma)
     }
     const platforma = iphonemi() ? 'iphone' : /android/i.test(navigator.userAgent) ? 'android' : 'kompyuter'
-    createClient()
-      .rpc('ilova_belgi', { p_qurilma: qurilma, p_platforma: platforma })
-      .then(({ data }) => {
-        if (data === true) localStorage.setItem(BELGI_KALIT, String(Date.now()))
-      })
-  } catch {}
+    const { data } = await supabase.rpc('ilova_belgi', { p_qurilma: qurilma, p_platforma: platforma })
+    if (data === true) localStorage.setItem(BELGI_KALIT, String(Date.now()))
+  } catch {
+  } finally {
+    belgiKetmoqda = false
+  }
 }
 
 const YOPILDI_KALIT = 'wba-ilova-yopildi'
