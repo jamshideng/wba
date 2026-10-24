@@ -3,6 +3,14 @@ import { Maydon, FormaBolim, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { HAFTA_KUNLARI } from '@/lib/format'
 
+/** 0093 — guruh turi: umumiy — ustoz stavkasi, qolganlari — tur stavkasi (Sozlamalar) */
+export const GURUH_TURI_NOMI: Record<string, string> = {
+  umumiy: 'Umumiy guruh',
+  individual: 'Individual',
+  mini: 'Mini guruh',
+  ielts: 'IELTS',
+}
+
 export type GuruhQiymati = {
   id?: string
   nom?: string
@@ -13,7 +21,7 @@ export type GuruhQiymati = {
   tugash?: string
   kunlar?: number[]
   oylik_narx?: number
-  sigim?: number
+  turi?: string
   holat?: string
 }
 
@@ -115,8 +123,12 @@ export async function GuruhFormasi({
           <Maydon nom="Oylik narx" izoh={qiymat.id ? 'Yangi narx keyingi hisoblardan' : undefined} className="col-span-2">
             <input name="oylik_narx" required inputMode="decimal" defaultValue={qiymat.oylik_narx ?? standart ?? ''} className={kirishKlass} />
           </Maydon>
-          <Maydon nom="Sig‘im" izoh="12 dan oshmaydi">
-            <input type="number" name="sigim" min={1} max={12} defaultValue={qiymat.sigim ?? 12} className={kirishKlass} />
+          <Maydon nom="Guruh turi" izoh="Ustoz maoshi shunga qarab">
+            <select name="turi" required defaultValue={qiymat.turi ?? 'umumiy'} className={kirishKlass}>
+              {Object.entries(GURUH_TURI_NOMI).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
           </Maydon>
           {qiymat.id && (
             <Maydon nom="Holat">

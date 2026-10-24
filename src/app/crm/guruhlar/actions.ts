@@ -16,8 +16,12 @@ type GuruhMaydonlari = {
   /** ISO hafta kunlari, 1 = dushanba … 7 = yakshanba */
   kunlar: number[]
   oylik_narx: number
-  sigim: number
+  /** 0093 — maosh stavkasi shunga qarab */
+  turi: GuruhTuri
 }
+
+const TURLAR = ['umumiy', 'individual', 'mini', 'ielts'] as const
+type GuruhTuri = (typeof TURLAR)[number]
 
 /**
  * Formani tekshiradi. Nom bo'sh qolsa Sheets'dagi formula bo'yicha
@@ -30,13 +34,13 @@ async function oqi(fd: FormData): Promise<GuruhMaydonlari | string> {
     .filter((k) => Number.isInteger(k) && k >= 1 && k <= 7)
     .sort((a, b) => a - b)
   const narx = summaOqi(fd.get('oylik_narx'))
-  const sigim = sonOqi(fd.get('sigim')) ?? 12
+  const turi = TURLAR.find((t) => t === fd.get('turi'))
 
   if (!boshlanish || !tugash) return 'Dars boshlanish va tugash vaqtini kiriting.'
   if (tugash <= boshlanish) return 'Dars tugash vaqti boshlanishidan keyin bo‘lishi kerak.'
   if (!kunlar.length) return 'Dars kunlarini tanlang — kamida bitta kun.'
   if (!narx) return 'Oylik narx noto‘g‘ri. Masalan: 650000 yoki 650.'
-  if (sigim < 1 || sigim > 12) return 'Guruh sig‘imi 1 dan 12 gacha (markaz qoidasi).'
+  if (!turi) return 'Guruh turini tanlang.'
 
   const subjectId = matn(fd.get('subject_id'))
   const levelId = sonOqi(fd.get('level_id'))
@@ -64,7 +68,7 @@ async function oqi(fd: FormData): Promise<GuruhMaydonlari | string> {
     tugash,
     kunlar,
     oylik_narx: narx,
-    sigim,
+    turi,
   }
 }
 

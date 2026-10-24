@@ -8,6 +8,7 @@ import { Xabar } from '@/components/forma'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { IconArrowLeft } from '@/components/icons'
 import { pul, jadval, sana, davrNomi, joriyDavr, bosh, bugunToshkent, guruhQisqa } from '@/lib/format'
+import { GURUH_TURI_NOMI } from '../forma'
 
 export const metadata = { title: 'Guruh' }
 
@@ -42,7 +43,7 @@ export default async function GuruhProfil({
 
   const { data: guruh } = await supabase
     .from('groups')
-    .select('id, nom, boshlanish, tugash, kunlar, oylik_narx, sigim, holat, teacher_id, teachers(id, ism)')
+    .select('id, nom, boshlanish, tugash, kunlar, oylik_narx, turi, holat, teacher_id, teachers(id, ism)')
     .eq('id', id)
     .maybeSingle()
 
@@ -57,7 +58,7 @@ export default async function GuruhProfil({
     tugash: string
     kunlar: number[]
     oylik_narx: number
-    sigim: number
+    turi: string
     holat: string
     teachers: { id: string; ism: string } | null
   }
@@ -148,7 +149,7 @@ export default async function GuruhProfil({
       <Xabar ok={xabar.ok} xato={xabar.xato} />
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <Stat label="O‘quvchilar" value={yList.length} sub={`sig‘imi ${g.sigim} kishi`} />
+        <Stat label="O‘quvchilar" value={yList.length} sub={GURUH_TURI_NOMI[g.turi] ?? g.turi} />
         <Stat
           label={`Davomat · ${davrNomi(davr)}`}
           value={ortacha === null ? '—' : `${ortacha}%`}

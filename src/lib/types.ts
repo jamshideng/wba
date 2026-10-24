@@ -105,6 +105,8 @@ export type Group = {
   kunlar: number[]
   oylik_narx: number
   sigim: number
+  /** 0093 — umumiy | individual | mini | ielts (maosh stavkasi) */
+  turi: 'umumiy' | 'individual' | 'mini' | 'ielts'
   holat: GroupStatus
   created_at: string
   updated_at: string

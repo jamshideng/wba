@@ -26,7 +26,7 @@ export default async function GuruhTahrir({
   const supabase = await createClient()
   const { data: g } = await supabase
     .from('groups')
-    .select('id, nom, subject_id, level_id, teacher_id, boshlanish, tugash, kunlar, oylik_narx, sigim, holat')
+    .select('id, nom, subject_id, level_id, teacher_id, boshlanish, tugash, kunlar, oylik_narx, turi, holat')
     .eq('id', id)
     .maybeSingle()
   if (!g) notFound()
