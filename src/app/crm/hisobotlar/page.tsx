@@ -7,8 +7,8 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, kirishKlass } from '@/components/forma'
 import { JonliForma } from '@/components/jonli-forma'
 import { sana, bugunToshkent } from '@/lib/format'
-import type { Hisobot, HisobotGrafik, HisobotDavomat, HisobotMoliya, HisobotOquvchilar, HisobotUstoz, MonthlyIncome } from '@/lib/types'
-import { DavomatBolimi, MoliyaBolimi, OquvchilarBolimi, UstozlarBolimi } from './bolimlar'
+import type { Hisobot, HisobotGrafik, HisobotDavomat, HisobotMoliya, HisobotOquvchilar, HisobotOrtacha, HisobotUstoz, MonthlyIncome } from '@/lib/types'
+import { DavomatBolimi, MoliyaBolimi, OquvchilarBolimi, OrtachaTolovBolimi, UstozlarBolimi } from './bolimlar'
 import { UmumiyBolim } from './umumiy'
 import { KECHIKISH_USTUNLAR, KechikishJadval, KechikishJamlanma, type KechikishYozuv } from '@/components/kechikish'
 
@@ -90,7 +90,7 @@ export default async function Hisobotlar({
     yol({ ...(b === 'umumiy' ? {} : { bolim: b }), ...(OYLIK.includes(b) ? (s.oy ? { oy: s.oy } : {}) : oraliqQs) })
 
   const supabase = await createClient()
-  const [{ data: hisobot, error }, { data: oylik }, bolimData, { data: grafik }, { data: kechikish }] = await Promise.all([
+  const [{ data: hisobot, error }, { data: oylik }, bolimData, { data: grafik }, { data: kechikish }, { data: ortachaTolov }] = await Promise.all([
     bolim === 'umumiy'
       ? supabase.rpc('tushum_hisobot', { p_dan: o.dan, p_gacha: o.gacha })
       : Promise.resolve({ data: null, error: null }),
@@ -113,6 +113,10 @@ export default async function Hisobotlar({
     bolim === 'ustozlar'
       ? supabase.from('ustoz_kechikish').select(KECHIKISH_USTUNLAR).gte('sana', o.dan).lte('sana', o.gacha).order('sana', { ascending: false }).limit(500)
       : Promise.resolve({ data: [] }),
+    // 0091 — fan bo'yicha o'rtacha to'lov (Moliya)
+    bolim === 'moliya'
+      ? supabase.rpc('hisobot_ortacha_tolov', { p_oylar: oyNechta })
+      : Promise.resolve({ data: null }),
   ])
 
   const h = hisobot as Hisobot | null
@@ -204,7 +208,10 @@ export default async function Hisobotlar({
             <Empty>Hisobotni olib bo‘lmadi{bolimData.error ? `: ${bolimData.error.message}` : ''}.</Empty>
           </Card>
         ) : bolim === 'moliya' ? (
-          <MoliyaBolimi m={bolimData.data as HisobotMoliya} />
+          <>
+            <MoliyaBolimi m={bolimData.data as HisobotMoliya} />
+            {ortachaTolov && <OrtachaTolovBolimi o={ortachaTolov as HisobotOrtacha} />}
+          </>
         ) : bolim === 'oquvchilar' ? (
           <OquvchilarBolimi o={bolimData.data as HisobotOquvchilar} />
         ) : bolim === 'ustozlar' ? (

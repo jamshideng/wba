@@ -90,13 +90,32 @@ export async function oquvchiTahrir(fd: FormData) {
       // Tanaffusda bo'lmasa baza o'zi tozalaydi (0046 trigger)
       qaytish_sana: holat === 'tanaffus' ? sanaOqi(fd.get('qaytish_sana')) : null,
       tanaffus_sabab: holat === 'tanaffus' ? matn(fd.get('tanaffus_sabab')) : null,
+      // Guruhi yo'q o'quvchida qo'shilgan sana to'g'ridan-to'g'ri (guruhi bor bo'lsa — 0090 o'zi qo'yadi)
+      ...(fd.has('qoshilgan_sana') && sanaOqi(fd.get('qoshilgan_sana')) ? { qoshilgan_sana: sanaOqi(fd.get('qoshilgan_sana'))! } : {}),
     })
     .eq('id', id!)
 
   if (error) redirect(xabarliYol(forma, { xato: xatoMatni(error) }))
 
+  // Guruhga qo'shilgan sanalar — faqat o'zgarganlari (0090)
+  let sanaOzgardi = 0
+  for (const [kalit, qiymat] of fd.entries()) {
+    if (!kalit.startsWith('sana_')) continue
+    const eid = kalit.slice(5)
+    const yangi = sanaOqi(qiymat)
+    if (!yangi || yangi === matn(fd.get(`eski_${eid}`))) continue
+    const { error: e } = await supabase.rpc('qoshilgan_sana_ozgartir', { p_enrollment: eid, p_sana: yangi })
+    if (e) {
+      revalidatePath('/crm', 'layout')
+      redirect(xabarliYol(forma, { xato: `Ma’lumot saqlandi, lekin qo‘shilgan sana o‘zgarmadi: ${xatoMatni(e)}` }))
+    }
+    sanaOzgardi++
+  }
+
   revalidatePath('/crm', 'layout')
-  redirect(xabarliYol(`/crm/oquvchilar/${id}`, { ok: 'Ma’lumot saqlandi.' }))
+  redirect(xabarliYol(`/crm/oquvchilar/${id}`, {
+    ok: sanaOzgardi ? 'Ma’lumot saqlandi. Qo‘shilgan sana o‘zgardi — oylik hisob qayta yozildi.' : 'Ma’lumot saqlandi.',
+  }))
 }
 
 export async function guruhgaBiriktir(fd: FormData) {

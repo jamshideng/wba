@@ -3,7 +3,7 @@ import { Card, CardHeader, Stat, BarRow, Empty } from '@/components/ui'
 import { ChiziqGrafik, UstunGrafik as Ustunlar } from '@/components/grafiklar'
 import { RANG } from '@/lib/grafik-rang'
 import { pul, davrNomi, davrQisqa, sanaQisqa } from '@/lib/format'
-import type { HisobotDavomat, HisobotMoliya, HisobotOquvchilar, HisobotUstoz } from '@/lib/types'
+import type { HisobotDavomat, HisobotMoliya, HisobotOquvchilar, HisobotOrtacha, HisobotUstoz } from '@/lib/types'
 
 /** Guruh sig'imi — markaz qoidasi: "Guruhda 12 kishidan ortiq emas". Individual (IND) dars — 1 kishi */
 const SIGIM = 12
@@ -412,5 +412,65 @@ export function DavomatBolimi({ d }: { d: HisobotDavomat }) {
         <Stat label="Bo‘sh joylar" value={String(bosh)} sub="faol guruhlarda — yangi o‘quvchi uchun" ton="ok" />
       </div>
     </>
+  )
+}
+
+/* ================================================================== */
+/*  O'RTACHA TO'LOV (0091) — Moliya ichida                             */
+/* ================================================================== */
+
+const ortacha = (tushum: number, soni: number) => (soni > 0 ? Math.round(tushum / soni) : 0)
+
+export function OrtachaTolovBolimi({ o }: { o: HisobotOrtacha }) {
+  const oylar = o.filter((m) => Number(m.fan) > 0 || Number(m.tushum) > 0)
+  const joriy = oylar.at(-1)
+  return (
+    <Card className="flex flex-col overflow-hidden">
+      <CardHeader title="O‘rtacha to‘lov — 1 fan uchun" meta="oy uchun tushum ÷ shu oyda o‘qigan fanlar" />
+      {!joriy ? (
+        <div className="px-5 pb-5"><Empty>Bu oraliqda ma’lumot yo‘q.</Empty></div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-3.5 px-5 pb-4 sm:grid-cols-3">
+            <Stat label={`${davrNomi(joriy.davr)} — o‘rtacha`} value={ortacha(Number(joriy.tushum), Number(joriy.fan))} sub="1 fan uchun · so‘m" ton="brand" />
+            <Stat label="Tushum" value={Number(joriy.tushum)} sub="shu oy uchun to‘langan · so‘m" />
+            <Stat label="Fanlar" value={String(joriy.fan)} sub={`${joriy.bola} bola · ${joriy.vip_fan} VIP`} />
+          </div>
+          <Jadval>
+            <thead className="border-y border-line bg-surface-2/60">
+              <tr>
+                <th className={th}>Oy</th><th className={th}>Tushum</th><th className={th}>Fanlar</th><th className={th}>Bola</th>
+                <th className={th}>O‘rtacha</th><th className={th}>VIPsiz o‘rtacha</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {oylar.map((m) => (
+                <tr key={m.davr}>
+                  <td className={`${td} font-semibold`}>{davrNomi(m.davr)}</td>
+                  <td className={td}>{pul(m.tushum)}</td>
+                  <td className={td}>{m.fan}</td>
+                  <td className={`${td} text-ink-3`}>{m.bola}</td>
+                  <td className={`${td} font-bold`}>{pul(ortacha(Number(m.tushum), Number(m.fan)))}</td>
+                  <td className={`${td} text-ink-3`}>{pul(ortacha(Number(m.tushum), Number(m.fan) - Number(m.vip_fan)))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Jadval>
+          <div className="flex flex-col gap-1.5 border-t border-line px-5 py-3">
+            <span className="lbl">{davrNomi(joriy.davr)} — fanlar bo‘yicha</span>
+            {joriy.fanlar.map((f) => (
+              <div key={f.nom} className="flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
+                <span>{f.nom} <span className="text-ink-3">· {f.soni} ta</span></span>
+                <span className="tnum"><b>{pul(ortacha(Number(f.tushum), Number(f.soni)))}</b> <span className="text-ink-3">({pul(f.tushum)})</span></span>
+              </div>
+            ))}
+          </div>
+          <p className="px-5 pb-4 text-[11.5px] leading-relaxed text-ink-3">
+            Oyning kamida bir kunida o‘qigan har kim sanaladi — oy ichida qo‘shilgan yoki ketgan ham; to‘lagani tushumga kiradi.
+            2 fanda o‘qigan bola — 2 fan. To‘lov, yangi o‘quvchi yoki ketish darhol shu yerda aks etadi.
+          </p>
+        </>
+      )}
+    </Card>
   )
 }

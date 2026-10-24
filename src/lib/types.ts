@@ -687,6 +687,15 @@ export type HisobotMoliya = {
   keyingi_kutilgan: number
   boglanmagan_tolov: number
 }
+/** 0091 — oy uchun tushum ÷ shu oyda o'qigan fanlar ("bola + fan" juftlari) */
+export type HisobotOrtacha = {
+  davr: string
+  tushum: number
+  fan: number
+  vip_fan: number
+  bola: number
+  fanlar: { nom: string; soni: number; tushum: number }[]
+}[]
 export type HisobotOquvchilar = {
   oylar: {
     davr: string; yangi_bola: number; yangi_fan: number; ketgan_bola: number; tugagan_fan: number
@@ -991,6 +1000,7 @@ export type Database = {
       hisobot_grafik: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotGrafik }
       hisobot_moliya: { Args: { p_oylar?: number }; Returns: HisobotMoliya }
       hisobot_oquvchilar: { Args: { p_oylar?: number }; Returns: HisobotOquvchilar }
+      hisobot_ortacha_tolov: { Args: { p_oylar?: number }; Returns: HisobotOrtacha }
       hisobot_ustozlar: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotUstoz[] }
       hisobot_davomat: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotDavomat }
       ustoz_woblar_limiti: { Args: { p_ustoz?: string | null; p_davr?: string | null }; Returns: import('./woblar-chegara').WoblarLimiti | null }
