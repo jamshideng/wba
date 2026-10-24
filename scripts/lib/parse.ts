@@ -53,15 +53,16 @@ export function davrga(v: unknown): string | null {
   return sana ? sana.slice(0, 7) : null
 }
 
-const USUL_MAP: Record<string, 'naqd' | 'karta' | 'click' | 'payme'> = {
+const USUL_MAP: Record<string, 'naqd' | 'terminal' | 'click' | 'payme'> = {
+  // terminal birinchi: 'termiNAL' ichida 'nal' bor
+  terminal: 'terminal', karta: 'terminal', plastik: 'terminal', card: 'terminal', карта: 'terminal', терминал: 'terminal',
   naqd: 'naqd', nal: 'naqd', cash: 'naqd', наличные: 'naqd',
-  karta: 'karta', plastik: 'karta', card: 'karta', карта: 'karta',
   click: 'click', klik: 'click',
   payme: 'payme', payma: 'payme',
 }
 
 /** To'lov usulini aniqlaydi. Aniqlanmasa — null (qo'lda tekshiriladi). */
-export function usulga(v: unknown): 'naqd' | 'karta' | 'click' | 'payme' | null {
+export function usulga(v: unknown): 'naqd' | 'terminal' | 'click' | 'payme' | null {
   const s = String(v ?? '').trim().toLowerCase()
   if (!s) return null
   for (const [kalit, qiymat] of Object.entries(USUL_MAP)) {

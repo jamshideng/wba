@@ -172,7 +172,7 @@ export type Tolov = {
   sana: string
   davr: string
   summa: number
-  usul: 'naqd' | 'karta' | 'click' | 'payme' | null
+  usul: 'naqd' | 'terminal' | 'click' | 'payme' | null
   izoh: string | null
   tasdiqlangan: boolean
   tasdiqlangan_vaqt: string | null

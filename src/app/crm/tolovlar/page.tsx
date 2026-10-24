@@ -20,7 +20,7 @@ const SAHIFA_SONI = 30
 
 const USUL_NOMI: Record<PaymentMethod, string> = {
   naqd: 'Naqd',
-  karta: 'Karta',
+  terminal: 'Terminal',
   click: 'Click',
   payme: 'Payme',
 }
@@ -58,7 +58,7 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
   const s = await searchParams
   const filtr = (['tasdiqlanmagan', 'bekor'] as const).find((f) => f === s.filtr) ?? 'hammasi'
   const davr = /^\d{4}-\d{2}$/.test(s.davr ?? '') ? s.davr! : ''
-  const usul = (['naqd', 'karta', 'click', 'payme'] as const).find((u) => u === s.usul)
+  const usul = (['naqd', 'click', 'terminal', 'payme'] as const).find((u) => u === s.usul)
   const qidiruv = (s.q ?? '').trim()
   const sahifa = Math.max(1, Number(s.sahifa ?? 1) || 1)
   const boshi = (sahifa - 1) * SAHIFA_SONI
@@ -151,7 +151,7 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
           <span className="lbl">Usul</span>
           <select name="usul" defaultValue={usul ?? ''} className={kirishKlass}>
             <option value="">Hammasi</option>
-            {Object.entries(USUL_NOMI).map(([k, v]) => (
+            {Object.entries(USUL_NOMI).filter(([k]) => k !== 'payme').map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
           </select>

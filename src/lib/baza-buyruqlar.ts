@@ -32,7 +32,7 @@ const BELGI = '<b>[BAZA · sayt]</b> — saytdagi baza, Sheets emas'
 
 const USUL_NOMI: Record<string, string> = {
   naqd: 'Naqd',
-  karta: 'Karta',
+  terminal: 'Terminal',
   click: 'Click',
   payme: 'Payme',
   aniqlanmagan: 'Usuli yozilmagan',

@@ -6,7 +6,7 @@ import { davrQisqa, pul } from '@/lib/format'
 import type { Hisobot, HisobotGrafik } from '@/lib/types'
 
 const USUL_NOMI: Record<string, string> = {
-  naqd: 'Naqd', karta: 'Karta', click: 'Click', payme: 'Payme', aniqlanmagan: 'Aniqlanmagan',
+  naqd: 'Naqd', terminal: 'Terminal', click: 'Click', payme: 'Payme', aniqlanmagan: 'Aniqlanmagan',
 }
 
 const kunOy = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}`

@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
 
 const USUL_NOMI: Record<PaymentMethod, string> = {
   naqd: 'Naqd',
-  karta: 'Karta',
+  terminal: 'Terminal',
   click: 'Click',
   payme: 'Payme',
 }

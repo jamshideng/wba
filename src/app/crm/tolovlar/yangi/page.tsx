@@ -161,9 +161,8 @@ export default async function TolovQosh({ searchParams }: { searchParams: Promis
               <select name="usul" required defaultValue="" className={kirishKlass}>
                 <option value="" disabled>Tanlang…</option>
                 <option value="naqd">Naqd</option>
-                <option value="karta">Karta</option>
                 <option value="click">Click</option>
-                <option value="payme">Payme</option>
+                <option value="terminal">Terminal</option>
               </select>
             </Maydon>
             <Maydon nom="Qaysi oy uchun">

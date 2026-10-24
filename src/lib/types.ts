@@ -13,7 +13,8 @@ export type GroupStatus = 'faol' | 'yopilgan'
 export type DayType = 'toq' | 'juft' | 'dam_olish' | 'har_kuni'
 export type EnrollmentStatus = 'faol' | 'tanaffus' | 'tugagan'
 export type AttendanceStatus = 'keldi' | 'kechikdi' | 'sababli' | 'kelmadi'
-export type PaymentMethod = 'naqd' | 'karta' | 'click' | 'payme'
+/** 'payme' — faqat eski yozuvlar uchun (0088); yangi to'lovda tanlanmaydi. */
+export type PaymentMethod = 'naqd' | 'terminal' | 'click' | 'payme'
 export type InvoiceStatus = 'ochiq' | 'yopilgan' | 'bekor'
 /** Botdagi Probniylar: Probniy→yangi · Doimiy→yozildi · Kelmadi→kelmadi · Rad etdi→rad */
 export type LeadStatus = 'yangi' | 'qongiroq' | 'keldi' | 'kelmadi' | 'yozildi' | 'rad'

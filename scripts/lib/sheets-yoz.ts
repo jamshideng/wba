@@ -55,7 +55,7 @@ export function telefonSheets(t: string | null): string | null {
   return `+${r.slice(0, 3)}-${r.slice(3, 5)}-${r.slice(5, 8)}-${r.slice(8, 10)}-${r.slice(10, 12)}`
 }
 
-const USUL_NOMI: Record<string, string> = { naqd: 'Naqd', karta: 'Karta', click: 'Click', payme: 'Payme' }
+const USUL_NOMI: Record<string, string> = { naqd: 'Naqd', terminal: 'Terminal', click: 'Click', payme: 'Payme' }
 export const usulSheets = (u: string | null) => (u ? (USUL_NOMI[u] ?? u) : null)
 
 /** Kataklarni bitta so'rov bilan yozadi (RAW — Sheets o'zi talqin qilmaydi). */

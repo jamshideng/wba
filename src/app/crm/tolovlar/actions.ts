@@ -7,7 +7,7 @@ import { talabRol } from '@/lib/auth'
 import { summaOqi, matn, davrOqi, sanaOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
 import type { PaymentMethod } from '@/lib/types'
 
-const USULLAR: PaymentMethod[] = ['naqd', 'karta', 'click', 'payme']
+const USULLAR: PaymentMethod[] = ['naqd', 'click', 'terminal']
 
 /** Qaytish manzili faqat CRM ichida bo'lsin — tashqi saytga yo'naltirib bo'lmasin. */
 function qaytish(fd: FormData, zaxira: string): string {

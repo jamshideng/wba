@@ -10,7 +10,7 @@ import type { PaymentMethod } from '@/lib/types'
 export const metadata = { title: 'Farzandim' }
 export const dynamic = 'force-dynamic'
 
-const USUL_NOMI: Record<PaymentMethod, string> = { naqd: 'Naqd', karta: 'Karta', click: 'Click', payme: 'Payme' }
+const USUL_NOMI: Record<PaymentMethod, string> = { naqd: 'Naqd', terminal: 'Terminal', click: 'Click', payme: 'Payme' }
 
 /**
  * OTA-ONA PANELI — faqat O'Z farzandini ko'radi (RLS *_parent_read,

@@ -39,7 +39,8 @@ test('davrga', () => {
 
 test('usulga — aniqlanmasa null', () => {
   assert.equal(usulga('Naqd'), 'naqd')
-  assert.equal(usulga('karta orqali'), 'karta')
+  assert.equal(usulga('karta orqali'), 'terminal')
+  assert.equal(usulga('Terminal'), 'terminal')
   assert.equal(usulga('CLICK'), 'click')
   assert.equal(usulga('Payme'), 'payme')
   assert.equal(usulga(''), null)
