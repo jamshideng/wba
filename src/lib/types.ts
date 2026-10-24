@@ -696,6 +696,15 @@ export type HisobotOrtacha = {
   bola: number
   fanlar: { nom: string; soni: number; tushum: number }[]
 }[]
+/** 0092 — ilovani (PWA) o'rnatganlar */
+export type HisobotIlova = {
+  odam: number
+  qurilma: number
+  hafta: number
+  rollar: Record<string, number>
+  platformalar: Record<string, number>
+  boshlangan: string | null
+}
 export type HisobotOquvchilar = {
   oylar: {
     davr: string; yangi_bola: number; yangi_fan: number; ketgan_bola: number; tugagan_fan: number
@@ -1001,6 +1010,8 @@ export type Database = {
       hisobot_moliya: { Args: { p_oylar?: number }; Returns: HisobotMoliya }
       hisobot_oquvchilar: { Args: { p_oylar?: number }; Returns: HisobotOquvchilar }
       hisobot_ortacha_tolov: { Args: { p_oylar?: number }; Returns: HisobotOrtacha }
+      hisobot_ilova: { Args: Record<string, never>; Returns: HisobotIlova }
+      ilova_belgi: { Args: { p_qurilma: string; p_platforma: string }; Returns: boolean }
       hisobot_ustozlar: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotUstoz[] }
       hisobot_davomat: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotDavomat }
       ustoz_woblar_limiti: { Args: { p_ustoz?: string | null; p_davr?: string | null }; Returns: import('./woblar-chegara').WoblarLimiti | null }

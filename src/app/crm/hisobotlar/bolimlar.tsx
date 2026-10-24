@@ -3,7 +3,7 @@ import { Card, CardHeader, Stat, BarRow, Empty } from '@/components/ui'
 import { ChiziqGrafik, UstunGrafik as Ustunlar } from '@/components/grafiklar'
 import { RANG } from '@/lib/grafik-rang'
 import { pul, davrNomi, davrQisqa, sanaQisqa } from '@/lib/format'
-import type { HisobotDavomat, HisobotMoliya, HisobotOquvchilar, HisobotOrtacha, HisobotUstoz } from '@/lib/types'
+import type { HisobotDavomat, HisobotIlova, HisobotMoliya, HisobotOquvchilar, HisobotOrtacha, HisobotUstoz } from '@/lib/types'
 
 /** Guruh sig'imi — markaz qoidasi: "Guruhda 12 kishidan ortiq emas". Individual (IND) dars — 1 kishi */
 const SIGIM = 12
@@ -471,6 +471,45 @@ export function OrtachaTolovBolimi({ o }: { o: HisobotOrtacha }) {
           </p>
         </>
       )}
+    </Card>
+  )
+}
+
+/* ================================================================== */
+/*  ILOVA (0092) — O'quvchilar ichida                                  */
+/* ================================================================== */
+
+const ROL_NOMI: Record<string, string> = {
+  oquvchi: 'O‘quvchi', ota_ona: 'Ota-ona', ustoz: 'Ustoz', admin: 'Admin', direktor: 'Direktor', qabulxona: 'Qabulxona', manager: 'Manager',
+}
+const PLATFORMA_NOMI: Record<string, string> = { iphone: 'iPhone', android: 'Android', kompyuter: 'Kompyuter' }
+
+export function IlovaBolimi({ i }: { i: HisobotIlova }) {
+  const rollar = Object.entries(i.rollar).sort((a, b) => b[1] - a[1])
+  const maxRol = Math.max(1, ...rollar.map(([, n]) => n))
+  return (
+    <Card className="flex flex-col">
+      <CardHeader title="Ilovani o‘rnatganlar" meta={i.boshlangan ? `${sanaQisqa(i.boshlangan.slice(0, 10))} dan sanalmoqda` : 'sanash boshlandi'} />
+      <div className="grid grid-cols-1 gap-3.5 px-5 pb-4 sm:grid-cols-3">
+        <Stat label="O‘rnatgan odamlar" value={String(i.odam)} sub={`${i.qurilma} ta qurilma`} ton="brand" />
+        <Stat label="Oxirgi 7 kunda ochgan" value={String(i.hafta)} sub="odam" />
+        <Stat
+          label="Qurilmalar"
+          value={String(i.qurilma)}
+          sub={Object.entries(i.platformalar).map(([k, n]) => `${PLATFORMA_NOMI[k] ?? k} ${n}`).join(' · ') || '—'}
+        />
+      </div>
+      <div className="flex flex-col px-5 pb-4">
+        {rollar.length === 0 ? (
+          <Empty>Hali hech kim ilovani o‘rnatgan holda ochmagan.</Empty>
+        ) : (
+          rollar.map(([rol, n]) => <BarRow key={rol} label={ROL_NOMI[rol] ?? rol} value={n} max={maxRol} />)
+        )}
+        <p className="mt-3 text-[11.5px] leading-relaxed text-ink-3">
+          Ilova telefon ekraniga o‘rnatilgan holda ochilganda sanaladi (kuniga bir marta). Sanash shu ko‘rsatkich qo‘shilgan kundan boshlangan —
+          o‘rnatgan, lekin o‘shandan beri ochmagan odam hali ko‘rinmaydi.
+        </p>
+      </div>
     </Card>
   )
 }

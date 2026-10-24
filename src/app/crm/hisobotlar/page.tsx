@@ -7,8 +7,8 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, kirishKlass } from '@/components/forma'
 import { JonliForma } from '@/components/jonli-forma'
 import { sana, bugunToshkent } from '@/lib/format'
-import type { Hisobot, HisobotGrafik, HisobotDavomat, HisobotMoliya, HisobotOquvchilar, HisobotOrtacha, HisobotUstoz, MonthlyIncome } from '@/lib/types'
-import { DavomatBolimi, MoliyaBolimi, OquvchilarBolimi, OrtachaTolovBolimi, UstozlarBolimi } from './bolimlar'
+import type { Hisobot, HisobotGrafik, HisobotDavomat, HisobotIlova, HisobotMoliya, HisobotOquvchilar, HisobotOrtacha, HisobotUstoz, MonthlyIncome } from '@/lib/types'
+import { DavomatBolimi, IlovaBolimi, MoliyaBolimi, OquvchilarBolimi, OrtachaTolovBolimi, UstozlarBolimi } from './bolimlar'
 import { UmumiyBolim } from './umumiy'
 import { KECHIKISH_USTUNLAR, KechikishJadval, KechikishJamlanma, type KechikishYozuv } from '@/components/kechikish'
 
@@ -90,7 +90,7 @@ export default async function Hisobotlar({
     yol({ ...(b === 'umumiy' ? {} : { bolim: b }), ...(OYLIK.includes(b) ? (s.oy ? { oy: s.oy } : {}) : oraliqQs) })
 
   const supabase = await createClient()
-  const [{ data: hisobot, error }, { data: oylik }, bolimData, { data: grafik }, { data: kechikish }, { data: ortachaTolov }] = await Promise.all([
+  const [{ data: hisobot, error }, { data: oylik }, bolimData, { data: grafik }, { data: kechikish }, { data: ortachaTolov }, { data: ilova }] = await Promise.all([
     bolim === 'umumiy'
       ? supabase.rpc('tushum_hisobot', { p_dan: o.dan, p_gacha: o.gacha })
       : Promise.resolve({ data: null, error: null }),
@@ -117,6 +117,8 @@ export default async function Hisobotlar({
     bolim === 'moliya'
       ? supabase.rpc('hisobot_ortacha_tolov', { p_oylar: oyNechta })
       : Promise.resolve({ data: null }),
+    // 0092 — ilovani o'rnatganlar (O'quvchilar)
+    bolim === 'oquvchilar' ? supabase.rpc('hisobot_ilova') : Promise.resolve({ data: null }),
   ])
 
   const h = hisobot as Hisobot | null
@@ -213,7 +215,10 @@ export default async function Hisobotlar({
             {ortachaTolov && <OrtachaTolovBolimi o={ortachaTolov as HisobotOrtacha} />}
           </>
         ) : bolim === 'oquvchilar' ? (
-          <OquvchilarBolimi o={bolimData.data as HisobotOquvchilar} />
+          <>
+            <OquvchilarBolimi o={bolimData.data as HisobotOquvchilar} />
+            {ilova && <IlovaBolimi i={ilova as HisobotIlova} />}
+          </>
         ) : bolim === 'ustozlar' ? (
           <>
             <UstozlarBolimi u={bolimData.data as HisobotUstoz[]} />
