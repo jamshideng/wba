@@ -35,6 +35,8 @@ export type MeningBildirishnomam = {
   yopilgan: boolean
   javob_berdim: boolean
   savollar: SorovnomaSavol[]
+  /** 0094 — faqat ilovani o'rnatmaganlarga: ilova ichida ko'rsatilmaydi */
+  ilova_yoq?: boolean
 }
 
 /** So'rovnomaning bitta savoli (0052): har birining o'z variantlari */

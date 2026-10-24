@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from 'react'
 import Link from 'next/link'
 import { createPortal } from 'react-dom'
 import { BTUR_NOMI, natijaSavollarga, type BildirishnomaTuri, type MeningBildirishnomam, type SorovnomaNatija } from '@/lib/bildirishnoma'
 import { bildirishnomaBelgila, sorovnomagaJavob } from '@/app/crm/bildirishnomalar/actions'
+import { ilovaIchidami } from '@/components/ilova'
 
 /**
  * Sayt ichidagi bildirishnomalar (0047):
@@ -361,6 +362,11 @@ export function BildirishnomaJoyi({ joy, royxat }: { joy: 'mobil' | 'kompyuter';
     kattami,
     () => null,
   )
+  // 0094 — "ilovani o'rnating" kabi xabarlar ilova ichida ko'rsatilmaydi (komponent faqat brauzerda chiziladi)
+  const korinadigan = useMemo(
+    () => (katta !== null && ilovaIchidami() ? royxat.filter((x) => !x.ilova_yoq) : royxat),
+    [royxat, katta],
+  )
   if (katta === null || katta !== (joy === 'kompyuter')) return null
-  return <Bildirishnomalar royxat={royxat} />
+  return <Bildirishnomalar royxat={korinadigan} />
 }
