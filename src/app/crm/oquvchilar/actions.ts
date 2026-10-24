@@ -123,6 +123,35 @@ export async function guruhgaBiriktir(fd: FormData) {
 }
 
 /**
+ * Guruhga qo'shilgan sanani o'zgartirish (0090). Oylik hisob bazada qayta
+ * yoziladi: yangi sanadan oldingi oylar olinadi, yetishmagani qo'shiladi.
+ */
+export async function qoshilganSanaOzgartir(fd: FormData) {
+  await talabRol('admin', 'direktor', 'qabulxona')
+  const studentId = matn(fd.get('student_id'))
+  const enrollmentId = matn(fd.get('enrollment_id'))
+  const yol = `/crm/oquvchilar/${studentId}`
+  if (!studentId || !enrollmentId) redirect('/crm/oquvchilar')
+  const sana = sanaOqi(fd.get('sana'))
+  if (!sana) redirect(xabarliYol(yol, { xato: 'Qo‘shilgan sanani tanlang.' }))
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('qoshilgan_sana_ozgartir', {
+    p_enrollment: enrollmentId!,
+    p_sana: sana!,
+  })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  const n = (data ?? {}) as { olindi?: number; qoshildi?: number }
+  const hisob = [
+    n.qoshildi ? `${n.qoshildi} oy hisobga qo‘shildi` : '',
+    n.olindi ? `${n.olindi} oy hisobdan olindi` : '',
+  ].filter(Boolean).join(', ')
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(yol, { ok: `Qo‘shilgan sana o‘zgartirildi.${hisob ? ` ${hisob}.` : ''}` }))
+}
+
+/**
  * Shu fan ichida guruhni sana bilan almashtirish (0074). Sanagacha tarix
  * eski guruhda qoladi; o'tish oyining hisobi va to'lovi yangi guruhniki.
  */

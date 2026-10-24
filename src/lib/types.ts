@@ -913,6 +913,10 @@ export type Database = {
         Args: { p_enrollment: string; p_group: string; p_sana: string }
         Returns: { eski: string; yangi: string; tolovlar: number; davomat: number; davomat_qoldi: number; woblar: number }
       }
+      qoshilgan_sana_ozgartir: {
+        Args: { p_enrollment: string; p_sana: string }
+        Returns: { olindi: number; qoshildi: number }
+      }
       probniy_woblar_ber: { Args: { p_group: string; p_lead: string; p_ball: number }; Returns: number }
       jurnal_probniy_woblar: {
         Args: { p_group: string; p_sana: string }

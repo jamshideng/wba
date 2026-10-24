@@ -7,7 +7,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty, Button } from '@/components/ui'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { guruhgaBiriktir, guruhAlmashtir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor, vipOzgartir, oquvchiArxivla, oquvchiArxivdan } from '../actions'
+import { guruhgaBiriktir, guruhAlmashtir, qoshilganSanaOzgartir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor, vipOzgartir, oquvchiArxivla, oquvchiArxivdan } from '../actions'
 import { ChegirmaMaydonlari } from '../bolaklar'
 import { HisobForma } from '@/components/hisob'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
@@ -450,6 +450,24 @@ export default async function OquvchiProfil({
                       </details>
                     )}
 
+                    {pulKoradi && (
+                      <details className="w-full">
+                        <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Qo‘shilgan sanani o‘zgartirish</summary>
+                        <form action={qoshilganSanaOzgartir} className="mt-2 flex flex-col gap-2">
+                          <input type="hidden" name="student_id" value={oquvchi.id} />
+                          <input type="hidden" name="enrollment_id" value={y.id} />
+                          <div className="flex flex-wrap items-end gap-2">
+                            <Maydon nom="Guruhga qo‘shilgan sana">
+                              <input type="date" name="sana" required defaultValue={y.boshlandi} max={y.tugadi ?? bugunToshkent()} className={kirishKlass} />
+                            </Maydon>
+                            <Yuborish kutish="…">Saqlash</Yuborish>
+                          </div>
+                          <p className="text-[12px] leading-snug text-ink-3">
+                            Oylik hisob shu sanadan qayta yoziladi: oldingi oylar hisobdan olinadi, yetishmagan oylar qo‘shiladi, chegirma oylari yangidan sanaladi. Olib tashlanadigan oyga to‘lov bo‘lsa, saqlanmaydi.
+                          </p>
+                        </form>
+                      </details>
+                    )}
                     {pulKoradi && y.holat !== 'tugagan' && (
                       <details className="w-full">
                         <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Guruhni almashtirish</summary>
