@@ -706,6 +706,8 @@ export type HisobotIlova = {
   rollar: Record<string, number>
   platformalar: Record<string, number>
   boshlangan: string | null
+  /** 0099 — kim o'rnatgan */
+  royxat?: { ism: string; rol: string; platformalar: string[]; birinchi: string; oxirgi: string }[]
 }
 export type HisobotOquvchilar = {
   oylar: {

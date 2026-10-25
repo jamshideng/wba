@@ -505,6 +505,25 @@ export function IlovaBolimi({ i }: { i: HisobotIlova }) {
         ) : (
           rollar.map(([rol, n]) => <BarRow key={rol} label={ROL_NOMI[rol] ?? rol} value={n} max={maxRol} />)
         )}
+        {(i.royxat?.length ?? 0) > 0 && (
+          <div className="mt-4 flex flex-col">
+            <span className="lbl mb-1.5">Kim o‘rnatgan</span>
+            <ul className="flex flex-col divide-y divide-line">
+              {[...(i.royxat ?? [])]
+                .sort((a, b) => (ROL_NOMI[a.rol] ?? a.rol).localeCompare(ROL_NOMI[b.rol] ?? b.rol, 'uz') || a.ism.localeCompare(b.ism, 'uz'))
+                .map((x) => (
+                  <li key={`${x.ism}-${x.birinchi}`} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2 text-[13px]">
+                    <span className="font-semibold">
+                      {x.ism} <span className="font-normal text-ink-3">· {ROL_NOMI[x.rol] ?? x.rol}</span>
+                    </span>
+                    <span className="text-[12px] text-ink-3">
+                      {x.platformalar.map((k) => PLATFORMA_NOMI[k] ?? k).join(', ')} · oxirgi: {sanaQisqa(x.oxirgi.slice(0, 10))}
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        )}
         <p className="mt-3 text-[11.5px] leading-relaxed text-ink-3">
           Ilova telefon ekraniga o‘rnatilgan holda ochilganda sanaladi (kuniga bir marta). Sanash shu ko‘rsatkich qo‘shilgan kundan boshlangan —
           o‘rnatgan, lekin o‘shandan beri ochmagan odam hali ko‘rinmaydi.
