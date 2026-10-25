@@ -467,9 +467,11 @@ function Tugmalar({ yop, children, tur = 'asosiy' }: { yop: () => void; children
 
 /** Tasodifiy parol — brauzerda (kanban mijoz komponenti) */
 function tasodifiyParol(): string {
-  const b = new Uint8Array(6)
+  // 10 belgi: lotin harf va raqam (o'xshash 0/O, 1/l yo'q)
+  const alifbo = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  const b = new Uint32Array(10)
   crypto.getRandomValues(b)
-  return btoa(String.fromCharCode(...b)).replace(/[+/=]/g, '').slice(0, 8)
+  return Array.from(b, (x) => alifbo[x % alifbo.length]).join('')
 }
 
 /**
