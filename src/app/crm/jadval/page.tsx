@@ -6,6 +6,7 @@ import { Card, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { vaqt, HAFTA_KUNLARI, haftaKuni, bugunToshkent, guruhQisqa } from '@/lib/format'
 import { haftalikJadval, yolaklar, type JadvalGuruh } from '@/lib/jadval'
+import { JadvalZoom } from './zoom'
 
 export const metadata = { title: 'Dars jadvali' }
 export const dynamic = 'force-dynamic'
@@ -19,8 +20,8 @@ export const dynamic = 'force-dynamic'
  * guruh kartasi o'z kuni va vaqtiga joylashadi (Jamshid, 18.10).
  */
 
-/** Bir soat balandligi (px) */
-const SOAT = 72
+/** Bir soat balandligi — zoom bilan o'zgaradi (CSS --soat, ./zoom.tsx) */
+const soat = (n: number) => `calc(var(--soat) * ${n})`
 /** Fan bo'yicha rang — bir fan har kuni bir xil rangda */
 const RANGLAR = ['var(--color-osmon)', 'var(--color-binafsha)', 'var(--color-firuza)', 'var(--color-accent)', 'var(--color-ok)', 'var(--color-bronza)']
 
@@ -82,6 +83,9 @@ export default async function DarsJadvali() {
       if (!fanRangi.has(fan)) fanRangi.set(fan, fanRangi.size % RANGLAR.length)
     }
   const soatlar = Array.from({ length: oxirSoat - boshSoat }, (_, i) => boshSoat + i)
+  // Kun ustuni kengligi: shu kundagi eng ko'p parallel dars soni × karta kengligi (zoom bilan o'sadi)
+  const yolakSoni = kunlar.map((k) => Math.max(1, ...yolaklar(k.darslar).map((d) => d.yolaklar)))
+  const jamiYolak = yolakSoni.reduce((a, n) => a + n, 0)
   const hozir = hozirToshkent()
 
   return (
@@ -98,9 +102,14 @@ export default async function DarsJadvali() {
         </Card>
       ) : (
         <Card className="overflow-hidden">
-          {/* Telefonda setka o'z ichida suriladi (sahifa emas); soat ustuni joyida qoladi */}
-          <div className="overflow-x-auto">
-            <div className="grid min-w-[760px]" style={{ gridTemplateColumns: `56px repeat(${kunlar.length}, minmax(0, 1fr))` }}>
+          <JadvalZoom yolaklar={jamiYolak}>
+            <div
+              className="grid"
+              style={{
+                minWidth: 'var(--jadval-min)',
+                gridTemplateColumns: `56px ${yolakSoni.map((n) => `minmax(calc(var(--karta) * ${n}), ${n}fr)`).join(' ')}`,
+              }}
+            >
               {/* Sarlavha qatori — kunlar */}
               <div className="sticky left-0 z-30 border-b border-line bg-surface" />
               {kunlar.map((k) => (
@@ -119,12 +128,12 @@ export default async function DarsJadvali() {
               ))}
 
               {/* Soatlar ustuni */}
-              <div className="sticky left-0 z-30 border-r border-line bg-surface" style={{ height: soatlar.length * SOAT }}>
+              <div className="sticky left-0 z-30 border-r border-line bg-surface" style={{ height: soat(soatlar.length) }}>
                 {soatlar.map((h, i) => (
                   <span
                     key={h}
                     className="tnum absolute right-2 font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3"
-                    style={{ top: i * SOAT + 4 }}
+                    style={{ top: `calc(${soat(i)} + 4px)` }}
                   >
                     {String(h).padStart(2, '0')}:00
                   </span>
@@ -137,15 +146,15 @@ export default async function DarsJadvali() {
                   key={k.kun}
                   className={`relative border-l border-line ${k.kun === bugun ? 'bg-brand-soft/30' : ''}`}
                   style={{
-                    height: soatlar.length * SOAT,
+                    height: soat(soatlar.length),
                     backgroundImage: `linear-gradient(to bottom, var(--color-line) 1px, transparent 1px), linear-gradient(to bottom, var(--color-line-soft) 1px, transparent 1px)`,
-                    backgroundSize: `100% ${SOAT}px, 100% ${SOAT / 2}px`,
+                    backgroundSize: `100% var(--soat), 100% calc(var(--soat) / 2)`,
                   }}
                 >
                   {k.kun === bugun && hozir >= boshSoat * 60 && hozir <= oxirSoat * 60 && (
                     <div
                       className="pointer-events-none absolute inset-x-0 z-20 flex items-center"
-                      style={{ top: ((hozir - boshSoat * 60) / 60) * SOAT - 4 }}
+                      style={{ top: `calc(${soat((hozir - boshSoat * 60) / 60)} - 4px)` }}
                       aria-label="Hozirgi vaqt"
                     >
                       <span className="size-2 shrink-0 rounded-full bg-brand" />
@@ -154,8 +163,8 @@ export default async function DarsJadvali() {
                   )}
                   {yolaklar(k.darslar).map((d) => {
                     const rang = RANGLAR[fanRangi.get(guruhQisqa(d.nom)) ?? 0]
-                    const top = ((d.bosh - boshSoat * 60) / 60) * SOAT
-                    const h = Math.max(((d.oxir - d.bosh) / 60) * SOAT, 30)
+                    const top = (d.bosh - boshSoat * 60) / 60
+                    const davom = (d.oxir - d.bosh) / 60
                     const toq = d.toqnash.length > 0
                     return (
                       <Link
@@ -166,31 +175,30 @@ export default async function DarsJadvali() {
                         }${toq ? ` · ustoz bir vaqtda: ${d.toqnash.map(guruhQisqa).join(', ')}` : ''}`}
                         className="absolute z-10 flex flex-col gap-0.5 overflow-hidden rounded-[8px] border-l-[3px] px-2 py-1.5 shadow-sm transition hover:z-20 hover:-translate-y-px hover:shadow-md focus-visible:z-20"
                         style={{
-                          top: top + 1,
-                          height: h - 2,
+                          top: `calc(${soat(top)} + 1px)`,
+                          height: `calc(max(${soat(davom)}, 30px) - 2px)`,
                           left: `calc(${(d.yolak / d.yolaklar) * 100}% + 3px)`,
                           width: `calc(${100 / d.yolaklar}% - 6px)`,
                           borderLeftColor: toq ? 'var(--color-brand)' : rang,
                           background: toq ? 'var(--color-brand-soft)' : `color-mix(in srgb, ${rang} 16%, var(--color-surface))`,
                         }}
                       >
-                        <span className="truncate text-[12.5px] leading-tight font-bold">{guruhQisqa(d.nom)}</span>
-                        <span className="tnum truncate font-[family-name:var(--font-mono)] text-[11px] text-ink-2">
+                        {/* Joy yetsa to'liq ko'rinadi (kattalashtirilganda), sig'maganini karta kesadi */}
+                        <span className="text-[12.5px] leading-tight font-bold break-words">{guruhQisqa(d.nom)}</span>
+                        <span className="tnum font-[family-name:var(--font-mono)] text-[11px] text-ink-2">
                           {vaqt(d.boshlanish)}–{vaqt(d.tugash)}
                         </span>
-                        {h >= 60 && (
-                          <span className="truncate text-[11px] text-ink-2">
-                            {d.oquvchilar} o‘quvchi{xodim && d.ustoz ? ` · ${d.ustoz}` : ''}
-                          </span>
-                        )}
-                        {toq && h >= 80 && <span className="truncate text-[11px] font-semibold text-brand">to‘qnashuv</span>}
+                        <span className="text-[11px] leading-tight break-words text-ink-2">
+                          {d.oquvchilar} o‘quvchi{xodim && d.ustoz ? ` · ${d.ustoz}` : ''}
+                        </span>
+                        {toq && <span className="text-[11px] font-semibold text-brand">to‘qnashuv</span>}
                       </Link>
                     )
                   })}
                 </div>
               ))}
             </div>
-          </div>
+          </JadvalZoom>
         </Card>
       )}
     </div>
