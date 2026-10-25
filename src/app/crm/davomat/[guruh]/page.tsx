@@ -469,7 +469,10 @@ export default async function DavomatJurnali({
                   Taklif: {sanaFmt(t.taklif!)} ({HAFTA_KUNLARI[haftaKuni(t.taklif!) - 1].qisqa}) — eng yaqin bo‘sh kun. Ma’qul bo‘lmasa, pastda boshqa kun va sababini kiriting.
                 </span>
               </span>
-              <Yuborish kutish="…">{`${qisqaSana(t.taklif!)} ga ko‘chirish`}</Yuborish>
+              <span className="flex flex-wrap gap-2">
+                <Yuborish tur="ikkilamchi" kutish="…" name="amal" value="yop">Kerak emas</Yuborish>
+                <Yuborish kutish="…">{`${qisqaSana(t.taklif!)} ga ko‘chirish`}</Yuborish>
+              </span>
             </form>
           ))}
           {kochiradi && kochiriladiganKunlar.length > 0 && (

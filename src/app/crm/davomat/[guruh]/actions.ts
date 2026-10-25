@@ -158,6 +158,17 @@ export async function darsKochir(fd: FormData) {
 
   const xato = await ruxsat()
   if (xato) redirect(xabarliYol(orqaga, { xato }))
+
+  // 0098 — "Kerak emas": ko'chirish tavsiyasini yopish (darslar yetarli)
+  if (fd.get('amal') === 'yop') {
+    if (!guruh || !eski || !SANA.test(eski)) redirect(xabarliYol(orqaga, { xato: 'Sanani tanlang.' }))
+    const supabase = await createClient()
+    const { error } = await supabase.rpc('kochirish_taklifini_yop', { p_group: guruh!, p_sana: eski! })
+    if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+    revalidatePath('/crm/davomat')
+    redirect(xabarliYol(orqaga, { ok: 'Tavsiya yopildi — bu kun darsini ko‘chirish shart emas.' }))
+  }
+
   if (!guruh || !eski || !SANA.test(eski) || (yangi && !SANA.test(yangi))) {
     redirect(xabarliYol(orqaga, { xato: 'Sanani tanlang.' }))
   }

@@ -975,6 +975,7 @@ export type Database = {
       }
       dars_kam_tekshir: { Args: Record<string, never>; Returns: number }
       kochirish_takliflari: { Args: { p_group: string; p_davr: string }; Returns: { eski: string; taklif: string | null; sabab: string | null }[] }
+      kochirish_taklifini_yop: { Args: { p_group: string; p_sana: string }; Returns: undefined }
       nazorat_direktorga: { Args: Record<string, never>; Returns: boolean }
       nazorat_direktorga_ozgartir: { Args: { p_yoq: boolean }; Returns: boolean }
       nazorat_chatlar: { Args: { p_teacher: string | null; p_profile: string | null }; Returns: number[] }
