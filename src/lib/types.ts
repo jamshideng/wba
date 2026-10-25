@@ -981,6 +981,8 @@ export type Database = {
       kochirish_takliflari: { Args: { p_group: string; p_davr: string }; Returns: { eski: string; taklif: string | null; sabab: string | null }[] }
       kochirish_taklifini_yop: { Args: { p_group: string; p_sana: string }; Returns: undefined }
       probniy_kabinet: { Args: Record<string, never>; Returns: Record<string, unknown> | null }
+      probniy_kabinet_lid: { Args: { p_lead: string }; Returns: Record<string, unknown> | null }
+      probniy_yozilmoqchi_lid: { Args: { p_lead: string }; Returns: { ism: string; telefon: string; guruh: string | null } }
       probniy_yozilmoqchi: { Args: Record<string, never>; Returns: { ism: string; telefon: string; guruh: string | null } }
       nazorat_direktorga: { Args: Record<string, never>; Returns: boolean }
       nazorat_direktorga_ozgartir: { Args: { p_yoq: boolean }; Returns: boolean }

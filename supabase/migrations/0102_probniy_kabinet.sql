@@ -28,8 +28,8 @@ $$;
 revoke execute on function app_lead_id() from public, anon;
 grant execute on function app_lead_id() to authenticated;
 
-/* Kabinet ma'lumoti — faqat o'z lidi */
-create or replace function probniy_kabinet() returns jsonb
+/* Kabinet ma'lumoti (ichki — lid bo'yicha). Sayt: probniy_kabinet(), bot: service_role */
+create or replace function probniy_kabinet_lid(p_lead uuid) returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 declare
   l       leads%rowtype;
@@ -37,7 +37,7 @@ declare
   v_holat text;
   v_bugun date := bugun_toshkent();
 begin
-  select * into l from leads where id = app_lead_id();
+  select * into l from leads where id = p_lead;
   if not found then
     return null;
   end if;
@@ -74,16 +74,24 @@ begin
   );
 end;
 $$;
+revoke execute on function probniy_kabinet_lid(uuid) from public, anon, authenticated;
+grant execute on function probniy_kabinet_lid(uuid) to service_role;
+
+/* Sayt: faqat o'z lidi */
+create or replace function probniy_kabinet() returns jsonb
+language sql stable security definer set search_path = public as $$
+  select case when app_lead_id() is null then null else probniy_kabinet_lid(app_lead_id()) end
+$$;
 revoke execute on function probniy_kabinet() from public, anon;
 grant execute on function probniy_kabinet() to authenticated;
 
 /* "Guruhga yozilmoqchiman" — lidga belgi va bugungi aloqa; xodimga xabar (server action) */
-create or replace function probniy_yozilmoqchi() returns jsonb
+create or replace function probniy_yozilmoqchi_lid(p_lead uuid) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   l leads%rowtype;
 begin
-  select * into l from leads where id = app_lead_id() for update;
+  select * into l from leads where id = p_lead for update;
   if not found or not lid_sinovdami(l) then
     raise exception 'Kabinet faol emas.';
   end if;
@@ -95,6 +103,18 @@ begin
   end if;
   return jsonb_build_object('ism', l.ism, 'telefon', l.telefon,
                             'guruh', (select nom from groups where id = l.group_id));
+end;
+$$;
+revoke execute on function probniy_yozilmoqchi_lid(uuid) from public, anon, authenticated;
+grant execute on function probniy_yozilmoqchi_lid(uuid) to service_role;
+
+create or replace function probniy_yozilmoqchi() returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  if app_lead_id() is null then
+    raise exception 'Kabinet faol emas.';
+  end if;
+  return probniy_yozilmoqchi_lid(app_lead_id());
 end;
 $$;
 revoke execute on function probniy_yozilmoqchi() from public, anon;
@@ -109,6 +129,11 @@ begin
   if new.student_id is null or old.student_id is not distinct from new.student_id then
     return new;
   end if;
+  -- Botdagi probniy ulanish — o'quvchi ulanishiga (chat o'sha)
+  perform telegram_ula_qator(u.chat_id, 'oquvchi', new.student_id, null, null, u.telefon, u.tg_ism)
+    from telegram_ulanish u where u.lead_id = new.id;
+  delete from telegram_ulanish where lead_id = new.id;
+
   select id into v_pid from profiles where lead_id = new.id and rol::text = 'probniy' limit 1;
   if v_pid is null then
     return new;
@@ -122,3 +147,53 @@ $$;
 drop trigger if exists leads_probniy_oquvchiga on leads;
 create trigger leads_probniy_oquvchiga after update on leads
   for each row execute function leads_probniy_oquvchiga();
+
+
+-- ------------------------------------------------------------
+-- Bot (@WBAlcBot): probniy telefon raqami bilan ulanadi
+-- ------------------------------------------------------------
+alter table telegram_ulanish add column if not exists lead_id uuid references leads (id) on delete cascade;
+alter table telegram_ulanish drop constraint if exists telegram_ulanish_kim_check;
+alter table telegram_ulanish add constraint telegram_ulanish_kim_check
+  check (kim in ('oquvchi', 'ota_ona', 'ustoz', 'xodim', 'probniy'));
+alter table telegram_ulanish drop constraint if exists telegram_ulanish_check;
+alter table telegram_ulanish add constraint telegram_ulanish_check check (
+  (kim in ('oquvchi', 'ota_ona') and student_id is not null)
+  or (kim = 'ustoz' and teacher_id is not null)
+  or (kim = 'xodim' and profile_id is not null)
+  or (kim = 'probniy' and lead_id is not null)
+);
+
+/* Bitta chatga bitta probniy (oxirgisi) — mavjud yagona indeks bilan */
+create or replace function telegram_ula_probniy(p_chat bigint, p_lead uuid, p_tel text, p_tg_ism text) returns void
+language sql volatile security definer set search_path = public as $$
+  insert into telegram_ulanish (chat_id, kim, lead_id, telefon, tg_ism)
+  values (p_chat, 'probniy', p_lead, p_tel, p_tg_ism)
+  on conflict (chat_id, kim, coalesce(student_id, ''), coalesce(teacher_id, ''), coalesce(profile_id::text, ''))
+  do update set lead_id = excluded.lead_id, holat = 'faol', tg_ism = excluded.tg_ism,
+                telefon = coalesce(excluded.telefon, telegram_ulanish.telefon), updated_at = now()
+$$;
+revoke execute on function telegram_ula_probniy(bigint, uuid, text, text) from public, anon, authenticated;
+grant execute on function telegram_ula_probniy(bigint, uuid, text, text) to service_role;
+
+/* telegram_ula_telefon — "Sinov darsi"dagi lid ham (joyida yamash: 0077 o'zgarishlari saqlanadi) */
+do $$
+declare
+  v_def text := pg_get_functiondef('telegram_ula_telefon(text, bigint, text)'::regprocedure);
+  v_joy1 text := '  return query';
+  v_joy2 text := 'coalesce(s.fish, t.ism, p.ism)';
+begin
+  if v_def like '%telegram_ula_probniy%' then
+    return;
+  end if;
+  if position(v_joy1 in v_def) = 0 or position(v_joy2 in v_def) = 0 then
+    raise exception 'telegram_ula_telefon kutilgan ko''rinishda emas';
+  end if;
+  v_def := replace(v_def, v_joy1,
+    E'  -- 0102: probniy ("Sinov darsi" bosqichidagi, guruhi bor lid)\n'
+    || E'  perform telegram_ula_probniy(p_chat, l.id, p_tel, p_tg_ism)\n'
+    || E'    from leads l where tel9(l.telefon) = v_t9 and lid_sinovdami(l) and l.group_id is not null;\n\n'
+    || v_joy1);
+  v_def := replace(v_def, v_joy2, 'coalesce(s.fish, t.ism, p.ism, (select x.ism from leads x where x.id = u.lead_id))');
+  execute v_def;
+end $$;

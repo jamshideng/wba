@@ -36,7 +36,9 @@ type TgUpdate = {
   message?: TgMessage
   callback_query?: { id: string; from: TgUser; data?: string; message?: TgMessage }
 }
-type Ulanish = { kim: TelegramKim; student_id: string | null; teacher_id: string | null; profile_id: string | null; ism: string }
+/** 0102 — probniy (sinov darsidagi lid) faqat botda; e'lonlar ro'yxatiga kirmaydi */
+type BotKim = TelegramKim | 'probniy'
+type Ulanish = { kim: BotKim; student_id: string | null; teacher_id: string | null; profile_id: string | null; lead_id: string | null; ism: string }
 
 export async function POST(req: NextRequest) {
   const sir = process.env.TELEGRAM_WEBHOOK_SECRET
@@ -121,27 +123,31 @@ function bazaXato(joy: string, e: { message: string } | null) {
 }
 const ism = (u?: TgUser) => [u?.first_name, u?.last_name].filter(Boolean).join(' ') || u?.username || 'Telegram'
 
-const KIM_NOMI: Record<TelegramKim, string> = {
+const KIM_NOMI: Record<BotKim, string> = {
   oquvchi: 'o‘quvchi',
   ota_ona: 'ota-ona',
   ustoz: 'ustoz',
   xodim: 'xodim',
+  probniy: 'sinov darsi',
 }
 
 async function ulanishlar(chat: number): Promise<Ulanish[]> {
   const { data, error } = await db()
     .from('telegram_ulanish')
-    .select('kim, student_id, teacher_id, profile_id, students(fish), teachers(ism), profiles(ism)')
+    .select('kim, student_id, teacher_id, profile_id, lead_id, students(fish), teachers(ism), profiles(ism), leads(ism)')
     .eq('chat_id', chat)
     .eq('holat', 'faol')
   bazaXato('ulanishlar', error)
-  type Q = Omit<Ulanish, 'ism'> & { students: { fish: string } | null; teachers: { ism: string } | null; profiles: { ism: string } | null }
+  type Q = Omit<Ulanish, 'ism'> & {
+    students: { fish: string } | null; teachers: { ism: string } | null; profiles: { ism: string } | null; leads: { ism: string } | null
+  }
   return ((data ?? []) as unknown as Q[]).map((u) => ({
     kim: u.kim,
     student_id: u.student_id,
     teacher_id: u.teacher_id,
     profile_id: u.profile_id,
-    ism: u.students?.fish ?? u.teachers?.ism ?? u.profiles?.ism ?? '—',
+    lead_id: u.lead_id,
+    ism: u.students?.fish ?? u.teachers?.ism ?? u.profiles?.ism ?? u.leads?.ism ?? '—',
   }))
 }
 
@@ -162,7 +168,7 @@ const SALOM =
   '<b>World Bridge Academy</b> botiga xush kelibsiz.\n\n' +
   'Qarz, darslar, davomat va markaz e’lonlarini shu yerda olasiz. ' +
   'Ulanish uchun pastdagi tugma bilan telefon raqamingizni yuboring — ' +
-  'u markazdagi o‘quvchi, ota-ona yoki ustoz raqami bilan solishtiriladi.'
+  'u markazdagi o‘quvchi, ota-ona, ustoz yoki sinov darsiga yozilganlar raqami bilan solishtiriladi.'
 
 /* ------------------------------------------------------------------ */
 /*  Xabarlar                                                            */
@@ -271,6 +277,10 @@ async function menyu(chat: number, bor?: Ulanish[]) {
       [{ text: `Davomat${nom}`, callback_data: `v|${o.student_id}` }, { text: `Woblar${nom}`, callback_data: `w|${o.student_id}` }],
     )
   }
+  // 0102 — sinov darsidagi (probniy): kabinet ma'lumoti va "Guruhga yozilmoqchiman"
+  if (u.some((x) => x.kim === 'probniy')) {
+    qatorlar.push([{ text: 'Sinov darslarim', callback_data: 'p' }], [{ text: 'Guruhga yozilmoqchiman', callback_data: 'y' }])
+  }
   if (u.some((x) => x.kim === 'ustoz')) qatorlar.push([{ text: 'Bugungi darslarim', callback_data: 'b' }])
   if (u.some((x) => x.kim === 'xodim')) {
     qatorlar.push([{ text: 'Bugungi hisobot', callback_data: 'h' }, { text: 'Qarzdorlar', callback_data: 'x' }])
@@ -302,6 +312,10 @@ async function tugmaniIshla(cq: NonNullable<TgUpdate['callback_query']>) {
     if (amal === 'v') return davomat(chat, o)
     return woblar(chat, o)
   }
+  // Probniy — faqat shu chatga ulangan lid (tugma ma'lumotiga ishonilmaydi)
+  const probniy = u.find((x) => x.kim === 'probniy' && x.lead_id)
+  if (amal === 'p' && probniy) return probniyKabinet(chat, probniy)
+  if (amal === 'y' && probniy) return probniyYozilmoqchi(chat, probniy)
   if (amal === 'b' && u.some((x) => x.kim === 'ustoz')) {
     return ustozBugun(chat, u.filter((x) => x.kim === 'ustoz').map((x) => x.teacher_id!))
   }
@@ -359,6 +373,58 @@ async function davomat(chat: number, o: Ulanish) {
 async function woblar(chat: number, o: Ulanish) {
   const { data } = await db().from('v_woblr_balance').select('jami_ball, balans').eq('student_id', o.student_id!).maybeSingle()
   await xabar(chat, `<b>${html(o.ism)}</b> — woblar\nBalans: <b>${Number(data?.balans ?? 0)}</b> · jami olingan: ${Number(data?.jami_ball ?? 0)}`, orqaga)
+}
+
+type ProbniyKabinet = {
+  holat: string
+  sinov_sana: string | null
+  yozilmoqchi: boolean
+  guruh: { nom: string; boshlanish: string; tugash: string; fan: string | null; ustoz: string | null } | null
+  darslar: string[]
+  davomat: { sana: string; holat: string }[]
+  woblar: number
+}
+
+/** Probniy kabineti botda (0102): guruh, ustoz, keyingi darslar, davomat, woblar. Narx yo'q. */
+async function probniyKabinet(chat: number, p: Ulanish) {
+  const { data, error } = await db().rpc('probniy_kabinet_lid', { p_lead: p.lead_id! })
+  if (bazaXato('probniy_kabinet', error)) return xabar(chat, TEXNIK)
+  const k = data as unknown as ProbniyKabinet | null
+  if (!k || k.holat === 'yopiq' || k.holat === 'kutilmoqda') {
+    return xabar(chat, 'Sinov davri tugagan. Qaytadan yozilish uchun markaz administratori bilan bog‘laning.', orqaga)
+  }
+  if (k.holat === 'oquvchi') return xabar(chat, 'Siz guruhga yozildingiz — menyuda o‘quvchi bo‘limi ochiladi. /menyu', orqaga)
+  const kelgan = k.davomat.filter((d) => d.holat === 'keldi' || d.holat === 'kechikdi').length
+  const qator = [
+    `<b>${html(p.ism)}</b> — sinov darslari`,
+    k.guruh ? `${html(k.guruh.fan ?? k.guruh.nom)} · ustoz: ${html(k.guruh.ustoz ?? '—')}` : '',
+    k.guruh ? `Vaqti: ${vaqt(k.guruh.boshlanish)}–${vaqt(k.guruh.tugash)}` : '',
+    k.sinov_sana ? `Sinov darsi: ${sana(k.sinov_sana)}` : '',
+    '',
+    k.darslar.length ? `Keyingi darslar: ${k.darslar.slice(0, 4).map((d) => sana(d)).join(', ')}` : '',
+    `Qatnashgan: <b>${kelgan}</b> · woblar: <b>${k.woblar}</b>`,
+    k.holat === 'yoqotildi' ? '\nSinov davri yakunlandi. Fikringiz o‘zgarsa — administratorga yozing.' : '',
+  ].filter((x) => x !== '')
+  const tugma: Tugma[][] = k.holat === 'sinov' && !k.yozilmoqchi ? [[{ text: 'Guruhga yozilmoqchiman', callback_data: 'y' }]] : []
+  await xabar(chat, qator.join('\n'), [...tugma, ...orqaga])
+}
+
+async function probniyYozilmoqchi(chat: number, p: Ulanish) {
+  const { data, error } = await db().rpc('probniy_yozilmoqchi_lid', { p_lead: p.lead_id! })
+  if (error) return xabar(chat, 'Sinov davri faol emas — administrator bilan bog‘laning.', orqaga)
+  const l = data as { ism: string; telefon: string; guruh: string | null } | null
+  if (process.env.VERCEL_ENV === 'production') {
+    await xabar(
+      Number(HISOBOT_GURUH),
+      [
+        '<b>[BOT] PROBNIY — guruhga yozilmoqchi</b>',
+        `${html(l?.ism ?? p.ism)} · ${html(l?.telefon ?? '')}`,
+        l?.guruh ? `Guruh: ${html(l.guruh)}` : '',
+        `Lidlar: ${saytManzil()}/crm/lidlar`,
+      ].filter(Boolean).join('\n'),
+    )
+  }
+  await xabar(chat, 'So‘rovingiz yuborildi! Administrator tez orada siz bilan bog‘lanadi.', orqaga)
 }
 
 async function ustozBugun(chat: number, ustozlar: string[]) {
