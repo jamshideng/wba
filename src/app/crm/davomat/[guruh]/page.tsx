@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { talabRol, getUstoz, adminmi, ustozRejimi } from '@/lib/auth'
+import { talabRol, getUstoz, adminmi, staffmi, ustozRejimi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Empty, Badge } from '@/components/ui'
@@ -359,7 +359,7 @@ export default async function DavomatJurnali({
           boshlangich={qatorlar}
           huquq={huquq}
           woblarOchiq={bugunDarsKunimi}
-          profilOchiq={['admin', 'direktor', 'qabulxona'].includes(profil.rol)}
+          profilOchiq={staffmi(profil.rol)}
         />
       )}
 
