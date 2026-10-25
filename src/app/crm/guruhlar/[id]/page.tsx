@@ -136,6 +136,7 @@ export default async function GuruhProfil({
         amal={
           <div className="flex flex-wrap items-center gap-2">
             {g.holat === 'faol' ? <Badge ton="ok">Faol</Badge> : <Badge ton="jim">Yopilgan</Badge>}
+            <Button href={`/crm/davomat/${g.id}`}>Davomat jurnali</Button>
             <Button href={`/crm/davomat/eksport?guruh=${g.id}&davr=${davr}`} yuklab variant="ikkilamchi">
               Oylik davomat (Excel)
             </Button>
