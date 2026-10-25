@@ -80,4 +80,6 @@ export type LidKarta = {
   created_at: string
   /** Probniy davridagi woblar (0073) — yo'qotilsa lid bilan arxivda qoladi */
   woblar?: number
+  /** Probniy kabineti logini (0102) — ochilmagan bo'lsa null */
+  kabinet?: string | null
 }

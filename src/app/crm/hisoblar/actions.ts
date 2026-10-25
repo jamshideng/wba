@@ -36,11 +36,13 @@ export async function hisobOch(fd: FormData) {
 
   const ustozmi = fd.get('turi') === 'ustoz'
   const otaOnami = fd.get('turi') === 'ota_ona'
-  const rol: 'ustoz' | 'oquvchi' | 'ota_ona' = otaOnami ? 'ota_ona' : ustozmi ? 'ustoz' : 'oquvchi'
+  // 0102 — probniy kabineti: nishon = lid uuid
+  const probniymi = fd.get('turi') === 'probniy'
+  const rol: 'ustoz' | 'oquvchi' | 'ota_ona' | 'probniy' = probniymi ? 'probniy' : otaOnami ? 'ota_ona' : ustozmi ? 'ustoz' : 'oquvchi'
   const nishon = matn(fd.get('nishon'))
   const email = loginEmail(fd.get('email'))
   const parol = String(fd.get('parol') ?? '')
-  const yol = ustozmi ? '/crm/ustozlar' : `/crm/oquvchilar/${nishon}`
+  const yol = probniymi ? '/crm/lidlar' : ustozmi ? '/crm/ustozlar' : `/crm/oquvchilar/${nishon}`
 
   if (!nishon) redirect(xabarliYol(yol, { xato: 'Kim uchun ekani ko‘rsatilmagan.' }))
   if (!email) {
@@ -52,9 +54,11 @@ export async function hisobOch(fd: FormData) {
 
   const supabase = await createClient()
 
-  const { data: kim } = ustozmi
-    ? await supabase.from('teachers').select('id, ism, profile_id').eq('id', nishon!).maybeSingle()
-    : await supabase.from('students').select('id, fish, profile_id').eq('id', nishon!).maybeSingle()
+  const { data: kim } = probniymi
+    ? await supabase.from('leads').select('id, ism, student_id').eq('id', nishon!).is('student_id', null).maybeSingle()
+    : ustozmi
+      ? await supabase.from('teachers').select('id, ism, profile_id').eq('id', nishon!).maybeSingle()
+      : await supabase.from('students').select('id, fish, profile_id').eq('id', nishon!).maybeSingle()
 
   if (!kim) redirect(xabarliYol(yol, { xato: `${nishon} topilmadi.` }))
 
@@ -64,7 +68,7 @@ export async function hisobOch(fd: FormData) {
 
   const ism = otaOnami
     ? otaOnaIsm!
-    : ustozmi
+    : ustozmi || probniymi
       ? (kim as { ism: string }).ism
       : (kim as { fish: string }).fish
 
@@ -82,6 +86,14 @@ export async function hisobOch(fd: FormData) {
     if (data.users.length < 1000) break
   }
   let userId: string
+
+  // Probniy: band login boshqa odamniki bo'lsa — uning parolini almashtirib yubormaymiz
+  if (bor && probniymi) {
+    const { data: egasi } = await supabase.from('profiles').select('rol, lead_id').eq('id', bor.id).maybeSingle()
+    if (!egasi || egasi.rol !== 'probniy' || egasi.lead_id !== nishon) {
+      redirect(xabarliYol(yol, { xato: 'Bu login band — boshqa login tanlang.' }))
+    }
+  }
 
   if (bor) {
     const { error } = await admin.auth.admin.updateUserById(bor.id, {
@@ -110,13 +122,13 @@ export async function hisobOch(fd: FormData) {
   // Natijada ustoz 'oquvchi' bo'lib qolardi. Shuning uchun profiles.rol ni
   // biz o'zimiz ustun qilib yozamiz.
   // Ota-ona: rol + farzandga bog'lanish (oquvchi_id). Boshqasi: rol.
-  const profilYangi = otaOnami ? { ism, rol, oquvchi_id: nishon } : { ism, rol }
+  const profilYangi = otaOnami ? { ism, rol, oquvchi_id: nishon } : probniymi ? { ism, rol, lead_id: nishon } : { ism, rol }
   const { error: xatoProfil } = await supabase.from('profiles').update(profilYangi).eq('id', userId)
   if (xatoProfil) redirect(xabarliYol(yol, { xato: xatoMatni(xatoProfil) }))
 
   // Ota-ona hisobi o'quvchi/ustoz yozuvini EGALLAMAYDI (u faqat kuzatuvchi).
   const jadval = ustozmi ? 'teachers' : 'students'
-  if (!otaOnami) {
+  if (!otaOnami && !probniymi) {
     // Bitta hisob bitta odamga: eski bog'lanish uziladi
     await supabase.from(jadval).update({ profile_id: null }).eq('profile_id', userId)
     const { error: xatoBog } = await supabase.from(jadval).update({ profile_id: userId }).eq('id', nishon!)
@@ -127,7 +139,7 @@ export async function hisobOch(fd: FormData) {
   await admin.from('audit_log').insert({
     profile_id: men.id,
     amal: bor ? 'HISOB_PAROL' : 'HISOB_OCHILDI',
-    jadval,
+    jadval: probniymi ? 'leads' : jadval,
     obyekt_id: nishon!,
     yangi: { email, ism },
   })

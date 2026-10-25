@@ -6,7 +6,7 @@
  * Hozircha 0001–0004 migratsiyalariga qo'lda mos yozilgan.
  */
 
-export type UserRole = 'admin' | 'direktor' | 'manager' | 'qabulxona' | 'ustoz' | 'oquvchi' | 'ota_ona'
+export type UserRole = 'admin' | 'direktor' | 'manager' | 'qabulxona' | 'ustoz' | 'oquvchi' | 'ota_ona' | 'probniy'
 export type AccountStatus = 'faol' | 'bloklangan'
 export type StudentStatus = 'faol' | 'tanaffus' | 'ketgan'
 export type GroupStatus = 'faol' | 'yopilgan'
@@ -32,6 +32,8 @@ export type Profile = {
   email: string | null
   /** Ota-ona hisobi bog'langan o'quvchi (faqat rol=ota_ona uchun, 0019) */
   oquvchi_id: string | null
+  /** 0102 — probniy kabineti bog'langan lid */
+  lead_id?: string | null
   holat: AccountStatus
   created_at: string
   updated_at: string
@@ -978,6 +980,8 @@ export type Database = {
       dars_kam_tekshir: { Args: Record<string, never>; Returns: number }
       kochirish_takliflari: { Args: { p_group: string; p_davr: string }; Returns: { eski: string; taklif: string | null; sabab: string | null }[] }
       kochirish_taklifini_yop: { Args: { p_group: string; p_sana: string }; Returns: undefined }
+      probniy_kabinet: { Args: Record<string, never>; Returns: Record<string, unknown> | null }
+      probniy_yozilmoqchi: { Args: Record<string, never>; Returns: { ism: string; telefon: string; guruh: string | null } }
       nazorat_direktorga: { Args: Record<string, never>; Returns: boolean }
       nazorat_direktorga_ozgartir: { Args: { p_yoq: boolean }; Returns: boolean }
       nazorat_chatlar: { Args: { p_teacher: string | null; p_profile: string | null }; Returns: number[] }

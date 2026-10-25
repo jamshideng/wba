@@ -180,6 +180,13 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
     })
   }
 
+  if (rol === 'probniy') {
+    bolimlar.push({
+      nom: 'Sinov',
+      bandlar: [{ href: '/crm/probniy', nom: 'Sinov darslarim', Icon: IconDashboard, tayyor: true, mobil: true }],
+    })
+  }
+
   if (rol === 'ota_ona') {
     bolimlar.push({
       nom: 'Farzandim',
@@ -200,6 +207,7 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
 export function boshSahifa(rol: UserRole, ustozmi: boolean): string {
   if (rol === 'oquvchi') return '/crm/men'
   if (rol === 'ota_ona') return '/crm/farzand'
+  if (rol === 'probniy') return '/crm/probniy'
   if (ustozmi && !staffmi(rol)) return '/crm/davomat'
   return '/crm/dashboard'
 }

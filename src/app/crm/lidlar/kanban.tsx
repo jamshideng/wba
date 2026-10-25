@@ -16,6 +16,7 @@ import { IconPhone, IconSend } from '@/components/icons'
 import { bosqichi, kunQosh, MANBA_NOMI, type Bosqich, type LidKarta } from '@/lib/lidlar'
 import { izohniAjrat } from '@/lib/ariza-izoh'
 import { lidBosqich, lidBoglanildi, lidOquvchi, lidSaqla } from './actions'
+import { hisobOch } from '@/app/crm/hisoblar/actions'
 
 type Guruh = { id: string; nom: string }
 type Oyna =
@@ -200,6 +201,9 @@ function Karta({
             {lid.holat === 'keldi' ? ' · keldi' : ''}
           </span>
         )}
+        {lid.kabinet && b === 'sinov' && (
+          <span title={`Probniy kabineti · login: ${lid.kabinet}`} className="rounded-md bg-ok-soft px-1.5 py-0.5 font-semibold text-ok">kabinet</span>
+        )}
         {!!lid.woblar && (
           <span className="tnum rounded-md bg-accent-soft px-1.5 py-0.5 font-semibold text-accent">{lid.woblar} woblar</span>
         )}
@@ -380,6 +384,7 @@ function Oynalar({
     const l = oyna.lid
     sarlavha = 'Lidni tahrirlash'
     ichi = (
+      <>
       <form action={lidSaqla} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Yashirin yol={yol} id={l.id} />
         <Maydon nom="Ism familya">
@@ -413,6 +418,8 @@ function Oynalar({
           <Tugmalar yop={yop}>Saqlash</Tugmalar>
         </div>
       </form>
+      {bosqichi(l) === 'sinov' && <KabinetForma lid={l} />}
+      </>
     )
   }
 
@@ -455,5 +462,44 @@ function Tugmalar({ yop, children, tur = 'asosiy' }: { yop: () => void; children
       </button>
       <Yuborish tur={tur}>{children}</Yuborish>
     </div>
+  )
+}
+
+/** Tasodifiy parol — brauzerda (kanban mijoz komponenti) */
+function tasodifiyParol(): string {
+  const b = new Uint8Array(6)
+  crypto.getRandomValues(b)
+  return btoa(String.fromCharCode(...b)).replace(/[+/=]/g, '').slice(0, 8)
+}
+
+/**
+ * Probniy kabineti (0102): "Sinov darsi" dagi lidga login-parol ochish.
+ * Login taklifi — telefonning oxirgi 9 raqami (p998901234567 emas, p901234567).
+ */
+function KabinetForma({ lid }: { lid: LidKarta }) {
+  const [parol] = useState(tasodifiyParol)
+  const taklif = lid.kabinet ?? `p${lid.telefon.replace(/\D/g, '').slice(-9)}`
+  return (
+    <details className="mt-4 rounded-[10px] border border-dashed border-line px-4 py-3" open={!lid.kabinet}>
+      <summary className="cursor-pointer text-[13px] font-semibold text-ink-2">
+        Probniy kabineti{lid.kabinet ? ` · login: ${lid.kabinet}` : ' — ochilmagan'}
+      </summary>
+      <form action={hisobOch} className="mt-3 flex flex-col gap-3">
+        <input type="hidden" name="turi" value="probniy" />
+        <input type="hidden" name="nishon" value={lid.id} />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Maydon nom="Login">
+            <input name="email" required autoCapitalize="none" spellCheck={false} defaultValue={taklif} className={kirishKlass} />
+          </Maydon>
+          <Maydon nom="Parol" izoh="Nusxalab oling — keyin ko‘rinmaydi">
+            <input name="parol" required minLength={8} defaultValue={parol} className={kirishKlass} />
+          </Maydon>
+        </div>
+        <Yuborish tur={lid.kabinet ? 'ikkilamchi' : 'asosiy'}>{lid.kabinet ? 'Parolni yangilash' : 'Kabinet ochish'}</Yuborish>
+      </form>
+      <p className="mt-2 text-[11.5px] leading-relaxed text-ink-3">
+        Bola yoki ota-ona shu login bilan wbalc.uz ga kiradi: guruh va ustoz, keyingi darslar, davomat, woblar va «Guruhga yozilmoqchiman». Narx ko‘rinmaydi. Guruhga yozilsa — shu login o‘quvchi kabinetiga aylanadi.
+      </p>
+    </details>
   )
 }

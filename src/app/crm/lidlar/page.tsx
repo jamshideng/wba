@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { talabRol } from '@/lib/auth'
+import { loginNomi } from '@/lib/login'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, Stat } from '@/components/ui'
@@ -72,6 +73,15 @@ export default async function Lidlar({
   for (const w of (pWoblar ?? []) as { lead_id: string; ball: number }[]) {
     const l = hammasi.find((x) => x.id === w.lead_id)
     if (l) l.woblar = (l.woblar ?? 0) + Number(w.ball)
+  }
+
+  // Probniy kabinetlari (0102): qaysi lidga login ochilgan
+  const { data: kabinetlar } = hammasi.length
+    ? await supabase.from('profiles').select('lead_id, email').in('lead_id', hammasi.map((l) => l.id))
+    : { data: [] }
+  for (const k of (kabinetlar ?? []) as { lead_id: string; email: string | null }[]) {
+    const l = hammasi.find((x) => x.id === k.lead_id)
+    if (l) l.kabinet = loginNomi(k.email)
   }
 
   const ochiqlar = hammasi.filter((l) => ['yangi', 'boglanildi', 'sinov'].includes(bosqichi(l)))
