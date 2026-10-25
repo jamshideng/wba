@@ -89,7 +89,7 @@ export default async function DavomatJurnali({
   const [{ data: yozilishlar }, { data: darslar }, { data: birinchiDars }, { data: kochibKetgan }] = await Promise.all([
     supabase
       .from('enrollments')
-      .select('student_id, boshlandi, tugadi, holat, students(fish)')
+      .select('student_id, boshlandi, tugadi, holat, students(fish, tugilgan_sana, shaxsiy_tel, ota_tel, ona_tel)')
       .eq('group_id', guruh)
       .lte('boshlandi', oyOxiri),
     supabase.from('lessons').select('id, sana, otkazildi, zamena_teacher_id, zamena_sabab, kochirildi_ga, kochirilgan_dan, kochirish_sabab').eq('group_id', guruh).gte('sana', oyBoshi).lte('sana', oyOxiri),
@@ -103,7 +103,7 @@ export default async function DavomatJurnali({
     boshlandi: string
     tugadi: string | null
     holat: string
-    students: { fish: string } | null
+    students: { fish: string; tugilgan_sana: string | null; shaxsiy_tel: string | null; ota_tel: string | null; ona_tel: string | null } | null
   }
   // Shu oyda guruhda bo'lganlar: oy tugashidan oldin kelgan, oy boshlanishidan oldin ketmagan
   const yList = ((yozilishlar ?? []) as unknown as Yozilish[]).filter((y) => !y.tugadi || y.tugadi >= oyBoshi)
@@ -188,7 +188,7 @@ export default async function DavomatJurnali({
   }))
 
   const qatorlar: JurnalQatori[] = yList
-    .map((y) => ({
+    .map((y): JurnalQatori => ({
       student_id: y.student_id,
       fish: y.students?.fish ?? y.student_id,
       boshlandi: y.boshlandi,
@@ -197,6 +197,10 @@ export default async function DavomatJurnali({
       belgilar: belgiXaritasi.get(y.student_id) ?? {},
       bugun: bugunBall.get(y.student_id) ?? 0,
       umumiy: balans.get(y.student_id) ?? 0,
+      // Ustozga ism bosilganda qisqa oyna (pul/hisob yo'q); xodim to'liq profilga o'tadi
+      malumot: y.students
+        ? { tugilgan_sana: y.students.tugilgan_sana, shaxsiy_tel: y.students.shaxsiy_tel, ota_tel: y.students.ota_tel, ona_tel: y.students.ona_tel }
+        : undefined,
     }))
     .sort((a, b) => Number(a.ketgan) - Number(b.ketgan) || a.fish.localeCompare(b.fish, 'uz'))
     .concat(probniyQatorlar)
@@ -355,6 +359,7 @@ export default async function DavomatJurnali({
           boshlangich={qatorlar}
           huquq={huquq}
           woblarOchiq={bugunDarsKunimi}
+          profilOchiq={['admin', 'direktor', 'qabulxona'].includes(profil.rol)}
         />
       )}
 

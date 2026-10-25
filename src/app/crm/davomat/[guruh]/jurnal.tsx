@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { davomatBelgila, probniyBelgila, probniyWoblarBer, woblarBer } from './actions'
 import type { AttendanceStatus } from '@/lib/types'
 import { woblarChegara, woblarXato } from '@/lib/woblar-chegara'
+import { sana as sanaFmt, telefon } from '@/lib/format'
 
 export type JurnalQatori = {
   /** O'quvchi ID si yoki probniy uchun lead uuid */
@@ -22,6 +24,53 @@ export type JurnalQatori = {
   bugun: number
   /** Umumiy woblar balansi */
   umumiy: number
+  /** Ustoz uchun qisqa ma'lumot — pul/hisob yo'q (ism bosilganda oynada) */
+  malumot?: { tugilgan_sana: string | null; shaxsiy_tel: string | null; ota_tel: string | null; ona_tel: string | null }
+}
+
+/** Ustozga o'quvchi haqida qisqa oyna: ism, telefonlar, tug'ilgan va qo'shilgan sana. To'lov/hisob yo'q. */
+function OquvchiOynasi({ q, yop }: { q: JurnalQatori; yop: () => void }) {
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') yop() }
+    window.addEventListener('keydown', esc)
+    return () => window.removeEventListener('keydown', esc)
+  }, [yop])
+  const m = q.malumot
+  const tellar = [
+    { nom: 'Shaxsiy', t: m?.shaxsiy_tel },
+    { nom: 'Otasi', t: m?.ota_tel },
+    { nom: 'Onasi', t: m?.ona_tel },
+  ].filter((x) => x.t)
+  return (
+    <div className="fixed inset-0 z-[80] grid grid-cols-1 place-items-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-label={q.fish} onClick={yop}>
+      <div className="flex w-full max-w-sm flex-col gap-3 rounded-[16px] border border-line bg-surface p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <span className="text-[16px] font-bold">{q.fish}</span>
+          <button type="button" onClick={yop} className="min-h-11 min-w-11 rounded-[10px] text-[13px] text-ink-3 hover:text-ink" aria-label="Yopish">
+            Yopish
+          </button>
+        </div>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[13.5px]">
+          <dt className="text-ink-3">Tug‘ilgan sana</dt>
+          <dd>{m?.tugilgan_sana ? sanaFmt(m.tugilgan_sana) : '[ANIQLANMAGAN]'}</dd>
+          <dt className="text-ink-3">Guruhga qo‘shilgan</dt>
+          <dd>{sanaFmt(q.boshlandi)}</dd>
+        </dl>
+        <div className="flex flex-col gap-2">
+          {tellar.length === 0 ? (
+            <span className="text-[13px] text-ink-3">Telefon raqami yozilmagan.</span>
+          ) : (
+            tellar.map((x) => (
+              <a key={x.nom} href={`tel:${x.t}`} className="flex min-h-11 items-center justify-between rounded-[10px] border border-line px-3.5 text-[13.5px] hover:border-ink-3">
+                <span className="text-ink-3">{x.nom}</span>
+                <span className="tnum font-semibold">{telefon(x.t)}</span>
+              </a>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 /** dam — kanikul/bayram sababi (0036): bu kun davomat qo'yilmaydi */
@@ -73,7 +122,10 @@ export function Jurnal({
   boshlangich,
   huquq,
   woblarOchiq,
+  profilOchiq = false,
 }: {
+  /** Admin/direktor/qabulxona — ism bosilsa o'quvchi profiliga o'tadi */
+  profilOchiq?: boolean
   guruhId: string
   kunlar: DarsKuni[]
   bugun: string
@@ -82,6 +134,7 @@ export function Jurnal({
   /** Bugun shu guruhning dars kuni va jurnal joriy oyda */
   woblarOchiq: boolean
 }) {
+  const [oyna, setOyna] = useState<JurnalQatori | null>(null)
   const [qatorlar, setQatorlar] = useState(boshlangich)
   const [xato, setXato] = useState<string | null>(null)
   const [xabar, setXabar] = useState<string | null>(null)
@@ -269,7 +322,26 @@ export function Jurnal({
                 <th scope="row" className="sticky left-0 z-10 bg-surface px-3 py-1.5 text-left font-normal">
                   <span className="flex items-center gap-2">
                     <span className="tnum w-5 shrink-0 text-right text-[11.5px] text-ink-4">{i + 1}.</span>
-                    <span title={q.fish} className="line-clamp-2 max-w-[120px] break-words text-[13px] leading-tight font-semibold sm:max-w-none sm:text-[13.5px]">{q.fish}</span>
+                    {!profilOchiq && !q.probniy && q.malumot ? (
+                      <button
+                        type="button"
+                        onClick={() => setOyna(q)}
+                        title={`${q.fish} — ma’lumot`}
+                        className="line-clamp-2 max-w-[120px] cursor-pointer break-words text-left text-[13px] leading-tight font-semibold hover:text-brand hover:underline sm:max-w-none sm:text-[13.5px]"
+                      >
+                        {q.fish}
+                      </button>
+                    ) : profilOchiq && !q.probniy ? (
+                      <Link
+                        href={`/crm/oquvchilar/${q.student_id}`}
+                        title={`${q.fish} — profil`}
+                        className="line-clamp-2 max-w-[120px] break-words text-[13px] leading-tight font-semibold hover:text-brand hover:underline sm:max-w-none sm:text-[13.5px]"
+                      >
+                        {q.fish}
+                      </Link>
+                    ) : (
+                      <span title={q.fish} className="line-clamp-2 max-w-[120px] break-words text-[13px] leading-tight font-semibold sm:max-w-none sm:text-[13.5px]">{q.fish}</span>
+                    )}
                     {q.ketgan && <span className="shrink-0 text-[11px] text-ink-4">chiqqan</span>}
                     {q.probniy && <span className="shrink-0 rounded-[5px] bg-accent-soft px-1.5 text-[10.5px] font-semibold text-accent">probniy</span>}
                   </span>
@@ -339,6 +411,7 @@ export function Jurnal({
           </tbody>
         </table>
       </div>
+      {oyna && <OquvchiOynasi q={oyna} yop={() => setOyna(null)} />}
     </div>
   )
 }
