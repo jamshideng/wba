@@ -86,7 +86,7 @@ export default async function DavomatJurnali({
   const oyBoshi = `${davr}-01`
   const oyOxiri = oyKunlari(davr).at(-1)!
 
-  const [{ data: yozilishlar }, { data: darslar }, { data: birinchiDars }] = await Promise.all([
+  const [{ data: yozilishlar }, { data: darslar }, { data: birinchiDars }, { data: kochibKetgan }] = await Promise.all([
     supabase
       .from('enrollments')
       .select('student_id, boshlandi, tugadi, holat, students(fish)')
@@ -94,6 +94,8 @@ export default async function DavomatJurnali({
       .lte('boshlandi', oyOxiri),
     supabase.from('lessons').select('id, sana, otkazildi, zamena_teacher_id, zamena_sabab, kochirildi_ga, kochirilgan_dan, kochirish_sabab').eq('group_id', guruh).gte('sana', oyBoshi).lte('sana', oyOxiri),
     supabase.from('lessons').select('sana').eq('group_id', guruh).order('sana').limit(1).maybeSingle(),
+    // 0097 — shu oy darsi keyingi oyga ko'chirilgan bo'lsa, u ham shu oy jurnalining oxirida
+    supabase.from('lessons').select('id, sana, otkazildi, zamena_teacher_id, zamena_sabab, kochirildi_ga, kochirilgan_dan, kochirish_sabab').eq('group_id', guruh).gte('kochirilgan_dan', oyBoshi).lte('kochirilgan_dan', oyOxiri).gt('sana', oyOxiri),
   ])
 
   type Yozilish = {
@@ -105,7 +107,7 @@ export default async function DavomatJurnali({
   }
   // Shu oyda guruhda bo'lganlar: oy tugashidan oldin kelgan, oy boshlanishidan oldin ketmagan
   const yList = ((yozilishlar ?? []) as unknown as Yozilish[]).filter((y) => !y.tugadi || y.tugadi >= oyBoshi)
-  const dList = (darslar ?? []) as {
+  const dList = [...(darslar ?? []), ...(kochibKetgan ?? [])] as {
     id: string
     sana: string
     otkazildi: boolean
@@ -127,6 +129,13 @@ export default async function DavomatJurnali({
   const kunlar: DarsKuni[] = oyKunlari(davr)
     .filter((sana) => guruhi.kunlar.includes(haftaKuni(sana)) || darsSanalari.has(sana))
     .map((sana) => ({ sana, kun: haftaKuni(sana), hafta: HAFTA_KUNLARI[haftaKuni(sana) - 1].qisqa, dam: dam.get(sana) ?? null }))
+    // 0097 — keyingi oyga ko'chgan shu oy darslari oxirida (hisob shu oyniki)
+    .concat(
+      ((kochibKetgan ?? []) as { sana: string }[])
+        .map((d) => d.sana)
+        .sort()
+        .map((sana) => ({ sana, kun: haftaKuni(sana), hafta: HAFTA_KUNLARI[haftaKuni(sana) - 1].qisqa, dam: null })),
+    )
 
   const darsIdlar = dList.map((d) => d.id)
   const sanaById = new Map(dList.map((d) => [d.id, d.sana]))
