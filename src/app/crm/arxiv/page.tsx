@@ -44,10 +44,10 @@ export default async function Arxiv({ searchParams }: { searchParams: Promise<{ 
       <Xabar ok={s.ok} xato={s.xato} />
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <Stat label="Arxivdagi o‘quvchilar" value={oList.length} />
-        <Stat label="Arxivdagilar qarzi" value={qarzJami} sub="so‘m" ton={qarzJami > 0 ? 'brand' : undefined} />
-        <Stat label="Yopilgan guruhlar" value={gList.length} />
-        <Stat label="Arxivdagi ustozlar" value={uList.length} />
+        <Stat label="Arxivdagi o‘quvchilar" value={oList.length} href="/crm/arxiv?b=oq" />
+        <Stat label="Arxivdagilar qarzi" value={qarzJami} sub="so‘m" ton={qarzJami > 0 ? 'brand' : undefined} href="/crm/arxiv?b=qarz" />
+        <Stat label="Yopilgan guruhlar" value={gList.length} href="/crm/arxiv?b=guruh" />
+        <Stat label="Arxivdagi ustozlar" value={uList.length} href="/crm/arxiv?b=ustoz" />
       </div>
 
       <Card className="flex flex-col">
@@ -57,7 +57,7 @@ export default async function Arxiv({ searchParams }: { searchParams: Promise<{ 
         ) : (
           <ul className="flex flex-col">
             {oList.map((o) => (
-              <li key={o.student_id} className="border-b border-line-soft last:border-0">
+              <li key={o.student_id} data-belgi={`oq${Number(o.qarz) > 0 ? ' qarz' : ''}`} className="border-b border-line-soft last:border-0">
                 <Link
                   href={`/crm/oquvchilar/${o.student_id}`}
                   className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-5 py-3 transition hover:bg-surface-2"
@@ -117,7 +117,7 @@ export default async function Arxiv({ searchParams }: { searchParams: Promise<{ 
           ) : (
             <ul className="flex flex-col">
               {gList.map((g) => (
-                <li key={g.id}>
+                <li key={g.id} data-belgi="guruh">
                   <Link href={`/crm/guruhlar/${g.id}`} className="flex min-h-11 flex-col justify-center gap-0.5 border-b border-line-soft px-5 py-2.5 last:border-0 hover:bg-surface-2">
                     <span className="truncate text-[13px] font-semibold">{g.nom}</span>
                     <span className="truncate text-[11.5px] text-ink-3">
@@ -137,7 +137,7 @@ export default async function Arxiv({ searchParams }: { searchParams: Promise<{ 
           ) : (
             <ul className="flex flex-col px-5 pb-3">
               {uList.map((u) => (
-                <li key={u.id} className="flex min-h-11 items-center justify-between border-b border-line-soft text-[13px] last:border-0">
+                <li key={u.id} data-belgi="ustoz" className="flex min-h-11 items-center justify-between border-b border-line-soft text-[13px] last:border-0">
                   <span>{u.ism}</span>
                   <span className="font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3">{u.id}</span>
                 </li>

@@ -68,8 +68,8 @@ export default async function BoshqaXodimlar({ searchParams }: { searchParams: P
       </datalist>
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-        <Stat label="Faol xodimlar" value={faollar.length} sub={`ketgan: ${royxat.length - faollar.length}`} />
-        <Stat label="Oyliklar jami" value={pul(jamiOylik)} sub="faollar · so‘m" />
+        <Stat label="Faol xodimlar" value={faollar.length} sub={`ketgan: ${royxat.length - faollar.length}`} href="/crm/boshqa-xodimlar?b=faol" />
+        <Stat label="Oyliklar jami" value={pul(jamiOylik)} sub="faollar · so‘m" href="/crm/boshqa-xodimlar?b=faol" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_340px]">
@@ -82,7 +82,7 @@ export default async function BoshqaXodimlar({ searchParams }: { searchParams: P
           ) : (
             <ul className="flex flex-col">
               {royxat.map((x) => (
-                <li key={x.id} className="flex flex-col gap-2 border-t border-line-soft px-5 py-3.5">
+                <li key={x.id} data-belgi={x.holat === 'faol' ? 'faol' : undefined} className="flex flex-col gap-2 border-t border-line-soft px-5 py-3.5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <span className="flex min-w-0 flex-col gap-0.5">
                       <span className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold">

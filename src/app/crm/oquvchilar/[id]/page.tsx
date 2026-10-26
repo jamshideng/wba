@@ -268,16 +268,18 @@ export default async function OquvchiProfil({
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
         {pulKoradi && (
           <>
-            <Stat label="Qarz" value={jamiQarz} sub="so‘m" ton={jamiQarz > 0 ? 'brand' : 'ok'} border={jamiQarz > 0 ? 'brand' : undefined} />
-            <Stat label="Jami to‘langan" value={jamiTolangan} sub="so‘m" />
+            <Stat label="Qarz" value={jamiQarz} sub="so‘m" ton={jamiQarz > 0 ? 'brand' : 'ok'} border={jamiQarz > 0 ? 'brand' : undefined} href={`/crm/oquvchilar/${oquvchi.id}?b=qarz`} />
+            <Stat label="Jami to‘langan" value={jamiTolangan} sub="so‘m" href={`/crm/tolovlar?filtr=faol&q=${oquvchi.id}`} />
           </>
         )}
         <Stat
+          href={`/crm/oquvchilar/${oquvchi.id}?b=guruh`}
           label="Guruhlari"
           value={yList.filter((y) => y.holat !== 'tugagan').length}
           sub={`jami ${yList.length} ta yozilish`}
         />
         <Stat
+          href={`/crm/woblr/tarix?oquvchi=${oquvchi.id}&dan=2025-01-01`}
           label="Woblar"
           value={w ? Number(w.balans) : 0}
           sub={w ? `jami ${Number(w.jami_ball)} woblar olgan` : 'hali woblar berilmagan'}
@@ -299,11 +301,14 @@ export default async function OquvchiProfil({
                 return (
                   <div
                     key={y.id}
+                    data-belgi={`${y.holat !== 'tugagan' ? 'guruh' : ''}${qarz > 0 ? ' qarz' : ''}`}
                     className="flex flex-wrap items-start justify-between gap-3 rounded-[10px] border border-line px-4 py-3"
                   >
                     <div className="flex min-w-0 flex-col gap-1">
                       <span className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold">
-                        {y.groups?.nom ?? '—'}
+                        <Link href={`/crm/guruhlar/${y.group_id}`} className="hover:text-brand hover:underline">
+                          {y.groups?.nom ?? '—'}
+                        </Link>
                         {y.vip && <Badge ton="accent">VIP</Badge>}
                       </span>
                       <span className="text-[12px] text-ink-3">
@@ -638,9 +643,10 @@ export default async function OquvchiProfil({
                 <Empty>Hali to‘lov yo‘q.</Empty>
               ) : (
                 tList.map((t) => (
-                  <div
+                  <Link
                     key={t.id}
-                    className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-line-soft py-2.5 last:border-0"
+                    href={`/crm/tolovlar?id=${t.id}&b=tol:${t.id}`}
+                    className="-mx-2 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border-b border-line-soft px-2 py-2.5 transition last:border-0 hover:bg-surface-2"
                   >
                     <span className="tnum font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3">
                       {sana(t.sana)}
@@ -663,7 +669,7 @@ export default async function OquvchiProfil({
                     >
                       {pul(t.summa)}
                     </span>
-                  </div>
+                  </Link>
                 ))
               )}
             </div>
@@ -678,9 +684,10 @@ export default async function OquvchiProfil({
               <Empty>Hali davomat belgilanmagan.</Empty>
             ) : (
               dList.map((d) => (
-                <div
+                <Link
                   key={`${d.davr}-${d.group_id}`}
-                  className="flex items-center justify-between gap-3 border-b border-line-soft py-2 last:border-0"
+                  href={`/crm/davomat/${d.group_id}?oy=${d.davr}&b=oq:${oquvchi.id}`}
+                  className="-mx-2 flex items-center justify-between gap-3 rounded-lg border-b border-line-soft px-2 py-2 transition last:border-0 hover:bg-surface-2"
                 >
                   <span className="text-[12.5px]">{davrNomi(d.davr)}</span>
                   <span className="flex items-center gap-2.5">
@@ -691,7 +698,7 @@ export default async function OquvchiProfil({
                       {d.foiz}%
                     </Badge>
                   </span>
-                </div>
+                </Link>
               ))
             )}
             <p className="lbl pt-1">

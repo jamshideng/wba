@@ -116,10 +116,10 @@ export default async function UstozDavomati({
       </JonliForma>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label={`${davrNomi(davr)} — kechikish`} value={String(royxat.length)} sub="marta" ton={royxat.length ? 'brand' : 'ok'} Icon={IconAlert} />
-        <Stat label="Jami kechikkan vaqt" value={`${jamiDaq} daq`} sub={royxat.length ? `o‘rtacha ${Math.round(jamiDaq / royxat.length)} daq` : '—'} ton="accent" Icon={IconJadval} />
-        <Stat label="Kechikkan ustozlar" value={String(ustozSoni)} sub={`${uList.length} ta ustozdan`} Icon={IconTeacher} />
-        <Stat label="Bugun" value={String(bugungi.length)} sub={bugungi.length ? `${bugungi.reduce((a, k) => a + k.daqiqa, 0)} daq` : 'kechikish yo‘q'} ton={bugungi.length ? 'brand' : 'ok'} Icon={IconAttendance} />
+        <Stat label={`${davrNomi(davr)} — kechikish`} value={String(royxat.length)} sub="marta" ton={royxat.length ? 'brand' : 'ok'} Icon={IconAlert} href={`${yol}${yol.includes('?') ? '&' : '?'}b=kech-hammasi`} />
+        <Stat label="Jami kechikkan vaqt" value={`${jamiDaq} daq`} sub={royxat.length ? `o‘rtacha ${Math.round(jamiDaq / royxat.length)} daq` : '—'} ton="accent" Icon={IconJadval} href={`${yol}${yol.includes('?') ? '&' : '?'}b=kech-hammasi`} />
+        <Stat label="Kechikkan ustozlar" value={String(ustozSoni)} sub={`${uList.length} ta ustozdan`} Icon={IconTeacher} href={`${yol}${yol.includes('?') ? '&' : '?'}b=kechikkan-ustoz`} />
+        <Stat href={`/crm/ustoz-davomati?b=kun:${bugun}`} label="Bugun" value={String(bugungi.length)} sub={bugungi.length ? `${bugungi.reduce((a, k) => a + k.daqiqa, 0)} daq` : 'kechikish yo‘q'} ton={bugungi.length ? 'brand' : 'ok'} Icon={IconAttendance} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">

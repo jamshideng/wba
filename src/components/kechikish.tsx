@@ -70,7 +70,7 @@ export function KechikishJadval({
         </thead>
         <tbody>
           {royxat.map((k) => (
-            <tr key={k.id} className="border-t border-line-soft">
+            <tr key={k.id} data-belgi={`kech:${k.id} kech-hammasi oy:${k.sana.slice(0, 7)} kun:${k.sana}`} className="border-t border-line-soft">
               <td className="tnum px-2 py-2.5 whitespace-nowrap">{sanaQisqa(k.sana)}</td>
               {!ustozsiz && <td className="px-2 py-2.5 font-semibold whitespace-nowrap">{k.teachers?.ism ?? '—'}</td>}
               <td className="max-w-[260px] truncate px-2 py-2.5 text-ink-2" title={k.groups?.nom ?? ''}>{k.groups?.nom ?? '—'}</td>
@@ -106,7 +106,7 @@ export function KechikishJamlanma({ royxat }: { royxat: KechikishYozuv[] }) {
   return (
     <ul className="flex flex-col">
       {qatorlar.map((q) => (
-        <li key={q.ism} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto] items-center gap-3 border-b border-line-soft py-2 last:border-0">
+        <li key={q.ism} data-belgi="kechikkan-ustoz" className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto] items-center gap-3 border-b border-line-soft py-2 last:border-0">
           <span className="truncate text-[13px] font-semibold">{q.ism}</span>
           <span className="h-3 overflow-hidden rounded-[4px] bg-surface-2">
             <span className="block h-3 rounded-[4px] bg-brand" style={{ width: `${(q.daqiqa / max) * 100}%` }} />

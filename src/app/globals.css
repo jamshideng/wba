@@ -339,3 +339,15 @@ select:not([multiple]):not([size]) {
   background-size: 12px 12px;
   text-overflow: ellipsis;
 }
+
+/* Manba havolasi (26.10, components/belgila.tsx) — sababi bo'lgan joy yonib-o'chadi */
+@keyframes belgi-yonish {
+  50% {
+    outline-color: transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-belgi] {
+    animation: none !important;
+  }
+}

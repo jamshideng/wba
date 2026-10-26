@@ -221,7 +221,7 @@ export default async function Hisobotlar({
           </>
         ) : bolim === 'ustozlar' ? (
           <>
-            <UstozlarBolimi u={bolimData.data as HisobotUstoz[]} />
+            <UstozlarBolimi u={bolimData.data as HisobotUstoz[]} dan={o.dan} gacha={o.gacha} />
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
               <Card className="flex flex-col">
                 <CardHeader title="Kechikishlar — ustozlar bo‘yicha" meta={`${(kechikish ?? []).length} ta`} />
@@ -238,7 +238,7 @@ export default async function Hisobotlar({
             </div>
           </>
         ) : (
-          <DavomatBolimi d={bolimData.data as HisobotDavomat} />
+          <DavomatBolimi d={bolimData.data as HisobotDavomat} dan={o.dan} gacha={o.gacha} />
         )
       ) : error || !h || !g ? (
         <Card className="p-5">
@@ -246,10 +246,17 @@ export default async function Hisobotlar({
         </Card>
       ) : (
         <>
-          <UmumiyBolim h={h} g={g} oylar={oylar} />
+          <UmumiyBolim h={h} g={g} oylar={oylar} dan={o.dan} gacha={o.gacha} />
           {qilinmagan.size > 0 && (
             <Card className="flex flex-col">
-              <CardHeader title="Davomat qilinmagan darslar" meta="jadval bo‘yicha dars bor, belgi yo‘q" />
+              <CardHeader
+                title="Davomat qilinmagan darslar"
+                meta={
+                  <Link href={`/crm/hisobotlar/royxat?tur=dars_qilinmagan&dan=${o.dan}&gacha=${o.gacha}`} className="inline-flex min-h-11 items-center text-accent hover:text-brand">
+                    Hammasi — jurnalga →
+                  </Link>
+                }
+              />
               <div className="flex flex-col gap-3 px-5 pb-4">
                 {qilinmagan.size === 0 ? (
                   <Empty>Hamma darsga davomat qo‘yilgan.</Empty>

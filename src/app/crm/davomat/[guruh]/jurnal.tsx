@@ -297,6 +297,7 @@ export function Jurnal({
                   <th
                     key={k.sana}
                     scope="col"
+                    data-belgi={`kun:${k.sana}${k.dam ? ' dam' : ''}`}
                     data-bugun={bugunmi ? '1' : undefined}
                     data-otgan={k.sana < bugun ? '1' : undefined}
                     title={k.dam ? `Dars yo‘q: ${k.dam}` : undefined}
@@ -319,7 +320,7 @@ export function Jurnal({
           <tbody>
             {qatorlar.map((q, i) => (
               <tr key={q.student_id} className={`border-b border-line-soft last:border-b-0 ${q.ketgan ? 'opacity-55' : ''}`}>
-                <th scope="row" className="sticky left-0 z-10 bg-surface px-3 py-1.5 text-left font-normal">
+                <th scope="row" data-belgi={`oq:${q.student_id}`} className="sticky left-0 z-10 bg-surface px-3 py-1.5 text-left font-normal">
                   <span className="flex items-center gap-2">
                     <span className="tnum w-5 shrink-0 text-right text-[11.5px] text-ink-4">{i + 1}.</span>
                     {!profilOchiq && !q.probniy && q.malumot ? (
@@ -353,7 +354,11 @@ export function Jurnal({
                   const bugunmi = k.sana === bugun
                   const guruhdami = k.sana >= q.boshlandi && (!q.tugadi || k.sana <= q.tugadi)
                   return (
-                    <td key={k.sana} className={`px-1 py-1 text-center ${k.dam ? 'bg-surface-2' : bugunmi ? 'bg-accent-soft/60' : ''}`}>
+                    <td
+                      key={k.sana}
+                      // Manba havolasi (Nazorat): katak, kun ustuni va "kelmadi" belgilari
+                      data-belgi={`kun:${k.sana} k:${q.student_id}@${k.sana}${q.belgilar[k.sana] === 'kelmadi' ? ` kelmadi:${q.student_id}` : ''}`}
+                      className={`px-1 py-1 text-center ${k.dam ? 'bg-surface-2' : bugunmi ? 'bg-accent-soft/60' : ''}`}>
                       {k.dam && !holat ? (
                         <span className="text-[11px] text-ink-4" title={`Dars yo‘q: ${k.dam}`}>—</span>
                       ) : guruhdami || holat ? (

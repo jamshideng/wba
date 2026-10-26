@@ -98,9 +98,10 @@ export default async function Farzand() {
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
         {jamiQarz === 0 && oldindan > 0 ? (
-          <Stat label="Oldindan to‘langan" value={oldindan} sub="keyingi oylar uchun · so‘m" ton="ok" />
+          <Stat label="Oldindan to‘langan" value={oldindan} sub="keyingi oylar uchun · so‘m" ton="ok" href="/crm/farzand?b=tolov" />
         ) : (
           <Stat
+            href="/crm/farzand?b=guruh,tolov"
             label="Qarz"
             value={jamiQarz}
             sub={oldindan > 0 ? `yana ${pul(oldindan)} oldindan to‘langan` : 'so‘m'}
@@ -108,14 +109,15 @@ export default async function Farzand() {
             border={jamiQarz > 0 ? 'brand' : undefined}
           />
         )}
-        <Stat label="Woblar" value={w ? Number(w.balans) : 0} sub={w ? `jami ${Number(w.jami_ball)} olingan` : 'hali yo‘q'} ton="accent" />
+        <Stat label="Woblar" value={w ? Number(w.balans) : 0} sub={w ? `jami ${Number(w.jami_ball)} olingan` : 'hali yo‘q'} ton="accent" href="/crm/woblr/tarix" />
         <Stat
+          href="/crm/farzand?b=guruh"
           label={`Davomat · ${davrNomi(davr)}`}
           value={shuOyFoiz === null ? '—' : `${shuOyFoiz}%`}
           sub={shuOyFoiz === null ? 'belgilanmagan' : 'o‘rtacha'}
           ton={shuOyFoiz !== null && shuOyFoiz >= 80 ? 'ok' : 'neytral'}
         />
-        <Stat label="Guruhlar" value={yList.length} sub="hozir o‘qiyapti" />
+        <Stat label="Guruhlar" value={yList.length} sub="hozir o‘qiyapti" href="/crm/farzand?b=guruh" />
       </div>
 
       <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
@@ -126,7 +128,7 @@ export default async function Farzand() {
               <Empty>Hali guruhga biriktirilmagan.</Empty>
             ) : (
               yList.map((y) => (
-                <div key={y.id} className="flex flex-col gap-1 rounded-[10px] border border-line px-4 py-3">
+                <div key={y.id} data-belgi="guruh" className="flex flex-col gap-1 rounded-[10px] border border-line px-4 py-3">
                   <span className="text-[13.5px] font-semibold">{guruhQisqa(y.groups?.nom)}</span>
                   <span className="text-[12px] text-ink-3">
                     {y.groups?.teachers?.ism ?? '[ANIQLANMAGAN]'} ·{' '}
@@ -145,7 +147,7 @@ export default async function Farzand() {
               <Empty>Hali to‘lov yo‘q.</Empty>
             ) : (
               tList.map((t) => (
-                <div key={t.id} className="flex items-center justify-between gap-3 border-b border-line-soft py-2.5 last:border-0">
+                <div key={t.id} data-belgi="tolov" className="flex items-center justify-between gap-3 border-b border-line-soft py-2.5 last:border-0">
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span className="text-[12.5px] font-semibold">{davrNomi(t.davr)}</span>
                     <span className="text-[10.5px] text-ink-3">

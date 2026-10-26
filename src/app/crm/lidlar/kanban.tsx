@@ -167,6 +167,7 @@ function Karta({
 
   return (
     <article
+      data-belgi={`lid:${lid.id}`}
       draggable={!yopiq}
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', lid.id)

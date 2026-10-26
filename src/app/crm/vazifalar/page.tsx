@@ -29,7 +29,9 @@ const BOLIMLAR = {
   kelgusi: 'Kelgusi',
   bajarilgan: 'Bajarilganlar',
 } as const
-type Bolim = keyof typeof BOLIMLAR
+/** Ko'rsatkich kartalari va Nazoratdan (26.10) — tablarda yo'q, raqam = ro'yxat */
+const BOLIM_YASHIRIN = { kechikkan: 'Kechikkan', bugun_bajarildi: 'Bugun bajarildi', bitta: 'Vazifa' } as const
+type Bolim = keyof typeof BOLIMLAR | keyof typeof BOLIM_YASHIRIN
 
 type Qator = {
   id: string
@@ -67,13 +69,16 @@ function muddatMatn(iso: string, bugun: string): string {
 export default async function Vazifalar({
   searchParams,
 }: {
-  searchParams: Promise<{ bolim?: string; turi?: string; ok?: string; xato?: string; lid?: string; oquvchi?: string; yangi?: string }>
+  searchParams: Promise<{ bolim?: string; turi?: string; ok?: string; xato?: string; lid?: string; oquvchi?: string; yangi?: string; id?: string }>
 }) {
   await talabRol('admin', 'direktor', 'qabulxona')
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Vazifalar" />
 
   const s = await searchParams
-  const bolim: Bolim = (Object.keys(BOLIMLAR) as Bolim[]).find((b) => b === s.bolim) ?? 'bugun'
+  const vazifaId = /^[0-9a-f-]{36}$/.test(s.id ?? '') ? s.id! : null
+  const bolim: Bolim = vazifaId
+    ? 'bitta'
+    : ([...Object.keys(BOLIMLAR), 'kechikkan', 'bugun_bajarildi'] as Bolim[]).find((b) => b === s.bolim) ?? 'bugun'
   const turi = (Object.keys(TUR_NOMI) as VazifaTuri[]).find((t) => t === s.turi)
   const bugun = bugunToshkent()
   const ertaga = kunQosh(bugun, 1)
@@ -82,7 +87,8 @@ export default async function Vazifalar({
   const hozir = new Date().toISOString()
 
   const sorov = new URLSearchParams()
-  if (bolim !== 'bugun') sorov.set('bolim', bolim)
+  if (vazifaId) sorov.set('id', vazifaId)
+  else if (bolim !== 'bugun') sorov.set('bolim', bolim)
   if (turi) sorov.set('turi', turi)
   const yol = `/crm/vazifalar${sorov.size ? `?${sorov}` : ''}`
 
@@ -91,7 +97,10 @@ export default async function Vazifalar({
     'id, nom, turi, muddat, holat, muhimlik, izoh, avto, lead_id, student_id, bajarildi_at, leads(ism, telefon), students(fish, ota_tel, ona_tel, shaxsiy_tel), masul_p:profiles!crm_vazifalar_masul_fkey(ism), bajardi_p:profiles!crm_vazifalar_bajardi_fkey(ism)'
 
   let royxatSorov = supabase.from('crm_vazifalar').select(ustunlar)
-  if (bolim === 'bugun') royxatSorov = royxatSorov.in('holat', ['yangi', 'jarayonda']).lt('muddat', kunOxiri).order('muddat')
+  if (vazifaId) royxatSorov = royxatSorov.eq('id', vazifaId)
+  else if (bolim === 'kechikkan') royxatSorov = royxatSorov.in('holat', ['yangi', 'jarayonda']).lt('muddat', hozir).order('muddat')
+  else if (bolim === 'bugun_bajarildi') royxatSorov = royxatSorov.eq('holat', 'bajarildi').gte('bajarildi_at', kunBoshi).order('bajarildi_at', { ascending: false })
+  else if (bolim === 'bugun') royxatSorov = royxatSorov.in('holat', ['yangi', 'jarayonda']).lt('muddat', kunOxiri).order('muddat')
   else if (bolim === 'kelgusi') royxatSorov = royxatSorov.in('holat', ['yangi', 'jarayonda']).gte('muddat', kunOxiri).order('muddat')
   else royxatSorov = royxatSorov.eq('holat', 'bajarildi').order('bajarildi_at', { ascending: false })
   if (turi) royxatSorov = royxatSorov.eq('turi', turi)
@@ -116,6 +125,7 @@ export default async function Vazifalar({
 
   const havola = (b: Bolim) => {
     const u = new URLSearchParams(sorov)
+    u.delete('id')
     if (b === 'bugun') u.delete('bolim')
     else u.set('bolim', b)
     return `/crm/vazifalar${u.size ? `?${u}` : ''}`
@@ -131,10 +141,10 @@ export default async function Vazifalar({
       <Xabar ok={s.ok} xato={s.xato} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Bugun" value={String(bugunSoni)} sub="bugun bajarilishi kerak" ton="accent" border={bugunSoni ? 'accent' : undefined} Icon={IconAlert} />
-        <Stat label="Kechikkan" value={String(kechikkan)} sub="muddati o‘tib ketgan" ton="brand" border={kechikkan ? 'brand' : undefined} Icon={IconDebt} />
-        <Stat label="Kelgusi" value={String(kelgusi)} sub="ertadan boshlab" Icon={IconJadval} />
-        <Stat label="Bugun bajarildi" value={String(bugunBajarildi ?? 0)} ton="ok" Icon={IconAttendance} />
+        <Stat label="Bugun" value={String(bugunSoni)} sub="bugun bajarilishi kerak" ton="accent" border={bugunSoni ? 'accent' : undefined} Icon={IconAlert} href="/crm/vazifalar" />
+        <Stat label="Kechikkan" value={String(kechikkan)} sub="muddati o‘tib ketgan" ton="brand" border={kechikkan ? 'brand' : undefined} Icon={IconDebt} href="/crm/vazifalar?bolim=kechikkan" />
+        <Stat label="Kelgusi" value={String(kelgusi)} sub="ertadan boshlab" Icon={IconJadval} href="/crm/vazifalar?bolim=kelgusi" />
+        <Stat label="Bugun bajarildi" value={String(bugunBajarildi ?? 0)} ton="ok" Icon={IconAttendance} href="/crm/vazifalar?bolim=bugun_bajarildi" />
       </div>
 
       <Card className="flex flex-col">
@@ -209,7 +219,7 @@ export default async function Vazifalar({
       </Card>
 
       <div className="flex flex-wrap items-center gap-2">
-        {(Object.keys(BOLIMLAR) as Bolim[]).map((b) => (
+        {(Object.keys(BOLIMLAR) as (keyof typeof BOLIMLAR)[]).map((b) => (
           <Link
             key={b}
             href={havola(b)}
@@ -235,7 +245,7 @@ export default async function Vazifalar({
       </div>
 
       <Card className="flex flex-col">
-        <CardHeader title={BOLIMLAR[bolim]} meta={`${royxat.length} ta`} />
+        <CardHeader title={bolim in BOLIMLAR ? BOLIMLAR[bolim as keyof typeof BOLIMLAR] : BOLIM_YASHIRIN[bolim as keyof typeof BOLIM_YASHIRIN]} meta={`${royxat.length} ta`} />
         {royxat.length === 0 ? (
           <div className="px-5 pb-5">
             <Empty>
@@ -250,10 +260,10 @@ export default async function Vazifalar({
               const kim = v.leads?.ism ?? v.students?.fish ?? null
               const tel = v.leads?.telefon ?? v.students?.shaxsiy_tel ?? v.students?.ota_tel ?? v.students?.ona_tel ?? null
               const kechikdi = v.holat !== 'bajarildi' && v.muddat < hozir
-              const kimHavola = v.lead_id ? '/crm/lidlar' : v.student_id ? `/crm/oquvchilar/${v.student_id}` : null
+              const kimHavola = v.lead_id ? `/crm/lidlar?b=lid:${v.lead_id}` : v.student_id ? `/crm/oquvchilar/${v.student_id}` : null
               const qarz = v.student_id ? qarzMap.get(v.student_id) : undefined
               return (
-                <li key={v.id} className="flex flex-col gap-2.5 border-t border-line-soft px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                <li key={v.id} data-belgi={`vaz:${v.id}`} className="flex flex-col gap-2.5 border-t border-line-soft px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 flex-col gap-1">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="text-[13.5px] font-semibold">{v.nom}</span>
@@ -265,7 +275,7 @@ export default async function Vazifalar({
                     <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-ink-3">
                       <span className={kechikdi ? 'font-semibold text-brand' : ''}>
                         {kechikdi ? 'Kechikdi · ' : ''}
-                        {bolim === 'bajarilgan' && v.bajarildi_at
+                        {v.holat === 'bajarildi' && v.bajarildi_at
                           ? `Bajarildi: ${muddatMatn(v.bajarildi_at, bugun)}${v.bajardi_p ? ` · ${v.bajardi_p.ism}` : ''}`
                           : muddatMatn(v.muddat, bugun)}
                       </span>
@@ -283,7 +293,7 @@ export default async function Vazifalar({
                     {v.izoh && <span className="text-[12px] leading-snug text-ink-3">{v.izoh}</span>}
                   </div>
 
-                  {bolim !== 'bajarilgan' ? (
+                  {v.holat !== 'bajarildi' ? (
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
                       <form action={vazifaHolat}>
                         <input type="hidden" name="qaytish" value={yol} />

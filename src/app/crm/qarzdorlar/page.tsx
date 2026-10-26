@@ -54,8 +54,8 @@ export default async function Qarzdorlar({
       <Sarlavha nom="Qarzdorlar" izoh="eng kattadan" />
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <Stat label="Jami qarz" value={Number(panel?.jami_qarz ?? 0)} sub="so‘m" ton="brand" border="brand" Icon={IconDebt} />
-        <Stat label="Qarzdorlar" value={Number(panel?.qarzdorlar ?? 0)} sub="faol o‘quvchi" Icon={IconStudents} />
+        <Stat label="Jami qarz" value={Number(panel?.jami_qarz ?? 0)} sub="so‘m" ton="brand" border="brand" Icon={IconDebt} href="/crm/qarzdorlar?b=qarzdor" />
+        <Stat label="Qarzdorlar" value={Number(panel?.qarzdorlar ?? 0)} sub="faol o‘quvchi" Icon={IconStudents} href="/crm/qarzdorlar?b=qarzdor" />
       </div>
 
       <JonliForma className="flex gap-2.5">
@@ -72,7 +72,7 @@ export default async function Qarzdorlar({
             {royxat.map((q, i) => {
               const tel = q.shaxsiy_tel ?? q.ota_tel ?? q.ona_tel
               return (
-                <li key={q.student_id} className="flex flex-wrap items-center gap-3 border-b border-line-soft px-5 py-3 last:border-0">
+                <li key={q.student_id} data-belgi="qarzdor" className="flex flex-wrap items-center gap-3 border-b border-line-soft px-5 py-3 last:border-0">
                   <span className="tnum w-6 font-[family-name:var(--font-mono)] text-[11px] text-ink-4">{boshi + i + 1}</span>
 
                   <Link href={`/crm/oquvchilar/${q.student_id}`} className="flex min-w-0 flex-1 flex-col gap-0.5 hover:text-brand">

@@ -92,7 +92,7 @@ export default async function ProbniyKabinet({ searchParams }: { searchParams: P
       )}
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-        <Stat label="Qatnashgan darslar" value={String(kelgan)} sub={`${k.davomat.length} ta dars belgilangan`} />
+        <Stat label="Qatnashgan darslar" value={String(kelgan)} sub={`${k.davomat.length} ta dars belgilangan`} href="/crm/probniy?b=keldi" />
         <Stat label="Woblar" value={String(k.woblar)} sub="guruhga yozilsangiz saqlanadi" ton="accent" />
       </div>
 
@@ -115,7 +115,11 @@ export default async function ProbniyKabinet({ searchParams }: { searchParams: P
           <CardHeader title="Davomat" meta={`${kelgan} / ${k.davomat.length}`} />
           <ul className="flex flex-col divide-y divide-line px-5 pb-3">
             {k.davomat.map((d) => (
-              <li key={d.sana} className="flex items-center justify-between py-2.5 text-[13.5px]">
+              <li
+                key={d.sana}
+                data-belgi={d.holat === 'keldi' || d.holat === 'kechikdi' ? 'keldi' : undefined}
+                className="flex items-center justify-between py-2.5 text-[13.5px]"
+              >
                 <span>{sana(d.sana)}</span>
                 <Badge ton={d.holat === 'keldi' || d.holat === 'kechikdi' ? 'ok' : 'brand'}>
                   {d.holat === 'keldi' || d.holat === 'kechikdi' ? 'Keldi' : 'Kelmadi'}

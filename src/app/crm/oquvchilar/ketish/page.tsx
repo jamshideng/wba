@@ -41,6 +41,8 @@ export default async function KetishTahliliSahifa({
   const maxUstoz = Math.max(1, ...(t?.ustozlar ?? []).map((x) => x.soni))
   const maxFan = Math.max(1, ...(t?.fanlar ?? []).map((x) => x.soni))
   const belgilanmagan = (t?.sabablar ?? []).find((x) => x.sabab === 'belgilanmagan')?.soni ?? 0
+  // Manba havolasi (26.10): kartalar pastdagi "Ketganlar" ro'yxatini ajratadi
+  const shu = (b: string) => `/crm/oquvchilar/ketish?dan=${dan}&gacha=${gacha}&b=${b}`
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -62,10 +64,10 @@ export default async function KetishTahliliSahifa({
       {error && <p className="text-[13px] text-brand">Tahlilni o‘qib bo‘lmadi.</p>}
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <Stat label="Ketganlar" value={t?.jami ?? 0} sub={`${t?.boshida ?? 0} ta o‘qiyotgan + ${t?.yangi ?? 0} ta yangi`} ton={t?.jami ? 'brand' : undefined} />
-        <Stat label="Ketish koeffitsienti" value={t?.koeffitsient == null ? '—' : `${t.koeffitsient}%`} sub="ketganlar ÷ o‘qiganlar" />
-        <Stat label="Yo‘qotilgan daromad" value={pul(t?.yoqotilgan ?? 0)} sub="oyiga · so‘m" />
-        <Stat label="O‘rtacha o‘qigan" value={t?.orta_oy == null ? '—' : `${t.orta_oy} oy`} sub="kelgandan ketguncha" />
+        <Stat label="Ketganlar" value={t?.jami ?? 0} sub={`${t?.boshida ?? 0} ta o‘qiyotgan + ${t?.yangi ?? 0} ta yangi`} ton={t?.jami ? 'brand' : undefined} href={shu('ket')} />
+        <Stat label="Ketish koeffitsienti" value={t?.koeffitsient == null ? '—' : `${t.koeffitsient}%`} sub="ketganlar ÷ o‘qiganlar" href={shu('ket')} />
+        <Stat label="Yo‘qotilgan daromad" value={pul(t?.yoqotilgan ?? 0)} sub="oyiga · so‘m" href={shu('ket')} />
+        <Stat label="O‘rtacha o‘qigan" value={t?.orta_oy == null ? '—' : `${t.orta_oy} oy`} sub="kelgandan ketguncha" href={shu('ket')} />
       </div>
 
       {belgilanmagan > 0 && (
@@ -84,7 +86,11 @@ export default async function KetishTahliliSahifa({
             {(t?.sabablar ?? []).length === 0 ? (
               <Empty>Bu davrda ketgan yo‘q.</Empty>
             ) : (
-              t!.sabablar.map((x) => <BarRow key={x.sabab} label={ketishNomi(x.sabab)} value={x.soni} max={maxSabab} format={soniFmt} />)
+              t!.sabablar.map((x) => (
+                <Link key={x.sabab} href={shu(`sabab:${x.sabab}`)} className="-mx-2 rounded-lg px-2 transition hover:bg-surface-2">
+                  <BarRow label={ketishNomi(x.sabab)} value={x.soni} max={maxSabab} format={soniFmt} />
+                </Link>
+              ))
             )}
           </div>
         </Card>
@@ -119,7 +125,7 @@ export default async function KetishTahliliSahifa({
         ) : (
           <ul className="flex flex-col">
             {t!.royxat.map((x) => (
-              <li key={x.id}>
+              <li key={x.id} data-belgi={`ket sabab:${x.sabab}`}>
                 <Link
                   href={`/crm/oquvchilar/${x.id}`}
                   className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft px-5 py-3 transition hover:bg-surface-2"

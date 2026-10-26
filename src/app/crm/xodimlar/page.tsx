@@ -58,7 +58,7 @@ export default async function Xodimlar({ searchParams }: { searchParams: Promise
               const direktorQatori = x.rol === 'direktor'
               const tegsaBoladi = !ozim && (!direktorQatori || direktorman) && (x.rol !== 'manager' || managermi(men.rol))
               return (
-                <li key={x.id} className="flex flex-col gap-2 border-b border-line-soft px-5 py-3 last:border-0">
+                <li key={x.id} data-belgi={`x:${x.id}`} className="flex flex-col gap-2 border-b border-line-soft px-5 py-3 last:border-0">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="flex min-w-0 flex-col gap-0.5">
                       <span className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold">

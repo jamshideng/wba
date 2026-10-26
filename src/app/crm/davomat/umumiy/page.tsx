@@ -95,10 +95,11 @@ export default async function UmumiyDavomat({ searchParams }: { searchParams: Pr
       />
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <Stat label="O‘tilgan darslar" value={jamiDars} sub="belgi qo‘yilgan" />
-        <Stat label="Keldi" value={jamiKeldi} sub="kechikkanlar bilan" ton="ok" />
-        <Stat label="Kelmadi" value={jamiKelmadi} sub="sababsiz" ton={jamiKelmadi ? 'brand' : 'neytral'} />
+        <Stat label="O‘tilgan darslar" value={jamiDars} sub="belgi qo‘yilgan" href={`/crm/davomat/umumiy?kun=${kalit}&b=guruh`} />
+        <Stat label="Keldi" value={jamiKeldi} sub="kechikkanlar bilan" ton="ok" href={`/crm/davomat/umumiy?kun=${kalit}&b=keldi`} />
+        <Stat label="Kelmadi" value={jamiKelmadi} sub="sababsiz" ton={jamiKelmadi ? 'brand' : 'neytral'} href={`/crm/davomat/umumiy?kun=${kalit}&b=kelmadi`} />
         <Stat
+          href={`/crm/davomat/umumiy?kun=${kalit}&b=${belgilanmagan ? 'belgisiz' : 'guruh'}`}
           label="Davomat"
           value={foiz === null ? '—' : `${foiz}%`}
           sub={belgilanmagan ? `${belgilanmagan} ta dars belgilanmagan` : 'hamma dars belgilangan'}
@@ -116,7 +117,11 @@ export default async function UmumiyDavomat({ searchParams }: { searchParams: Pr
         ) : (
           <ul className="flex flex-col">
             {qatorlar.map((q) => (
-              <li key={q.id} className="flex flex-col gap-2 border-t border-line-soft px-5 py-3.5">
+              <li
+                key={q.id}
+                data-belgi={['guruh', q.keldi ? 'keldi' : '', q.kelmadi ? 'kelmadi' : '', q.belgilanmagan.length ? 'belgisiz' : ''].join(' ')}
+                className="flex flex-col gap-2 border-t border-line-soft px-5 py-3.5"
+              >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <Link href={`/crm/davomat/${q.id}`} className="min-w-0 truncate text-[13.5px] font-semibold hover:text-brand">
                     {q.nom}
@@ -141,7 +146,15 @@ export default async function UmumiyDavomat({ searchParams }: { searchParams: Pr
                 )}
                 {q.belgilanmagan.length > 0 && (
                   <span className="text-[12px] text-accent">
-                    Belgilanmagan: {q.belgilanmagan.map((k) => sanaQisqa(k)).join(', ')}
+                    Belgilanmagan:{' '}
+                    {q.belgilanmagan.map((k, i) => (
+                      <span key={k}>
+                        {i > 0 && ', '}
+                        <Link href={`/crm/davomat/${q.id}?oy=${k.slice(0, 7)}&b=kun:${k}`} className="underline underline-offset-2 hover:text-brand">
+                          {sanaQisqa(k)}
+                        </Link>
+                      </span>
+                    ))}
                   </span>
                 )}
               </li>

@@ -183,9 +183,10 @@ export default async function MeningSahifam({
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
         {jamiQarz === 0 && oldindan > 0 ? (
-          <Stat label="Oldindan to‘langan" value={oldindan} sub="keyingi oylar uchun · so‘m" ton="ok" />
+          <Stat label="Oldindan to‘langan" value={oldindan} sub="keyingi oylar uchun · so‘m" ton="ok" href="/crm/men?b=tolov" />
         ) : (
           <Stat
+            href="/crm/men?b=qarz,tolov"
             label="Qarzim"
             value={jamiQarz}
             sub={oldindan > 0 ? `yana ${pul(oldindan)} oldindan to‘langan` : 'so‘m'}
@@ -194,18 +195,20 @@ export default async function MeningSahifam({
           />
         )}
         <Stat
+          href="/crm/woblr/tarix"
           label="Woblarim"
           value={w ? Number(w.balans) : 0}
           sub={w ? `jami ${Number(w.jami_ball)} woblar olingan` : 'hali woblar yo‘q'}
           ton="accent"
         />
         <Stat
+          href={`/crm/men?b=dav:${davr}`}
           label={`Davomat · ${davrNomi(davr)}`}
           value={shuOyFoiz === null ? '—' : `${shuOyFoiz}%`}
           sub={shuOyFoiz === null ? 'shu oyda belgilanmagan' : 'o‘rtacha'}
           ton={shuOyFoiz !== null && shuOyFoiz >= 80 ? 'ok' : 'neytral'}
         />
-        <Stat label="Guruhlarim" value={yList.length} sub="hozir o‘qiyapman" />
+        <Stat label="Guruhlarim" value={yList.length} sub="hozir o‘qiyapman" href="/crm/men?b=guruh" />
       </div>
 
       <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
@@ -219,7 +222,7 @@ export default async function MeningSahifam({
                 const q = qarzMap.get(y.id) ?? 0
                 const h = hisobMap.get(y.id)
                 return (
-                  <div key={y.id} className="flex flex-wrap items-start justify-between gap-3 rounded-[10px] border border-line px-4 py-3">
+                  <div key={y.id} data-belgi={`guruh${q > 0 ? ' qarz' : ''}`} className="flex flex-wrap items-start justify-between gap-3 rounded-[10px] border border-line px-4 py-3">
                     <span className="flex min-w-0 flex-col gap-1">
                       <span className="text-[13.5px] font-semibold">{guruhQisqa(y.groups?.nom)}</span>
                       <span className="text-[12px] text-ink-3">
@@ -281,7 +284,7 @@ export default async function MeningSahifam({
               <Empty>Hali to‘lov yozilmagan.</Empty>
             ) : (
               tList.map((t) => (
-                <div key={t.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-line-soft py-2.5 last:border-0">
+                <div key={t.id} data-belgi="tolov" className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-line-soft py-2.5 last:border-0">
                   <span className="tnum font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3">{sana(t.sana)}</span>
                   <span className="truncate text-[12.5px]">
                     {davrNomi(t.davr)} uchun{t.usul ? ` · ${USUL_NOMI[t.usul]}` : ''}
@@ -303,7 +306,7 @@ export default async function MeningSahifam({
               <Empty>Hali davomat belgilanmagan.</Empty>
             ) : (
               dList.map((d) => (
-                <div key={`${d.davr}-${d.group_id}`} className="flex items-center justify-between gap-3 border-b border-line-soft py-2 last:border-0">
+                <div key={`${d.davr}-${d.group_id}`} data-belgi={`dav:${d.davr}`} className="flex items-center justify-between gap-3 border-b border-line-soft py-2 last:border-0">
                   <span className="flex min-w-0 flex-col">
                     <span className="text-[12.5px]">{davrNomi(d.davr)}</span>
                     <span className="truncate text-[11px] text-ink-3">{guruhNomi.get(d.group_id) ?? d.group_id}</span>

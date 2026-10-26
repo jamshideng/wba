@@ -25,6 +25,15 @@ function Jadval({ children }: { children: React.ReactNode }) {
     </div>
   )
 }
+/** Manba havolasi (26.10): jadvaldagi raqam — o'z ro'yxatiga */
+const rq = 'underline decoration-line underline-offset-2 hover:text-brand hover:decoration-brand'
+const tafsilot = (tur: string, davr: string) => `/crm/hisobotlar/tafsilot?tur=${tur}&davr=${davr}`
+const tolovlar = (davr: string) => `/crm/tolovlar?filtr=faol&davr=${davr}`
+const royxat = (tur: string, davr?: string) => `/crm/hisobotlar/royxat?tur=${tur}${davr ? `&davr=${davr}` : ''}`
+/** Oraliqli ro'yxat (Davomat, Ustozlar): kim — guruh yoki ustoz */
+const oraliqRoyxat = (tur: string, dan: string, gacha: string, kim?: string) =>
+  `/crm/hisobotlar/royxat?tur=${tur}&dan=${dan}&gacha=${gacha}${kim ? `&kim=${encodeURIComponent(kim)}` : ''}`
+
 const th = 'px-3 py-2.5 text-right text-[11px] font-semibold tracking-wide text-ink-3 uppercase first:pl-5 first:text-left last:pr-5'
 const td = 'tnum px-3 py-2.5 text-right first:pl-5 first:text-left last:pr-5'
 
@@ -48,15 +57,16 @@ export function MoliyaBolimi({ m }: { m: HisobotMoliya }) {
   return (
     <>
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label={`${joriy ? davrNomi(joriy.davr) : 'Shu oy'} — to‘lashi kerak`} value={Number(joriy?.hisoblangan ?? 0)} sub={`${joriy?.yozilish ?? 0} ta yozilish · so‘m`} />
+        <Stat label={`${joriy ? davrNomi(joriy.davr) : 'Shu oy'} — to‘lashi kerak`} value={Number(joriy?.hisoblangan ?? 0)} sub={`${joriy?.yozilish ?? 0} ta yozilish · so‘m`} href={joriy ? tafsilot('hisoblangan', joriy.davr) : undefined} />
         <Stat
+          href={joriy ? tolovlar(joriy.davr) : undefined}
           label="Shu oy uchun yig‘ildi"
           value={Number(joriy?.yigilgan ?? 0)}
           sub={joriyFoiz === null ? 'so‘m' : `${joriyFoiz}% yig‘ildi · so‘m`}
           ton={joriyFoiz !== null && joriyFoiz >= 90 ? 'ok' : 'accent'}
         />
-        <Stat label="Jami qarz" value={Number(m.qarz)} sub={`${m.qarzdor_yozilish} ta qarzdor yozilish · so‘m`} ton="brand" border="brand" />
-        <Stat label={`${davrNomi(m.keyingi_davr)} — kutilmoqda`} value={Number(m.keyingi_kutilgan)} sub="chegirma, VIP, tuzatish hisobga olingan" ton="ok" />
+        <Stat label="Jami qarz" value={Number(m.qarz)} sub={`${m.qarzdor_yozilish} ta qarzdor yozilish · so‘m`} ton="brand" border="brand" href="/crm/qarzdorlar" />
+        <Stat label={`${davrNomi(m.keyingi_davr)} — kutilmoqda`} value={Number(m.keyingi_kutilgan)} sub="chegirma, VIP, tuzatish hisobga olingan" ton="ok" href={tafsilot('keyingi', m.keyingi_davr)} />
       </div>
 
       <Card className="flex flex-col">
@@ -94,12 +104,12 @@ export function MoliyaBolimi({ m }: { m: HisobotMoliya }) {
               {oylar.map((o) => (
                 <tr key={o.davr}>
                   <td className={`${td} font-semibold`}>{davrNomi(o.davr)}</td>
-                  <td className={td}>{pul(o.hisoblangan)}</td>
-                  <td className={td}>{pul(o.yigilgan)}</td>
+                  <td className={td}><Link href={tafsilot('hisoblangan', o.davr)} className={rq}>{pul(o.hisoblangan)}</Link></td>
+                  <td className={td}><Link href={tolovlar(o.davr)} className={rq}>{pul(o.yigilgan)}</Link></td>
                   <td className={td}><FoizBelgi f={foiz(Number(o.yigilgan), Number(o.hisoblangan))} /></td>
-                  <td className={`${td} text-ink-3`}>{pul(o.chegirma)}</td>
-                  <td className={`${td} text-ink-3`}>{pul(o.vip)}</td>
-                  <td className={`${td} text-ink-3`}>{pul(o.tuzatish)}</td>
+                  <td className={`${td} text-ink-3`}><Link href={tafsilot('chegirma', o.davr)} className={rq}>{pul(o.chegirma)}</Link></td>
+                  <td className={`${td} text-ink-3`}><Link href={tafsilot('vip', o.davr)} className={rq}>{pul(o.vip)}</Link></td>
+                  <td className={`${td} text-ink-3`}><Link href={tafsilot('tuzatish', o.davr)} className={rq}>{pul(o.tuzatish)}</Link></td>
                 </tr>
               ))}
             </tbody>
@@ -150,11 +160,11 @@ export function OquvchilarBolimi({ o }: { o: HisobotOquvchilar }) {
   return (
     <>
       <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-5">
-        <Stat label="Faol bolalar" value={String(o.faol_bola)} sub="haqiqiy bolalar soni" />
-        <Stat label="Fan bo‘yicha" value={String(o.faol_fan)} sub="2 fanli bola — 2 marta" />
-        <Stat label="2 fanga qatnaydi" value={String(o.ikki_fanli)} sub="bola" />
-        <Stat label="VIP" value={String(o.vip)} sub="to‘lamaydi" ton="accent" />
-        <Stat label="Arxivda" value={String(o.arxiv)} sub="ketgan bolalar" />
+        <Stat label="Faol bolalar" value={String(o.faol_bola)} sub="haqiqiy bolalar soni" href={royxat('faol_bola')} />
+        <Stat label="Fan bo‘yicha" value={String(o.faol_fan)} sub="2 fanli bola — 2 marta" href={royxat('faol_fan')} />
+        <Stat label="2 fanga qatnaydi" value={String(o.ikki_fanli)} sub="bola" href={royxat('ikki_fanli')} />
+        <Stat label="VIP" value={String(o.vip)} sub="to‘lamaydi" ton="accent" href={royxat('vip')} />
+        <Stat label="Arxivda" value={String(o.arxiv)} sub="ketgan bolalar" href={royxat('arxiv')} />
       </div>
 
       <Card className="flex flex-col">
@@ -183,17 +193,24 @@ export function OquvchilarBolimi({ o }: { o: HisobotOquvchilar }) {
                 <tr key={m.davr}>
                   <td className={`${td} font-semibold`}>{davrNomi(m.davr)}</td>
                   <td className={td}>
-                    <span className="font-bold text-ok">+{m.yangi_bola}</span>
-                    <span className="text-ink-3"> · {m.yangi_fan} fan</span>
+                    <Link href={royxat('yangi_bola', m.davr)} className={`font-bold text-ok ${rq}`}>+{m.yangi_bola}</Link>
+                    <span className="text-ink-3"> · <Link href={royxat('yangi_fan', m.davr)} className={rq}>{m.yangi_fan} fan</Link></span>
                   </td>
                   <td className={td}>
-                    <span className={m.ketgan_bola ? 'font-bold text-brand' : 'text-ink-4'}>−{m.ketgan_bola}</span>
-                    <span className="text-ink-3"> · {m.tugagan_fan} fan</span>
+                    <Link href={royxat('ketgan_bola', m.davr)} className={`${m.ketgan_bola ? 'font-bold text-brand' : 'text-ink-4'} ${rq}`}>−{m.ketgan_bola}</Link>
+                    <span className="text-ink-3"> · <Link href={royxat('tugagan_fan', m.davr)} className={rq}>{m.tugagan_fan} fan</Link></span>
                   </td>
-                  <td className={td}>{m.faol_bola} <span className="text-ink-3">· {m.faol_fan} fan</span></td>
+                  <td className={td}>
+                    <Link href={royxat('oy_faol_bola', m.davr)} className={rq}>{m.faol_bola}</Link>{' '}
+                    <span className="text-ink-3">· <Link href={royxat('oy_faol_fan', m.davr)} className={rq}>{m.faol_fan} fan</Link></span>
+                  </td>
                   <td className={td}>
                     {m.probniy ? (
-                      <>{m.probniy_yozildi}/{m.probniy} <FoizBelgi f={foiz(m.probniy_yozildi, m.probniy)} yaxshi={50} orta={30} /></>
+                      <>
+                        <Link href={royxat('probniy_yozildi', m.davr)} className={rq}>{m.probniy_yozildi}</Link>/
+                        <Link href={royxat('probniy', m.davr)} className={rq}>{m.probniy}</Link>{' '}
+                        <FoizBelgi f={foiz(m.probniy_yozildi, m.probniy)} yaxshi={50} orta={30} />
+                      </>
                     ) : <span className="text-ink-4">—</span>}
                   </td>
                 </tr>
@@ -209,7 +226,9 @@ export function OquvchilarBolimi({ o }: { o: HisobotOquvchilar }) {
               <Empty>Faol yozilish yo‘q.</Empty>
             ) : (
               o.fanlar.map((f) => (
-                <BarRow key={f.fan} label={`${f.fan} · ${f.guruh} guruh`} value={f.yozilish} max={maxFan} format={(n) => `${n} o‘quvchi`} />
+                <Link key={f.fan} href={`/crm/hisobotlar/royxat?tur=fan&kim=${encodeURIComponent(f.fan)}`} className="-mx-2 rounded-lg px-2 transition hover:bg-surface-2">
+                  <BarRow label={`${f.fan} · ${f.guruh} guruh`} value={f.yozilish} max={maxFan} format={(n) => `${n} o‘quvchi`} />
+                </Link>
               ))
             )}
           </div>
@@ -223,7 +242,8 @@ export function OquvchilarBolimi({ o }: { o: HisobotOquvchilar }) {
 /*  USTOZLAR                                                           */
 /* ================================================================== */
 
-export function UstozlarBolimi({ u }: { u: HisobotUstoz[] }) {
+export function UstozlarBolimi({ u, dan, gacha }: { u: HisobotUstoz[]; dan: string; gacha: string }) {
+  const r = (tur: string, kim: string) => oraliqRoyxat(tur, dan, gacha, kim)
   const jami = u.reduce(
     (a, x) => ({
       g: a.g + x.guruh, y: a.y + x.yozilish, d: a.d + x.dars, b: a.b + x.belgi, k: a.k + x.kelgan,
@@ -247,14 +267,14 @@ export function UstozlarBolimi({ u }: { u: HisobotUstoz[] }) {
           <tbody className="divide-y divide-line">
             {u.map((x) => (
               <tr key={x.id}>
-                <td className={`${td} font-semibold`}>{x.ism}</td>
-                <td className={td}>{x.guruh}</td>
-                <td className={td}>{x.yozilish}</td>
-                <td className={td}>{x.dars}</td>
-                <td className={td}><FoizBelgi f={foiz(x.kelgan, x.belgi)} /></td>
-                <td className={td}>{pul(x.tushum)}</td>
-                <td className={`${td} ${Number(x.qarz) > 0 ? 'text-brand' : 'text-ink-4'}`}>{pul(x.qarz)}</td>
-                <td className={`${td} text-accent`}>{x.woblar}</td>
+                <td className={`${td} font-semibold`}><Link href={`/crm/ustozlar/${x.id}`} className="hover:text-brand hover:underline">{x.ism}</Link></td>
+                <td className={td}><Link href={`/crm/guruhlar?ustoz=${x.id}&holat=faol`} className={rq}>{x.guruh}</Link></td>
+                <td className={td}><Link href={`/crm/hisobotlar/royxat?tur=ustoz_oquvchi&kim=${x.id}`} className={rq}>{x.yozilish}</Link></td>
+                <td className={td}><Link href={r('ustoz_dars', x.id)} className={rq}>{x.dars}</Link></td>
+                <td className={td}><Link href={r('ustoz_kelgan', x.id)} title={`${x.kelgan} / ${x.belgi} belgi`}><FoizBelgi f={foiz(x.kelgan, x.belgi)} /></Link></td>
+                <td className={td}><Link href={r('ustoz_tushum', x.id)} className={rq}>{pul(x.tushum)}</Link></td>
+                <td className={`${td} ${Number(x.qarz) > 0 ? 'text-brand' : 'text-ink-4'}`}><Link href={`/crm/hisobotlar/royxat?tur=ustoz_qarz&kim=${x.id}`} className={rq}>{pul(x.qarz)}</Link></td>
+                <td className={`${td} text-accent`}><Link href={r('ustoz_woblar', x.id)} className={rq}>{x.woblar}</Link></td>
               </tr>
             ))}
           </tbody>
@@ -278,7 +298,8 @@ export function UstozlarBolimi({ u }: { u: HisobotUstoz[] }) {
 /*  DAVOMAT                                                            */
 /* ================================================================== */
 
-export function DavomatBolimi({ d }: { d: HisobotDavomat }) {
+export function DavomatBolimi({ d, dan, gacha }: { d: HisobotDavomat; dan: string; gacha: string }) {
+  const r = (tur: string, kim?: string) => oraliqRoyxat(tur, dan, gacha, kim)
   const b = d.belgilar
   const keldi = b.keldi + b.kechikdi
   const qoyilgan = b.kutilgan - b.belgilanmagan
@@ -296,16 +317,19 @@ export function DavomatBolimi({ d }: { d: HisobotDavomat }) {
           value={`${d.darslar.otildi} / ${d.darslar.reja}`}
           sub={d.darslar.belgilanmagan ? `${d.darslar.belgilanmagan} ta darsga davomat qo‘yilmagan` : 'hamma darsga davomat qo‘yilgan'}
           ton={d.darslar.belgilanmagan ? 'brand' : 'ok'}
+          href={r(d.darslar.belgilanmagan ? 'dav_dars_qilinmagan' : 'dav_dars')}
         />
-        <Stat label="Belgi bo‘lishi kerak" value={String(b.kutilgan)} sub="dars kuni × guruhdagi o‘quvchi" />
+        <Stat label="Belgi bo‘lishi kerak" value={String(b.kutilgan)} sub="dars kuni × guruhdagi o‘quvchi" href={r('dav_kutilgan')} />
         <Stat
+          href={r('dav_keldi')}
           label="Keldi"
           value={String(keldi)}
           sub={`${foiz(keldi, qoyilgan) ?? '—'}% belgilanganlardan${b.kechikdi ? ` · ${b.kechikdi} kechikdi` : ''}`}
           ton="ok"
         />
-        <Stat label="Kelmadi" value={String(b.kelmadi)} sub={b.sababli ? `+ ${b.sababli} sababli` : 'sababli yo‘q'} ton={b.kelmadi ? 'accent' : 'ok'} />
+        <Stat label="Kelmadi" value={String(b.kelmadi)} sub={b.sababli ? `+ ${b.sababli} sababli` : 'sababli yo‘q'} ton={b.kelmadi ? 'accent' : 'ok'} href={r('dav_kelmadi')} />
         <Stat
+          href={r('dav_belgisiz')}
           label="Belgilanmagan"
           value={String(b.belgilanmagan)}
           sub={`${foiz(b.belgilanmagan, b.kutilgan) ?? 0}% — ustoz belgi qo‘ymagan`}
@@ -335,14 +359,14 @@ export function DavomatBolimi({ d }: { d: HisobotDavomat }) {
                   </td>
                   <td className={`${td} text-ink-2`}>{g.ustoz}</td>
                   <td className={td}>
-                    <span className={g.dars_otildi < g.dars_reja ? 'text-brand' : ''}>{g.dars_otildi}</span>
-                    <span className="text-ink-3"> / {g.dars_reja}</span>
+                    <Link href={r('dav_dars_otildi', g.id)} className={`${g.dars_otildi < g.dars_reja ? 'text-brand' : ''} ${rq}`}>{g.dars_otildi}</Link>
+                    <span className="text-ink-3"> / <Link href={r('dav_dars', g.id)} className={rq}>{g.dars_reja}</Link></span>
                   </td>
-                  <td className={td}>{g.kutilgan}</td>
-                  <td className={`${td} text-ok`}>{g.s_keldi}</td>
-                  <td className={td}>{g.s_kelmadi || <span className="text-ink-4">0</span>}</td>
-                  <td className={td}>{g.s_sababli || <span className="text-ink-4">0</span>}</td>
-                  <td className={td}>{g.s_belgilanmagan ? <b className="text-brand">{g.s_belgilanmagan}</b> : <span className="text-ink-4">0</span>}</td>
+                  <td className={td}><Link href={r('dav_kutilgan', g.id)} className={rq}>{g.kutilgan}</Link></td>
+                  <td className={`${td} text-ok`}><Link href={r('dav_keldi', g.id)} className={rq}>{g.s_keldi}</Link></td>
+                  <td className={td}>{g.s_kelmadi ? <Link href={r('dav_kelmadi', g.id)} className={rq}>{g.s_kelmadi}</Link> : <span className="text-ink-4">0</span>}</td>
+                  <td className={td}>{g.s_sababli ? <Link href={r('dav_sababli', g.id)} className={rq}>{g.s_sababli}</Link> : <span className="text-ink-4">0</span>}</td>
+                  <td className={td}>{g.s_belgilanmagan ? <Link href={r('dav_belgisiz', g.id)} className={`font-bold text-brand ${rq}`}>{g.s_belgilanmagan}</Link> : <span className="text-ink-4">0</span>}</td>
                   <td className={td}><FoizBelgi f={foiz(g.s_keldi, g.s_keldi + g.s_kelmadi + g.s_sababli)} yaxshi={85} /></td>
                 </tr>
               ))}
@@ -350,12 +374,12 @@ export function DavomatBolimi({ d }: { d: HisobotDavomat }) {
             <tfoot className="border-t border-line bg-surface-2/60 font-semibold">
               <tr>
                 <td className={td}>Jami</td><td className={td} />
-                <td className={td}>{d.darslar.otildi} / {d.darslar.reja}</td>
-                <td className={td}>{b.kutilgan}</td>
-                <td className={td}>{keldi}</td>
-                <td className={td}>{b.kelmadi}</td>
-                <td className={td}>{b.sababli}</td>
-                <td className={td}>{b.belgilanmagan}</td>
+                <td className={td}><Link href={r('dav_dars_otildi')} className={rq}>{d.darslar.otildi}</Link> / <Link href={r('dav_dars')} className={rq}>{d.darslar.reja}</Link></td>
+                <td className={td}><Link href={r('dav_kutilgan')} className={rq}>{b.kutilgan}</Link></td>
+                <td className={td}><Link href={r('dav_keldi')} className={rq}>{keldi}</Link></td>
+                <td className={td}><Link href={r('dav_kelmadi')} className={rq}>{b.kelmadi}</Link></td>
+                <td className={td}><Link href={r('dav_sababli')} className={rq}>{b.sababli}</Link></td>
+                <td className={td}><Link href={r('dav_belgisiz')} className={rq}>{b.belgilanmagan}</Link></td>
                 <td className={td}><FoizBelgi f={foiz(keldi, qoyilgan)} yaxshi={85} /></td>
               </tr>
             </tfoot>
@@ -408,8 +432,8 @@ export function DavomatBolimi({ d }: { d: HisobotDavomat }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3.5">
-        <Stat label="To‘lgan guruhlar" value={`${tola} / ${d.guruhlar.length}`} sub={`guruh ${SIGIM} kishilik, individual — 1`} />
-        <Stat label="Bo‘sh joylar" value={String(bosh)} sub="faol guruhlarda — yangi o‘quvchi uchun" ton="ok" />
+        <Stat label="To‘lgan guruhlar" value={`${tola} / ${d.guruhlar.length}`} sub={`guruh ${SIGIM} kishilik, individual — 1`} href="/crm/guruhlar?holat=faol" />
+        <Stat label="Bo‘sh joylar" value={String(bosh)} sub="faol guruhlarda — yangi o‘quvchi uchun" ton="ok" href="/crm/guruhlar?holat=faol" />
       </div>
     </>
   )
@@ -432,9 +456,9 @@ export function OrtachaTolovBolimi({ o }: { o: HisobotOrtacha }) {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3.5 px-5 pb-4 sm:grid-cols-3">
-            <Stat label={`${davrNomi(joriy.davr)} — o‘rtacha`} value={ortacha(Number(joriy.tushum), Number(joriy.fan))} sub="1 fan uchun · so‘m" ton="brand" />
-            <Stat label="Tushum" value={Number(joriy.tushum)} sub="shu oy uchun to‘langan · so‘m" />
-            <Stat label="Fanlar" value={String(joriy.fan)} sub={`${joriy.bola} bola · ${joriy.vip_fan} VIP`} />
+            <Stat label={`${davrNomi(joriy.davr)} — o‘rtacha`} value={ortacha(Number(joriy.tushum), Number(joriy.fan))} sub="1 fan uchun · so‘m" ton="brand" href={royxat('ortacha_fan', joriy.davr)} />
+            <Stat label="Tushum" value={Number(joriy.tushum)} sub="shu oy uchun to‘langan · so‘m" href={royxat('ortacha_tolov', joriy.davr)} />
+            <Stat label="Fanlar" value={String(joriy.fan)} sub={`${joriy.bola} bola · ${joriy.vip_fan} VIP`} href={royxat('ortacha_fan', joriy.davr)} />
           </div>
           <Jadval>
             <thead className="border-y border-line bg-surface-2/60">
@@ -447,8 +471,8 @@ export function OrtachaTolovBolimi({ o }: { o: HisobotOrtacha }) {
               {oylar.map((m) => (
                 <tr key={m.davr}>
                   <td className={`${td} font-semibold`}>{davrNomi(m.davr)}</td>
-                  <td className={td}>{pul(m.tushum)}</td>
-                  <td className={td}>{m.fan}</td>
+                  <td className={td}><Link href={royxat('ortacha_tolov', m.davr)} className={rq}>{pul(m.tushum)}</Link></td>
+                  <td className={td}><Link href={royxat('ortacha_fan', m.davr)} className={rq}>{m.fan}</Link></td>
                   <td className={`${td} text-ink-3`}>{m.bola}</td>
                   <td className={`${td} font-bold`}>{pul(ortacha(Number(m.tushum), Number(m.fan)))}</td>
                   <td className={`${td} text-ink-3`}>{pul(ortacha(Number(m.tushum), Number(m.fan) - Number(m.vip_fan)))}</td>
@@ -460,8 +484,14 @@ export function OrtachaTolovBolimi({ o }: { o: HisobotOrtacha }) {
             <span className="lbl">{davrNomi(joriy.davr)} — fanlar bo‘yicha</span>
             {joriy.fanlar.map((f) => (
               <div key={f.nom} className="flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
-                <span>{f.nom} <span className="text-ink-3">· {f.soni} ta</span></span>
-                <span className="tnum"><b>{pul(ortacha(Number(f.tushum), Number(f.soni)))}</b> <span className="text-ink-3">({pul(f.tushum)})</span></span>
+                <span>
+                  {f.nom}{' '}
+                  <Link href={`${royxat('ortacha_fan', joriy.davr)}&kim=${encodeURIComponent(f.nom)}`} className={`text-ink-3 ${rq}`}>· {f.soni} ta</Link>
+                </span>
+                <span className="tnum">
+                  <b>{pul(ortacha(Number(f.tushum), Number(f.soni)))}</b>{' '}
+                  <Link href={`${royxat('ortacha_tolov', joriy.davr)}&kim=${encodeURIComponent(f.nom)}`} className={`text-ink-3 ${rq}`}>({pul(f.tushum)})</Link>
+                </span>
               </div>
             ))}
           </div>

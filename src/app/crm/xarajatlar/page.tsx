@@ -92,8 +92,13 @@ export default async function Xarajatlar({
       <Xabar ok={s.ok} xato={s.xato} />
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
-        <Stat label={`${davrNomi(davr)} tushumi`} value={pul(mo.tushum)} sub="tasdiqlangan to‘lovlar · so‘m" />
-        <Stat label="Xarajat" value={pul(mo.xarajat)} sub="bekor qilinmaganlar · so‘m" ton="accent" />
+        <Stat
+          label={`${davrNomi(davr)} tushumi`}
+          value={pul(mo.tushum)}
+          sub="tasdiqlangan to‘lovlar · so‘m"
+          href={`/crm/hisobotlar/royxat?tur=tushum&kim=tasdiqlangan&dan=${dan}&gacha=${gacha}`}
+        />
+        <Stat label="Xarajat" value={pul(mo.xarajat)} sub="bekor qilinmaganlar · so‘m" ton="accent" href={`/crm/xarajatlar?davr=${davr}&b=xarajat`} />
         <Stat
           label="Sof foyda"
           value={pul(foyda)}
@@ -113,7 +118,7 @@ export default async function Xarajatlar({
           ) : (
             <ul className="flex flex-col">
               {royxat.map((x) => (
-                <li key={x.id} className="flex flex-col gap-2 border-t border-line-soft px-5 py-3.5">
+                <li key={x.id} data-belgi={x.bekor ? undefined : "xarajat"} className="flex flex-col gap-2 border-t border-line-soft px-5 py-3.5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex min-w-0 flex-col gap-1">
                       <span className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold">

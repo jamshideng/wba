@@ -37,8 +37,8 @@ export default async function Kechikishlarim() {
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha nom="Kechikishlarim" izoh="administrator yozgan kechikishlar — yozuv yo‘q bo‘lsa, o‘z vaqtida kelgansiz" />
       <div className="grid grid-cols-2 gap-3">
-        <Stat label={`${davrNomi(davr)} — kechikish`} value={String(oy.length)} sub="marta" ton={oy.length ? 'brand' : 'ok'} Icon={IconAlert} />
-        <Stat label="Jami kechikkan vaqt" value={`${oyDaq} daq`} sub="shu oy" ton={oyDaq ? 'accent' : 'ok'} Icon={IconJadval} />
+        <Stat label={`${davrNomi(davr)} — kechikish`} value={String(oy.length)} sub="marta" ton={oy.length ? 'brand' : 'ok'} Icon={IconAlert} href={`/crm/kechikishlarim?b=oy:${davr}`} />
+        <Stat label="Jami kechikkan vaqt" value={`${oyDaq} daq`} sub="shu oy" ton={oyDaq ? 'accent' : 'ok'} Icon={IconJadval} href={`/crm/kechikishlarim?b=oy:${davr}`} />
       </div>
       <Card className="flex flex-col">
         <CardHeader title="Tarix" meta={`${royxat.length} ta`} />

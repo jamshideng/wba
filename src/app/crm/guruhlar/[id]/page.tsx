@@ -13,15 +13,15 @@ import { GURUH_TURI_NOMI } from '../forma'
 export const metadata = { title: 'Guruh' }
 
 /** O'quvchi qatori: xodimga profilga havola, ustozga oddiy qator. */
-function Qator({ href, children }: { href: string | null; children: React.ReactNode }) {
+function Qator({ href, belgi, children }: { href: string | null; belgi?: string; children: React.ReactNode }) {
   const klass =
     'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-line-soft py-2.5 last:border-0'
   return href ? (
-    <Link href={href} className={`${klass} transition hover:bg-surface-2`}>
+    <Link href={href} data-belgi={belgi} className={`${klass} transition hover:bg-surface-2`}>
       {children}
     </Link>
   ) : (
-    <div className={klass}>{children}</div>
+    <div data-belgi={belgi} className={klass}>{children}</div>
   )
 }
 export const dynamic = 'force-dynamic'
@@ -150,8 +150,9 @@ export default async function GuruhProfil({
       <Xabar ok={xabar.ok} xato={xabar.xato} />
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <Stat label="O‘quvchilar" value={yList.length} sub={GURUH_TURI_NOMI[g.turi] ?? g.turi} />
+        <Stat label="O‘quvchilar" value={yList.length} sub={GURUH_TURI_NOMI[g.turi] ?? g.turi} href={`/crm/guruhlar/${g.id}?b=oq`} />
         <Stat
+          href={`/crm/davomat/${g.id}`}
           label={`Davomat · ${davrNomi(davr)}`}
           value={ortacha === null ? '—' : `${ortacha}%`}
           sub={ortacha === null ? 'shu oyda belgilanmagan' : 'o‘rtacha'}
@@ -159,8 +160,9 @@ export default async function GuruhProfil({
         />
         {pulKoradi && (
           <>
-            <Stat label="Oylik narx" value={g.oylik_narx} sub="so‘m" />
+            <Stat label="Oylik narx" value={g.oylik_narx} sub="so‘m" href={adminmi(profil.rol) ? `/crm/guruhlar/${g.id}/tahrir` : undefined} />
             <Stat
+              href={`/crm/hisobotlar/royxat?tur=balans_qarz&kim=g:${g.id}`}
               label="Guruh qarzi"
               value={Number(stats?.qarz ?? 0)}
               sub="so‘m"
@@ -185,6 +187,7 @@ export default async function GuruhProfil({
                   <Qator
                     key={y.id}
                     href={pulKoradi ? `/crm/oquvchilar/${y.student_id}` : null}
+                    belgi={`oq${qarz > 0 ? ' qarz' : ''}`}
                   >
                     <span className="flex min-w-0 items-center gap-3">
                       <span className="grid grid-cols-1 size-9 shrink-0 place-items-center rounded-full bg-brand-soft font-[family-name:var(--font-display)] text-[12px] font-bold text-brand">

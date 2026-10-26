@@ -130,9 +130,10 @@ export default async function Maosh({
       </Card>
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
-        <Stat label={`${davrNomi(davr)} · jami`} value={pul(jami)} sub="to‘lanadigan maosh · so‘m" />
-        <Stat label="O‘quvchilar" value={jamiOquvchi} sub="hisobga kirgan qatnashuvlar" />
+        <Stat label={`${davrNomi(davr)} · jami`} value={pul(jami)} sub="to‘lanadigan maosh · so‘m" href={`/crm/maosh?davr=${davr}&b=ustoz`} />
+        <Stat label="O‘quvchilar" value={jamiOquvchi} sub="hisobga kirgan qatnashuvlar" href={`/crm/maosh?davr=${davr}&b=ustoz`} />
         <Stat
+          href={`/crm/maosh?davr=${davr}&b=aniqmas`}
           label="Stavkasiz"
           value={aniqmas}
           sub={aniqmas ? 'stavka belgilanmagan guruh bor' : 'hammasiga belgilangan'}
@@ -151,7 +152,7 @@ export default async function Maosh({
           ) : (
             <ul className="flex flex-col">
               {qatorlar.map((q) => (
-                <li key={q.teacher_id} className="flex flex-col gap-2.5 border-t border-line-soft px-5 py-3.5">
+                <li key={q.teacher_id} data-belgi={`ustoz${q.aniqmas ? ' aniqmas' : ''}`} className="flex flex-col gap-2.5 border-t border-line-soft px-5 py-3.5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex min-w-0 flex-col gap-1">
                       <Link

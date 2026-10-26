@@ -31,6 +31,8 @@ type Sorov = {
   usul?: string
   q?: string
   sahifa?: string
+  /** Manba havolasi (Nazorat, 26.10): bitta to'lov */
+  id?: string
   ok?: string
   xato?: string
 }
@@ -56,7 +58,9 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="To‘lovlar" />
 
   const s = await searchParams
-  const filtr = (['tasdiqlanmagan', 'bekor'] as const).find((f) => f === s.filtr) ?? 'hammasi'
+  // 'faol' — bekor qilinmaganlar (tushum kartasi shulardan, 26.10)
+  const filtr = (['tasdiqlanmagan', 'bekor', 'faol'] as const).find((f) => f === s.filtr) ?? 'hammasi'
+  const tolovId = /^\d+$/.test(s.id ?? '') ? Number(s.id) : null
   const davr = /^\d{4}-\d{2}$/.test(s.davr ?? '') ? s.davr! : ''
   const usul = (['naqd', 'click', 'terminal', 'payme'] as const).find((u) => u === s.usul)
   const qidiruv = (s.q ?? '').trim()
@@ -77,6 +81,8 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
 
   if (filtr === 'tasdiqlanmagan') soorov = soorov.eq('tasdiqlangan', false).eq('bekor', false)
   else if (filtr === 'bekor') soorov = soorov.eq('bekor', true)
+  else if (filtr === 'faol') soorov = soorov.eq('bekor', false)
+  if (tolovId) soorov = soorov.eq('id', tolovId)
   if (davr) soorov = soorov.eq('davr', davr)
   if (usul) soorov = soorov.eq('usul', usul)
   // To'lovda telefon yo'q — raqam yozilsa ism sifatida emas, hech narsa topilmaydi; ID va ism yetarli
@@ -93,7 +99,7 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
   const p = panel as DashboardStats | null
   const kutayotgan = tolovlar.filter((t) => !t.tasdiqlangan && !t.bekor)
   const joriy = `/crm/tolovlar?${new URLSearchParams(
-    Object.entries({ filtr: filtr === 'hammasi' ? '' : filtr, davr, usul: usul ?? '', q: qidiruv, sahifa: sahifa > 1 ? String(sahifa) : '' })
+    Object.entries({ id: tolovId ? String(tolovId) : '', filtr: filtr === 'hammasi' ? '' : filtr, davr, usul: usul ?? '', q: qidiruv, sahifa: sahifa > 1 ? String(sahifa) : '' })
       .filter(([, v]) => v) as [string, string][],
   ).toString()}`
 
@@ -119,22 +125,30 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
       <Xabar ok={s.ok} xato={s.xato} />
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <Stat label={`${davrNomi(joriyDavr())} tushumi`} value={p?.joriy_oy_tushumi ?? 0} sub={`${p?.joriy_oy_tolovlari ?? 0} ta to‘lov`} ton="ok" Icon={IconPayments} />
+        <Stat label={`${davrNomi(joriyDavr())} tushumi`} value={p?.joriy_oy_tushumi ?? 0} sub={`${p?.joriy_oy_tolovlari ?? 0} ta to‘lov`} ton="ok" Icon={IconPayments} href={`/crm/tolovlar?filtr=faol&davr=${joriyDavr()}`} />
         <Stat
+          href="/crm/tolovlar?filtr=tasdiqlanmagan"
           label="Tasdiq kutmoqda"
           value={p?.tasdiqlanmagan_summa ?? 0}
           sub={`${p?.tasdiqlanmagan_soni ?? 0} ta to‘lov`}
           ton={(p?.tasdiqlanmagan_soni ?? 0) > 0 ? 'accent' : 'ok'}
           border={(p?.tasdiqlanmagan_soni ?? 0) > 0 ? 'accent' : undefined}
         />
-        <Stat label="Jami qarz" value={p?.jami_qarz ?? 0} sub={`${p?.qarzdorlar ?? 0} qarzdor`} ton="brand" Icon={IconDebt} />
-        <Stat label="Chegirma" value={p?.chegirma ?? 0} sub="shu oy" ton="accent" Icon={IconWoblr} />
+        <Stat label="Jami qarz" value={p?.jami_qarz ?? 0} sub={`${p?.qarzdorlar ?? 0} qarzdor`} ton="brand" Icon={IconDebt} href="/crm/qarzdorlar" />
+        <Stat label="Chegirma" value={p?.chegirma ?? 0} sub="shu oy" ton="accent" Icon={IconWoblr} href={`/crm/hisobotlar/tafsilot?tur=chegirma_jami&davr=${joriyDavr()}`} />
       </div>
 
       <div className="flex flex-wrap gap-2">
         {bolim('hammasi', 'Hammasi')}
         {bolim('tasdiqlanmagan', 'Tasdiqlanmagan')}
         {bolim('bekor', 'Bekor qilingan')}
+        {filtr === 'faol' && bolim('faol', 'Bekor qilinmaganlar')}
+        {tolovId && (
+          <span className="flex min-h-11 items-center gap-2 rounded-[9px] border border-brand bg-brand-soft px-4 text-[13px]">
+            To‘lov #{tolovId}
+            <Link href="/crm/tolovlar" className="text-ink-3 underline underline-offset-2 hover:text-ink">hammasi</Link>
+          </span>
+        )}
       </div>
 
       <JonliForma className="flex flex-wrap items-end gap-2.5">
@@ -187,7 +201,7 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
         ) : (
           <ul className="flex flex-col">
             {tolovlar.map((t) => (
-              <li key={t.id} className="flex flex-col gap-2.5 border-b border-line-soft px-5 py-3.5 last:border-0">
+              <li key={t.id} data-belgi={`tol:${t.id}`} className="flex flex-col gap-2.5 border-b border-line-soft px-5 py-3.5 last:border-0">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex min-w-0 flex-col gap-1">
                     {t.students ? (
@@ -256,7 +270,7 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
 
       <Sahifalash
         yol="/crm/tolovlar"
-        sorov={{ filtr: filtr === 'hammasi' ? undefined : filtr, davr: davr || undefined, usul, q: qidiruv || undefined }}
+        sorov={{ id: tolovId ? String(tolovId) : undefined, filtr: filtr === 'hammasi' ? undefined : filtr, davr: davr || undefined, usul, q: qidiruv || undefined }}
         sahifa={sahifa}
         jami={count ?? 0}
         soni={SAHIFA_SONI}

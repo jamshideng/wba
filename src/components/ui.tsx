@@ -93,6 +93,7 @@ export function Stat({
   ton = 'neytral',
   border,
   Icon,
+  href,
 }: {
   label: string
   value: string | number
@@ -101,6 +102,8 @@ export function Stat({
   border?: 'brand' | 'accent'
   /** Ixtiyoriy: o'ng yuqori burchakda rangli kvadrat ichida ikonka */
   Icon?: (p: { size?: number; className?: string }) => React.ReactElement
+  /** Manba (26.10): shu raqamni tashkil qilgan ro'yxat — kartani bosib o'tiladi */
+  href?: string
 }) {
   const chiziq =
     border === 'brand'
@@ -109,8 +112,8 @@ export function Stat({
         ? 'border-accent-line'
         : 'border-line'
 
-  return (
-    <div className={`flex flex-col gap-1.5 rounded-[12px] border bg-surface px-4 py-3.5 ${chiziq}`}>
+  const ichi = (
+    <>
       <span className="flex items-start justify-between gap-2">
         <span className="lbl pt-0.5">{label}</span>
         {Icon && (
@@ -125,7 +128,15 @@ export function Stat({
         {typeof value === 'number' ? pul(value) : value}
       </span>
       {sub && <span className="text-xs text-ink-3">{sub}</span>}
-    </div>
+    </>
+  )
+  const klass = `flex flex-col gap-1.5 rounded-[12px] border bg-surface px-4 py-3.5 ${chiziq}`
+  return href ? (
+    <Link href={href} title={`${label} — ro‘yxatini ochish`} className={`${klass} group/stat transition hover:border-ink-3 hover:bg-surface-2/60`}>
+      {ichi}
+    </Link>
+  ) : (
+    <div className={klass}>{ichi}</div>
   )
 }
 

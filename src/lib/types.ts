@@ -1019,6 +1019,10 @@ export type Database = {
       tushum_hisobot: { Args: { p_dan: string; p_gacha: string }; Returns: Hisobot }
       hisobot_grafik: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotGrafik }
       hisobot_moliya: { Args: { p_oylar?: number }; Returns: HisobotMoliya }
+      /** 0103 — moliya raqamining qatorlari (manba havolasi) */
+      hisob_tafsilot: { Args: { p_davr: string }; Returns: Record<string, unknown>[] }
+      keyingi_oy_tafsilot: { Args: Record<string, never>; Returns: Record<string, unknown>[] }
+      hisobot_royxat: { Args: { p_tur: string; p_davr?: string | null; p_kim?: string | null; p_dan?: string | null; p_gacha?: string | null }; Returns: Record<string, unknown>[] }
       hisobot_oquvchilar: { Args: { p_oylar?: number }; Returns: HisobotOquvchilar }
       hisobot_ortacha_tolov: { Args: { p_oylar?: number }; Returns: HisobotOrtacha }
       hisobot_ilova: { Args: Record<string, never>; Returns: HisobotIlova }

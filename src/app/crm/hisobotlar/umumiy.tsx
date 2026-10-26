@@ -51,7 +51,22 @@ function Kpi({
   return href ? <Link href={href} className={`${klass} hover:border-ink-3`}>{ichi}</Link> : <div className={`${klass} pb-4`}>{ichi}</div>
 }
 
-export function UmumiyBolim({ h, g, oylar }: { h: Hisobot; g: HisobotGrafik; oylar: { davr: string; tushum: number }[] }) {
+export function UmumiyBolim({
+  h,
+  g,
+  oylar,
+  dan,
+  gacha,
+}: {
+  h: Hisobot
+  g: HisobotGrafik
+  oylar: { davr: string; tushum: number }[]
+  dan: string
+  gacha: string
+}) {
+  /** Manba havolasi (26.10): raqamni tashkil qilgan qatorlar (hisobot_royxat, 0103) */
+  const r = (tur: string, kim?: string) =>
+    `/crm/hisobotlar/royxat?tur=${tur}&dan=${dan}&gacha=${gacha}${kim ? `&kim=${encodeURIComponent(kim)}` : ''}`
   const kun = g.kunlar
   const davJ = foiz(g.joriy.kelgan, g.joriy.belgi)
   const davO = foiz(g.oldingi.kelgan, g.oldingi.belgi)
@@ -69,8 +84,10 @@ export function UmumiyBolim({ h, g, oylar }: { h: Hisobot; g: HisobotGrafik; oyl
           trend={<Trend joriy={Number(g.joriy.tushum)} oldingi={Number(g.oldingi.tushum)} />}
           seriya={kun.map((k) => Number(k.tushum))}
           rang={RANG.ok}
+          href={r('tushum')}
         />
         <Kpi
+          href={r('belgi_kelgan')}
           nom="Davomat"
           qiymat={davJ === null ? '—' : `${davJ.toFixed(1)}%`}
           trend={<Trend joriy={davJ} oldingi={davO} birlik="pp" />}
@@ -83,6 +100,7 @@ export function UmumiyBolim({ h, g, oylar }: { h: Hisobot; g: HisobotGrafik; oyl
           trend={<Trend joriy={g.joriy.yangi} oldingi={g.oldingi.yangi} />}
           seriya={kun.map((k) => k.yangi)}
           rang={RANG.ok}
+          href={r('yangi_yozilish')}
         />
         <Kpi
           nom="Qarzdorlar"
@@ -97,13 +115,20 @@ export function UmumiyBolim({ h, g, oylar }: { h: Hisobot; g: HisobotGrafik; oyl
       {(Number(h.tasdiqlanmagan) > 0 || h.darslar.qilinmagan > 0) && (
         <div className="flex flex-wrap gap-2.5">
           {Number(h.tasdiqlanmagan) > 0 && (
-            <Link href="/crm/tolovlar?filtr=tasdiqlanmagan" className="rounded-[10px] border border-accent-line bg-accent-soft px-3.5 py-2 text-[12.5px] text-ink hover:brightness-95">
+            <Link href={r('tushum', 'tasdiqlanmagan')} className="rounded-[10px] border border-accent-line bg-accent-soft px-3.5 py-2 text-[12.5px] text-ink hover:brightness-95">
               Tasdiq kutmoqda: <b>{pul(h.tasdiqlanmagan)} so‘m</b>
             </Link>
           )}
           {h.darslar.qilinmagan > 0 && (
             <span className="rounded-[10px] border border-brand/30 bg-brand-soft px-3.5 py-2 text-[12.5px] text-ink">
-              Davomat qilinmagan: <b>{h.darslar.qilinmagan}</b> / {h.darslar.kutilgan} dars
+              Davomat qilinmagan:{' '}
+              <Link href={r('dars_qilinmagan')} className="font-bold underline underline-offset-2 hover:text-brand">
+                {h.darslar.qilinmagan}
+              </Link>{' '}
+              /{' '}
+              <Link href={r('dars_kutilgan')} className="underline underline-offset-2 hover:text-brand">
+                {h.darslar.kutilgan} dars
+              </Link>
             </span>
           )}
         </div>
@@ -116,7 +141,10 @@ export function UmumiyBolim({ h, g, oylar }: { h: Hisobot; g: HisobotGrafik; oyl
           <span className="tnum font-[family-name:var(--font-display)] text-[34px] leading-tight font-extrabold tracking-[-0.02em]">{pul(g.joriy.tushum)}</span>
           <span className="text-[14px] text-ink-3">so‘m</span>
           <Trend joriy={Number(g.joriy.tushum)} oldingi={Number(g.oldingi.tushum)} />
-          <span className="text-[12px] text-ink-3">{g.joriy.tolov} ta to‘lov · o‘tgan davrga nisbatan</span>
+          <Link href={r('tushum')} className="text-[12px] text-ink-3 underline underline-offset-2 hover:text-ink">
+            {g.joriy.tolov} ta to‘lov
+          </Link>
+          <span className="text-[12px] text-ink-3">· o‘tgan davrga nisbatan</span>
         </span>
         {kun.length > 1 ? (
           <MaydonGrafik data={kun.map((k) => ({ x: kunOy(k.sana), y: Number(k.tushum) }))} nom="Tushum" />
@@ -139,7 +167,20 @@ export function UmumiyBolim({ h, g, oylar }: { h: Hisobot; g: HisobotGrafik; oyl
         <Card className="flex flex-col">
           <CardHeader title="To‘lov usullari" meta="ulush" />
           <div className="px-5 pb-5">
-            {usullar.length === 0 ? <Empty>Bu oraliqda to‘lov yo‘q.</Empty> : <HalqaGrafik data={usullar} />}
+            {usullar.length === 0 ? (
+              <Empty>Bu oraliqda to‘lov yo‘q.</Empty>
+            ) : (
+              <>
+                <HalqaGrafik data={usullar} />
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-ink-3">
+                  {h.usul.map((u) => (
+                    <Link key={u.nom} href={r('tushum', u.nom)} className="min-h-8 underline underline-offset-2 hover:text-ink">
+                      {USUL_NOMI[u.nom] ?? u.nom}: {pul(u.summa)}
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </Card>
       </div>
@@ -191,15 +232,18 @@ export function UmumiyBolim({ h, g, oylar }: { h: Hisobot; g: HisobotGrafik; oyl
         <Card className="flex flex-col">
           <CardHeader title="Probniylar" meta="shu oraliqda yozilgan" />
           <div className="grid grid-cols-2 gap-3 px-5 pb-2 sm:grid-cols-4">
-            {([['Jami', h.probniy.jami], ['Doimiy', h.probniy.yozildi], ['Kelmadi', h.probniy.kelmadi], ['Rad etdi', h.probniy.rad]] as const).map(([nom, son]) => (
-              <span key={nom} className="flex flex-col gap-1">
+            {([['Jami', h.probniy.jami, undefined], ['Doimiy', h.probniy.yozildi, 'yozildi'], ['Kelmadi', h.probniy.kelmadi, 'kelmadi'], ['Rad etdi', h.probniy.rad, 'rad']] as const).map(([nom, son, kim]) => (
+              <Link key={nom} href={r('lid', kim)} className="-mx-1 flex flex-col gap-1 rounded-lg px-1 transition hover:bg-surface-2">
                 <span className="lbl">{nom}</span>
                 <span className="tnum font-[family-name:var(--font-display)] text-[22px] font-bold">{son}</span>
-              </span>
+              </Link>
             ))}
           </div>
           <p className="px-5 pb-4 text-[12px] text-ink-3">
-            {h.probniy.kutilmoqda} tasi hali kutilmoqda.
+            <Link href={r('lid', 'kutilmoqda')} className="underline underline-offset-2 hover:text-ink">
+              {h.probniy.kutilmoqda} tasi
+            </Link>{' '}
+            hali kutilmoqda.
             {h.probniy.jami > 0 && <> Doimiyga o‘tish: <b>{Math.round((h.probniy.yozildi * 100) / h.probniy.jami)}%</b>.</>}
           </p>
         </Card>

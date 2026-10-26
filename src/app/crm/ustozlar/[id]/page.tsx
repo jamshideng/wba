@@ -135,6 +135,8 @@ export default async function UstozProfil({
   const kList = (kechikish ?? []) as unknown as KechikishYozuv[]
   const oyKech = kList.filter((k) => k.sana.startsWith(davr))
   const oyKechDaq = oyKech.reduce((a, k) => a + k.daqiqa, 0)
+  // Manba havolasi (26.10): kartadagi raqam ortidagi qatorlar (hisobot_royxat, 0103)
+  const oyRoyxat = (tur: string) => `/crm/hisobotlar/royxat?tur=${tur}&kim=${id}&dan=${davr}-01&gacha=${bugun}`
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -157,17 +159,19 @@ export default async function UstozProfil({
       <Xabar ok={xabar.ok} xato={xabar.xato} />
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-3">
-        <Stat label="Guruhlar" value={faolIdlar.length} sub={`o‘quvchi: ${Number(s?.oquvchilar ?? 0)}`} />
-        <Stat label={`Darslar · ${davrNomi(davr)}`} value={darsSoni ?? 0} sub="o‘tkazilgan" />
+        <Stat label="Guruhlar" value={faolIdlar.length} sub={`o‘quvchi: ${Number(s?.oquvchilar ?? 0)}`} href={`/crm/guruhlar?ustoz=${id}&holat=faol`} />
+        <Stat label={`Darslar · ${davrNomi(davr)}`} value={darsSoni ?? 0} sub="o‘tkazilgan" href={oyRoyxat('ustoz_otkazilgan')} />
         <Stat
+          href={oyRoyxat('ustoz_kelgan')}
           label={`Davomat · ${davrNomi(davr)}`}
           value={davomatFoiz === null ? '—' : `${davomatFoiz}%`}
           sub={davomatFoiz === null ? 'shu oyda belgilanmagan' : 'guruhlari o‘rtachasi'}
           ton={davomatFoiz !== null && davomatFoiz >= 80 ? 'ok' : 'accent'}
         />
-        <Stat label={`Woblar · ${davrNomi(davr)}`} value={`+${oyBerdi}`} sub={oyAyirdi ? `ayirgan: −${oyAyirdi}` : 'bergan'} />
-        <Stat label="Tushum" value={pul(s?.tushum ?? 0)} sub="so‘m · to‘langan" />
+        <Stat label={`Woblar · ${davrNomi(davr)}`} value={`+${oyBerdi}`} sub={oyAyirdi ? `ayirgan: −${oyAyirdi}` : 'bergan'} href={oyRoyxat('ustoz_woblar')} />
+        <Stat label="Tushum" value={pul(s?.tushum ?? 0)} sub="so‘m · to‘langan" href={`/crm/hisobotlar/royxat?tur=balans_tolangan&kim=u:${id}`} />
         <Stat
+          href={`/crm/hisobotlar/royxat?tur=balans_qarz&kim=u:${id}`}
           label="Guruhlar qarzi"
           value={pul(qarz)}
           sub="so‘m · hozirgi"
@@ -175,6 +179,7 @@ export default async function UstozProfil({
           border={qarz > 0 ? 'brand' : undefined}
         />
         <Stat
+          href={`/crm/ustoz-davomati?oy=${davr}&ustoz=${id}`}
           label={`Kechikish · ${davrNomi(davr)}`}
           value={oyKech.length ? `${oyKech.length} marta` : '0'}
           sub={oyKech.length ? `jami ${oyKechDaq} daqiqa` : 'o‘z vaqtida keldi'}

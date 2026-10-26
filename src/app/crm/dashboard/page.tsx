@@ -58,6 +58,8 @@ export default async function Dashboard() {
         : Promise.resolve({ count: 0 }),
     ])
   const k = kunlik as Hisobot | null
+  /** Manba havolasi (26.10): bugungi raqam ortidagi qatorlar (hisobot_royxat, 0103) */
+  const bugunRoyxat = (tur: string) => `/crm/hisobotlar/royxat?tur=${tur}&dan=${bugun}&gacha=${bugun}`
 
   const s = (stats ?? null) as DashboardStats | null
   const qList = (qarzdorlar ?? []) as Qarzdor[]
@@ -97,7 +99,7 @@ export default async function Dashboard() {
             { href: '/crm/qarzdorlar', son: s?.qarzdorlar ?? 0, matn: 'qarzdor o‘quvchi', Icon: IconDebt },
             { href: '/crm/vazifalar', son: vazifaSoni ?? 0, matn: 'bugungi vazifa', Icon: IconAlert },
             { href: '/crm/lidlar?tez=kechikkan', son: kechikkanLid ?? 0, matn: 'lid aloqasi kechikdi', Icon: IconLeads },
-            { href: '/crm/hisobotlar?tur=bugun', son: k?.darslar.qilinmagan ?? 0, matn: 'dars davomatsiz', Icon: IconAttendance },
+            { href: `/crm/hisobotlar/royxat?tur=dars_qilinmagan&dan=${bugun}&gacha=${bugun}`, son: k?.darslar.qilinmagan ?? 0, matn: 'dars davomatsiz', Icon: IconAttendance },
           ]}
         />
       )}
@@ -127,20 +129,18 @@ export default async function Dashboard() {
         <section className="flex flex-col gap-2">
           <h2 className="lbl">Bugun · {sana(bugun)}</h2>
           <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-            <Stat label="Bugungi tushum" value={Number(k.tushum)} sub={`${k.soni} ta to‘lov`} ton="ok" Icon={IconPayments} />
-            <Link href="/crm/hisobotlar?tur=bugun" className="contents">
-              <Stat
-                label="Davomat qo‘yilmagan"
-                value={k.darslar.qilinmagan}
-                sub={`${k.darslar.kutilgan} ta darsdan`}
-                ton={k.darslar.qilinmagan > 0 ? 'brand' : 'ok'}
-                Icon={IconAttendance}
-              />
-            </Link>
-            <Link href="/crm/lidlar?tez=sinov" className="contents">
-              <Stat label="Bugun sinov darsi" value={probniyBugun ?? 0} sub="lidlar · sinov kuni bugun" ton="accent" Icon={IconLeads} />
-            </Link>
+            <Stat label="Bugungi tushum" value={Number(k.tushum)} sub={`${k.soni} ta to‘lov`} ton="ok" Icon={IconPayments} href={bugunRoyxat('tushum')} />
             <Stat
+              label="Davomat qo‘yilmagan"
+              value={k.darslar.qilinmagan}
+              sub={`${k.darslar.kutilgan} ta darsdan`}
+              ton={k.darslar.qilinmagan > 0 ? 'brand' : 'ok'}
+              Icon={IconAttendance}
+              href={bugunRoyxat('dars_qilinmagan')}
+            />
+            <Stat label="Bugun sinov darsi" value={probniyBugun ?? 0} sub="lidlar · sinov kuni bugun" ton="accent" Icon={IconLeads} href="/crm/lidlar?tez=sinov" />
+            <Stat
+              href={bugunRoyxat('belgi')}
               label="Bugungi davomat"
               value={k.davomat.belgilar ? `${Math.round((k.davomat.kelgan * 100) / k.davomat.belgilar)}%` : '—'}
               sub={`${k.davomat.kelgan} keldi · ${k.davomat.kelmadi} kelmadi`}
@@ -156,6 +156,7 @@ export default async function Dashboard() {
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
         <Stat
+          href={`/crm/tolovlar?filtr=faol&davr=${davr}`}
           label={`${davrNomi(davr)} tushumi`}
           value={s?.joriy_oy_tushumi ?? 0}
           sub={`${s?.joriy_oy_tolovlari ?? 0} ta to‘lov · so‘m`}
@@ -163,6 +164,7 @@ export default async function Dashboard() {
           Icon={IconPayments}
         />
         <Stat
+          href="/crm/qarzdorlar"
           label="Jami qarz"
           value={s?.jami_qarz ?? 0}
           sub={`${s?.qarzdorlar ?? 0} qarzdor · so‘m`}
@@ -171,12 +173,14 @@ export default async function Dashboard() {
           Icon={IconDebt}
         />
         <Stat
+          href="/crm/oquvchilar?holat=faol"
           label="Faol o‘quvchilar"
           value={s?.oquvchilar ?? 0}
           sub={`fan bo‘yicha ${s?.fan_boyicha ?? 0} · ${s?.guruhlar ?? 0} guruh · ${s?.ustozlar ?? 0} ustoz`}
           Icon={IconStudents}
         />
         <Stat
+          href={`/crm/hisobotlar/tafsilot?tur=chegirma_jami&davr=${davr}`}
           label="Berilgan chegirma"
           value={s?.chegirma ?? 0}
           sub="shu oy · so‘m"
@@ -204,20 +208,21 @@ export default async function Dashboard() {
               <Empty>Bu oy hali to‘lov yozilmagan.</Empty>
             ) : (
               uList.map((u) => (
-                <BarRow
+                <Link
                   key={u.teacher_id}
-                  label={u.ism}
-                  value={Number(u.tushum)}
-                  max={maxTushum}
-                />
+                  href={`/crm/hisobotlar/royxat?tur=ustoz_oy_tushum&davr=${davr}&kim=${u.teacher_id}`}
+                  className="-mx-2 rounded-lg px-2 transition hover:bg-surface-2"
+                >
+                  <BarRow label={u.ism} value={Number(u.tushum)} max={maxTushum} />
+                </Link>
               ))
             )}
             {uList.length > 0 && (
               <div className="mt-2.5 flex items-center justify-between border-t border-line pt-2.5">
                 <span className="text-xs text-ink-3">Jami</span>
-                <span className="tnum font-[family-name:var(--font-mono)] text-[12.5px]">
+                <Link href={`/crm/tolovlar?filtr=faol&davr=${davr}`} className="tnum font-[family-name:var(--font-mono)] text-[12.5px] underline underline-offset-2 hover:text-brand">
                   {pul(jamiTushum)} so‘m
-                </span>
+                </Link>
               </div>
             )}
           </div>

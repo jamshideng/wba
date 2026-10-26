@@ -67,6 +67,8 @@ export default async function UstozMaoshi({
   }
   const ism = jam?.ism ?? (param === 'men' ? men?.ism : null) ?? ustozId!
   const ortga = admin ? `/crm/maosh?davr=${davr}` : null
+  // Manba havolasi (26.10): kartalar shu sahifadagi qatorlarni ajratadi
+  const shu = (b: string) => `/crm/maosh/${param}?davr=${davr}&b=${b}`
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -90,14 +92,16 @@ export default async function UstozMaoshi({
       {xato && <p className="text-[13px] text-brand">Maoshni o‘qib bo‘lmadi.</p>}
 
       <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
-        <Stat label="To‘lanadigan" value={pul(jam?.yakuniy ?? 0)} sub="so‘m" ton="ok" />
-        <Stat label="Darslar bo‘yicha" value={pul(jam?.hisob ?? 0)} sub={`${jam?.oquvchilar ?? 0} o‘quvchi`} />
+        <Stat label="To‘lanadigan" value={pul(jam?.yakuniy ?? 0)} sub="so‘m" ton="ok" href={shu('oq,harakat')} />
+        <Stat label="Darslar bo‘yicha" value={pul(jam?.hisob ?? 0)} sub={`${jam?.oquvchilar ?? 0} o‘quvchi`} href={shu('oq')} />
         <Stat
+          href={shu('ayir')}
           label="Avans va jarima"
           value={pul(Number(jam?.avans ?? 0) + Number(jam?.jarima ?? 0))}
           sub="ayiriladi"
         />
         <Stat
+          href={shu('qosh')}
           label="Bonus va tuzatish"
           value={pul(Number(jam?.bonus ?? 0) + Number(jam?.tuzatish ?? 0))}
           sub="qo‘shiladi"
@@ -138,10 +142,19 @@ export default async function UstozMaoshi({
                   </thead>
                   <tbody>
                     {g.qator.map((q) => (
-                      <tr key={`${q.student_id}-${q.group_id}`} className="border-t border-line-soft">
+                      <tr key={`${q.student_id}-${q.group_id}`} data-belgi="oq" className="border-t border-line-soft">
                         <td className="px-5 py-2.5">{q.fish}</td>
                         <td className="tnum px-3 py-2.5 text-right">
-                          {q.hisob_darslar} / {q.darslar}
+                          {/* Jurnalda shu o'quvchi qatori (zamena ustozi jurnalni faqat o'sha kuni ochadi) */}
+                          {admin || !g.zamena ? (
+                            <Link href={`/crm/davomat/${q.group_id}?oy=${davr}&b=oq:${q.student_id}`} className="underline decoration-line underline-offset-2 hover:text-brand">
+                              {q.hisob_darslar} / {q.darslar}
+                            </Link>
+                          ) : (
+                            <>
+                              {q.hisob_darslar} / {q.darslar}
+                            </>
+                          )}
                         </td>
                         <td className="tnum px-3 py-2.5 text-right">
                           {q.ayirildi > 0 ? <Badge ton="brand">−{q.ayirildi}</Badge> : <span className="text-ink-4">—</span>}
@@ -166,7 +179,11 @@ export default async function UstozMaoshi({
             {harakatlar.map((h) => {
               const t = h.turi === 'avans' || h.turi === 'jarima' ? -Number(h.summa) : Number(h.summa)
               return (
-                <li key={h.id} className="flex items-start justify-between gap-3 border-t border-line-soft px-5 py-3">
+                <li
+                  key={h.id}
+                  data-belgi={`harakat ${h.turi === 'avans' || h.turi === 'jarima' ? 'ayir' : 'qosh'}`}
+                  className="flex items-start justify-between gap-3 border-t border-line-soft px-5 py-3"
+                >
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span className="text-[13px] font-semibold">{TURLAR[h.turi]}</span>
                     {h.izoh && <span className="text-[11.5px] text-ink-3">{h.izoh}</span>}

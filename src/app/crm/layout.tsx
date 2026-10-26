@@ -20,6 +20,7 @@ import { ProfilMenyu } from '@/components/profil-menyu'
 import { MenyuTugma } from '@/components/menyu-tugma'
 import { YuklanishChizigi, HavolaHolati } from '@/components/yuklanish'
 import { BildirishnomaJoyi } from '@/components/bildirishnomalar'
+import { Belgila } from '@/components/belgila'
 import { PastkiHavola } from '@/components/pastki-havola'
 import { MenyuHavola } from '@/components/menyu-havola'
 import { Yaratish } from '@/components/yaratish'
@@ -283,6 +284,9 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
           <IlovaOrnatish joy="banner" />
           <XabarnomaYoqish joy="banner" />
           <BolimTablari guruhlar={tabGuruhlar} />
+          <Suspense>
+            <Belgila />
+          </Suspense>
           {children}
         </main>
       </div>

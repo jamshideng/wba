@@ -68,7 +68,10 @@ export default async function TelegramUlanishi({ searchParams }: { searchParams:
       (!q || r.fish.toLowerCase().includes(q) || r.student_id.toLowerCase() === q) &&
       (holat === 'hammasi' ||
         (holat === 'ulanmagan' && r.oquvchi_ulangan + r.ota_ona_ulangan === 0) ||
-        (holat === 'ulangan' && r.oquvchi_ulangan + r.ota_ona_ulangan > 0)),
+        (holat === 'ulangan' && r.oquvchi_ulangan + r.ota_ona_ulangan > 0) ||
+        // Kartalardan (26.10): raqam = ro'yxat
+        (holat === 'ota_ona' && r.ota_ona_ulangan > 0) ||
+        (holat === 'ozi' && r.oquvchi_ulangan > 0)),
   )
 
   const ulangan = hammasi.filter((r) => r.oquvchi_ulangan + r.ota_ona_ulangan > 0).length
@@ -86,10 +89,10 @@ export default async function TelegramUlanishi({ searchParams }: { searchParams:
       <Xabar ok={s.ok} xato={s.xato ?? (error ? error.message : undefined)} />
 
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <Stat label="Botda" value={`${ulangan} / ${hammasi.length}`} sub="kamida bittasi ulangan" ton="ok" />
-        <Stat label="Ota-onasi ulangan" value={otaOna} sub="o‘quvchi" />
-        <Stat label="O‘zi ulangan" value={ozi} sub="o‘quvchi" />
-        <Stat label="Hech kim ulanmagan" value={hammasi.length - ulangan} sub="taklif yuboring" ton="brand" />
+        <Stat label="Botda" value={`${ulangan} / ${hammasi.length}`} sub="kamida bittasi ulangan" ton="ok" href="/crm/telegram?holat=ulangan" />
+        <Stat label="Ota-onasi ulangan" value={otaOna} sub="o‘quvchi" href="/crm/telegram?holat=ota_ona" />
+        <Stat label="O‘zi ulangan" value={ozi} sub="o‘quvchi" href="/crm/telegram?holat=ozi" />
+        <Stat label="Hech kim ulanmagan" value={hammasi.length - ulangan} sub="taklif yuboring" ton="brand" href="/crm/telegram?holat=ulanmagan" />
       </div>
 
       {takliflar.length > 0 && (

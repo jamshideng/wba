@@ -27,7 +27,7 @@ const HOLATLAR: (BuyurtmaHolati | 'hammasi')[] = ['kutilmoqda', 'buyurtma', 'ber
 export default async function Boshqaruv({
   searchParams,
 }: {
-  searchParams: Promise<{ bolim?: string; holat?: string; q?: string; ok?: string; xato?: string }>
+  searchParams: Promise<{ bolim?: string; holat?: string; q?: string; oy?: string; ok?: string; xato?: string }>
 }) {
   const profil = await talabRol('admin', 'direktor', 'qabulxona')
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Market boshqaruvi" />
@@ -86,9 +86,9 @@ export default async function Boshqaruv({
       <Xabar ok={s.ok} xato={s.xato} />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Tayyor, olib ketilmagan" value={String(kutilmoqdaSoni ?? 0)} ton={kutilmoqdaSoni ? 'accent' : 'neytral'} />
-        <Stat label="Oldindan buyurtmalar" value={String(oldindanSoni ?? 0)} sub="tovar kelishi kutilmoqda" ton={oldindanSoni ? 'brand' : 'neytral'} />
-        <Stat label="Shu oy berildi" value={String(oyBerilgan?.length ?? 0)} sub={`${oyWoblar.toLocaleString('ru-RU')} woblar`} />
+        <Stat label="Tayyor, olib ketilmagan" value={String(kutilmoqdaSoni ?? 0)} ton={kutilmoqdaSoni ? 'accent' : 'neytral'} href="/crm/market/boshqaruv?holat=kutilmoqda" />
+        <Stat label="Oldindan buyurtmalar" value={String(oldindanSoni ?? 0)} sub="tovar kelishi kutilmoqda" ton={oldindanSoni ? 'brand' : 'neytral'} href="/crm/market/boshqaruv?holat=buyurtma" />
+        <Stat label="Shu oy berildi" value={String(oyBerilgan?.length ?? 0)} sub={`${oyWoblar.toLocaleString('ru-RU')} woblar`} href="/crm/market/boshqaruv?holat=berildi&oy=1" />
         <div className="flex flex-col gap-1.5 rounded-[12px] border border-line bg-surface px-4 py-3.5">
           <span className="lbl">Bozor kuni</span>
           {admin ? (
@@ -110,7 +110,7 @@ export default async function Boshqaruv({
       {tablar}
 
       {bolim === 'buyurtma' ? (
-        <BuyurtmalarBolimi holat={holat} qidiruv={qidiruv} q={s.q} />
+        <BuyurtmalarBolimi holat={holat} qidiruv={qidiruv} q={s.q} oyBoshi={holat === 'berildi' && s.oy === '1' ? oyBoshi : null} />
       ) : bolim === 'taklif' ? (
         <TakliflarBolimi holat={s.holat} admin={admin} />
       ) : (
@@ -120,7 +120,18 @@ export default async function Boshqaruv({
   )
 }
 
-async function BuyurtmalarBolimi({ holat, qidiruv, q }: { holat: BuyurtmaHolati | 'hammasi'; qidiruv: string; q?: string }) {
+async function BuyurtmalarBolimi({
+  holat,
+  qidiruv,
+  q,
+  oyBoshi,
+}: {
+  holat: BuyurtmaHolati | 'hammasi'
+  qidiruv: string
+  q?: string
+  /** "Shu oy berildi" kartasidan (26.10) — shu oy boshidan berilganlar */
+  oyBoshi: string | null
+}) {
   const supabase = await createClient()
 
   // Qidiruv: kod, mahsulot nomi yoki o'quvchi ismi
@@ -132,6 +143,7 @@ async function BuyurtmalarBolimi({ holat, qidiruv, q }: { holat: BuyurtmaHolati 
 
   let soorov = supabase.from('woblr_redemptions').select('*').not('kod', 'is', null)
   if (holat !== 'hammasi') soorov = soorov.eq('holat', holat)
+  if (oyBoshi) soorov = soorov.gte('berildi_vaqt', oyBoshi)
   if (qidiruv) {
     const shartlar = [`kod.ilike.%${qidiruv}%`, `mahsulot_nomi.ilike.%${qidiruv}%`]
     if (oquvchiIdlar.length) shartlar.push(`student_id.in.(${oquvchiIdlar.join(',')})`)

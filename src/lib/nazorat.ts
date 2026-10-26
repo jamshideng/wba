@@ -25,12 +25,66 @@ export type NazoratHodisa = {
   sana: string
   teacher_id: string | null
   profile_id: string | null
+  group_id: string | null
+  student_id: string | null
+  lead_id: string | null
+  vazifa_id: string | null
+  payment_id: number | null
+  kalit: string
   tafsilot: string
   holat: 'yangi' | 'ogohlantirildi' | 'yopildi'
   yopish_izoh: string | null
   created_at: string
   teachers: { ism: string } | null
   profiles: { ism: string } | null
+}
+
+export type ManbaHavola = { nom: string; href: string }
+
+/**
+ * Hodisaga sabab bo'lgan joy (26.10, Jamshid): birinchisi — asosiy manba,
+ * qolganlari — bog'liq sahifalar. `b=` — o'sha sahifada rang bilan ajratiladi
+ * (components/belgila.tsx).
+ */
+export function nazoratManba(h: Pick<NazoratHodisa, 'turi' | 'sana' | 'group_id' | 'student_id' | 'lead_id' | 'vazifa_id' | 'payment_id' | 'teacher_id' | 'kalit'>): ManbaHavola[] {
+  const oy = h.sana.slice(0, 7)
+  const jurnal = (b: string, davr = oy) => `/crm/davomat/${h.group_id}?oy=${davr}&b=${b}`
+  const qoshimcha: ManbaHavola[] = []
+  if (h.student_id && h.turi !== 'qarzdor_eslatilmadi') qoshimcha.push({ nom: 'O‘quvchi profili', href: `/crm/oquvchilar/${h.student_id}` })
+  if (h.group_id) qoshimcha.push({ nom: 'Guruh', href: `/crm/guruhlar/${h.group_id}` })
+  switch (h.turi) {
+    case 'ustoz_kechikdi': {
+      const id = h.kalit.startsWith('kech:') ? h.kalit.slice(5) : null
+      const qs = new URLSearchParams({ oy })
+      if (h.teacher_id) qs.set('ustoz', h.teacher_id)
+      if (id) qs.set('b', `kech:${id}`)
+      return [{ nom: 'Ustozlar davomati', href: `/crm/ustoz-davomati?${qs}` }, ...qoshimcha]
+    }
+    case 'davomat_qilinmadi':
+    case 'woblar_berilmadi':
+      return h.group_id ? [{ nom: 'Davomat jurnali — o‘sha kun', href: jurnal(`kun:${h.sana}`) }, ...qoshimcha] : qoshimcha
+    case 'oquvchi_3_kelmadi':
+      return h.group_id && h.student_id
+        ? [{ nom: 'Davomat jurnali — kelmagan darslar', href: jurnal(`oq:${h.student_id},kelmadi:${h.student_id}`) }, ...qoshimcha]
+        : qoshimcha
+    case 'darslar_kam': {
+      // kalit: kam:<guruh>:<davr>
+      const davr = h.kalit.split(':')[2] ?? oy
+      return h.group_id ? [{ nom: 'Davomat jurnali — dam kunlari', href: jurnal('dam', davr) }, ...qoshimcha] : qoshimcha
+    }
+    case 'lid_qongiroq':
+      return [
+        ...(h.lead_id ? [{ nom: 'Lid kartasi', href: `/crm/lidlar?b=lid:${h.lead_id}` }] : []),
+        ...(h.vazifa_id ? [{ nom: 'Vazifa', href: `/crm/vazifalar?id=${h.vazifa_id}&b=vaz:${h.vazifa_id}` }] : []),
+      ]
+    case 'vazifa_muddati':
+      return h.vazifa_id ? [{ nom: 'Vazifa', href: `/crm/vazifalar?id=${h.vazifa_id}&b=vaz:${h.vazifa_id}` }, ...qoshimcha] : qoshimcha
+    case 'tolov_kech':
+    case 'tolov_tasdiqlanmadi':
+      return h.payment_id ? [{ nom: `To‘lov #${h.payment_id}`, href: `/crm/tolovlar?id=${h.payment_id}&b=tol:${h.payment_id}` }, ...qoshimcha] : qoshimcha
+    case 'qarzdor_eslatilmadi':
+      return h.student_id ? [{ nom: 'O‘quvchi — qarz va to‘lovlar', href: `/crm/oquvchilar/${h.student_id}?b=qarz` }] : []
+  }
 }
 
 /** Tayyor ogohlantirish matni — manager xohlasa o'zgartiradi */

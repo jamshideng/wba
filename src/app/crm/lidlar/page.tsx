@@ -26,13 +26,16 @@ const TEZ = {
   rejalangan: 'Rejalangan',
 } as const
 type Tez = keyof typeof TEZ
+/** Ko'rsatkich kartalaridan (26.10) — chiplar qatorida yo'q, lekin raqam = ro'yxat */
+const TEZ_YASHIRIN = { ochiq: 'Ochiq lidlar', shu_oy: 'Shu oy kelgan lidlar' } as const
+type Filtr = Tez | keyof typeof TEZ_YASHIRIN
 
 type Qator = Omit<LidKarta, 'guruh'> & { groups: { nom: string } | null; updated_at: string }
 
 export default async function Lidlar({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; manba?: string; tez?: string; ok?: string; xato?: string; yangi?: string }>
+  searchParams: Promise<{ q?: string; manba?: string; tez?: string; ok?: string; xato?: string; yangi?: string; b?: string }>
 }) {
   await talabRol('admin', 'direktor', 'qabulxona')
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Lidlar" />
@@ -43,7 +46,7 @@ export default async function Lidlar({
   const otizKunOldin = kunQosh(bugun, -30)
   const q = (s.q ?? '').trim().toLowerCase()
   const manba = MANBALAR.find((m) => m === s.manba) as LeadSource | undefined
-  const tez: Tez = (Object.keys(TEZ) as Tez[]).find((t) => t === s.tez) ?? 'hammasi'
+  const tez: Filtr = ([...Object.keys(TEZ), ...Object.keys(TEZ_YASHIRIN)] as Filtr[]).find((t) => t === s.tez) ?? 'hammasi'
 
   const sorov = new URLSearchParams()
   if (q) sorov.set('q', q)
@@ -62,7 +65,14 @@ export default async function Lidlar({
     supabase.from('leads').select('holat, student_id').gte('created_at', `${oyBoshi}T00:00:00+05:00`),
   ])
 
-  const hammasi = [...((ochiq ?? []) as unknown as Qator[]), ...((yopiq ?? []) as unknown as Qator[])].map(
+  // Manba havolasi (?b=lid:<id>, Nazorat): eski yopilgan lid ro'yxatda bo'lmasa ham ko'rinsin
+  const izlangan = /(?:^|,)lid:([0-9a-f-]{36})/.exec(s.b ?? '')?.[1]
+  const yuklangan = [...((ochiq ?? []) as unknown as Qator[]), ...((yopiq ?? []) as unknown as Qator[])]
+  if (izlangan && !yuklangan.some((l) => l.id === izlangan)) {
+    const { data: bitta } = await supabase.from('leads').select(ustunlar).eq('id', izlangan).maybeSingle()
+    if (bitta) yuklangan.push(bitta as unknown as Qator)
+  }
+  const hammasi = yuklangan.map(
     ({ groups, ...l }) => ({ ...l, teglar: l.teglar ?? [], keyingi_aloqa: aloqaSanasi(l.keyingi_aloqa), guruh: groups?.nom ?? null }) as LidKarta,
   )
 
@@ -93,9 +103,14 @@ export default async function Lidlar({
     rejalangan: ochiqlar.filter((l) => l.keyingi_aloqa !== null && l.keyingi_aloqa > bugun).length,
   }
 
+  const ochiqmi = (l: LidKarta) => ['yangi', 'boglanildi', 'sinov'].includes(bosqichi(l))
   const korinadi = hammasi.filter((l) => {
     if (manba && l.manba !== manba) return false
     if (q && ![l.ism, l.telefon, l.izoh ?? '', l.teglar.join(' ')].join(' ').toLowerCase().includes(q)) return false
+    // Kartadagi raqamlar faqat ochiq lidlardan — ro'yxat ham shunday (raqam = ro'yxat)
+    if (tez === 'ochiq') return ochiqmi(l)
+    if (tez === 'shu_oy') return Date.parse(l.created_at) >= Date.parse(`${oyBoshi}T00:00:00+05:00`)
+    if (tez !== 'hammasi' && !ochiqmi(l)) return false
     if (tez === 'bugun') return l.keyingi_aloqa === bugun
     if (tez === 'sinov') return l.sinov_sana === bugun && ['yangi', 'boglanildi', 'sinov'].includes(bosqichi(l))
     if (tez === 'kechikkan') return l.keyingi_aloqa !== null && l.keyingi_aloqa < bugun
@@ -123,10 +138,10 @@ export default async function Lidlar({
       <Xabar ok={s.ok} xato={s.xato} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Ochiq lidlar" value={String(tezSoni.hammasi)} sub="yangi + bog‘lanildi + sinov" Icon={IconLeads} />
-        <Stat label="Bugun aloqa" value={String(tezSoni.bugun)} sub="bugun bog‘lanish kerak" ton="accent" border={tezSoni.bugun ? 'accent' : undefined} Icon={IconPhone} />
-        <Stat label="Kechikkan" value={String(tezSoni.kechikkan)} sub="aloqa sanasi o‘tib ketgan" ton="brand" border={tezSoni.kechikkan ? 'brand' : undefined} Icon={IconAlert} />
-        <Stat label="Shu oy konversiya" value={`${konversiya}%`} sub={`${oyLidlar.length} lid → ${oyYozildi} o‘quvchi`} ton="ok" Icon={IconStudents} />
+        <Stat label="Ochiq lidlar" value={String(tezSoni.hammasi)} sub="yangi + bog‘lanildi + sinov" Icon={IconLeads} href="/crm/lidlar?tez=ochiq" />
+        <Stat label="Bugun aloqa" value={String(tezSoni.bugun)} sub="bugun bog‘lanish kerak" ton="accent" border={tezSoni.bugun ? 'accent' : undefined} Icon={IconPhone} href="/crm/lidlar?tez=bugun" />
+        <Stat label="Kechikkan" value={String(tezSoni.kechikkan)} sub="aloqa sanasi o‘tib ketgan" ton="brand" border={tezSoni.kechikkan ? 'brand' : undefined} Icon={IconAlert} href="/crm/lidlar?tez=kechikkan" />
+        <Stat label="Shu oy konversiya" value={`${konversiya}%`} sub={`${oyLidlar.length} lid → ${oyYozildi} o‘quvchi`} ton="ok" Icon={IconStudents} href="/crm/lidlar?tez=shu_oy" />
       </div>
 
       <Card className="flex flex-col">
@@ -210,6 +225,12 @@ export default async function Lidlar({
               <span className="tnum font-[family-name:var(--font-mono)] text-[11px] text-ink-3">{tezSoni[t]}</span>
             </Link>
           ))}
+          {tez in TEZ_YASHIRIN && (
+            <span className="flex min-h-10 items-center gap-2 rounded-[9px] border border-brand bg-brand-soft px-3.5 text-[13px]">
+              {TEZ_YASHIRIN[tez as keyof typeof TEZ_YASHIRIN]}
+              <span className="tnum font-[family-name:var(--font-mono)] text-[11px] text-ink-3">{korinadi.length}</span>
+            </span>
+          )}
         </div>
       </Card>
 
