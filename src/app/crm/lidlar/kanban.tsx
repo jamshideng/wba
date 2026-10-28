@@ -163,6 +163,7 @@ function Karta({
   const aloqa = lid.keyingi_aloqa
   const aloqaTon = !aloqa || yopiq ? '' : aloqa < bugun ? 'text-brand' : aloqa === bugun ? 'text-accent' : 'text-ink-3'
   const ariza = izohniAjrat(lid.izoh)
+  const [izohOchiq, setIzohOchiq] = useState(false)
   const aloqaMatn = !aloqa ? null : aloqa < bugun ? `Kechikdi · ${sanaKorinish(aloqa)}` : aloqa === bugun ? 'Bugun bog‘lanish' : `Aloqa · ${sanaKorinish(aloqa)}`
 
   return (
@@ -229,7 +230,18 @@ function Karta({
           {ariza.vaqt}
         </p>
       )}
-      {ariza.qolgan && <p className="line-clamp-2 text-[12px] leading-snug whitespace-pre-line text-ink-3">{ariza.qolgan}</p>}
+      {/* Izoh uzun bo'lsa 2 qator; bosilsa to'liq ochiladi */}
+      {ariza.qolgan && (
+        <button
+          type="button"
+          onClick={() => setIzohOchiq((o) => !o)}
+          aria-expanded={izohOchiq}
+          title={izohOchiq ? 'Yig‘ish' : 'To‘liq ko‘rish'}
+          className={`text-left text-[12px] leading-snug whitespace-pre-line break-words text-ink-3 hover:text-ink-2 ${izohOchiq ? '' : 'line-clamp-2'}`}
+        >
+          {ariza.qolgan}
+        </button>
+      )}
       {b === 'yoqotildi' && lid.sabab && (
         <p className="text-[12px] text-ink-3">
           {lid.holat === 'kelmadi' ? 'Kelmadi' : 'Rad etdi'}: {lid.sabab}
