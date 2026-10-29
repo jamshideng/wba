@@ -8,7 +8,8 @@ import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { sana as sanaFmt, joriyDavr, davrNomi } from '@/lib/format'
 import { NAZORAT_TURLAR, ogohlantirishMatni, nazoratManba, type NazoratHodisa } from '@/lib/nazorat'
-import { ogohlantir, hodisaYop, jarimaQol, tekshir, direktorgaAlmashtir } from './actions'
+import { ogohlantir, hodisaYop, hodisalarniYop, jarimaQol, tekshir, direktorgaAlmashtir } from './actions'
+import { OmmaviyYopish, OMMAVIY_FORMA } from './ommaviy-yopish'
 
 export const metadata = { title: 'Nazorat' }
 export const dynamic = 'force-dynamic'
@@ -185,6 +186,8 @@ export default async function Nazorat({
               <Empty>Hozircha qoidabuzarlik yo‘q.</Empty>
             </div>
           ) : (
+            <>
+            {yangi > 0 && <OmmaviyYopish action={hodisalarniYop} qaytish={joriy} jami={yangi} />}
             <ul className="flex flex-col">
               {hodisalar.map((h) => {
                 const t = NAZORAT_TURLAR[h.turi]
@@ -194,7 +197,18 @@ export default async function Nazorat({
                 const [asosiy, ...boshqa] = nazoratManba(h)
                 return (
                   <li key={h.id} data-belgi={`hodisa:${h.id}`} className="flex flex-col gap-2 border-t border-line-soft px-5 py-3.5">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      {h.holat === 'yangi' && (
+                        <input
+                          type="checkbox"
+                          name="id"
+                          value={h.id}
+                          form={OMMAVIY_FORMA}
+                          aria-label={`Belgilash: ${t.nom}${kimIsmi ? ` — ${kimIsmi}` : ''}`}
+                          className="mt-1 size-4 shrink-0 cursor-pointer accent-[var(--color-brand)]"
+                        />
+                      )}
+                    <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-3">
                       <span className="flex min-w-0 flex-col gap-1">
                         <span className="flex flex-wrap items-center gap-2 text-[13px] font-semibold">
                           <Badge ton={t.kim === 'ustoz' ? 'accent' : 'brand'}>{t.nom}</Badge>
@@ -229,6 +243,7 @@ export default async function Nazorat({
                         </span>
                       </span>
                       {h.holat !== 'yangi' && <Badge ton={h.holat === 'ogohlantirildi' ? 'accent' : 'jim'}>{h.holat}</Badge>}
+                    </div>
                     </div>
                     {h.holat === 'yangi' && (
                       <div className="flex flex-wrap gap-4">
@@ -277,6 +292,7 @@ export default async function Nazorat({
                 )
               })}
             </ul>
+            </>
           )}
         </Card>
 

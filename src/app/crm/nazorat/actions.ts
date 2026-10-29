@@ -67,6 +67,25 @@ export async function hodisaYop(fd: FormData) {
   redirect(xabarliYol(orqaga, { ok: 'Yopildi.' }))
 }
 
+/** Bir nechta hodisani birdan yopish (Gmail kabi belgilab, 29.10). Faqat hali "yangi"lari. */
+export async function hodisalarniYop(fd: FormData) {
+  const profil = await talabRol('manager', 'direktor')
+  const orqaga = qaytish(fd)
+  const idlar = [...new Set(fd.getAll('id').map(Number).filter((n) => Number.isInteger(n) && n > 0))]
+  if (idlar.length === 0) redirect(xabarliYol(orqaga, { xato: 'Hech bir hodisa belgilanmagan.' }))
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('nazorat_hodisalar')
+    .update({ holat: 'yopildi', yopdi: profil.id, yopish_izoh: matn(fd.get('izoh')) })
+    .in('id', idlar)
+    .eq('holat', 'yangi')
+    .select('id')
+  if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+  revalidatePath(YOL)
+  redirect(xabarliYol(orqaga, { ok: `${data?.length ?? 0} ta hodisa yopildi.` }))
+}
+
 /** Jarima — shu oy 3+ ogohlantirishdan keyin; summani manager yozadi, maoshdan ayiriladi */
 export async function jarimaQol(fd: FormData) {
   await talabRol('manager', 'direktor')
