@@ -73,13 +73,13 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
             { href: '/crm/maosh/men', nom: 'Maoshim', Icon: IconPayments, tayyor: true },
           ]
         : [
-            // 0104 — oylik test natijalarini kiritish (Jamshid, 28.10)
-            { href: '/crm/oylik-test', nom: 'Oylik test', Icon: IconMedal, tayyor: true },
             { href: '/crm/davomat', nom: 'Davomat', Icon: IconAttendance, tayyor: true, mobil: true },
             { href: '/crm/guruhlar', nom: 'Guruhlarim', Icon: IconGroups, tayyor: true, mobil: true },
             { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true, mobil: true },
             { href: '/crm/woblr/tarix', nom: 'Woblar tarixi', Icon: IconWoblr, tayyor: true },
             { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true, mobil: true },
+            // 0104 — oylik test natijalarini kiritish (Jamshid, 29.10: dars jadvalidan keyin)
+            { href: '/crm/oylik-test', nom: 'Oylik test', Icon: IconMedal, tayyor: true },
             // 0060 — o'z kechikishlari (faqat ko'rish)
             { href: '/crm/kechikishlarim', nom: 'Kechikishlarim', Icon: IconAttendance, tayyor: true },
             // 0075 — o'z maoshi, har davomatdan keyin yangilanadi (Jamshid, 17.10)
