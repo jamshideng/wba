@@ -22,8 +22,10 @@ type Manzil = {
 }
 
 /* Lokal baza (127.0.0.1) — prod nusxasi: unda haqiqiy chat ID'lar bo'lishi mumkin,
-   .env.local da esa haqiqiy bot tokeni. Lokal sinovda tashqariga xabar ketmasin. */
+   .env.local da esa haqiqiy bot tokeni. Lokal sinovda tashqariga xabar ketmaydi —
+   faqat LOKAL_TG_RUXSAT dagi chat(lar)ga (masalan Jamshidning o'zi), push esa umuman. */
 const lokal = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').includes('127.0.0.1')
+const lokalRuxsat = new Set((process.env.LOKAL_TG_RUXSAT ?? '').split(',').map((x) => Number(x.trim())).filter(Boolean))
 
 export async function oylikXabarYubor(supabase: Awaited<ReturnType<typeof createClient>>, natijaIdlar: string[]) {
   for (const id of natijaIdlar) {
@@ -32,7 +34,12 @@ export async function oylikXabarYubor(supabase: Awaited<ReturnType<typeof create
       if (error || !data) continue
       const m = data as Manzil
       if (lokal) {
-        console.info('[oylik-test-xabar] lokal — yuborilmadi:', m.student, `push ${m.push.length}, tg ${m.tg.length}`, m.matn)
+        const ruxsat = m.tg.filter((c) => lokalRuxsat.has(c))
+        console.info('[oylik-test-xabar] lokal:', m.student, `push 0/${m.push.length}, tg ${ruxsat.length}/${m.tg.length}`)
+        for (const chat of ruxsat) {
+          await tg('sendMessage', { chat_id: chat, text: `<b>${html(m.sarlavha)}</b>
+${html(m.matn)}`, parse_mode: 'HTML' })
+        }
         continue
       }
 
