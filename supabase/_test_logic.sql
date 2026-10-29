@@ -2339,3 +2339,167 @@ begin
   end if;
   raise notice 'OK: 0084 — kunlik_qoshimcha va ertangi_maslahat ishlaydi';
 end $$;
+
+-- 0104 — oylik test: ustoz kiritadi, admin e'lon qiladi, foiz bazada
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz Diana (N01)
+do $$
+declare t uuid; t2 uuid; f numeric;
+begin
+  insert into oylik_testlar (group_id, davr, turi, maks) values ('N01', '2026-10', 'ball', 40) returning id into t;
+  insert into oylik_test_natijalar (test_id, student_id, ball) values (t, 'S001', 34);
+  insert into oylik_test_natijalar (test_id, student_id, keldi, ball) values (t, 'S002', false, 20);
+  select foiz into f from oylik_test_natijalar where test_id = t and student_id = 'S001';
+  if f <> 85.0 then raise exception 'XATO: 34/40 foizi %', f; end if;
+  if (select foiz from oylik_test_natijalar where test_id = t and student_id = 'S002') is not null then
+    raise exception 'XATO: kelmaganga foiz yozildi';
+  end if;
+  begin
+    insert into oylik_test_natijalar (test_id, student_id, ball) values (t, 'S003', 41);
+    raise exception 'XATO: maksdan oshgan ball o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    update oylik_test_natijalar set elon_qilingan = true where test_id = t and student_id = 'S001';
+    raise exception 'XATO: ustoz e''lon qildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    insert into oylik_testlar (group_id, davr, turi) values ('N02', '2026-10', 'foiz');
+    raise exception 'XATO: ustoz begona guruhga test ochdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  insert into oylik_testlar (group_id, davr, turi, bolimlar)
+    values ('N01', '2026-09', 'bolimlar', '[{"nom":"Reading","maks":40},{"nom":"Listening","maks":40}]') returning id into t2;
+  insert into oylik_test_natijalar (test_id, student_id, bolim_ballar) values (t2, 'S001', '{30,35}');
+  -- (30/40 = 75% + 35/40 = 87.5%) / 2 = 81.25
+  if (select foiz from oylik_test_natijalar where test_id = t2) <> 81.3 then
+    raise exception 'XATO: bo''limlar foizi %', (select foiz from oylik_test_natijalar where test_id = t2);
+  end if;
+  raise notice 'OK: 0104 — ustoz kiritadi, foiz hisoblanadi, e''lon/begona guruh/maksdan oshish to''siladi';
+end $$;
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi S001
+do $$
+begin
+  if exists (select 1 from oylik_test_natijalar) or exists (select 1 from oylik_natijalarim()) then
+    raise exception 'XATO: e''lon qilinmagan natija o''quvchiga ko''rindi';
+  end if;
+  raise notice 'OK: 0104 — e''lon qilinmagan natija o''quvchiga yopiq';
+end $$;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+begin
+  update oylik_test_natijalar n set elon_qilingan = true
+    from oylik_testlar t where t.id = n.test_id and t.davr = '2026-10' and n.student_id = 'S001';
+  if (select elon_vaqti from oylik_test_natijalar n join oylik_testlar t on t.id = n.test_id
+       where t.davr = '2026-10' and n.student_id = 'S001') is null then
+    raise exception 'XATO: e''lon vaqti yozilmadi';
+  end if;
+  raise notice 'OK: 0104 — admin bitta o''quvchini e''lon qiladi';
+end $$;
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi S001
+do $$
+declare r record;
+begin
+  select * into r from oylik_natijalarim();
+  if r.foiz <> 85.0 or r.orin <> 1 or r.davr <> '2026-10' then
+    raise exception 'XATO: o''quvchi natijasi noto''g''ri: %', r;
+  end if;
+  if (select count(*) from oylik_test_natijalar) <> 1 then
+    raise exception 'XATO: o''quvchi boshqa natijani ko''rdi';
+  end if;
+  raise notice 'OK: 0104 — o''quvchi e''lon qilingan natijasi va o''rnini ko''radi';
+end $$;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  update oylik_test_natijalar set ball = 10 where student_id = 'S001'
+    and test_id = (select id from oylik_testlar where group_id = 'N01' and davr = '2026-10');
+  if (select ball from oylik_test_natijalar n join oylik_testlar t on t.id = n.test_id
+       where t.davr = '2026-10' and n.student_id = 'S001') <> 34 then
+    raise exception 'XATO: ustoz e''lon qilingan natijani o''zgartirdi';
+  end if;
+  begin
+    update oylik_testlar set maks = 50 where group_id = 'N01' and davr = '2026-10';
+    raise exception 'XATO: e''lon qilingan testning maksi o''zgardi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: 0104 — e''lon qilingan natija va test ustozdan qulflangan';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+
+-- 0104 — IELTS: Overall band IELTS qoidasi bilan yaxlitlanadi
+do $$
+declare t uuid;
+begin
+  insert into oylik_testlar (group_id, davr, turi) values ('N02', '2026-08', 'ielts') returning id into t;
+  insert into oylik_test_natijalar (test_id, student_id, bolim_ballar) values (t, 'S003', '{7,6.5,6,7.5}');
+  if (select ball from oylik_test_natijalar where test_id = t) <> 7.0 then
+    raise exception 'XATO: IELTS overall % (7.0 kerak)', (select ball from oylik_test_natijalar where test_id = t);
+  end if;
+  update oylik_test_natijalar set bolim_ballar = '{6,6,6,6.5}' where test_id = t;     -- 6.125 → 6.0
+  if (select ball from oylik_test_natijalar where test_id = t) <> 6.0 then raise exception 'XATO: 6.125 → 6.0 bo''lmadi'; end if;
+  update oylik_test_natijalar set bolim_ballar = '{6,6.5,6,6.5}' where test_id = t;   -- 6.25 → 6.5
+  if (select ball from oylik_test_natijalar where test_id = t) <> 6.5 then raise exception 'XATO: 6.25 → 6.5 bo''lmadi'; end if;
+  begin
+    update oylik_test_natijalar set bolim_ballar = '{6.3,6,6,6}' where test_id = t;
+    raise exception 'XATO: 6.3 band o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: 0104 — IELTS overall yaxlitlash (6.75→7, 6.125→6, 6.25→6.5), 0.5 qadam';
+end $$;
+
+-- 0104 — bo'limlar har xil shkalada: Grammar 70/100, Writing 7/9, Speaking 3/9
+do $$
+declare t uuid;
+begin
+  insert into oylik_testlar (group_id, davr, turi, bolimlar)
+    values ('N02', '2026-07', 'bolimlar', '[{"nom":"Grammar","maks":100},{"nom":"Writing","maks":9},{"nom":"Speaking","maks":9}]') returning id into t;
+  insert into oylik_test_natijalar (test_id, student_id, bolim_ballar) values (t, 'S003', '{70,7,3}');
+  -- (70 + 77.78 + 33.33) / 3 = 60.4
+  if (select foiz from oylik_test_natijalar where test_id = t) <> 60.4 then
+    raise exception 'XATO: aralash shkala foizi %', (select foiz from oylik_test_natijalar where test_id = t);
+  end if;
+  update oylik_test_natijalar set bolim_ballar = '{70,null,null}' where test_id = t;   -- faqat Grammar
+  if (select foiz from oylik_test_natijalar where test_id = t) <> 70.0 then raise exception 'XATO: yozilmagan bo''lim hisobga kirdi'; end if;
+  raise notice 'OK: 0104 — bo''limlar har biri o''z shkalasida, foiz = o''rtacha, bo''sh bo''lim hisobga kirmaydi';
+end $$;
+
+-- 0104 — e'londa o'quvchi/ota-onaga eslatma, qaytarganda yopiladi, manzil bir marta
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare v_id uuid; v_b bigint; m jsonb;
+begin
+  select n.id into v_id from oylik_test_natijalar n join oylik_testlar t on t.id = n.test_id
+   where t.davr = '2026-10' and n.student_id = 'S001';
+  select bildirishnoma_id into v_b from oylik_test_xabar where natija_id = v_id;
+  if v_b is null then raise exception 'XATO: e''londa eslatma yozilmadi'; end if;
+  if (select matn from bildirishnomalar where id = v_b) not like 'Oktabr 2026 · %34 / 40 (85%' then
+    raise exception 'XATO: eslatma matni: %', (select matn from bildirishnomalar where id = v_b);
+  end if;
+  m := oylik_xabar_manzil(v_id);
+  if m is null or m ->> 'student' <> 'S001' then raise exception 'XATO: manzil: %', m; end if;
+  if oylik_xabar_manzil(v_id) is not null then raise exception 'XATO: tashqi xabar ikki marta'; end if;
+  update oylik_test_natijalar set elon_qilingan = false where id = v_id;
+  if (select holat from bildirishnomalar where id = v_b) <> 'yopilgan' then raise exception 'XATO: qaytarganda eslatma yopilmadi'; end if;
+  update oylik_test_natijalar set elon_qilingan = true where id = v_id;
+  if (select holat from bildirishnomalar where id = v_b) <> 'faol' then raise exception 'XATO: qayta e''londa eslatma ochilmadi'; end if;
+  raise notice 'OK: 0104 — e''lon eslatmasi, push/Telegram manzili bir marta, qaytarish/qayta e''lon';
+end $$;
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi S001
+do $$
+begin
+  if not exists (select 1 from jsonb_array_elements(mening_bildirishnomalarim()) b where b ->> 'sarlavha' = 'Oylik test natijasi chiqdi') then
+    raise exception 'XATO: o''quvchiga eslatma ko''rinmadi';
+  end if;
+  begin
+    perform oylik_xabar_manzil((select id from oylik_test_natijalar limit 1));
+    raise exception 'XATO: o''quvchi manzil oldi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: 0104 — o''quvchi eslatmani ko''radi, manzilni ololmaydi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;

@@ -7,6 +7,7 @@ import { Card, CardHeader, Stat, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Xabar } from '@/components/forma'
 import { TelegramTaklif } from '@/components/telegram-taklif'
+import { OylikNatijalarKarta, type MeningOylikNatijam } from '@/components/oylik-natijalar'
 import { pul, sana, jadval, davrNomi, joriyDavr, bugunToshkent, vaqt, guruhQisqa } from '@/lib/format'
 import type { PaymentMethod, AttendanceStatus, KeyingiDars } from '@/lib/types'
 
@@ -169,6 +170,10 @@ export default async function MeningSahifam({
 
   const darsList = (darslar ?? []) as KeyingiDars[]
 
+  // 0104 — oylik test: faqat e'lon qilingan natijalar va guruhdagi o'rin
+  const { data: oylikXom } = await supabase.rpc('oylik_natijalarim')
+  const oylik = (oylikXom ?? []) as MeningOylikNatijam[]
+
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha
@@ -210,6 +215,8 @@ export default async function MeningSahifam({
         />
         <Stat label="Guruhlarim" value={yList.length} sub="hozir o‘qiyapman" href="/crm/men?b=guruh" />
       </div>
+
+      <OylikNatijalarKarta royxat={oylik} />
 
       <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Card className="flex flex-col">

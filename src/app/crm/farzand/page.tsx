@@ -6,6 +6,7 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { TelegramTaklif } from '@/components/telegram-taklif'
 import { pul, sana, jadval, davrNomi, joriyDavr, bugunToshkent, guruhQisqa } from '@/lib/format'
 import type { PaymentMethod } from '@/lib/types'
+import { OylikNatijalarKarta, type MeningOylikNatijam } from '@/components/oylik-natijalar'
 
 export const metadata = { title: 'Farzandim' }
 export const dynamic = 'force-dynamic'
@@ -86,6 +87,10 @@ export default async function Farzand() {
   type Tolov = { id: number; sana: string; davr: string; summa: number; usul: PaymentMethod | null; tasdiqlangan: boolean; bekor: boolean }
   const tList = (tolovlar ?? []) as unknown as Tolov[]
 
+  // 0104 — oylik test: faqat e'lon qilingan natijalar va guruhdagi o'rin
+  const { data: oylikXom } = await supabase.rpc('oylik_natijalarim')
+  const oylik = (oylikXom ?? []) as MeningOylikNatijam[]
+
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha
@@ -119,6 +124,8 @@ export default async function Farzand() {
         />
         <Stat label="Guruhlar" value={yList.length} sub="hozir o‘qiyapti" href="/crm/farzand?b=guruh" />
       </div>
+
+      <OylikNatijalarKarta royxat={oylik} />
 
       <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Card className="flex flex-col">

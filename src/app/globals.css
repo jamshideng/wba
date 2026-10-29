@@ -351,3 +351,15 @@ select:not([multiple]):not([size]) {
     animation: none !important;
   }
 }
+
+/* Chop etiladigan hujjat (oylik test PDF) — qorong'i temada ham yorug' qog'oz ranglari */
+.hujjat-yorug {
+  color-scheme: light;
+  --color-surface: #ffffff;
+  --color-surface-2: #f3efed;
+  --color-line: #e6ddd9;
+  --color-ink: #1a1210;
+  --color-ink-2: #5c514d;
+  --color-ink-3: #786c67;
+  --color-brand: #d12121;
+}

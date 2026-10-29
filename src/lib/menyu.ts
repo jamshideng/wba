@@ -20,7 +20,7 @@ import { adminmi, staffmi, tasdiqlaydimi, managermi } from '@/lib/auth'
 import {
   IconDashboard, IconStudents, IconGroups, IconTeacher, IconAttendance,
   IconWoblr, IconPayments, IconDebt, IconLeads, IconReports, IconSettings, IconSend, IconAlert, IconArxiv, IconXarajat, IconAudit,
-  IconJadval, IconMarket,
+  IconJadval, IconMarket, IconMedal,
 } from '@/components/icons'
 
 type IconKomponent = (p: { size?: number; className?: string }) => React.ReactElement
@@ -73,6 +73,8 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
             { href: '/crm/maosh/men', nom: 'Maoshim', Icon: IconPayments, tayyor: true },
           ]
         : [
+            // 0104 — oylik test natijalarini kiritish (Jamshid, 28.10)
+            { href: '/crm/oylik-test', nom: 'Oylik test', Icon: IconMedal, tayyor: true },
             { href: '/crm/davomat', nom: 'Davomat', Icon: IconAttendance, tayyor: true, mobil: true },
             { href: '/crm/guruhlar', nom: 'Guruhlarim', Icon: IconGroups, tayyor: true, mobil: true },
             { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true, mobil: true },
@@ -106,6 +108,8 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
           { href: '/crm/davomat', nom: 'Davomat', Icon: IconAttendance, tayyor: true },
           { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true },
           { href: '/crm/dam-kunlar', nom: 'Dam olish kunlari', Icon: IconAttendance, tayyor: true },
+          // 0104 — oylik test: natijalar, e'lon, Excel/PDF
+          { href: '/crm/oylik-test', nom: 'Oylik test', Icon: IconMedal, tayyor: true },
         ]),
         ...guruh('Lidlar', IconLeads, [
           { href: '/crm/lidlar', nom: 'Lidlar', Icon: IconLeads, tayyor: true },

@@ -869,6 +869,14 @@ export type Database = {
       boshqa_xodimlar: Table<BoshqaXodim>
       oquvchi_takror_emas: Table<{ a: string; b: string; belgiladi: string | null; created_at: string }>
       dam_kunlar: Table<{ sana: string; sabab: string; kiritdi: string | null; created_at: string }>
+      // 0104 — oylik test
+      oylik_testlar: Table<import('./oylik-test').OylikTest & { kiritdi: string | null; created_at: string; updated_at: string }>
+      oylik_test_natijalar: Table<{
+        id: string; test_id: string; student_id: string; keldi: boolean; ball: number | null
+        bolim_ballar: (number | null)[] | null; foiz: number | null; izoh: string | null
+        elon_qilingan: boolean; elon_vaqti: string | null; elon_qildi: string | null
+        kiritdi: string | null; created_at: string; updated_at: string
+      }>
       settings: Table<Setting>
       audit_log: Table<AuditLog>
     }
@@ -885,9 +893,12 @@ export type Database = {
       v_monthly_income: View<MonthlyIncome>
       v_bugungi_darslar: View<BugungiDars>
       v_ustoz_kechikish_oylik: View<UstozKechikishOylik>
+      v_oylik_natijalar: View<import('./oylik-test').OylikNatija>
       v_arxiv_oquvchilar: View<{ student_id: string; fish: string; arxiv_sana: string | null; arxiv_sabab: string | null; qarz: number; guruhlar: string | null; ketish_sababi: string | null }>
     }
     Functions: {
+      oylik_natijalarim: { Args: Record<string, never>; Returns: import('@/components/oylik-natijalar').MeningOylikNatijam[] }
+      oylik_xabar_manzil: { Args: { p_natija: string }; Returns: unknown }
       woblr_leaderboard: {
         Args: { p_group?: string | null; p_davr?: string | null; p_fan?: string | null }
         Returns: LeaderboardRow[]
