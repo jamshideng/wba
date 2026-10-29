@@ -2503,3 +2503,28 @@ begin
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+
+-- 0105 — tasdiqlanmagan to'lov hodisasi direktorga yoziladi
+reset role;
+reset request.jwt.claim.sub;
+do $$
+declare v_dir uuid; v_pid bigint;
+begin
+  select id into v_dir from profiles where rol = 'direktor' and holat = 'faol' order by created_at limit 1;
+  if v_dir is null then
+    insert into auth.users (id, email) values ('66666666-6666-6666-6666-666666666666', 'direktor0105@wba.uz');
+    update profiles set rol = 'direktor', ism = 'Farrux' where id = '66666666-6666-6666-6666-666666666666';
+    v_dir := '66666666-6666-6666-6666-666666666666';
+  end if;
+  insert into nazorat_hodisalar (turi, sana, profile_id, tafsilot, kalit)
+  values ('tolov_tasdiqlanmadi', bugun_toshkent(), '22222222-2222-2222-2222-222222222222', 'sinov 0105', 'tast:sinov0105');
+  if (select profile_id from nazorat_hodisalar where kalit = 'tast:sinov0105') <> v_dir then
+    raise exception 'XATO: tasdiqlanmagan to''lov hodisasi direktorga yozilmadi';
+  end if;
+  insert into nazorat_hodisalar (turi, sana, profile_id, tafsilot, kalit)
+  values ('tolov_kech', bugun_toshkent(), '22222222-2222-2222-2222-222222222222', 'sinov 0105', 'kech:sinov0105');
+  if (select profile_id from nazorat_hodisalar where kalit = 'kech:sinov0105') <> '22222222-2222-2222-2222-222222222222' then
+    raise exception 'XATO: kech kiritilgan to''lov mas''uli o''zgarib ketdi';
+  end if;
+  raise notice 'OK: 0105 — tasdiqlanmagan to''lov direktorga, kech kiritilgan — kiritganga';
+end $$;
