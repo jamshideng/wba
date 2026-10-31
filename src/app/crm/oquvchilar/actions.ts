@@ -44,6 +44,15 @@ export async function oquvchiQosh(fd: FormData) {
   const tel = telefonlar(fd)
   if (typeof tel === 'string') redirect(xabarliYol(forma, { xato: tel }))
 
+  // Birinchi tanlangan guruh asosiy (chegirma shunga), qolganlari qo'shimcha (0109)
+  const guruhlar = ['', '_2', '_3']
+    .map((q) => ({ group_id: matn(fd.get(`group_id${q}`)) ?? '', boshlandi: sanaOqi(fd.get(q ? `boshlandi${q}` : 'boshlandi')) ?? '' }))
+    .filter((g) => g.group_id)
+  if (new Set(guruhlar.map((g) => g.group_id)).size !== guruhlar.length) {
+    redirect(xabarliYol(forma, { xato: 'Bitta guruh ikki marta tanlangan.' }))
+  }
+  const [asosiy, ...qoshimcha] = guruhlar
+
   const supabase = await createClient()
   const { data: id, error } = await supabase.rpc('oquvchi_qosh', {
     p: {
@@ -51,8 +60,9 @@ export async function oquvchiQosh(fd: FormData) {
       tugilgan_sana: sanaOqi(fd.get('tugilgan_sana')) ?? '',
       ...tel,
       izoh: matn(fd.get('izoh')) ?? '',
-      group_id: matn(fd.get('group_id')) ?? '',
-      boshlandi: sanaOqi(fd.get('boshlandi')) ?? '',
+      group_id: asosiy?.group_id ?? '',
+      boshlandi: asosiy?.boshlandi ?? '',
+      qoshimcha_guruhlar: qoshimcha,
       ...chegirma(fd),
     },
   })
@@ -339,6 +349,25 @@ export async function oquvchiArxivla(fd: FormData) {
 
   revalidatePath('/crm', 'layout')
   redirect(xabarliYol(yol, { ok: 'Arxivga o‘tkazildi. Qarzi saqlanadi; qaytarish — shu sahifadan.' }))
+}
+
+/** Xato kiritilgan o'quvchini butunlay o'chirish (0109). To'siq va huquq bazada tekshiriladi. */
+export async function oquvchiXatoOchir(fd: FormData) {
+  await talabRol('admin', 'direktor')
+  const studentId = matn(fd.get('student_id'))
+  if (!studentId) redirect('/crm/oquvchilar')
+  const yol = `/crm/oquvchilar/${studentId}`
+
+  if (matn(fd.get('tasdiq'))?.toUpperCase() !== studentId) {
+    redirect(xabarliYol(yol, { xato: `Tasdiqlash uchun ${studentId} deb yozing.` }))
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('oquvchi_xato_ochir', { p_student: studentId!, p_sabab: matn(fd.get('sabab')) ?? '' })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol('/crm/oquvchilar', { ok: `${studentId} o‘chirildi.` }))
 }
 
 export async function oquvchiArxivdan(fd: FormData) {

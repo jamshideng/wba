@@ -8,7 +8,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty, Button } from '@/components/ui'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { guruhgaBiriktir, guruhAlmashtir, qoshilganSanaOzgartir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor, vipOzgartir, oquvchiArxivla, oquvchiArxivdan } from '../actions'
+import { guruhgaBiriktir, guruhAlmashtir, qoshilganSanaOzgartir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor, vipOzgartir, oquvchiArxivla, oquvchiArxivdan, oquvchiXatoOchir } from '../actions'
 import { ChegirmaMaydonlari } from '../bolaklar'
 import { HisobForma } from '@/components/hisob'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
@@ -73,6 +73,10 @@ export default async function OquvchiProfil({
   const supabase = await createClient()
   const ketishRoyxat = await royxatOl(supabase, 'ketish_sabab')
   const pulKoradi = staffmi(profil.rol)
+  const { data: tosiqlar } = pulKoradi
+    ? await supabase.rpc('oquvchi_ochirish_tosiqlar', { p_student: id })
+    : { data: null }
+  const ochirishTosiqlari = (tosiqlar ?? []) as string[]
 
   const { data: oquvchi } = await supabase
     .from('students')
@@ -580,6 +584,31 @@ export default async function OquvchiProfil({
                     Hamma guruhdan shu kuni chiqariladi, keyingi oylar hisoblanmaydi. Qarzi saqlanadi; shu ID bilan qaytarish mumkin.
                   </p>
                 </form>
+              </details>
+            )}
+
+            {pulKoradi && (
+              <details className="rounded-[10px] border border-dashed border-line px-4 py-3">
+                <summary className="cursor-pointer text-[13px] text-ink-3 hover:text-ink">Xato kiritilgan — o‘chirish</summary>
+                {ochirishTosiqlari.length > 0 ? (
+                  <p className="mt-3 text-[12.5px] text-ink-2">
+                    O‘chirib bo‘lmaydi, o‘quvchida bor: {ochirishTosiqlari.join(', ')}. Ikki marta kiritilgan bo‘lsa, birlashtirish kerak; ketgan bo‘lsa, arxivga o‘tkazing.
+                  </p>
+                ) : (
+                  <form action={oquvchiXatoOchir} className="mt-3 flex flex-wrap items-end gap-2">
+                    <input type="hidden" name="student_id" value={oquvchi.id} />
+                    <Maydon nom="Sabab">
+                      <input name="sabab" required placeholder="Masalan: ikki marta kiritilgan" className={kirishKlass} />
+                    </Maydon>
+                    <Maydon nom={`Tasdiq: ${oquvchi.id} deb yozing`}>
+                      <input name="tasdiq" required autoComplete="off" className={kirishKlass} />
+                    </Maydon>
+                    <Yuborish tur="xavfli" kutish="…">O‘chirish</Yuborish>
+                    <p className="w-full text-[11.5px] text-ink-3">
+                      O‘quvchi guruh yozilishlari va hisoblari bilan o‘chadi, ID qayta berilmaydi. Nusxasi jurnalda qoladi.
+                    </p>
+                  </form>
+                )}
               </details>
             )}
           </div>

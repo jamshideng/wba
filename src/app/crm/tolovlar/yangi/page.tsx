@@ -98,8 +98,7 @@ export default async function TolovQosh({ searchParams }: { searchParams: Promis
     supabase
       .from('enrollments')
       .select('id, holat, groups(nom, oylik_narx)')
-      .eq('student_id', oquvchiId)
-      .neq('holat', 'tugagan'),
+      .eq('student_id', oquvchiId),
     supabase.from('v_enrollment_balance').select('enrollment_id, qarz').eq('student_id', oquvchiId),
   ])
 
@@ -112,9 +111,14 @@ export default async function TolovQosh({ searchParams }: { searchParams: Promis
     )
   }
 
-  type Yozilish = { id: string; groups: { nom: string; oylik_narx: number } | null }
-  const yList = (yozilishlar ?? []) as unknown as Yozilish[]
+  type Yozilish = { id: string; holat: string; groups: { nom: string; oylik_narx: number } | null }
   const qarz = new Map(((balans ?? []) as { enrollment_id: string; qarz: number }[]).map((b) => [b.enrollment_id, Number(b.qarz) || 0]))
+  // Yopilgan guruh qarzi bo'lsa ham chiqadi: aks holda to'lov guruhga bog'lanmay, qarz yopilmay qoladi
+  const hammasi = (yozilishlar ?? []) as unknown as Yozilish[]
+  const yList = [
+    ...hammasi.filter((y) => y.holat !== 'tugagan'),
+    ...hammasi.filter((y) => y.holat === 'tugagan' && (qarz.get(y.id) ?? 0) > 0),
+  ]
 
   return (
     <div className="flex max-w-2xl flex-col gap-4 px-5 py-5 lg:px-7">
@@ -141,7 +145,9 @@ export default async function TolovQosh({ searchParams }: { searchParams: Promis
                   <input type="radio" name="enrollment_id" value={y.id} defaultChecked={i === 0} className="size-4" />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-[13.5px] font-semibold">{y.groups?.nom ?? '—'}</span>
-                    <span className="text-[11.5px] text-ink-3">oyiga {pul(y.groups?.oylik_narx ?? 0)}</span>
+                    <span className="text-[11.5px] text-ink-3">
+                      oyiga {pul(y.groups?.oylik_narx ?? 0)}{y.holat === 'tugagan' ? ' · yopilgan guruh' : ''}
+                    </span>
                   </span>
                   <span className={`tnum font-[family-name:var(--font-mono)] text-[12.5px] ${(qarz.get(y.id) ?? 0) > 0 ? 'text-brand' : 'text-ok'}`}>
                     {(qarz.get(y.id) ?? 0) > 0 ? `qarz ${pul(qarz.get(y.id))}` : 'qarzi yo‘q'}

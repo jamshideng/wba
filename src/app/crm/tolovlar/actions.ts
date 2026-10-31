@@ -43,6 +43,12 @@ export async function tolovQosh(fd: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Qarzi bor o'quvchining to'lovi guruhga bog'lanmasa, qarz yopilmaydi
+  if (!matn(fd.get('enrollment_id'))) {
+    const { data: qarzlar } = await supabase.from('v_enrollment_balance').select('qarz').eq('student_id', studentId!).gt('qarz', 0).limit(1)
+    if (qarzlar?.length) redirect(xabarliYol(forma, { xato: 'Qaysi guruh uchun ekanini tanlang: o‘quvchida qarz bor.' }))
+  }
+
   const { error } = await supabase.from('payments').insert({
     student_id: studentId!,
     enrollment_id: matn(fd.get('enrollment_id')),

@@ -2636,5 +2636,73 @@ begin
   end;
   raise notice 'OK: 0108 — ustoz o''qiydi, o''zgartira olmaydi';
 end $$;
+
+-- 0109 — bir nechta guruh va xato o'quvchini o'chirish
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  begin
+    perform oquvchi_xato_ochir('S002', 'xato');
+    raise exception 'XATO: ustoz o''quvchini o''chirdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: 0109 — ustoz o''chira olmaydi';
+end $$;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+do $$
+declare
+  g1 text; g2 text; v_id text; v_keyingi text; n int;
+begin
+  select id into g1 from groups order by id limit 1;
+  select id into g2 from groups where id <> g1 order by id limit 1;
+
+  v_id := oquvchi_qosh(jsonb_build_object('fish', 'Xato Kiritilgan', 'group_id', g1,
+    'chegirma_summa', '50000', 'chegirma_oy', '1',
+    'qoshimcha_guruhlar', jsonb_build_array(jsonb_build_object('group_id', g2, 'boshlandi', ''))));
+
+  select count(*) into n from enrollments where student_id = v_id;
+  if n <> 2 then raise exception 'XATO: 2 guruh kutilgan, % ta', n; end if;
+  if (select chegirma_summa from enrollments where student_id = v_id and group_id = g2) <> 0 then
+    raise exception 'XATO: chegirma ikkinchi guruhga ham yozildi';
+  end if;
+  if (select chegirma_summa from enrollments where student_id = v_id and group_id = g1) <> 50000 then
+    raise exception 'XATO: chegirma birinchi guruhga yozilmadi';
+  end if;
+
+  -- Bir guruh ikki marta: hech narsa yaratilmaydi
+  select count(*) into n from students;
+  begin
+    perform oquvchi_qosh(jsonb_build_object('fish', 'Ikki Marta', 'group_id', g1,
+      'qoshimcha_guruhlar', jsonb_build_array(jsonb_build_object('group_id', g1))));
+    raise exception 'XATO: bir guruhga ikki marta yozildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  if (select count(*) from students) <> n then raise exception 'XATO: yarim o''quvchi qoldi'; end if;
+
+  -- Davomati bor o'quvchi o'chmaydi
+  begin
+    perform oquvchi_xato_ochir((select student_id from attendance limit 1), 'xato');
+    raise exception 'XATO: davomati bor o''quvchi o''chdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+
+  -- Sababsiz o'chmaydi
+  begin
+    perform oquvchi_xato_ochir(v_id, '  ');
+    raise exception 'XATO: sababsiz o''chdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+
+  perform oquvchi_xato_ochir(v_id, 'Ikki marta kiritilgan');
+  if exists (select 1 from students where id = v_id) then raise exception 'XATO: o''chmadi'; end if;
+  if exists (select 1 from enrollments where student_id = v_id) then raise exception 'XATO: yozilishlar qoldi'; end if;
+  if (select jsonb_array_length(nusxa -> 'yozilishlar') from oquvchi_ochirilgan where student_id = v_id) <> 2 then
+    raise exception 'XATO: jurnalda nusxa to''liq emas';
+  end if;
+
+  v_keyingi := keyingi_id('students', 'S', 3);
+  if v_keyingi <= v_id then raise exception 'XATO: ID qayta berildi: %', v_keyingi; end if;
+  raise notice 'OK: 0109 — 2 guruh, chegirma 1-guruhga, to''siq, jurnal, ID qayta berilmaydi';
+end $$;
 reset role;
 reset request.jwt.claim.sub;

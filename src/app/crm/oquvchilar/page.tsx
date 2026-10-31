@@ -8,6 +8,7 @@ import { IconSearch } from '@/components/icons'
 import { pul, sanaQisqa, telefon } from '@/lib/format'
 import { qidiruvTuri, telefonFiltri } from '@/lib/qidiruv'
 import { JonliForma } from '@/components/jonli-forma'
+import { Xabar } from '@/components/forma'
 import type { StudentStatus } from '@/lib/types'
 
 export const metadata = { title: 'O‘quvchilar' }
@@ -16,6 +17,7 @@ export const dynamic = 'force-dynamic'
 const SAHIFA_SONI = 25
 
 type Sorov = {
+  ok?: string
   q?: string
   guruh?: string
   holat?: string
@@ -168,6 +170,7 @@ export default async function Oquvchilar({
         izoh={`${jami} ta yozuv${qidiruv ? ` · "${qidiruv}" bo‘yicha` : ''}`}
         amal={pulKoradi ? <Button href="/crm/oquvchilar/yangi">O‘quvchi qo‘shish</Button> : undefined}
       />
+      <Xabar ok={s.ok} />
 
       {/* Jonli filtr — yozish bilan natija yangilanadi */}
       <JonliForma className="flex flex-wrap items-end gap-2.5">

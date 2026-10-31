@@ -62,6 +62,29 @@ export default async function YangiOquvchi({ searchParams }: { searchParams: Pro
               <input name="boshlandi" type="date" defaultValue={bugunToshkent()} className={kirishKlass} />
             </Maydon>
           </div>
+          <details className="rounded-[10px] border border-dashed border-line px-4 py-3">
+            <summary className="cursor-pointer text-[13px] text-ink-3 hover:text-ink">Yana guruh qo‘shish</summary>
+            <div className="mt-3 flex flex-col gap-3">
+              {[2, 3].map((n) => (
+                <div key={n} className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr]">
+                  <Maydon nom={`${n}-guruh`}>
+                    <select name={`group_id_${n}`} defaultValue="" className={kirishKlass}>
+                      <option value="">Tanlanmagan</option>
+                      {(guruhlar ?? []).map((g) => (
+                        <option key={g.id} value={g.id}>{g.nom}</option>
+                      ))}
+                    </select>
+                  </Maydon>
+                  <Maydon nom="Boshlagan sana">
+                    <input name={`boshlandi_${n}`} type="date" defaultValue={bugunToshkent()} className={kirishKlass} />
+                  </Maydon>
+                </div>
+              ))}
+              <p className="text-[11.5px] text-ink-3">
+                Ikki fanga kelsa ham o‘quvchi bitta bo‘ladi. Chegirma faqat birinchi guruhga yoziladi; boshqasiga keyin profildan qo‘yiladi.
+              </p>
+            </div>
+          </details>
           <ChegirmaMaydonlari />
         </FormaBolim>
 

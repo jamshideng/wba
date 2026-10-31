@@ -904,6 +904,8 @@ export type Database = {
       v_arxiv_oquvchilar: View<{ student_id: string; fish: string; arxiv_sana: string | null; arxiv_sabab: string | null; qarz: number; guruhlar: string | null; ketish_sababi: string | null }>
     }
     Functions: {
+      oquvchi_ochirish_tosiqlar: { Args: { p_student: string }; Returns: string[] }
+      oquvchi_xato_ochir: { Args: { p_student: string; p_sabab: string }; Returns: undefined }
       oylik_natijalarim: { Args: Record<string, never>; Returns: import('@/components/oylik-natijalar').MeningOylikNatijam[] }
       oylik_xabar_manzil: { Args: { p_natija: string }; Returns: unknown }
       woblr_leaderboard: {
