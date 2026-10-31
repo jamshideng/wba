@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { talabProfil, adminmi, tasdiqlaydimi, managermi, ROL_NOMI } from '@/lib/auth'
+import { MaoshTolovlari } from './tolovlar'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Empty, Badge } from '@/components/ui'
@@ -97,7 +98,7 @@ export default async function Maosh({
           </span>
           <span className="text-[12px] text-ink-3">
             {tasdiqlangan
-              ? 'Direktor tasdiqlagan, maoshlar xarajatlarga yozilgan. O‘zgartirish uchun direktor oyni qayta ochadi.'
+              ? 'Direktor tasdiqlagan, hisob qulflangan. Pul berilganda pastda to‘lov kiritiladi. O‘zgartirish uchun direktor oyni qayta ochadi.'
               : tugagan
                 ? 'Oy tugagan. Hisobni tekshiring, xato bo‘lsa tuzatish kiriting, keyin direktor tasdiqlaydi.'
                 : 'Har davomatdan keyin avtomatik yangilanadi. Oy tugagach direktor tasdiqlaydi.'}
@@ -108,7 +109,7 @@ export default async function Maosh({
             <input type="hidden" name="davr" value={davr} />
             <input type="hidden" name="qaytish" value={joriy} />
             <Yuborish tur="ok" kutish="Tasdiqlanmoqda…">
-              Tasdiqlash va xarajatga yozish
+              Oy hisobini tasdiqlash
             </Yuborish>
           </form>
         )}
@@ -141,6 +142,8 @@ export default async function Maosh({
           border={aniqmas ? 'brand' : undefined}
         />
       </div>
+
+      {adminmi(profil.rol) && <MaoshTolovlari davr={davr} qaytish={joriy} />}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_340px]">
         <Card className="flex flex-col">
@@ -281,7 +284,6 @@ export default async function Maosh({
                     <option value="" disabled>
                       Tanlang…
                     </option>
-                    <option value="avans">Avans (ayiriladi)</option>
                     <option value="bonus">Bonus (qo‘shiladi)</option>
                     <option value="jarima">Jarima (ayiriladi)</option>
                     <option value="tuzatish_plus">Tuzatish — qo‘shish</option>

@@ -1801,8 +1801,9 @@ declare v_yak numeric; v_av numeric;
 begin
   select yakuniy, avans into v_yak, v_av from ustoz_maosh('2026-08') where teacher_id = 'U01';
   perform maosh_tasdiqla('2026-08');
-  if not exists (select 1 from xarajatlar where toifa = 'maosh' and summa = v_yak + v_av and izoh like 'Ustoz maoshi · 2026-08 · Diana%') then
-    raise exception 'XATO: tasdiqlangan maosh xarajatga tushmadi';
+  -- 0112: tasdiq hisobni qulflaydi, xarajat to'lov bilan yoziladi
+  if exists (select 1 from xarajatlar where izoh like 'Ustoz maoshi · 2026-08%') then
+    raise exception 'XATO: tasdiq xarajat yozdi';
   end if;
   if not (select tasdiqlangan from ustoz_maosh('2026-08') where teacher_id = 'U01') then
     raise exception 'XATO: oy tasdiqlangan ko''rinmadi';
@@ -1813,10 +1814,10 @@ begin
   exception when others then if sqlerrm like 'XATO%' then raise; end if;
   end;
   perform maosh_qayta_och('2026-08', 'test');
-  if exists (select 1 from xarajatlar where izoh like 'Ustoz maoshi · 2026-08%' and not bekor) then
-    raise exception 'XATO: qayta ochilganda xarajat bekor bo''lmadi';
+  if maosh_oy_qulfmi('2026-08') then
+    raise exception 'XATO: oy qayta ochilmadi';
   end if;
-  raise notice 'OK: maosh — direktor tasdig''i → xarajat, oy qulfi, qayta ochish';
+  raise notice 'OK: maosh — direktor tasdig''i, oy qulfi, qayta ochish';
 end $$;
 
 set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';   -- o'quvchi
@@ -2822,5 +2823,63 @@ begin
   if v_n3 < 12 then raise exception 'XATO: 3 kunlik N 12 dan kam: %', v_n3; end if;
   if v_n2 >= 12 or v_n2 <> guruh_oy_darslari('GM2', v_davr) then raise exception 'XATO: 2 kunlik N jadvalga teng emas: %', v_n2; end if;
   raise notice 'OK: 0111 — 2 kunlik N=%, 3 kunlik N=%', v_n2, v_n3;
+end $$;
+reset request.jwt.claim.sub;
+
+-- 0112 — maosh to'lovlari
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+do $$
+declare
+  v_davr text := to_char(bugun_toshkent() - 100, 'YYYY-MM');
+  v_t text := (select id from teachers where profile_id = '33333333-3333-3333-3333-333333333333');
+  v_id bigint;
+  v_xar int;
+begin
+  perform maosh_tolov_qosh('ustoz', v_t, v_davr, 'avans', 100000, bugun_toshkent(), 'sinov');
+  if not exists (select 1 from xarajatlar where toifa = 'maosh' and summa = 100000 and sana = bugun_toshkent() and not bekor) then
+    raise exception 'XATO: avans xarajatga tushmadi';
+  end if;
+  begin
+    perform maosh_tolov_qosh('ustoz', v_t, v_davr, 'maosh', 50000, bugun_toshkent(), null);
+    raise exception 'XATO: tasdiqsiz ustoz maoshi kiritildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  begin
+    perform maosh_tolov_qosh('ustoz', v_t, v_davr, 'avans', 50000, bugun_toshkent() + 1, null);
+    raise exception 'XATO: kelgusi sana qabul qilindi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  if (select qoldi from maosh_tolov_holati(v_davr) where tur = 'ustoz' and kim = v_t) is distinct from
+     (select yakuniy - 100000 from ustoz_maosh(v_davr) where teacher_id = v_t) then
+    raise exception 'XATO: qoldi noto''g''ri';
+  end if;
+  -- Xarajat bekor bo'lsa, to'lov ham
+  select id into v_id from maosh_tolovlar where teacher_id = v_t and davr = v_davr and not bekor;
+  update xarajatlar set bekor = true, bekor_sabab = 'sinov' where id = (select xarajat_id from maosh_tolovlar where id = v_id);
+  if not (select bekor from maosh_tolovlar where id = v_id) then raise exception 'XATO: to''lov bekor bo''lmadi'; end if;
+  raise notice 'OK: 0112 — avans, tasdiqsiz maosh bloki, qoldi, bekor';
+end $$;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+do $$
+begin
+  begin
+    perform maosh_tolov_qosh('ustoz', app_teacher_id(), '2026-01', 'avans', 1000, bugun_toshkent(), null);
+    raise exception 'XATO: ustoz o''ziga to''lov kiritdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  raise notice 'OK: 0112 — ustoz to''lov kirita olmaydi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+do $$
+declare
+  v_davr text := to_char(bugun_toshkent() - 100, 'YYYY-MM');
+  v_t text := (select id from teachers where profile_id = '33333333-3333-3333-3333-333333333333');
+  v_oldin numeric;
+begin
+  v_oldin := (select coalesce(sum(summa), 0) from xarajatlar where not bekor);
+  perform maosh_tasdiqla(v_davr);
+  if (select coalesce(sum(summa), 0) from xarajatlar where not bekor) <> v_oldin then
+    raise exception 'XATO: tasdiq xarajat yozdi';
+  end if;
+  raise notice 'OK: 0112 — tasdiq xarajat yozmaydi';
 end $$;
 reset request.jwt.claim.sub;

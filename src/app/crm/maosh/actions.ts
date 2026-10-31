@@ -119,7 +119,7 @@ export async function oyTasdiqla(fd: FormData) {
 
   revalidatePath(YOL)
   revalidatePath('/crm/xarajatlar')
-  redirect(xabarliYol(orqaga, { ok: `Tasdiqlandi: ${data ?? 0} ustoz maoshi xarajatlarga yozildi.` }))
+  redirect(xabarliYol(orqaga, { ok: `Tasdiqlandi: ${data ?? 0} ta hisob qulflandi. Pul berilganda to‘lov kiriting.` }))
 }
 
 /** Tasdiqlangan oyni qayta ochish — faqat direktor, sababi bilan; xarajatlar bekor bo'ladi. */
@@ -137,7 +137,7 @@ export async function oyQaytaOch(fd: FormData) {
 
   revalidatePath(YOL)
   revalidatePath('/crm/xarajatlar')
-  redirect(xabarliYol(orqaga, { ok: 'Oy qayta ochildi — maosh xarajatlari bekor qilindi.' }))
+  redirect(xabarliYol(orqaga, { ok: 'Oy qayta ochildi. Kiritilgan to‘lovlar saqlanadi.' }))
 }
 
 /** Xodim (admin, qabulxona, manager) oyligi — faqat manager va direktor (0077). Bo'sh — olib tashlanadi. */
@@ -164,4 +164,43 @@ export async function xodimOylikSaqla(fd: FormData) {
   if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
   revalidatePath(YOL)
   redirect(xabarliYol(orqaga, { ok: 'Oylik saqlandi.' }))
+}
+
+/** Pul berilganda: xarajatga berilgan sana bilan tushadi, "qaysi oy uchun" alohida (0112). */
+export async function maoshTolovQosh(fd: FormData) {
+  await talabRol('admin', 'direktor')
+  const orqaga = qaytish(fd)
+  const summa = summaOqi(fd.get('summa'))
+  if (!summa) redirect(xabarliYol(orqaga, { xato: 'Summa noto‘g‘ri.' }))
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('maosh_tolov_qosh', {
+    p_tur: matn(fd.get('tur')) ?? '',
+    p_kim: matn(fd.get('kim')) ?? '',
+    p_davr: matn(fd.get('davr')) ?? '',
+    p_turi: matn(fd.get('turi')) ?? '',
+    p_summa: summa!,
+    p_sana: matn(fd.get('sana')) ?? '',
+    p_izoh: matn(fd.get('izoh')),
+  })
+  if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+
+  revalidatePath(YOL)
+  revalidatePath('/crm/xarajatlar')
+  redirect(xabarliYol(orqaga, { ok: 'To‘lov kiritildi va xarajatga yozildi.' }))
+}
+
+export async function maoshTolovBekor(fd: FormData) {
+  await talabRol('admin', 'direktor')
+  const orqaga = qaytish(fd)
+  const id = Number(fd.get('id'))
+  if (!Number.isInteger(id) || id <= 0) redirect(orqaga)
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('maosh_tolov_bekor', { p_id: id, p_sabab: matn(fd.get('sabab')) ?? '' })
+  if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+
+  revalidatePath(YOL)
+  revalidatePath('/crm/xarajatlar')
+  redirect(xabarliYol(orqaga, { ok: 'To‘lov va uning xarajati bekor qilindi.' }))
 }

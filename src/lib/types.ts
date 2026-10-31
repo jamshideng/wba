@@ -841,6 +841,7 @@ export type Database = {
       elon_yetkazish: Table<ElonYetkazish>
       subjects: Table<Subject>
       levels: Table<Level>
+      maosh_tolovlar: Table<{ id: number; davr: string; turi: 'avans' | 'maosh'; teacher_id: string | null; profile_id: string | null; boshqa_xodim_id: number | null; summa: number; sana: string; izoh: string | null; xarajat_id: number; bekor: boolean }>
       guruh_jadvali: Table<{ group_id: string; dan: string; kunlar: number[] }>
       teachers: Table<Teacher>
       students: Table<Student>
@@ -907,6 +908,9 @@ export type Database = {
       v_arxiv_oquvchilar: View<{ student_id: string; fish: string; arxiv_sana: string | null; arxiv_sabab: string | null; qarz: number; guruhlar: string | null; ketish_sababi: string | null }>
     }
     Functions: {
+      maosh_tolov_holati: { Args: { p_davr: string }; Returns: { tur: string; kim: string; ism: string; lavozim: string; hisob: number; avans: number; maosh: number; qoldi: number }[] }
+      maosh_tolov_qosh: { Args: { p_tur: string; p_kim: string; p_davr: string; p_turi: string; p_summa: number; p_sana: string; p_izoh: string | null }; Returns: number }
+      maosh_tolov_bekor: { Args: { p_id: number; p_sabab: string }; Returns: undefined }
       guruh_jadval_ozgartir: { Args: { p_group: string; p_kunlar: number[]; p_dan: string }; Returns: boolean }
       guruh_ustoz_tahrir: { Args: { p_group: string; p_nom: string; p_level: number | null }; Returns: undefined }
       ustoz_bosqich_qosh: { Args: { p_group: string; p_nom: string }; Returns: number }

@@ -53,6 +53,9 @@ export default async function UstozMaoshi({
       .order('id'),
   ])
 
+  const { data: tolovXom } = await supabase.rpc('maosh_tolov_holati', { p_davr: davr })
+  const tolov = ((tolovXom ?? []) as { tur: string; kim: string; hisob: number; avans: number; maosh: number; qoldi: number }[])
+    .find((t) => t.tur === 'ustoz' && t.kim === ustozId)
   const jam = ((jamXom ?? []) as UstozMaosh[]).find((q) => q.teacher_id === ustozId) ?? null
   const qatorlar = (tafXom ?? []) as MaoshTafsilot[]
   const harakatlar = (harXom ?? []) as MaoshHarakat[]
@@ -107,6 +110,21 @@ export default async function UstozMaoshi({
           sub="qo‘shiladi"
         />
       </div>
+
+      {tolov && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 text-[13px]">
+          <span className="tnum">
+            Hisoblandi {pul(tolov.hisob)} · avans {pul(tolov.avans)} · berildi {pul(tolov.maosh)}
+          </span>
+          {Number(tolov.qoldi) > 0 ? (
+            <Badge ton="accent">qoldi {pul(tolov.qoldi)}</Badge>
+          ) : Number(tolov.qoldi) < 0 ? (
+            <Badge ton="brand">ortiqcha {pul(-Number(tolov.qoldi))}</Badge>
+          ) : (
+            <Badge ton="ok">olindi</Badge>
+          )}
+        </Card>
+      )}
 
       <Card className="px-5 py-4 text-[12.5px] leading-relaxed text-ink-2">
         Har o‘quvchi uchun: <b>stavka ÷ oydagi darslar</b> (kamida 12; haftada 2 kunlik guruhda jadvaldagi darslar) <b>× hisobga kirgan darslar</b>. Ketma-ket 3 va undan
