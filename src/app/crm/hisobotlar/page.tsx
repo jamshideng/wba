@@ -6,7 +6,8 @@ import { Card, CardHeader, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, kirishKlass } from '@/components/forma'
 import { JonliForma } from '@/components/jonli-forma'
-import { sana, bugunToshkent } from '@/lib/format'
+import { AreaGrafik } from '@/components/grafik'
+import { sana, bugunToshkent, joriyDavr, davrNomi } from '@/lib/format'
 import type { Hisobot, HisobotGrafik, HisobotDavomat, HisobotIlova, HisobotMoliya, HisobotOquvchilar, HisobotOrtacha, HisobotUstoz, MonthlyIncome } from '@/lib/types'
 import { DavomatBolimi, IlovaBolimi, MoliyaBolimi, OquvchilarBolimi, OrtachaTolovBolimi, UstozlarBolimi } from './bolimlar'
 import { UmumiyBolim } from './umumiy'
@@ -96,7 +97,10 @@ export default async function Hisobotlar({
       : Promise.resolve({ data: null, error: null }),
     bolim === 'umumiy'
       ? supabase.from('v_monthly_income').select('*').order('davr', { ascending: false }).limit(12)
-      : Promise.resolve({ data: [] }),
+      : bolim === 'moliya'
+        // Tushum dinamikasi — kelasi oylarsiz, tanlangan oylar soni bo'yicha
+        ? supabase.from('v_monthly_income').select('*').lte('davr', joriyDavr()).order('davr', { ascending: false }).limit(oyNechta)
+        : Promise.resolve({ data: [] }),
     bolim === 'moliya'
       ? supabase.rpc('hisobot_moliya', { p_oylar: oyNechta })
       : bolim === 'oquvchilar'
@@ -212,6 +216,14 @@ export default async function Hisobotlar({
         ) : bolim === 'moliya' ? (
           <>
             <MoliyaBolimi m={bolimData.data as HisobotMoliya} />
+            {oylar.length > 0 && (
+              <Card className="flex flex-col">
+                <CardHeader title="Tushum dinamikasi" meta="oylar bo‘yicha · so‘m" />
+                <div className="px-5 pb-4 pt-1">
+                  <AreaGrafik nuqtalar={oylar.map((m) => ({ label: davrNomi(m.davr).slice(0, 3), value: Number(m.tushum) }))} />
+                </div>
+              </Card>
+            )}
             {ortachaTolov && <OrtachaTolovBolimi o={ortachaTolov as HisobotOrtacha} />}
           </>
         ) : bolim === 'oquvchilar' ? (

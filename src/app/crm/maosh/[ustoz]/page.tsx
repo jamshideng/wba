@@ -109,7 +109,7 @@ export default async function UstozMaoshi({
       </div>
 
       <Card className="px-5 py-4 text-[12.5px] leading-relaxed text-ink-2">
-        Har o‘quvchi uchun: <b>stavka ÷ oydagi darslar</b> (kamida 12) <b>× hisobga kirgan darslar</b>. Ketma-ket 3 va undan
+        Har o‘quvchi uchun: <b>stavka ÷ oydagi darslar</b> (kamida 12; haftada 2 kunlik guruhda jadvaldagi darslar) <b>× hisobga kirgan darslar</b>. Ketma-ket 3 va undan
         ko‘p qoldirilgan darslar ayiriladi, 1–2 tasi to‘lanadi. Oy o‘rtasida kelgan o‘quvchi kelgan kunidan hisoblanadi.
         Zamena darsi o‘tgan ustozga yoziladi.
         {jam?.aniqmas && (

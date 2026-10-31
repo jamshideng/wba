@@ -2704,5 +2704,123 @@ begin
   if v_keyingi <= v_id then raise exception 'XATO: ID qayta berildi: %', v_keyingi; end if;
   raise notice 'OK: 0109 — 2 guruh, chegirma 1-guruhga, to''siq, jurnal, ID qayta berilmaydi';
 end $$;
+
+-- 0110 — dars kunlari tarixi
+do $$
+declare
+  v_bugun date := bugun_toshkent();
+  v_dan date := (date_trunc('month', bugun_toshkent() - 10) + interval '5 day')::date;
+  v_keyin date := bugun_toshkent() + 7;
+  v_soni int;
+begin
+  insert into groups (id, nom, boshlanish, tugash, oylik_narx, kunlar)
+  values ('GJ1', 'Jadval sinovi', '10:00', '11:30', 100000, '{1,3,5}'), ('GJ2', 'Blok sinovi', '10:00', '11:30', 100000, '{1,2,3,4,5,6,7}');
+  if (select count(*) from guruh_jadvali where group_id = 'GJ1') <> 1 then raise exception 'XATO: yangi guruh tarixi yo''q'; end if;
+
+  -- Kelgusi sanadan: bugungi jadval o'zgarmaydi
+  if not guruh_jadval_ozgartir('GJ1', '{2,4,6}', v_keyin) then raise exception 'XATO: o''zgarish yozilmadi'; end if;
+  if guruh_kunlari('GJ1', v_bugun) <> '{1,3,5}' then raise exception 'XATO: bugungi jadval o''zgardi'; end if;
+  if guruh_kunlari('GJ1', v_keyin) <> '{2,4,6}' then raise exception 'XATO: yangi jadval kuchga kirmadi'; end if;
+  if (select kunlar from groups where id = 'GJ1') <> '{1,3,5}' then raise exception 'XATO: groups.kunlar erta o''zgardi'; end if;
+
+  -- O'sha oyda belgilanmagan dars bo'lsa, saqlanmaydi
+  perform guruhga_biriktir('S003', 'GJ2', date_trunc('month', v_dan)::date, '{}'::jsonb);
+  if cardinality(guruh_belgilanmagan_kunlar('GJ2', v_dan)) = 0 then raise exception 'XATO: belgilanmagan kun topilmadi'; end if;
+  begin
+    perform guruh_jadval_ozgartir('GJ2', '{1,3,5}', v_dan);
+    raise exception 'XATO: belgilanmagan dars bilan saqlandi';
+  exception when others then
+    if sqlerrm like 'XATO%' then raise; end if;
+    if sqlerrm not like 'Dars kunlari o''zgarmadi%' then raise exception 'XATO: boshqa xabar: %', sqlerrm; end if;
+  end;
+  if (select count(*) from guruh_jadvali where group_id = 'GJ2') <> 1 then raise exception 'XATO: bloklanganda tarix o''zgardi'; end if;
+
+  -- Hamma dars belgilansa, saqlanadi; eski kunlar eski jadvalda qoladi
+  insert into lessons (group_id, sana, otkazildi)
+  select 'GJ2', d, true from unnest(guruh_belgilanmagan_kunlar('GJ2', v_dan)) d
+  on conflict (group_id, sana) do update set otkazildi = true;
+  if not guruh_jadval_ozgartir('GJ2', '{1,3,5}', v_dan) then raise exception 'XATO: belgilangach saqlanmadi'; end if;
+  if guruh_kunlari('GJ2', v_dan - 1) <> '{1,2,3,4,5,6,7}' then raise exception 'XATO: o''tgan kun jadvali o''zgardi'; end if;
+  if (select kunlar from groups where id = 'GJ2') <> '{1,3,5}' then raise exception 'XATO: joriy kunlar yangilanmadi'; end if;
+
+  -- Oy darslari: chegara oyida eski + yangi jadval
+  select count(*) into v_soni from generate_series(date_trunc('month', v_dan)::date, v_dan - 1, interval '1 day') k
+  where guruh_dars_kuni('GJ2', k::date);
+  if v_soni <> (v_dan - date_trunc('month', v_dan)::date) - (select count(*) from dam_kunlar where sana >= date_trunc('month', v_dan)::date and sana < v_dan) then
+    raise exception 'XATO: eski jadval kunlari noto''g''ri: %', v_soni;
+  end if;
+  raise notice 'OK: 0110 — sanadan jadval, blok, o''tgan kunlar, joriy kunlar';
+end $$;
+
+-- 0110 — ustoz: faqat o'z guruhi
 reset role;
+insert into groups (id, nom, subject_id, level_id, teacher_id, boshlanish, tugash, oylik_narx, kunlar)
+select 'GU1', l.nom || ' · Sinov · 10:00', l.subject_id, l.id,
+       (select id from teachers where profile_id = '33333333-3333-3333-3333-333333333333'),
+       '10:00', '11:30', 100000, '{1,3,5}'
+from levels l where l.subject_id = 'ingliz-tili' and l.nom = 'Beginner';
+insert into groups (id, nom, subject_id, teacher_id, boshlanish, tugash, oylik_narx, kunlar)
+values ('GU2', 'Begona', 'ingliz-tili', null, '10:00', '11:30', 100000, '{1,3,5}');
+set role authenticated;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+do $$
+declare
+  v_l bigint;
+  v_narx numeric;
+begin
+  select oylik_narx into v_narx from groups where id = 'GU1';
+  v_l := ustoz_bosqich_qosh('GU1', 'Speaking Club');
+
+  perform guruh_ustoz_tahrir('GU1', (select nom from groups where id = 'GU1'), v_l);
+  if (select nom from groups where id = 'GU1') <> 'Speaking Club · Sinov · 10:00' then
+    raise exception 'XATO: nomdagi bosqich almashmadi: %', (select nom from groups where id = 'GU1');
+  end if;
+
+  perform ustoz_bosqich_tahrir(v_l, 'Speaking');
+  if (select nom from groups where id = 'GU1') <> 'Speaking · Sinov · 10:00' then raise exception 'XATO: bosqich nomi nomga o''tmadi'; end if;
+
+  perform guruh_ustoz_tahrir('GU1', 'O''zim yozdim', (select id from levels where subject_id = 'ingliz-tili' and nom = 'Beginner'));
+  if (select nom from groups where id = 'GU1') <> 'O''zim yozdim' then raise exception 'XATO: ustoz yozgan nom bosildi'; end if;
+  if (select oylik_narx from groups where id = 'GU1') <> v_narx then raise exception 'XATO: narx o''zgardi'; end if;
+
+  begin perform guruh_ustoz_tahrir('GU2', 'Buzdim', null); raise exception 'XATO: begona guruh o''zgardi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  begin perform ustoz_bosqich_qosh('GU2', 'Buzdim'); raise exception 'XATO: begona guruhga bosqich';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  begin perform guruh_ustoz_tahrir('GU1', 'X', (select id from levels where subject_id = 'matematika' limit 1)); raise exception 'XATO: boshqa yo''nalish bosqichi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  begin perform ustoz_bosqich_tahrir((select id from levels where subject_id = 'ingliz-tili' and nom = 'Beginner'), 'Buzdim'); raise exception 'XATO: umumiy bosqich o''zgardi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  begin perform guruh_jadval_ozgartir('GU1', '{2}', bugun_toshkent()); raise exception 'XATO: ustoz kunlarni o''zgartirdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+
+  perform ustoz_bosqich_ochir(v_l);
+  raise notice 'OK: 0110 — ustoz faqat o''z guruhining nomi va bosqichi';
+end $$;
+reset role;
+
+-- 0111 — haftada 2 kunlik guruhda N = jadval darslari, 3 kunlikda kamida 12
+do $$
+declare
+  v_davr text := to_char(bugun_toshkent() - 40, 'YYYY-MM');
+  v_kun date;
+  v_n2 int;
+  v_n3 int;
+  v_t text := (select id from teachers where profile_id = '33333333-3333-3333-3333-333333333333');
+begin
+  insert into groups (id, nom, teacher_id, boshlanish, tugash, oylik_narx, kunlar)
+  values ('GM2', 'Ikki kunlik', v_t, '10:00', '11:30', 100000, '{2,4}'),
+         ('GM3', 'Uch kunlik', v_t, '12:00', '13:30', 100000, '{1,3,5}');
+  v_kun := to_date(v_davr || '-01', 'YYYY-MM-DD');
+  insert into enrollments (student_id, group_id, boshlandi) values ('S002', 'GM2', v_kun), ('S002', 'GM3', v_kun);
+  insert into lessons (group_id, sana, otkazildi) values ('GM2', v_kun, true), ('GM3', v_kun, true);
+  insert into attendance (lesson_id, student_id, holat)
+  select l.id, 'S002', 'keldi' from lessons l where l.group_id in ('GM2', 'GM3') and l.sana = v_kun;
+  select q.n into v_n2 from maosh_qatorlari(v_davr) q where q.group_id = 'GM2' limit 1;
+  select q.n into v_n3 from maosh_qatorlari(v_davr) q where q.group_id = 'GM3' limit 1;
+  if v_n2 is null or v_n3 is null then raise exception 'XATO: maosh qatori chiqmadi: %, %', v_n2, v_n3; end if;
+  if v_n3 < 12 then raise exception 'XATO: 3 kunlik N 12 dan kam: %', v_n3; end if;
+  if v_n2 >= 12 or v_n2 <> guruh_oy_darslari('GM2', v_davr) then raise exception 'XATO: 2 kunlik N jadvalga teng emas: %', v_n2; end if;
+  raise notice 'OK: 0111 — 2 kunlik N=%, 3 kunlik N=%', v_n2, v_n3;
+end $$;
 reset request.jwt.claim.sub;

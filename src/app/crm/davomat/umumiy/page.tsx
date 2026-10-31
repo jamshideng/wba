@@ -31,8 +31,9 @@ export default async function UmumiyDavomat({ searchParams }: { searchParams: Pr
   const kunlar = kunlarOraligi(dan, bugun)
 
   const supabase = await createClient()
-  const [{ data: guruhlar }, { data: yozilishlar }, { data: darslar }, { data: damlar }] = await Promise.all([
+  const [{ data: guruhlar }, { data: jadvallar }, { data: yozilishlar }, { data: darslar }, { data: damlar }] = await Promise.all([
     supabase.from('groups').select('id, nom, kunlar').eq('holat', 'faol').order('nom'),
+    supabase.from('guruh_jadvali').select('group_id, dan, kunlar'),
     supabase.from('enrollments').select('group_id, boshlandi, tugadi').lte('boshlandi', bugun),
     supabase.from('lessons').select('id, group_id, sana').gte('sana', dan).lte('sana', bugun),
     supabase.from('dam_kunlar').select('sana').gte('sana', dan).lte('sana', bugun),
@@ -60,7 +61,10 @@ export default async function UmumiyDavomat({ searchParams }: { searchParams: Pr
 
   const qatorlar = umumiyDavomat(
     kunlar,
-    (guruhlar ?? []) as { id: string; nom: string; kunlar: number[] | null }[],
+    ((guruhlar ?? []) as { id: string; nom: string; kunlar: number[] | null }[]).map((g) => ({
+      ...g,
+      jadval: (jadvallar ?? []).filter((j) => j.group_id === g.id),
+    })),
     (yozilishlar ?? []) as { group_id: string; boshlandi: string; tugadi: string | null }[],
     dList,
     belgilar,

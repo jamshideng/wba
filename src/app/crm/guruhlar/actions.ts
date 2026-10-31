@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabRol } from '@/lib/auth'
-import { matn, sonOqi, summaOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
+import { matn, sonOqi, sanaOqi, summaOqi, xabarliYol, xatoMatni, ichkiYol } from '@/lib/kiritish'
+import { bugunToshkent } from '@/lib/format'
 
 type GuruhMaydonlari = {
   nom: string
@@ -106,13 +107,136 @@ export async function guruhTahrir(fd: FormData) {
   const holat = fd.get('holat') === 'yopilgan' ? 'yopilgan' : 'faol'
 
   const supabase = await createClient()
+  // Avval dars kunlari (0110): eski darslar belgilanmagan bo'lsa, hech narsa saqlanmaydi
+  const { kunlar, ...qolgani } = g as GuruhMaydonlari
+  const { error: jadvalXato } = await supabase.rpc('guruh_jadval_ozgartir', {
+    p_group: id!,
+    p_kunlar: kunlar,
+    p_dan: sanaOqi(fd.get('kunlar_dan')) ?? bugunToshkent(),
+  })
+  if (jadvalXato) redirect(xabarliYol(forma, { xato: xatoMatni(jadvalXato) }))
+
   const { error } = await supabase
     .from('groups')
-    .update({ ...(g as GuruhMaydonlari), holat })
+    .update({ ...qolgani, holat })
     .eq('id', id!)
 
   if (error) redirect(xabarliYol(forma, { xato: xatoMatni(error) }))
 
   revalidatePath('/crm', 'layout')
   redirect(xabarliYol(`/crm/guruhlar/${id}`, { ok: 'Guruh saqlandi.' }))
+}
+
+/* Umumiy bosqichlar (admin). Nomi o'zgarsa, mavjud guruh nomlari o'zgarmaydi. */
+export async function bosqichQosh(fd: FormData) {
+  await talabRol('admin', 'direktor')
+  const yol = ichkiYol(fd.get('yol'))
+  const subjectId = matn(fd.get('subject_id'))
+  const nom = matn(fd.get('nom'))
+  if (!subjectId || !nom) redirect(xabarliYol(yol, { xato: 'Yo‘nalish va bosqich nomini kiriting.' }))
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('levels').insert({ subject_id: subjectId!, nom: nom!, tartib: 500 })
+  if (error) redirect(xabarliYol(yol, { xato: error.code === '23505' ? 'Bu bosqich ro‘yxatda bor.' : xatoMatni(error) }))
+
+  revalidatePath(yol)
+  redirect(yol)
+}
+
+export async function bosqichSaqla(fd: FormData) {
+  await talabRol('admin', 'direktor')
+  const yol = ichkiYol(fd.get('yol'))
+  const id = sonOqi(fd.get('level_id'))
+  const nom = matn(fd.get('nom'))
+  if (!id || !nom) redirect(xabarliYol(yol, { xato: 'Bosqich nomini yozing.' }))
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('levels').update({ nom: nom! }).eq('id', id!).is('group_id', null)
+  if (error) redirect(xabarliYol(yol, { xato: error.code === '23505' ? 'Bu bosqich ro‘yxatda bor.' : xatoMatni(error) }))
+
+  revalidatePath(yol)
+  redirect(yol)
+}
+
+export async function bosqichOchir(fd: FormData) {
+  await talabRol('admin', 'direktor')
+  const yol = ichkiYol(fd.get('yol'))
+  const id = sonOqi(fd.get('level_id'))
+  if (!id) redirect(yol)
+
+  const supabase = await createClient()
+  const { count } = await supabase.from('groups').select('id', { count: 'exact', head: true }).eq('level_id', id!)
+  if (count) redirect(xabarliYol(yol, { xato: `Bu bosqich ${count} ta guruhda ishlatilgan, o‘chirib bo‘lmaydi.` }))
+
+  const { error } = await supabase.from('levels').delete().eq('id', id!).is('group_id', null)
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  revalidatePath(yol)
+  redirect(yol)
+}
+
+/* Ustoz: o'z guruhining faqat nomi va bosqichi. Huquq bazada tekshiriladi (0110). */
+const USTOZ_ROLLARI = ['admin', 'direktor', 'qabulxona', 'ustoz'] as const
+
+export async function guruhUstozTahrir(fd: FormData) {
+  await talabRol(...USTOZ_ROLLARI)
+  const id = matn(fd.get('id'))
+  if (!id) redirect('/crm/guruhlar')
+  const forma = `/crm/guruhlar/${id}/ustoz-tahrir`
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('guruh_ustoz_tahrir', {
+    p_group: id!,
+    p_nom: matn(fd.get('nom')) ?? '',
+    p_level: sonOqi(fd.get('level_id')),
+  })
+  if (error) redirect(xabarliYol(forma, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(`/crm/guruhlar/${id}`, { ok: 'Guruh saqlandi.' }))
+}
+
+export async function ustozBosqichQosh(fd: FormData) {
+  await talabRol(...USTOZ_ROLLARI)
+  const id = matn(fd.get('id'))
+  if (!id) redirect('/crm/guruhlar')
+  const forma = `/crm/guruhlar/${id}/ustoz-tahrir`
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('ustoz_bosqich_qosh', { p_group: id!, p_nom: matn(fd.get('nom')) ?? '' })
+  if (error) redirect(xabarliYol(forma, { xato: xatoMatni(error) }))
+
+  revalidatePath(forma)
+  redirect(xabarliYol(forma, { ok: 'Bosqich qo‘shildi. Endi uni ro‘yxatdan tanlang.' }))
+}
+
+export async function ustozBosqichTahrir(fd: FormData) {
+  await talabRol(...USTOZ_ROLLARI)
+  const id = matn(fd.get('id'))
+  if (!id) redirect('/crm/guruhlar')
+  const forma = `/crm/guruhlar/${id}/ustoz-tahrir`
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('ustoz_bosqich_tahrir', {
+    p_level: sonOqi(fd.get('level_id')) ?? 0,
+    p_nom: matn(fd.get('nom')) ?? '',
+  })
+  if (error) redirect(xabarliYol(forma, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(forma, { ok: 'Bosqich saqlandi.' }))
+}
+
+export async function ustozBosqichOchir(fd: FormData) {
+  await talabRol(...USTOZ_ROLLARI)
+  const id = matn(fd.get('id'))
+  if (!id) redirect('/crm/guruhlar')
+  const forma = `/crm/guruhlar/${id}/ustoz-tahrir`
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('ustoz_bosqich_ochir', { p_level: sonOqi(fd.get('level_id')) ?? 0 })
+  if (error) redirect(xabarliYol(forma, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(forma, { ok: 'Bosqich o‘chirildi.' }))
 }

@@ -49,7 +49,8 @@ export default async function GuruhProfil({
 
   if (!guruh) notFound()
   // Xodim "Ustoz" rolida — boshqa ustozning guruhi yopiq
-  if (ustozRejimi(profil) && (guruh as { teacher_id: string | null }).teacher_id !== (await getUstoz())?.id) notFound()
+  const oziUstozi = (guruh as { teacher_id: string | null }).teacher_id === (await getUstoz())?.id
+  if (ustozRejimi(profil) && !oziUstozi) notFound()
 
   type Guruh = {
     id: string
@@ -142,6 +143,9 @@ export default async function GuruhProfil({
             </Button>
             {adminmi(profil.rol) && (
               <Button href={`/crm/guruhlar/${g.id}/tahrir`} variant="ikkilamchi">Tahrirlash</Button>
+            )}
+            {!adminmi(profil.rol) && oziUstozi && (
+              <Button href={`/crm/guruhlar/${g.id}/ustoz-tahrir`} variant="ikkilamchi">Nom va bosqich</Button>
             )}
           </div>
         }

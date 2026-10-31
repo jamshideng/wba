@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { talabRol, staffmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardHeader, Stat, BarRow, Empty } from '@/components/ui'
-import { AreaGrafik } from '@/components/grafik'
 import { IconAlert, IconPayments, IconAttendance, IconLeads, IconStudents, IconDebt, IconWoblr, IconPhone, IconChevronDown } from '@/components/icons'
 import { pul, davrNomi, joriyDavr, sana, bugunToshkent, telefon } from '@/lib/format'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
@@ -22,15 +21,12 @@ export default async function Dashboard() {
   const xodim = staffmi(profil.rol)
 
   const ertagaBoshi = `${new Date(Date.parse(`${bugun}T00:00:00Z`) + 86400_000).toISOString().slice(0, 10)}T00:00:00+05:00`
-  const [{ data: stats }, { data: qarzdorlar }, { data: ustozlar }, { data: oylik }, { data: kunlik }, { count: probniyBugun }, { data: tanaffus, count: tanaffusSoni }, { data: bugungiVazifalar, count: vazifaSoni }, { count: kechikkanLid }] =
+  const [{ data: stats }, { data: qarzdorlar }, { data: ustozlar }, { data: kunlik }, { count: probniyBugun }, { data: tanaffus, count: tanaffusSoni }, { data: bugungiVazifalar, count: vazifaSoni }, { count: kechikkanLid }] =
     await Promise.all([
       supabase.from('v_dashboard').select('*').single(),
       supabase.from('v_qarzdorlar').select('*').limit(6),
       // O'qituvchi bo'yicha tushum — shu oy (to'lov davri), yuqoridagi oy tushumi bilan teng (0087)
       supabase.from('v_teacher_monthly_income').select('*').eq('davr', davr).order('tushum', { ascending: false }),
-      // Tushum dinamikasi — kelasi oylarsiz (joriygacha), oxirgi 6 oy.
-      // Kamayish tartibida: o'sish tartibida limit ENG ESKI oylarni qaytarardi.
-      supabase.from('v_monthly_income').select('davr, tushum').lte('davr', davr).order('davr', { ascending: false }).limit(6),
       // Botdagi "Bugun" / "Kunlik hisobot" — bitta so'rov, hisob bazada
       xodim ? supabase.rpc('tushum_hisobot', { p_dan: bugun, p_gacha: bugun }) : Promise.resolve({ data: null }),
       xodim
@@ -66,15 +62,6 @@ export default async function Dashboard() {
   const uList = (ustozlar ?? []) as TeacherMonthlyIncome[]
   const maxTushum = Math.max(1, ...uList.map((u) => Number(u.tushum)))
   const jamiTushum = uList.reduce((a, u) => a + Number(u.tushum), 0)
-
-  // Tushum grafigi uchun — oxirgi 6 oy, qisqa oy nomi bilan
-  const OY_QISQA = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek']
-  // Bazadan yangidan eskiga keladi — grafik chapdan o'ngga eskidan yangiga
-  const oylikList = [...((oylik ?? []) as { davr: string; tushum: number }[])].reverse()
-  const grafik = oylikList.map((o) => ({
-    label: OY_QISQA[Number(o.davr.slice(5, 7)) - 1] ?? o.davr.slice(5),
-    value: Number(o.tushum),
-  }))
 
   return (
     <div className="flex flex-col gap-4 px-6 py-5 lg:px-7">
@@ -188,15 +175,6 @@ export default async function Dashboard() {
           Icon={IconWoblr}
         />
       </div>
-
-      {xodim && grafik.length > 0 && (
-        <Card className="flex flex-col">
-          <CardHeader title="Tushum dinamikasi" meta="oxirgi oylar · so‘m" />
-          <div className="px-5 pb-4 pt-1">
-            <AreaGrafik nuqtalar={grafik} />
-          </div>
-        </Card>
-      )}
 
       {xodim && <BugungiIshlar royxat={(bugungiVazifalar ?? []) as unknown as BugungiVazifa[]} jami={vazifaSoni ?? 0} />}
 

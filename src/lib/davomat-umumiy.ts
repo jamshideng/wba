@@ -8,9 +8,11 @@
 
 import { haftaKuni } from '@/lib/format'
 
+import { kunlarSanada, type JadvalQatori } from './guruh-jadval'
+
 export type Belgi = 'keldi' | 'kechikdi' | 'sababli' | 'kelmadi'
 
-export type GuruhKirish = { id: string; nom: string; kunlar: number[] | null }
+export type GuruhKirish = { id: string; nom: string; kunlar: number[] | null; jadval?: JadvalQatori[] }
 export type YozilishKirish = { group_id: string; boshlandi: string; tugadi: string | null }
 export type DarsKirish = { id: string; group_id: string; sana: string }
 export type BelgiKirish = { lesson_id: string; holat: Belgi }
@@ -74,7 +76,7 @@ export function umumiyDavomat(
           }
           continue
         }
-        const darsKuni = (g.kunlar ?? []).includes(haftaKuni(kun)) && !damKunlar.has(kun)
+        const darsKuni = kunlarSanada(g.jadval ?? [], g.kunlar ?? [], kun).includes(haftaKuni(kun)) && !damKunlar.has(kun)
         const oquvchiBor = yz.some((y) => y.boshlandi <= kun && (!y.tugadi || y.tugadi >= kun))
         if (darsKuni && oquvchiBor) q.belgilanmagan.push(kun)
       }

@@ -58,6 +58,8 @@ export type Level = {
   subject_id: string
   nom: string
   tartib: number
+  /** To'ldirilgan bo'lsa — ustoz qo'shgan, faqat shu guruhda ko'rinadi (0110) */
+  group_id?: string | null
 }
 
 export type Teacher = {
@@ -839,6 +841,7 @@ export type Database = {
       elon_yetkazish: Table<ElonYetkazish>
       subjects: Table<Subject>
       levels: Table<Level>
+      guruh_jadvali: Table<{ group_id: string; dan: string; kunlar: number[] }>
       teachers: Table<Teacher>
       students: Table<Student>
       groups: Table<Group>
@@ -904,6 +907,11 @@ export type Database = {
       v_arxiv_oquvchilar: View<{ student_id: string; fish: string; arxiv_sana: string | null; arxiv_sabab: string | null; qarz: number; guruhlar: string | null; ketish_sababi: string | null }>
     }
     Functions: {
+      guruh_jadval_ozgartir: { Args: { p_group: string; p_kunlar: number[]; p_dan: string }; Returns: boolean }
+      guruh_ustoz_tahrir: { Args: { p_group: string; p_nom: string; p_level: number | null }; Returns: undefined }
+      ustoz_bosqich_qosh: { Args: { p_group: string; p_nom: string }; Returns: number }
+      ustoz_bosqich_tahrir: { Args: { p_level: number; p_nom: string }; Returns: undefined }
+      ustoz_bosqich_ochir: { Args: { p_level: number }; Returns: undefined }
       oquvchi_ochirish_tosiqlar: { Args: { p_student: string }; Returns: string[] }
       oquvchi_xato_ochir: { Args: { p_student: string; p_sabab: string }; Returns: undefined }
       oylik_natijalarim: { Args: Record<string, never>; Returns: import('@/components/oylik-natijalar').MeningOylikNatijam[] }

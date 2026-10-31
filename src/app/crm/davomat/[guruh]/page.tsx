@@ -9,6 +9,7 @@ import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { IconArrowLeft } from '@/components/icons'
 import { sana as sanaFmt, vaqt, bugunToshkent, kunlarNomi, haftaKuni, davrQisqa, HAFTA_KUNLARI, guruhQisqa } from '@/lib/format'
+import { kunlarSanada } from '@/lib/guruh-jadval'
 import { Jurnal, type JurnalQatori, type DarsKuni, type Huquq } from './jurnal'
 import type { AttendanceStatus } from '@/lib/types'
 import type { WoblarLimiti } from '@/lib/woblar-chegara'
@@ -124,10 +125,12 @@ export default async function DavomatJurnali({
   // 0079 — boshqa kunga ko'chirilgan dars: ustun qoladi, lekin davomat so'ralmaydi
   for (const d of dList) if (d.kochirildi_ga) dam.set(d.sana, `Ko‘chirildi → ${d.kochirildi_ga.slice(8, 10)}.${d.kochirildi_ga.slice(5, 7)}`)
 
-  /* Ustunlar: guruh kunlariga tushgan sanalar + shu oyda ochilgan darslar */
+  /* Ustunlar: o'sha sanadagi jadvalga tushgan kunlar (0110) + shu oyda ochilgan darslar */
+  const { data: jadvalXom } = await supabase.from('guruh_jadvali').select('dan, kunlar').eq('group_id', guruh)
+  const jadvalKunimi = (sana: string) => kunlarSanada(jadvalXom ?? [], guruhi.kunlar, sana).includes(haftaKuni(sana))
   const darsSanalari = new Set(dList.map((d) => d.sana))
   const kunlar: DarsKuni[] = oyKunlari(davr)
-    .filter((sana) => guruhi.kunlar.includes(haftaKuni(sana)) || darsSanalari.has(sana))
+    .filter((sana) => jadvalKunimi(sana) || darsSanalari.has(sana))
     .map((sana) => ({ sana, kun: haftaKuni(sana), hafta: HAFTA_KUNLARI[haftaKuni(sana) - 1].qisqa, dam: dam.get(sana) ?? null }))
     // 0097 — keyingi oyga ko'chgan shu oy darslari oxirida (hisob shu oyniki)
     .concat(
@@ -265,7 +268,7 @@ export default async function DavomatJurnali({
     .filter((t) => t.taklif && (admin || t.eski >= bugun || t.taklif >= bugun))
   const kochiriladiganKunlar = oyKunlari(davr).filter((x) => {
     const d = darsBy.get(x)
-    return guruhi.kunlar.includes(haftaKuni(x)) && !d?.otkazildi && !d?.kochirildi_ga && !d?.kochirilgan_dan && (admin || x >= bugun)
+    return jadvalKunimi(x) && !d?.otkazildi && !d?.kochirildi_ga && !d?.kochirilgan_dan && (admin || x >= bugun)
   })
 
   return (
