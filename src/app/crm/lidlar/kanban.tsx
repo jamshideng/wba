@@ -393,6 +393,7 @@ function Oynalar({
           <select name="holat" defaultValue={oyna.lid.sinov_sana ? 'kelmadi' : 'rad'} className={kirishKlass}>
             <option value="rad">Rad etdi</option>
             <option value="kelmadi">Sinov darsiga kelmadi</option>
+            <option value="xato">Xato kiritilgan</option>
           </select>
         </Maydon>
         <Maydon nom="Sabab" izoh="Hisobot uchun: narx, vaqt, masofa…">

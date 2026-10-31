@@ -121,6 +121,12 @@ export async function lidBosqich(fd: FormData) {
     case 'yoqotildi': {
       const h = fd.get('holat') === 'kelmadi' ? 'kelmadi' : 'rad'
       if (!sabab) redirect(xabarliYol(yol, { xato: 'Sababini yozing — keyin tahlil uchun kerak.' }))
+      if (fd.get('holat') === 'xato') {
+        await talabRol('admin', 'direktor')
+        const { error } = await (await createClient()).rpc('lid_xato_belgila', { p_lid: id!, p_sabab: sabab! })
+        if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+        tugat(yol, 'Xato kiritilgan deb belgilandi, konversiyaga kirmaydi.')
+      }
       ozgarish = { holat: h, keyingi_aloqa: null }
       break
     }
@@ -179,4 +185,21 @@ export async function lidOquvchi(fd: FormData) {
 
   revalidatePath('/crm', 'layout')
   redirect(xabarliYol(`/crm/oquvchilar/${studentId}`, { ok: `O‘quvchi bo‘ldi: ${studentId}` }))
+}
+
+/** Xato kiritilgan lid: konversiyadan chiqadi, /crm/lidlar/xato da turadi (0114). */
+export async function lidXatoQaytar(fd: FormData) {
+  await talabRol('admin', 'direktor')
+  const yol = qaytish(fd)
+  const { error } = await (await createClient()).rpc('lid_xato_qaytar', { p_lid: String(fd.get('id') ?? '') })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+  tugat(yol, 'Lid qaytarildi.')
+}
+
+export async function lidXatoOchir(fd: FormData) {
+  await talabRol('manager', 'direktor')
+  const yol = qaytish(fd)
+  const { error } = await (await createClient()).rpc('lid_xato_ochir', { p_lid: String(fd.get('id') ?? '') })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+  tugat(yol, 'Lid butunlay o‘chirildi.')
 }

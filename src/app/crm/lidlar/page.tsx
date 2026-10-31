@@ -63,7 +63,7 @@ export default async function Lidlar({
     // Yopilganlar — faqat oxirgi 30 kun (kanban to'lib ketmasin)
     supabase.from('leads').select(ustunlar).or('student_id.not.is.null,holat.in.(yozildi,rad,kelmadi)').gte('updated_at', `${otizKunOldin}T00:00:00+05:00`).order('updated_at', { ascending: false }).limit(200),
     supabase.from('groups').select('id, nom').eq('holat', 'faol').order('nom'),
-    supabase.from('leads').select('holat, student_id').gte('created_at', `${oyBoshi}T00:00:00+05:00`),
+    supabase.from('leads').select('holat, student_id').neq('holat', 'xato').gte('created_at', `${oyBoshi}T00:00:00+05:00`),
   ])
 
   // Manba havolasi (?b=lid:<id>, Nazorat): eski yopilgan lid ro'yxatda bo'lmasa ham ko'rinsin
@@ -119,6 +119,7 @@ export default async function Lidlar({
     return true
   })
 
+  const { count: xatoSoni } = await supabase.from('leads').select('id', { count: 'exact', head: true }).eq('holat', 'xato')
   const oyLidlar = (shuOy ?? []) as { holat: string; student_id: string | null }[]
   const oyYozildi = oyLidlar.filter((l) => l.student_id || l.holat === 'yozildi').length
   const konversiya = oyLidlar.length ? Math.round((oyYozildi / oyLidlar.length) * 100) : 0
@@ -137,6 +138,12 @@ export default async function Lidlar({
         izoh="murojaatlarni o‘quvchiga aylantirish"
       />
       <Xabar ok={s.ok} xato={s.xato} />
+
+      <div className="-mt-1 text-right">
+        <Link href="/crm/lidlar/xato" className="text-[12px] text-ink-3 underline underline-offset-2 hover:text-ink">
+          Xato kiritilganlar ({xatoSoni ?? 0})
+        </Link>
+      </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Ochiq lidlar" value={String(tezSoni.hammasi)} sub="yangi + bog‘lanildi + sinov" Icon={IconLeads} href="/crm/lidlar?tez=ochiq" />

@@ -30,7 +30,7 @@ export async function kunlikHisobotMatn(kun: string = bugunToshkent()): Promise<
       db.from('lessons').select('group_id, otkazildi').eq('sana', kun),
       db.from('enrollments').select('group_id').neq('holat', 'tugagan').lte('boshlandi', kun),
       db.from('attendance').select('holat, lessons!inner(sana)').eq('lessons.sana', kun),
-      db.from('leads').select('holat').eq('sinov_sana', kun),
+      db.from('leads').select('holat').neq('holat', 'xato').eq('sinov_sana', kun),
       db.rpc('tushum_hisobot', { p_dan: kun, p_gacha: kun }),
       db.from('v_qarzdorlar').select('qarz'),
       db.from('teachers').select('id, ism'),

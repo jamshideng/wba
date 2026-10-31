@@ -17,7 +17,7 @@ export type AttendanceStatus = 'keldi' | 'kechikdi' | 'sababli' | 'kelmadi'
 export type PaymentMethod = 'naqd' | 'terminal' | 'click' | 'payme'
 export type InvoiceStatus = 'ochiq' | 'yopilgan' | 'bekor'
 /** Botdagi Probniylar: Probniy→yangi · Doimiy→yozildi · Kelmadi→kelmadi · Rad etdi→rad */
-export type LeadStatus = 'yangi' | 'qongiroq' | 'keldi' | 'kelmadi' | 'yozildi' | 'rad'
+export type LeadStatus = 'yangi' | 'qongiroq' | 'keldi' | 'kelmadi' | 'yozildi' | 'rad' | 'xato'
 /** Kalit royxatlar jadvalidan (0108) */
 export type LeadSource = string
 /** Kalit royxatlar jadvalidan (0108) */
@@ -908,6 +908,10 @@ export type Database = {
       v_arxiv_oquvchilar: View<{ student_id: string; fish: string; arxiv_sana: string | null; arxiv_sabab: string | null; qarz: number; guruhlar: string | null; ketish_sababi: string | null }>
     }
     Functions: {
+      lid_xato_belgila: { Args: { p_lid: string; p_sabab: string }; Returns: undefined }
+      lid_xato_qaytar: { Args: { p_lid: string }; Returns: undefined }
+      lid_xato_ochir: { Args: { p_lid: string }; Returns: undefined }
+      lid_xatolar: { Args: Record<string, never>; Returns: { id: string; ism: string; telefon: string | null; sabab: string | null; xato_at: string | null; belgiladi: string; kiritilgan: string }[] }
       maosh_tolov_holati: { Args: { p_davr: string }; Returns: { tur: string; kim: string; ism: string; lavozim: string; hisob: number; avans: number; maosh: number; qoldi: number }[] }
       maosh_tolov_qosh: { Args: { p_tur: string; p_kim: string; p_davr: string; p_turi: string; p_summa: number; p_sana: string; p_izoh: string | null }; Returns: number }
       maosh_tolov_bekor: { Args: { p_id: number; p_sabab: string }; Returns: undefined }

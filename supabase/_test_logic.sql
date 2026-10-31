@@ -2883,3 +2883,43 @@ begin
   raise notice 'OK: 0112 — tasdiq xarajat yozmaydi';
 end $$;
 reset request.jwt.claim.sub;
+
+-- 0114 — xato lid
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+do $$
+declare v_id uuid; v_oldin numeric;
+begin
+  insert into leads (ism, telefon, manba) values ('Xato Lid', '+998901112233', 'boshqa') returning id into v_id;
+  update leads set holat = 'rad', sabab = 'sinov' where id = v_id;
+  v_oldin := (select count(*) from hisobot_royxat('lid', null, null, bugun_toshkent(), bugun_toshkent()));
+  perform lid_xato_belgila(v_id, 'Ikki marta kiritilgan');
+  if (select holat::text from leads where id = v_id) <> 'xato' then raise exception 'XATO: belgilanmadi'; end if;
+  if (select count(*) from hisobot_royxat('lid', null, null, bugun_toshkent(), bugun_toshkent())) <> v_oldin - 1 then
+    raise exception 'XATO: xato lid hisobotda qoldi';
+  end if;
+  if not exists (select 1 from lid_xatolar() x where x.id = v_id and x.sabab = 'Ikki marta kiritilgan') then
+    raise exception 'XATO: ro''yxatda yo''q';
+  end if;
+  perform lid_xato_qaytar(v_id);
+  if (select holat::text from leads where id = v_id) <> 'rad' or (select sabab from leads where id = v_id) <> 'sinov' then
+    raise exception 'XATO: oldingi holat qaytmadi';
+  end if;
+  perform lid_xato_belgila(v_id, 'Yana');
+  begin
+    perform lid_xato_ochir(v_id);
+    raise exception 'XATO: admin butunlay o''chirdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  if not exists (select 1 from leads where id = v_id) then raise exception 'XATO: lid o''chib ketdi'; end if;
+  raise notice 'OK: 0114 — belgilash, hisobotdan chiqish, qaytarish, admin o''chira olmaydi';
+end $$;
+set request.jwt.claim.sub = '66666666-6666-6666-6666-666666666666';
+do $$
+declare v_id uuid := (select id from leads where ism = 'Xato Lid');
+begin
+  perform lid_xato_ochir(v_id);
+  if exists (select 1 from leads where ism = 'Xato Lid') then raise exception 'XATO: o''chmadi'; end if;
+  raise notice 'OK: 0114 — direktor o''chiradi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
