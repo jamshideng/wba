@@ -10,7 +10,8 @@ import { Yuborish } from '@/components/yuborish'
 import { HisobForma } from '@/components/hisob'
 import { IconArrowLeft } from '@/components/icons'
 import { pul, telefon, jadval, davrNomi, joriyDavr, bugunToshkent, guruhQisqa } from '@/lib/format'
-import { AMAL_NOMI, JADVAL_NOMI, WOBLR_SABAB } from '@/lib/audit'
+import { AMAL_NOMI, JADVAL_NOMI } from '@/lib/audit'
+import { royxatOl, royxatNomi } from '@/lib/royxat'
 import type { TeacherStats } from '@/lib/types'
 import { ustozTahrir } from '../actions'
 import { KECHIKISH_USTUNLAR, KechikishJadval, type KechikishYozuv } from '@/components/kechikish'
@@ -42,18 +43,21 @@ export default async function UstozProfil({
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Ustoz" />
 
   const supabase = await createClient()
+  const woblarSabablari = await royxatOl(supabase, 'woblar_sabab')
   const davr = joriyDavr()
   const bugun = bugunToshkent()
 
   const { data: ustoz } = await supabase
     .from('teachers')
-    .select('id, ism, telefon, telegram_id, profile_id, holat')
+    .select('id, ism, ismi, familiya, telefon, telegram_id, profile_id, holat')
     .eq('id', id)
     .maybeSingle()
   if (!ustoz) notFound()
   const u = ustoz as {
     id: string
     ism: string
+    ismi: string
+    familiya: string | null
     telefon: string | null
     telegram_id: number | null
     profile_id: string | null
@@ -236,7 +240,7 @@ export default async function UstozProfil({
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate font-semibold">{w.students?.fish ?? w.student_id}</span>
                     <span className="truncate text-[11px] text-ink-3">
-                      {WOBLR_SABAB[w.sabab] ?? w.sabab}
+                      {royxatNomi(woblarSabablari, w.sabab)}
                       {w.izoh ? ` · ${w.izoh}` : ''} · {vaqtFmt.format(new Date(w.created_at))}
                     </span>
                   </span>
@@ -290,11 +294,14 @@ export default async function UstozProfil({
             bormi={Boolean(u.profile_id)}
             email={(hisob as { email: string | null } | null)?.email ?? null}
           />
-          <form action={ustozTahrir} className="grid grid-cols-1 gap-2 sm:grid-cols-[2fr_1.5fr_1fr_auto] sm:items-end">
+          <form action={ustozTahrir} className="grid grid-cols-1 gap-2 sm:grid-cols-[1.5fr_1.5fr_1.5fr_1fr_auto] sm:items-end">
             <input type="hidden" name="id" value={u.id} />
             <input type="hidden" name="qayt" value="sahifa" />
             <Maydon nom="Ism">
-              <input name="ism" required defaultValue={u.ism} className={kirishKlass} />
+              <input name="ismi" required defaultValue={u.ismi} className={kirishKlass} />
+            </Maydon>
+            <Maydon nom="Familiya">
+              <input name="familiya" defaultValue={u.familiya ?? ''} className={kirishKlass} />
             </Maydon>
             <Maydon nom="Telefon">
               <input name="telefon" type="tel" defaultValue={u.telefon ?? ''} className={kirishKlass} />

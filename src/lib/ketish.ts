@@ -1,18 +1,8 @@
 /** Ketish sabablari (0083, Jamshid 13.10) — students.ketish_sababi */
-export const KETISH_SABABLARI = {
-  narx: 'Narx qimmat',
-  ustoz: 'Ustoz yoqmadi',
-  vaqt: 'Vaqt to‘g‘ri kelmadi',
-  kochdi: 'Ko‘chib ketdi',
-  natija: 'Natija yo‘q',
-  boshqa_markaz: 'Boshqa markazga o‘tdi',
-  boshqa: 'Boshqa',
-} as const
+import { royxatNomi, type RoyxatBand } from '@/lib/royxat'
 
-export type KetishSababi = keyof typeof KETISH_SABABLARI
-
-export function ketishNomi(s: string | null | undefined): string {
-  return s && s in KETISH_SABABLARI ? KETISH_SABABLARI[s as KetishSababi] : 'Belgilanmagan'
+export function ketishNomi(s: string | null | undefined, royxat: RoyxatBand[]): string {
+  return !s || s === 'belgilanmagan' ? 'Belgilanmagan' : royxatNomi(royxat, s)
 }
 
 /** ketish_tahlili() natijasi */

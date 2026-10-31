@@ -27,16 +27,6 @@ export function bosqichi(l: { holat: LeadStatus; sinov_sana: string | null; stud
   return 'yangi'
 }
 
-export const MANBA_NOMI: Record<LeadSource, string> = {
-  sayt: 'Sayt',
-  telegram: 'Telegram',
-  instagram: 'Instagram',
-  tavsiya: 'Tanishlar tavsiyasi',
-  boshqa: 'Boshqa',
-}
-
-export const MANBALAR = Object.keys(MANBA_NOMI) as LeadSource[]
-
 /**
  * leads.keyingi_aloqa — timestamptz (prod'da shunday edi). Kanban sana bilan
  * ishlaydi: sana tanlansa o'sha kuni 09:00 (Toshkent), o'qilganda Toshkent sanasi.

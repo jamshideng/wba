@@ -79,6 +79,14 @@ export default async function Sozlamalar({
         </form>
       </Card>
 
+      <Link href="/crm/sozlamalar/royxatlar" className="flex items-center justify-between gap-3 rounded-[12px] border border-line bg-surface px-5 py-4 transition hover:border-ink-3">
+        <span className="flex min-w-0 flex-col gap-1">
+          <span className="text-[14px] font-semibold">Ro‘yxatlar</span>
+          <span className="text-[12.5px] text-ink-3">Lid manbasi, xarajat toifalari, ketish va woblar sabablari: variant qo‘shish, nomini o‘zgartirish, yashirish</span>
+        </span>
+        <span aria-hidden className="text-ink-3">→</span>
+      </Link>
+
       <Card className="flex flex-col">
         <CardHeader title="Markaz qiymatlari" meta="bo‘sh qoldirilsa — [ANIQLANMAGAN]" />
         <ul>

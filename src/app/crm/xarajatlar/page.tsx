@@ -7,7 +7,7 @@ import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { pul, sana, davrNomi, joriyDavr, bugunToshkent } from '@/lib/format'
 import { xarajatQosh, xarajatBekor } from './actions'
-import { TOIFALAR, toifami } from './toifalar'
+import { royxatOl, royxatNomi, royxatVariantlari } from '@/lib/royxat'
 
 export const metadata = { title: 'Xarajatlar' }
 export const dynamic = 'force-dynamic'
@@ -47,15 +47,16 @@ export default async function Xarajatlar({
 
   const s = await searchParams
   const davr = /^\d{4}-(0[1-9]|1[0-2])$/.test(s.davr ?? '') ? s.davr! : joriyDavr()
-  const toifa = toifami(s.toifa) ? s.toifa : undefined
   const yozadi = adminmi(profil.rol)
+  const supabase = await createClient()
+  const toifalar = await royxatOl(supabase, 'xarajat_toifa')
+  const toifa = toifalar.find((t) => t.kalit === s.toifa)?.kalit
 
   const dan = `${davr}-01`
   const [y, m] = davr.split('-').map(Number)
   const gacha = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10)
   const joriy = `/crm/xarajatlar?davr=${davr}${toifa ? `&toifa=${toifa}` : ''}`
 
-  const supabase = await createClient()
   let sorov = supabase
     .from('xarajatlar')
     .select('id, sana, toifa, summa, izoh, bekor, bekor_sabab, profiles(ism)')
@@ -72,7 +73,7 @@ export default async function Xarajatlar({
   const mo: Moliya = moliyaXom ?? { tushum: 0, xarajat: 0, foyda: 0, toifalar: [] }
   const foyda = Number(mo.foyda)
   const maxToifa = Math.max(1, ...mo.toifalar.map((t) => Number(t.summa)))
-  const toifaNomi = (t: string) => TOIFALAR[t as keyof typeof TOIFALAR] ?? t
+  const toifaNomi = (t: string) => royxatNomi(toifalar, t)
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -168,9 +169,9 @@ export default async function Xarajatlar({
                     <option value="" disabled>
                       Tanlang…
                     </option>
-                    {Object.entries(TOIFALAR).map(([k, v]) => (
-                      <option key={k} value={k}>
-                        {v}
+                    {royxatVariantlari(toifalar).map((t) => (
+                      <option key={t.kalit} value={t.kalit}>
+                        {t.nom}
                       </option>
                     ))}
                   </select>

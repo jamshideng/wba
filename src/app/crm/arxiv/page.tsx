@@ -5,7 +5,8 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Empty, Badge } from '@/components/ui'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { KETISH_SABABLARI, ketishNomi } from '@/lib/ketish'
+import { ketishNomi } from '@/lib/ketish'
+import { royxatOl, royxatVariantlari } from '@/lib/royxat'
 import { ketishSababiBelgila } from '../oquvchilar/actions'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { pul, sana, jadval } from '@/lib/format'
@@ -25,6 +26,7 @@ export default async function Arxiv({ searchParams }: { searchParams: Promise<{ 
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Arxiv" />
 
   const supabase = await createClient()
+  const ketishRoyxat = await royxatOl(supabase, 'ketish_sabab')
   const [{ data: oquvchilar }, { data: guruhlar }, { data: ustozlar }] = await Promise.all([
     supabase.from('v_arxiv_oquvchilar').select('student_id, fish, arxiv_sana, arxiv_sabab, qarz, guruhlar, ketish_sababi').order('arxiv_sana', { ascending: false, nullsFirst: false }),
     supabase.from('groups').select('id, nom, boshlanish, tugash, kunlar, teachers(ism)').eq('holat', 'yopilgan').order('nom'),
@@ -65,7 +67,7 @@ export default async function Arxiv({ searchParams }: { searchParams: Promise<{ 
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span className="flex min-w-0 items-center gap-2">
                       <span className="truncate text-[13.5px] font-semibold">{o.fish}</span>
-                      <Badge ton={o.ketish_sababi ? 'jim' : 'accent'}>{ketishNomi(o.ketish_sababi)}</Badge>
+                      <Badge ton={o.ketish_sababi ? 'jim' : 'accent'}>{ketishNomi(o.ketish_sababi, ketishRoyxat)}</Badge>
                     </span>
                     <span className="truncate text-[12px] text-ink-3">
                       {o.student_id}
@@ -90,9 +92,9 @@ export default async function Arxiv({ searchParams }: { searchParams: Promise<{ 
                         <option value="" disabled>
                           Tanlang…
                         </option>
-                        {Object.entries(KETISH_SABABLARI).map(([k, v]) => (
-                          <option key={k} value={k}>
-                            {v}
+                        {royxatVariantlari(ketishRoyxat).map((b) => (
+                          <option key={b.kalit} value={b.kalit}>
+                            {b.nom}
                           </option>
                         ))}
                       </select>

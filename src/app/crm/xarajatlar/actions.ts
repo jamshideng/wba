@@ -5,7 +5,6 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabRol } from '@/lib/auth'
 import { summaOqi, matn, sanaOqi, xabarliYol, xatoMatni, ichkiYol } from '@/lib/kiritish'
-import { toifami, type Toifa } from './toifalar'
 
 const YOL = '/crm/xarajatlar'
 
@@ -21,11 +20,11 @@ export async function xarajatQosh(fd: FormData) {
   const orqaga = qaytish(fd)
 
   const summa = summaOqi(fd.get('summa'))
-  const toifa = fd.get('toifa')
+  const toifa = matn(fd.get('toifa'))
   const sana = sanaOqi(fd.get('sana'))
 
   const xato =
-    !toifami(toifa) ? 'Toifani tanlang.' :
+    !toifa ? 'Toifani tanlang.' :
     !summa ? 'Summa noto‘g‘ri. Masalan: 3500000, 3500 ming yoki 3.5 mln.' :
     !sana ? 'Sana noto‘g‘ri.' :
     null
@@ -33,7 +32,7 @@ export async function xarajatQosh(fd: FormData) {
 
   const supabase = await createClient()
   const { error } = await supabase.from('xarajatlar').insert({
-    toifa: toifa as Toifa,
+    toifa: toifa!,
     summa: summa!,
     sana: sana!,
     izoh: matn(fd.get('izoh')),

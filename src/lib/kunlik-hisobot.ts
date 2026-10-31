@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { html } from '@/lib/telegram'
 import { pul, sana, vaqt, bugunToshkent, haftaKuni, telefon } from '@/lib/format'
 import { ketishNomi } from '@/lib/ketish'
+import { royxatOl } from '@/lib/royxat'
 import type { Hisobot } from '@/lib/types'
 
 /**
@@ -19,6 +20,7 @@ import type { Hisobot } from '@/lib/types'
  */
 export async function kunlikHisobotMatn(kun: string = bugunToshkent()): Promise<string> {
   const db = createAdminClient()
+  const ketishRoyxat = await royxatOl(db, 'ketish_sabab')
 
   const [{ data: qoshimcha }, { data: guruhlar }, { data: darsQatorlari }, { data: yozilishlar }, { data: belgilar }, { data: probniy }, { data: tushum }, { data: qarzlar }, { data: ustozlar }, { data: kechikish }, { data: oyKechikish }] =
     await Promise.all([
@@ -120,7 +122,7 @@ export async function kunlikHisobotMatn(kun: string = bugunToshkent()): Promise<
     if (!k.ketgan.length) t.push('Bugun yo‘q')
     k.ketgan.forEach((x, i) =>
       t.push(
-        `${i + 1}. ${html(x.fish)}${x.fan ? ` — ${html(x.fan)}` : ''} · sabab: ${html(x.sabab ? ketishNomi(x.sabab) : (x.izoh ?? 'belgilanmagan'))}${Number(x.qarz) > 0 ? ` · qarz ${pul(x.qarz)}` : ''}`,
+        `${i + 1}. ${html(x.fish)}${x.fan ? ` — ${html(x.fan)}` : ''} · sabab: ${html(x.sabab ? ketishNomi(x.sabab, ketishRoyxat) : (x.izoh ?? 'belgilanmagan'))}${Number(x.qarz) > 0 ? ` · qarz ${pul(x.qarz)}` : ''}`,
       ),
     )
   }
@@ -184,6 +186,7 @@ const HAFTA = ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', '
  */
 export async function ertangiMaslahatMatn(kun: string = bugunToshkent()): Promise<string> {
   const db = createAdminClient()
+  const ketishRoyxat = await royxatOl(db, 'ketish_sabab')
   const { data } = await db.rpc('ertangi_maslahat', { p_kun: kun })
   const m = data as unknown as ErtangiMaslahat | null
   if (!m) return '<b>ERTANGI KUN UCHUN MASLAHAT</b>\nMa’lumotni o‘qib bo‘lmadi.'

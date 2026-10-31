@@ -2528,3 +2528,113 @@ begin
   end if;
   raise notice 'OK: 0105 — tasdiqlanmagan to''lov direktorga, kech kiritilgan — kiritganga';
 end $$;
+
+-- 0106 — ism va familiya alohida, to'liq nom trigger bilan
+reset role;
+reset request.jwt.claim.sub;
+do $$
+declare v_gr text;
+begin
+  insert into students (id, fish) values ('SI1', 'Lid Nomi');
+  if (select ismi from students where id = 'SI1') <> 'Lid Nomi' or (select familiya from students where id = 'SI1') is not null then
+    raise exception 'XATO: faqat to''liq nomdan ismi yozilmadi';
+  end if;
+  update students set ismi = ' Ali ', familiya = ' Valiyev ' where id = 'SI1';
+  if (select fish from students where id = 'SI1') <> 'Ali Valiyev' then raise exception 'XATO: fish yig''ilmadi'; end if;
+  update students set familiya = '' where id = 'SI1';
+  if (select fish from students where id = 'SI1') <> 'Ali' or (select familiya from students where id = 'SI1') is not null then
+    raise exception 'XATO: familiyasiz nom';
+  end if;
+  update students set fish = 'Eski Skript' where id = 'SI1';
+  if (select ismi from students where id = 'SI1') <> 'Eski Skript' then raise exception 'XATO: fish ismi ga tushmadi'; end if;
+  begin
+    update students set ismi = '  ', familiya = 'Valiyev' where id = 'SI1';
+    raise exception 'XATO: ismsiz o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+
+  update students set ismi = 'Amirxan', familiya = 'Anvarbekov' where id = 'S001';
+  if (select ism from profiles where id = '44444444-4444-4444-4444-444444444444') <> 'Amirxan Anvarbekov' then
+    raise exception 'XATO: o''quvchi profili yangilanmadi';
+  end if;
+
+  insert into teachers (id, ism) values ('UI1', 'Bozorov Ali');
+  insert into groups (id, nom, teacher_id, boshlanish, tugash, kun_turi, oylik_narx)
+    values ('GI1', 'Fan · Bozorov Ali · 08:00-09:00', 'UI1', '08:00', '09:00', 'toq', 100000);
+  update teachers set ismi = 'Ali', familiya = 'Bozorov' where id = 'UI1';
+  if (select ism from teachers where id = 'UI1') <> 'Ali Bozorov' then raise exception 'XATO: ustoz nomi yig''ilmadi'; end if;
+  select nom into v_gr from groups where id = 'GI1';
+  if v_gr <> 'Fan · Ali Bozorov · 08:00-09:00' then raise exception 'XATO: guruh nomi: %', v_gr; end if;
+  raise notice 'OK: 0106 — ism/familiya, to''liq nom, profil va guruh nomi';
+end $$;
+
+-- 0107 — boshqa guruhga o'tgan probniy: eski belgi yangi jurnalga o'tmaydi
+reset role;
+reset request.jwt.claim.sub;
+do $$
+declare v_lid uuid; v_dars uuid; v_sana date := bugun_toshkent();
+begin
+  insert into leads (ism, telefon, holat, sinov_sana, group_id)
+  values ('Sinov Bola', '+998900000999', 'qongiroq', v_sana, 'N01') returning id into v_lid;
+  insert into lessons (group_id, sana) values ('N01', v_sana)
+    on conflict do nothing;
+  select id into v_dars from lessons where group_id = 'N01' and sana = v_sana limit 1;
+  insert into probniy_davomat (lesson_id, lead_id, holat) values (v_dars, v_lid, 'keldi');
+  if not exists (select 1 from jurnal_probniylar('N01', v_sana, v_sana) j where j.lead_id = v_lid and j.belgilar ? v_sana::text) then
+    raise exception 'XATO: eski guruh jurnalida belgi yo''q';
+  end if;
+  update leads set group_id = 'N02' where id = v_lid;
+  if exists (select 1 from jurnal_probniylar('N01', v_sana, v_sana) j where j.lead_id = v_lid) then
+    raise exception 'XATO: bola eski guruh jurnalida qoldi';
+  end if;
+  if not exists (select 1 from jurnal_probniylar('N02', v_sana, v_sana) j where j.lead_id = v_lid and j.belgilar = '{}'::jsonb) then
+    raise exception 'XATO: yangi guruh jurnali noto''g''ri';
+  end if;
+  if not exists (select 1 from probniy_davomat where lead_id = v_lid) then raise exception 'XATO: belgi o''chib ketdi'; end if;
+  raise notice 'OK: 0107 — probniy boshqa guruhga o''tdi, belgi saqlangan, yangi jurnalga o''tmagan';
+end $$;
+
+-- 0108 — sozlanadigan ro'yxatlar
+reset role;
+reset request.jwt.claim.sub;
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+begin
+  insert into royxatlar (tur, kalit, nom, tartib) values ('lid_manba', 'k_facebook', 'Facebook', 50);
+  insert into leads (ism, telefon, manba, holat) values ('Royxat Sinov', '+998900000997', 'k_facebook', 'yangi');
+  begin
+    insert into leads (ism, telefon, manba, holat) values ('Royxat Xato', '+998900000996', 'yoq_variant', 'yangi');
+    raise exception 'XATO: ro''yxatda yo''q manba o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  update royxatlar set faol = false where tur = 'lid_manba' and kalit = 'k_facebook';
+  -- eski yozuv o'zgartirilsa ham ishlaydi, yashirilganni yangidan tanlab bo'lmaydi
+  update leads set izoh = 'tahrir' where telefon = '+998900000997';
+  begin
+    insert into leads (ism, telefon, manba, holat) values ('Royxat Xato', '+998900000996', 'k_facebook', 'yangi');
+    raise exception 'XATO: yashirilgan variant tanlandi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  begin
+    update royxatlar set faol = false where tur = 'xarajat_toifa' and kalit = 'maosh';
+    raise exception 'XATO: tizim varianti yashirildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  update royxatlar set nom = 'Oylik maosh' where tur = 'xarajat_toifa' and kalit = 'maosh';
+  update royxatlar set nom = 'Maosh' where tur = 'xarajat_toifa' and kalit = 'maosh';
+  raise notice 'OK: 0108 — admin variant qo''shadi, tekshiruv, yashirish, tizim varianti himoyasi';
+end $$;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  if not exists (select 1 from royxatlar where tur = 'woblar_sabab') then raise exception 'XATO: ustoz ro''yxatni o''qiy olmadi'; end if;
+  begin
+    insert into royxatlar (tur, kalit, nom) values ('lid_manba', 'k_ustoz', 'Ustozdan');
+    raise exception 'XATO: ustoz variant qo''shdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: 0108 — ustoz o''qiydi, o''zgartira olmaydi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;

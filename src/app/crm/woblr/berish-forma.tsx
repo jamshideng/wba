@@ -5,6 +5,8 @@ import { Maydon, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { woblrBer } from './actions'
 
+export type SababVariant = { kalit: string; nom: string }
+
 export type BerishOquvchi = { id: string; fish: string; guruhlar: string[] }
 
 /** Qidiruv uchun: kichik harf, tutuq belgilarsiz */
@@ -23,6 +25,7 @@ export function WoblarBerishForma({
   admin,
   qaytish,
   limit,
+  sabablar,
 }: {
   guruhlar: { id: string; nom: string }[]
   oquvchilar: BerishOquvchi[]
@@ -33,6 +36,7 @@ export function WoblarBerishForma({
   qaytish: string
   /** Ustozning oylik limiti (0064): guruh → qoldi; admin uchun null */
   limit: { jami: number; guruhlar: Record<string, number> } | null
+  sabablar: SababVariant[]
 }) {
   const [guruh, setGuruh] = useState(boshGuruh && guruhlar.some((g) => g.id === boshGuruh) ? boshGuruh : '')
   const [qidiruv, setQidiruv] = useState('')
@@ -93,11 +97,9 @@ export function WoblarBerishForma({
       </div>
       <Maydon nom="Sabab">
         <select name="sabab" defaultValue="faollik" className={kirishKlass}>
-          <option value="faollik">Faollik</option>
-          <option value="uy_vazifasi">Uy vazifasi</option>
-          <option value="yordam">Yordam berdi</option>
-          <option value="qoida">Qoida buzdi</option>
-          <option value="boshqa">Boshqa</option>
+          {sabablar.map((b) => (
+            <option key={b.kalit} value={b.kalit}>{b.nom}</option>
+          ))}
         </select>
       </Maydon>
       <Maydon nom="Izoh">

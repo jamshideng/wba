@@ -10,8 +10,8 @@ import { Yuborish } from '@/components/yuborish'
 import { JonliForma } from '@/components/jonli-forma'
 import { IconSearch, IconLeads, IconPhone, IconAlert, IconStudents } from '@/components/icons'
 import { bugunToshkent } from '@/lib/format'
-import { BOSQICHLAR, MANBALAR, MANBA_NOMI, aloqaSanasi, bosqichi, kunQosh, type LidKarta } from '@/lib/lidlar'
-import type { LeadSource } from '@/lib/types'
+import { royxatOl, royxatVariantlari } from '@/lib/royxat'
+import { BOSQICHLAR, aloqaSanasi, bosqichi, kunQosh, type LidKarta } from '@/lib/lidlar'
 import { lidQosh } from './actions'
 import { Kanban } from './kanban'
 
@@ -45,7 +45,9 @@ export default async function Lidlar({
   const oyBoshi = `${bugun.slice(0, 7)}-01`
   const otizKunOldin = kunQosh(bugun, -30)
   const q = (s.q ?? '').trim().toLowerCase()
-  const manba = MANBALAR.find((m) => m === s.manba) as LeadSource | undefined
+  const supabase = await createClient()
+  const manbalar = await royxatOl(supabase, 'lid_manba')
+  const manba = manbalar.find((m) => m.kalit === s.manba)?.kalit
   const tez: Filtr = ([...Object.keys(TEZ), ...Object.keys(TEZ_YASHIRIN)] as Filtr[]).find((t) => t === s.tez) ?? 'hammasi'
 
   const sorov = new URLSearchParams()
@@ -54,7 +56,6 @@ export default async function Lidlar({
   if (tez !== 'hammasi') sorov.set('tez', tez)
   const yol = `/crm/lidlar${sorov.size ? `?${sorov}` : ''}`
 
-  const supabase = await createClient()
   const ustunlar =
     'id, ism, telefon, manba, holat, izoh, sabab, teglar, student_id, group_id, sinov_sana, keyingi_aloqa, aloqa_soni, oxirgi_aloqa, created_at, updated_at, groups(nom)'
   const [{ data: ochiq }, { data: yopiq }, { data: guruhlar }, { data: shuOy }] = await Promise.all([
@@ -159,8 +160,8 @@ export default async function Lidlar({
             </Maydon>
             <Maydon nom="Qayerdan bildi">
               <select name="manba" defaultValue="instagram" className={kirishKlass}>
-                {MANBALAR.map((m) => (
-                  <option key={m} value={m}>{MANBA_NOMI[m]}</option>
+                {royxatVariantlari(manbalar).map((m) => (
+                  <option key={m.kalit} value={m.kalit}>{m.nom}</option>
                 ))}
               </select>
             </Maydon>
@@ -202,8 +203,8 @@ export default async function Lidlar({
           </label>
           <select name="manba" defaultValue={manba ?? ''} className={kirishKlass} aria-label="Manba">
             <option value="">Barcha manbalar</option>
-            {MANBALAR.map((m) => (
-              <option key={m} value={m}>{MANBA_NOMI[m]}</option>
+            {manbalar.map((m) => (
+              <option key={m.kalit} value={m.kalit}>{m.nom}</option>
             ))}
           </select>
           {(q || manba || tez !== 'hammasi') && (
@@ -238,6 +239,7 @@ export default async function Lidlar({
         lidlar={korinadi}
         bosqichlar={BOSQICHLAR}
         guruhlar={(guruhlar ?? []) as { id: string; nom: string }[]}
+        manbalar={manbalar}
         bugun={bugun}
         yol={yol}
       />

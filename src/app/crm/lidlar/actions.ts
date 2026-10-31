@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabRol } from '@/lib/auth'
 import { matn, sanaOqi, telefonOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
-import { MANBALAR, aloqaVaqtga, type Bosqich } from '@/lib/lidlar'
+import { aloqaVaqtga, type Bosqich } from '@/lib/lidlar'
 import type { Lead, LeadSource } from '@/lib/types'
 
 const XODIM = ['admin', 'direktor', 'manager', 'qabulxona'] as const
@@ -16,7 +16,8 @@ function qaytish(fd: FormData): string {
 }
 
 function manbaOqi(v: FormDataEntryValue | null): LeadSource {
-  return MANBALAR.find((m) => m === v) ?? 'boshqa'
+  // Ro'yxatda borligini baza tekshiradi (0108)
+  return typeof v === 'string' && v ? v : 'boshqa'
 }
 
 /** "issiq, chegirma , telegram" → ['issiq','chegirma','telegram'] (10 tagacha). */

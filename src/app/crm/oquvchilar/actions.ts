@@ -5,7 +5,6 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabRol } from '@/lib/auth'
 import { matn, sanaOqi, sonOqi, summaOqi, telefonOqi, xabarliYol, xatoMatni, ichkiYol } from '@/lib/kiritish'
-import { KETISH_SABABLARI } from '@/lib/ketish'
 
 /**
  * Chegirma maydonlari — Qatnashuvdagidek ikki bosqich.
@@ -38,8 +37,9 @@ export async function oquvchiQosh(fd: FormData) {
   await talabRol('admin', 'direktor', 'qabulxona')
   const forma = '/crm/oquvchilar/yangi'
 
-  const fish = matn(fd.get('fish'))
-  if (!fish) redirect(xabarliYol(forma, { xato: 'Ism familyani yozing.' }))
+  const ismi = matn(fd.get('ismi'))
+  const familiya = matn(fd.get('familiya'))
+  if (!ismi) redirect(xabarliYol(forma, { xato: 'Ismni yozing.' }))
 
   const tel = telefonlar(fd)
   if (typeof tel === 'string') redirect(xabarliYol(forma, { xato: tel }))
@@ -47,7 +47,7 @@ export async function oquvchiQosh(fd: FormData) {
   const supabase = await createClient()
   const { data: id, error } = await supabase.rpc('oquvchi_qosh', {
     p: {
-      fish,
+      fish: [ismi, familiya].filter(Boolean).join(' '),
       tugilgan_sana: sanaOqi(fd.get('tugilgan_sana')) ?? '',
       ...tel,
       izoh: matn(fd.get('izoh')) ?? '',
@@ -59,7 +59,11 @@ export async function oquvchiQosh(fd: FormData) {
 
   if (error) redirect(xabarliYol(forma, { xato: xatoMatni(error) }))
 
+  // oquvchi_qosh to'liq nom oladi; ism va familiya alohida shu yerda yoziladi (0106)
+  const { error: ismXato } = await supabase.from('students').update({ ismi: ismi!, familiya }).eq('id', id as string)
+
   revalidatePath('/crm', 'layout')
+  if (ismXato) redirect(xabarliYol(`/crm/oquvchilar/${id}/tahrir`, { xato: `O‘quvchi qo‘shildi, lekin familiya saqlanmadi: ${xatoMatni(ismXato)}` }))
   redirect(xabarliYol(`/crm/oquvchilar/${id}`, { ok: `O‘quvchi qo‘shildi: ${id}` }))
 }
 
@@ -69,8 +73,8 @@ export async function oquvchiTahrir(fd: FormData) {
   if (!id) redirect('/crm/oquvchilar')
   const forma = `/crm/oquvchilar/${id}/tahrir`
 
-  const fish = matn(fd.get('fish'))
-  if (!fish) redirect(xabarliYol(forma, { xato: 'Ism familyani yozing.' }))
+  const ismi = matn(fd.get('ismi'))
+  if (!ismi) redirect(xabarliYol(forma, { xato: 'Ismni yozing.' }))
 
   const tel = telefonlar(fd)
   if (typeof tel === 'string') redirect(xabarliYol(forma, { xato: tel }))
@@ -82,7 +86,8 @@ export async function oquvchiTahrir(fd: FormData) {
   const { error } = await supabase
     .from('students')
     .update({
-      fish: fish!,
+      ismi: ismi!,
+      familiya: matn(fd.get('familiya')),
       tugilgan_sana: sanaOqi(fd.get('tugilgan_sana')),
       ...tel,
       izoh: matn(fd.get('izoh')),
@@ -320,7 +325,7 @@ export async function oquvchiArxivla(fd: FormData) {
 
   // 0083 — sabab ro'yxatdan majburiy; "Boshqa" bo'lsa izoh ham
   const turi = matn(fd.get('turi'))
-  if (!turi || !(turi in KETISH_SABABLARI)) redirect(xabarliYol(yol, { xato: 'Ketish sababini tanlang.' }))
+  if (!turi) redirect(xabarliYol(yol, { xato: 'Ketish sababini tanlang.' }))
   if (turi === 'boshqa' && !matn(fd.get('sabab'))) redirect(xabarliYol(yol, { xato: '“Boshqa” tanlansa, sababini yozing.' }))
 
   const supabase = await createClient()
@@ -357,7 +362,7 @@ export async function ketishSababiBelgila(fd: FormData) {
   const turi = matn(fd.get('turi'))
   const y = ichkiYol(fd.get('qaytish'))
   const orqaga = y.startsWith('/crm/') ? y : '/crm/arxiv'
-  if (!studentId || !turi || !(turi in KETISH_SABABLARI)) redirect(xabarliYol(orqaga, { xato: 'Sababni tanlang.' }))
+  if (!studentId || !turi) redirect(xabarliYol(orqaga, { xato: 'Sababni tanlang.' }))
 
   const supabase = await createClient()
   const { error } = await supabase.rpc('ketish_sababi_belgila', { p_student: studentId!, p_turi: turi!, p_izoh: matn(fd.get('izoh')) })

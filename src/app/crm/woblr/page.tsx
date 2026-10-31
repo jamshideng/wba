@@ -9,6 +9,7 @@ import { Card, CardHeader, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { WoblarBerishForma, type BerishOquvchi } from './berish-forma'
+import { royxatOl, royxatVariantlari } from '@/lib/royxat'
 import { WoblarLimitKartasi } from '@/components/woblar-limit'
 import type { WoblarLimiti } from '@/lib/woblar-chegara'
 import { guruhUstozsiz } from '@/lib/format'
@@ -48,6 +49,7 @@ export default async function Woblr({
 
   const s = await searchParams
   const supabase = await createClient()
+  const sabablar = await royxatOl(supabase, 'woblar_sabab')
   const oquvchimi = profil.rol === 'oquvchi'
 
   // RLS: ustozga o'z guruhlari, o'quvchiga o'zi o'qiydigan guruhlar, xodimga hammasi
@@ -225,6 +227,7 @@ export default async function Woblr({
         <Card className="flex flex-col">
           <CardHeader title="Woblar berish" meta={admin ? 'barcha o‘quvchilar' : 'faqat o‘z o‘quvchilaringiz'} />
           <WoblarBerishForma
+            sabablar={royxatVariantlari(sabablar)}
             guruhlar={berishGuruhlari}
             oquvchilar={berishOquvchilar}
             boshGuruh={guruh}

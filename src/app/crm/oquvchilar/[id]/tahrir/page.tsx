@@ -29,7 +29,7 @@ export default async function OquvchiTahrir({
   const supabase = await createClient()
   const { data: o } = await supabase
     .from('students')
-    .select('id, fish, tugilgan_sana, ota_tel, ona_tel, shaxsiy_tel, holat, izoh, qaytish_sana, tanaffus_sabab, qoshilgan_sana')
+    .select('id, fish, ismi, familiya, tugilgan_sana, ota_tel, ona_tel, shaxsiy_tel, holat, izoh, qaytish_sana, tanaffus_sabab, qoshilgan_sana')
     .eq('id', id)
     .maybeSingle()
 
@@ -55,9 +55,12 @@ export default async function OquvchiTahrir({
         <input type="hidden" name="id" value={o.id} />
 
         <FormaBolim nom="Shaxsiy ma’lumot">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr]">
-            <Maydon nom="Ism familya">
-              <input name="fish" required defaultValue={o.fish} className={kirishKlass} />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Maydon nom="Ism">
+              <input name="ismi" required defaultValue={o.ismi} className={kirishKlass} />
+            </Maydon>
+            <Maydon nom="Familiya" izoh="Ixtiyoriy">
+              <input name="familiya" defaultValue={o.familiya ?? ''} className={kirishKlass} />
             </Maydon>
             <Maydon nom="Tug‘ilgan sana">
               <input name="tugilgan_sana" type="date" max={bugunToshkent()} defaultValue={o.tugilgan_sana ?? ''} className={kirishKlass} />

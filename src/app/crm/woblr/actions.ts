@@ -6,11 +6,8 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabProfil, getUstoz, adminmi } from '@/lib/auth'
 import { matn, sonOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
-import type { WoblrReason } from '@/lib/types'
 import { woblarXato } from '@/lib/woblar-chegara'
 import { woblarXabariniYubor } from '@/lib/woblar-xabar'
-
-const SABABLAR: WoblrReason[] = ['faollik', 'uy_vazifasi', 'yordam', 'qoida', 'boshqa']
 
 /**
  * Woblar berish — dars tashqarisida ham (masalan davomatdan keyin).
@@ -31,7 +28,8 @@ export async function woblrBer(fd: FormData) {
 
   const studentId = matn(fd.get('student_id'))
   const ball = sonOqi(fd.get('ball'))
-  const sabab = SABABLAR.find((s) => s === fd.get('sabab')) ?? 'faollik'
+  // Ro'yxatda borligini baza tekshiradi (0108)
+  const sabab = matn(fd.get('sabab')) ?? 'faollik'
 
   if (!studentId) redirect(xabarliYol(yol, { xato: 'O‘quvchini tanlang.' }))
   // Ustozga −10…+10, admin/direktorga chegara yo'q (0057)

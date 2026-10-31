@@ -18,8 +18,10 @@ export type PaymentMethod = 'naqd' | 'terminal' | 'click' | 'payme'
 export type InvoiceStatus = 'ochiq' | 'yopilgan' | 'bekor'
 /** Botdagi Probniylar: Probniy→yangi · Doimiy→yozildi · Kelmadi→kelmadi · Rad etdi→rad */
 export type LeadStatus = 'yangi' | 'qongiroq' | 'keldi' | 'kelmadi' | 'yozildi' | 'rad'
-export type LeadSource = 'sayt' | 'telegram' | 'instagram' | 'tavsiya' | 'boshqa'
-export type WoblrReason = 'faollik' | 'uy_vazifasi' | 'yordam' | 'qoida' | 'boshqa'
+/** Kalit royxatlar jadvalidan (0108) */
+export type LeadSource = string
+/** Kalit royxatlar jadvalidan (0108) */
+export type WoblrReason = string
 export type SalaryType = 'foiz' | 'oquvchi_soni' | 'fiks'
 export type PaymentSource = 'crm' | 'sheets' | 'telegram'
 
@@ -62,6 +64,8 @@ export type Teacher = {
   id: string
   profile_id: string | null
   ism: string
+  ismi: string
+  familiya: string | null
   telefon: string | null
   telegram_id: number | null
   maosh_turi: SalaryType | null
@@ -75,6 +79,8 @@ export type Student = {
   id: string
   profile_id: string | null
   fish: string
+  ismi: string
+  familiya: string | null
   tugilgan_sana: string | null
   ota_tel: string | null
   ona_tel: string | null
@@ -538,7 +544,7 @@ export type Tuzatish = {
 export type Xarajat = {
   id: number
   sana: string
-  toifa: 'ijara' | 'maosh' | 'kommunal' | 'reklama' | 'jihoz' | 'ofis' | 'soliq' | 'boshqa'
+  toifa: string
   summa: number
   izoh: string | null
   kiritgan: string | null
@@ -868,6 +874,7 @@ export type Database = {
       maosh_oylar: Table<{ davr: string; holat: 'tasdiqlangan'; tasdiqladi: string | null; tasdiqlangan_at: string }>
       boshqa_xodimlar: Table<BoshqaXodim>
       oquvchi_takror_emas: Table<{ a: string; b: string; belgiladi: string | null; created_at: string }>
+      royxatlar: Table<{ tur: string; kalit: string; nom: string; tartib: number; faol: boolean; tizim: boolean; created_at: string }>
       dam_kunlar: Table<{ sana: string; sabab: string; kiritdi: string | null; created_at: string }>
       // 0104 — oylik test
       oylik_testlar: Table<import('./oylik-test').OylikTest & { kiritdi: string | null; created_at: string; updated_at: string }>
@@ -1095,8 +1102,6 @@ export type Database = {
       payment_method: PaymentMethod
       invoice_status: InvoiceStatus
       lead_status: LeadStatus
-      lead_source: LeadSource
-      woblr_reason: WoblrReason
       salary_type: SalaryType
       vazifa_turi: VazifaTuri
       vazifa_holat: VazifaHolat

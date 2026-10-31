@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { KETISH_SABABLARI, ketishNomi } from '@/lib/ketish'
+import { ketishNomi } from '@/lib/ketish'
+import { royxatOl, royxatVariantlari } from '@/lib/royxat'
 import { notFound } from 'next/navigation'
 import { talabRol, staffmi, adminmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
@@ -70,6 +71,7 @@ export default async function OquvchiProfil({
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="O‘quvchi profili" />
 
   const supabase = await createClient()
+  const ketishRoyxat = await royxatOl(supabase, 'ketish_sabab')
   const pulKoradi = staffmi(profil.rol)
 
   const { data: oquvchi } = await supabase
@@ -253,7 +255,7 @@ export default async function OquvchiProfil({
           <span className="text-[13px]">
             <b>Arxivda</b>
             {oquvchi.arxiv_sana ? ` · ${sana(oquvchi.arxiv_sana)} dan` : ''}
-            {oquvchi.ketish_sababi ? ` · ${ketishNomi(oquvchi.ketish_sababi)}` : ''}
+            {oquvchi.ketish_sababi ? ` · ${ketishNomi(oquvchi.ketish_sababi, ketishRoyxat)}` : ''}
             {oquvchi.arxiv_sabab ? ` · ${oquvchi.arxiv_sabab}` : ''} — qarzi saqlanadi.
           </span>
           {pulKoradi && (
@@ -563,9 +565,9 @@ export default async function OquvchiProfil({
                       <option value="" disabled>
                         Tanlang…
                       </option>
-                      {Object.entries(KETISH_SABABLARI).map(([k, v]) => (
-                        <option key={k} value={k}>
-                          {v}
+                      {royxatVariantlari(ketishRoyxat).map((b) => (
+                        <option key={b.kalit} value={b.kalit}>
+                          {b.nom}
                         </option>
                       ))}
                     </select>

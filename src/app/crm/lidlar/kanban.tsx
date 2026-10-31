@@ -13,7 +13,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Yuborish } from '@/components/yuborish'
 import { Maydon, kirishKlass } from '@/components/forma'
 import { IconPhone, IconSend } from '@/components/icons'
-import { bosqichi, kunQosh, MANBA_NOMI, type Bosqich, type LidKarta } from '@/lib/lidlar'
+import { bosqichi, kunQosh, type Bosqich, type LidKarta } from '@/lib/lidlar'
+import { royxatNomi, royxatVariantlari, type RoyxatBand } from '@/lib/royxat'
 import { izohniAjrat } from '@/lib/ariza-izoh'
 import { lidBosqich, lidBoglanildi, lidOquvchi, lidSaqla } from './actions'
 import { hisobOch } from '@/app/crm/hisoblar/actions'
@@ -39,12 +40,14 @@ export function Kanban({
   lidlar,
   bosqichlar,
   guruhlar,
+  manbalar,
   bugun,
   yol,
 }: {
   lidlar: LidKarta[]
   bosqichlar: { id: Bosqich; nom: string; izoh: string; rang: string }[]
   guruhlar: Guruh[]
+  manbalar: RoyxatBand[]
   bugun: string
   yol: string
 }) {
@@ -125,6 +128,8 @@ export function Kanban({
                       onBosqich={(x) => otkaz(l, x)}
                       onAloqa={(kanal) => setOyna({ tur: 'aloqa', lid: l, kanal })}
                       onTahrir={() => setOyna({ tur: 'tahrir', lid: l })}
+                      onSinov={() => setOyna({ tur: 'bosqich', lid: l, bosqich: 'sinov' })}
+                      manbalar={manbalar}
                     />
                   ))
                 )}
@@ -134,7 +139,7 @@ export function Kanban({
         </div>
       </div>
 
-      <Oynalar oyna={oyna} yop={() => setOyna(null)} guruhlar={guruhlar} bugun={bugun} yol={yol} />
+      <Oynalar oyna={oyna} yop={() => setOyna(null)} guruhlar={guruhlar} manbalar={manbalar} bugun={bugun} yol={yol} />
     </>
   )
 }
@@ -146,6 +151,8 @@ function Karta({
   sudralmoqda,
   onSudrash,
   onBosqich,
+  onSinov,
+  manbalar,
   onAloqa,
   onTahrir,
 }: {
@@ -155,6 +162,8 @@ function Karta({
   sudralmoqda: boolean
   onSudrash: (id: string | null) => void
   onBosqich: (b: Bosqich) => void
+  onSinov: () => void
+  manbalar: RoyxatBand[]
   onAloqa: (kanal: 'telefon' | 'telegram') => void
   onTahrir: () => void
 }) {
@@ -196,7 +205,7 @@ function Karta({
       </a>
 
       <div className="flex flex-wrap gap-1.5 text-[11px]">
-        <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-ink-3">{MANBA_NOMI[lid.manba]}</span>
+        <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-ink-3">{royxatNomi(manbalar, lid.manba)}</span>
         {lid.sinov_sana && b === 'sinov' && (
           <span className="rounded-md bg-brand-soft px-1.5 py-0.5 font-semibold text-brand">
             Sinov · {sanaKorinish(lid.sinov_sana)}
@@ -269,6 +278,16 @@ function Karta({
               <IconSend size={14} />
             </button>
           </div>
+          {/* Sinovdagi bolani boshqa guruh/ustozda sinash: bosqich ro'yxatida hozirgi ustun yo'q */}
+          {b === 'sinov' && (
+            <button
+              type="button"
+              onClick={onSinov}
+              className="min-h-9 rounded-[8px] border border-line px-2 text-[12px] font-semibold text-ink-2 hover:border-ink-3 hover:text-ink"
+            >
+              Guruh yoki kunni o‘zgartirish
+            </button>
+          )}
           <label>
             <span className="sr-only">Bosqichni o‘zgartirish</span>
             <select
@@ -294,12 +313,14 @@ function Oynalar({
   oyna,
   yop,
   guruhlar,
+  manbalar,
   bugun,
   yol,
 }: {
   oyna: Oyna
   yop: () => void
   guruhlar: Guruh[]
+  manbalar: RoyxatBand[]
   bugun: string
   yol: string
 }) {
@@ -316,15 +337,17 @@ function Oynalar({
   let ichi: React.ReactNode = null
 
   if (oyna?.tur === 'bosqich' && oyna.bosqich === 'sinov') {
-    sarlavha = `Sinov darsi — ${oyna.lid.ism}`
+    const ozgartirish = bosqichi(oyna.lid) === 'sinov'
+    const eskiSana = oyna.lid.sinov_sana
+    sarlavha = `${ozgartirish ? 'Sinovni o‘zgartirish' : 'Sinov darsi'} — ${oyna.lid.ism}`
     ichi = (
       <form action={lidBosqich} className="flex flex-col gap-3">
         <Yashirin yol={yol} id={oyna.lid.id} />
         <input type="hidden" name="bosqich" value="sinov" />
         <Maydon nom="Sinov darsi kuni">
-          <input name="sinov_sana" type="date" required min={bugun} defaultValue={oyna.lid.sinov_sana ?? ertaga} className={kirishKlass} />
+          <input name="sinov_sana" type="date" required min={bugun} defaultValue={eskiSana && eskiSana >= bugun ? eskiSana : ertaga} className={kirishKlass} />
         </Maydon>
-        <Maydon nom="Guruh" izoh="Keyin o‘quvchi qilish uchun kerak bo‘ladi">
+        <Maydon nom="Guruh" izoh={ozgartirish ? 'Bola yangi ustoz jurnalida chiqadi, eski guruh jurnalidan chiqadi' : 'Keyin o‘quvchi qilish uchun kerak bo‘ladi'}>
           <select name="group_id" defaultValue={oyna.lid.group_id ?? ''} className={kirishKlass}>
             <option value="">Hali tanlanmagan</option>
             {guruhlar.map((g) => (
@@ -335,7 +358,7 @@ function Oynalar({
         <Maydon nom="Izoh">
           <input name="sabab" maxLength={200} placeholder="Masalan: dushanba 14:00 ga keladi" className={kirishKlass} />
         </Maydon>
-        <Tugmalar yop={yop}>Sinovga yozish</Tugmalar>
+        <Tugmalar yop={yop}>{ozgartirish ? 'Saqlash' : 'Sinovga yozish'}</Tugmalar>
       </form>
     )
   } else if (oyna?.tur === 'bosqich' && oyna.bosqich === 'oquvchi') {
@@ -408,8 +431,8 @@ function Oynalar({
         </Maydon>
         <Maydon nom="Qayerdan bildi">
           <select name="manba" defaultValue={l.manba} className={kirishKlass}>
-            {Object.entries(MANBA_NOMI).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
+            {royxatVariantlari(manbalar, l.manba).map((m) => (
+              <option key={m.kalit} value={m.kalit}>{m.nom}</option>
             ))}
           </select>
         </Maydon>

@@ -8,6 +8,7 @@ import { kirishKlass, Maydon } from '@/components/forma'
 import { JonliForma } from '@/components/jonli-forma'
 import { pul, sana, bugunToshkent } from '@/lib/format'
 import { ketishNomi, type KetishTahlili } from '@/lib/ketish'
+import { royxatOl } from '@/lib/royxat'
 
 export const metadata = { title: 'Ketish tahlili' }
 export const dynamic = 'force-dynamic'
@@ -34,6 +35,7 @@ export default async function KetishTahliliSahifa({
   const gacha = SANA.test(s.gacha ?? '') ? s.gacha! : bugun
 
   const supabase = await createClient()
+  const ketishRoyxat = await royxatOl(supabase, 'ketish_sabab')
   const { data, error } = await supabase.rpc('ketish_tahlili', { p_dan: dan, p_gacha: gacha })
   const t = data as KetishTahlili | null
 
@@ -88,7 +90,7 @@ export default async function KetishTahliliSahifa({
             ) : (
               t!.sabablar.map((x) => (
                 <Link key={x.sabab} href={shu(`sabab:${x.sabab}`)} className="-mx-2 rounded-lg px-2 transition hover:bg-surface-2">
-                  <BarRow label={ketishNomi(x.sabab)} value={x.soni} max={maxSabab} format={soniFmt} />
+                  <BarRow label={ketishNomi(x.sabab, ketishRoyxat)} value={x.soni} max={maxSabab} format={soniFmt} />
                 </Link>
               ))
             )}
@@ -137,7 +139,7 @@ export default async function KetishTahliliSahifa({
                       {x.izoh ? ` · ${x.izoh}` : ''}
                     </span>
                   </span>
-                  <Badge ton={x.sabab === 'belgilanmagan' ? 'accent' : 'jim'}>{ketishNomi(x.sabab)}</Badge>
+                  <Badge ton={x.sabab === 'belgilanmagan' ? 'accent' : 'jim'}>{ketishNomi(x.sabab, ketishRoyxat)}</Badge>
                 </Link>
               </li>
             ))}

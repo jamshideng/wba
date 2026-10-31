@@ -8,7 +8,7 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { bugunToshkent, sana } from '@/lib/format'
 import { xatoMatni } from '@/lib/kiritish'
-import { WOBLR_SABAB } from '@/lib/audit'
+import { royxatOl, royxatNomi } from '@/lib/royxat'
 import type { WoblrTarixQatori } from '@/lib/types'
 
 export const metadata = { title: 'Woblar tarixi' }
@@ -31,6 +31,7 @@ export default async function WoblarTarixi({ searchParams }: { searchParams: Pro
   const ustoz = await getUstoz()
   const s = await searchParams
   const supabase = await createClient()
+  const sabablar = await royxatOl(supabase, 'woblar_sabab')
   const xodim = staffmi(profil.rol)
   const ustozmi = !xodim && Boolean(ustoz)
 
@@ -198,7 +199,7 @@ export default async function WoblarTarixi({ searchParams }: { searchParams: Pro
                       {!xodim && !ustozmi && (
                         <span className="truncate text-[13.5px] font-semibold">{q.fan ?? q.guruh ?? 'Woblar'}</span>
                       )}
-                      <span className="text-[12px] text-ink-3">{WOBLR_SABAB[q.sabab] ?? q.sabab}</span>
+                      <span className="text-[12px] text-ink-3">{royxatNomi(sabablar, q.sabab)}</span>
                     </div>
                     <div className="mt-0.5 text-[12px] text-ink-3">
                       {vaqt}

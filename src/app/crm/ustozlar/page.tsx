@@ -17,6 +17,8 @@ export const dynamic = 'force-dynamic'
 type Ustoz = {
   id: string
   ism: string
+  ismi: string
+  familiya: string | null
   telefon: string | null
   telegram_id: number | null
   profile_id: string | null
@@ -35,7 +37,7 @@ export default async function Ustozlar({
   const supabase = await createClient()
 
   const [{ data: ustozlar }, { data: stats }, { data: maosh }, { data: hisoblar }] = await Promise.all([
-    supabase.from('teachers').select('id, ism, telefon, telegram_id, profile_id, holat').order('holat').order('ism'),
+    supabase.from('teachers').select('id, ism, ismi, familiya, telefon, telegram_id, profile_id, holat').order('holat').order('ism'),
     supabase.from('v_teacher_stats').select('*'),
     supabase.from('settings').select('qiymat').eq('kalit', 'maosh.qoida').maybeSingle(),
     supabase.from('profiles').select('id, email'),
@@ -104,10 +106,13 @@ export default async function Ustozlar({
 
                   <details>
                     <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Tahrirlash</summary>
-                    <form action={ustozTahrir} className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[2fr_1.5fr_1fr_auto] sm:items-end">
+                    <form action={ustozTahrir} className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[1.5fr_1.5fr_1.5fr_1fr_auto] sm:items-end">
                       <input type="hidden" name="id" value={u.id} />
                       <Maydon nom="Ism">
-                        <input name="ism" required defaultValue={u.ism} className={kirishKlass} />
+                        <input name="ismi" required defaultValue={u.ismi} className={kirishKlass} />
+                      </Maydon>
+                      <Maydon nom="Familiya">
+                        <input name="familiya" defaultValue={u.familiya ?? ''} className={kirishKlass} />
                       </Maydon>
                       <Maydon nom="Telefon">
                         <input name="telefon" type="tel" defaultValue={u.telefon ?? ''} className={kirishKlass} />
@@ -130,9 +135,12 @@ export default async function Ustozlar({
 
       <Card className="flex flex-col">
         <CardHeader title="Yangi ustoz" />
-        <form action={ustozQosh} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-[2fr_1.5fr_auto] sm:items-end">
+        <form action={ustozQosh} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-[1.5fr_1.5fr_1.5fr_auto] sm:items-end">
           <Maydon nom="Ism">
-            <input name="ism" required placeholder="Masalan: Komila Bozorova" className={kirishKlass} />
+            <input name="ismi" required placeholder="Masalan: Komila" className={kirishKlass} />
+          </Maydon>
+          <Maydon nom="Familiya" izoh="Ixtiyoriy">
+            <input name="familiya" placeholder="Masalan: Bozorova" className={kirishKlass} />
           </Maydon>
           <Maydon nom="Telefon">
             <input name="telefon" type="tel" placeholder="90 123 45 67" className={kirishKlass} />
