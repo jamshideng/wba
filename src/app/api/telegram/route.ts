@@ -1,11 +1,10 @@
-import { createHmac } from 'node:crypto'
 import { NextResponse, after, type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { tg, html, xabar, HISOBOT_GURUH, type Tugma } from '@/lib/telegram'
 import { pul, sana, vaqt, davrNomi, bugunToshkent } from '@/lib/format'
 import { saytManzil } from '@/lib/markaz'
 import { kunlikHisobotMatn } from '@/lib/kunlik-hisobot'
-import { bazaBuyrugimi, bazaBuyrugiMatn } from '@/lib/baza-buyruqlar'
+import { guruhBuyrugiMatn, xabarBolaklari } from '@/lib/baza-buyruqlar'
 import type { TelegramKim } from '@/lib/types'
 
 /**
@@ -49,24 +48,21 @@ export async function POST(req: NextRequest) {
   let update: TgUpdate | null = null
   try { update = JSON.parse(xom) as TgUpdate } catch { update = null }
 
-  /* "WBA Hisobot" guruhidagi buyruqlar:
-       /baza_*  — sayt bazasidan, shu yerda (lib/baza-buyruqlar.ts)
-       qolgani  — Apps Script'ga (haqiqiy ish hozircha Sheets'da) */
+  /* "WBA Hisobot" guruhidagi buyruqlar — sayt bazasidan (lib/baza-buyruqlar.ts) */
   if (update?.message && guruhBuyrugimi(update.message)) {
     const m = update.message
-    // /baza_* hozircha o'chiq (Jamshid, 01.10: "keyinroq") — Vercel'da BAZA_BUYRUQLARI=1 qo'yilsa yoqiladi
-    if (process.env.BAZA_BUYRUQLARI === '1' && bazaBuyrugimi(m.text ?? '')) {
-      after(async () => {
-        try {
-          await xabar(m.chat.id, await bazaBuyrugiMatn(m.text ?? ''))
-        } catch (e) {
-          console.error('[telegram] baza buyrug‘i', e)
-          await xabar(m.chat.id, '<b>[BAZA · sayt]</b> hisobotni tuzib bo‘lmadi — sayt jurnalini tekshiring.')
+    after(async () => {
+      try {
+        const javob = await guruhBuyrugiMatn(m.text ?? '')
+        for (const bolak of javob ? xabarBolaklari(javob) : []) {
+          const r = await xabar(m.chat.id, bolak)
+          if (!r.ok) throw new Error(r.description)
         }
-      })
-    } else {
-      after(() => guruhgaUzat(xom))
-    }
+      } catch (e) {
+        console.error('[telegram] guruh buyrug‘i', e)
+        await xabar(m.chat.id, 'Hisobotni tuzib bo‘lmadi — sayt jurnalini tekshiring.')
+      }
+    })
     return NextResponse.json({ ok: true })
   }
   const boshi = Date.now()
@@ -83,34 +79,9 @@ export async function POST(req: NextRequest) {
 
 /* ------------------------------------------------------------------ */
 
-/**
- * Hisobot guruhi buyruqlari (/hisobot_bugun, /tushum, /qarzdorlar …).
- * Ma'lumot va hisobot kodi Apps Script'da (wba_bot/BOT_GuruhBuyruq.js),
- * shuning uchun update o'zgarmasdan o'sha yerga uzatiladi. So'rov bot
- * tokeni bilan imzolanadi (HMAC-SHA256, ?imzo=) — Apps Script tekshiradi.
- */
-const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL ||
-  'https://script.google.com/macros/s/AKfycbzCUCCnuzyDGcmDaJ0xTk_Df5duRMRtR4voroRMMYgpmaXfdausb_-rcGdA3K1gqGTj/exec'
-
+/** Hisobot guruhi buyrug'i (/hisobot_bugun, /tushum, /qarzdorlar …) */
 function guruhBuyrugimi(m: TgMessage) {
   return String(m.chat.id) === HISOBOT_GURUH && (m.text ?? '').trim().startsWith('/')
-}
-
-async function guruhgaUzat(xom: string) {
-  const token = process.env.TELEGRAM_BOT_TOKEN
-  if (!token) return
-  const imzo = createHmac('sha256', token).update(xom).digest('hex')
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?imzo=${imzo}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: xom,
-    })
-    const javob = (await r.text()).slice(0, 40)
-    if (javob !== 'ok') console.error('[telegram] guruh buyrug‘i uzatilmadi', r.status, javob)
-  } catch (e) {
-    console.error('[telegram] guruh buyrug‘i uzatilmadi', e)
-  }
 }
 
 const db = () => createAdminClient()

@@ -20,10 +20,6 @@ import { kunlikHisobotMatn, ertangiMaslahatMatn } from '@/lib/kunlik-hisobot'
 
 export const dynamic = 'force-dynamic'
 
-/* Apps Script ham 19:40 da Sheets hisobotini yuboradi — sarlavha bir xil
-   bo'lib adashtirmasin: bu xabar saytdagi bazadan ekani boshida yoziladi. */
-const SAYT_BELGISI = '<b>[BAZA · sayt]</b> — saytdagi baza, Sheets emas\n\n'
-
 export async function POST(req: NextRequest) {
   const sir = process.env.CRON_SIR
   const qolda = Boolean(sir) && req.headers.get('authorization') === `Bearer ${sir}`
@@ -49,9 +45,7 @@ export async function POST(req: NextRequest) {
     if (!band) return NextResponse.json({ ok: true, sabab: 'bugun yuborilgan' })
   }
 
-  // Sheets muzlatilgan (0084) — Apps Script hisoboti ketmaydi, belgi ham kerak emas
-  const { data: muzlatilgan } = await db.rpc('sheets_muzlatilganmi')
-  const r = await xabar(chat, (muzlatilgan ? '' : SAYT_BELGISI) + (await kunlikHisobotMatn()))
+  const r = await xabar(chat, await kunlikHisobotMatn())
   if (!r.ok) return NextResponse.json({ ok: false, sabab: r.description }, { status: 502 })
 
   // 0084 — ertangi kun maslahati (Apps Script'dagi BOT_Maslahat o'rniga), alohida xabar

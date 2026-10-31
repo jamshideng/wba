@@ -2,33 +2,27 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { html } from '@/lib/telegram'
 import { pul, sana, davrNomi, bugunToshkent, HAFTA_KUNLARI, haftaKuni } from '@/lib/format'
-import { kunlikHisobotMatn } from '@/lib/kunlik-hisobot'
+import { kunlikHisobotMatn, ertangiMaslahatMatn } from '@/lib/kunlik-hisobot'
 import type { Hisobot } from '@/lib/types'
 
 /**
- * "WBA Hisobot" guruhidagi /baza_* buyruqlari — SAYT BAZASIDAN.
- *
- * Sayt to'liq ishga tushguncha haqiqiy ish Sheets'da (Apps Script
- * buyruqlari: /tushum, /hisobot_bugun …). Bular esa bazadan — ikkalasi
- * parallel keladi, adashmaslik uchun har xabar "[BAZA · sayt]" bilan
- * boshlanadi. Buyruq nomlari ham boshqa (baza_ oldi qo'shimchasi), ya'ni
- * Sheets buyruqlari o'zgarmaydi va Apps Script'ga uzatilaveradi.
+ * "WBA Hisobot" guruhidagi buyruqlar — sayt bazasidan (31.10 dan Sheets'ga
+ * bog'liq emas). Nomlar Apps Script'dagi bilan bir xil: odamlar o'rganib qolgan.
  *
  * service_role — Telegram so'rovida sessiya yo'q; guruhning o'zi ruxsat
  * (faqat markaz xodimlari), faqat umumiy raqamlar va ismlar chiqadi.
  */
 
-export const BAZA_BUYRUQLAR: [string, string][] = [
-  ['baza_bugun', 'Bugungi hisobot (baza)'],
-  ['baza_kecha', 'Kechagi hisobot (baza)'],
-  ['baza_haftalik', 'Shu hafta hisoboti (baza)'],
-  ['baza_oylik', 'Shu oy hisoboti + oy rejasi (baza)'],
-  ['baza_tushum', 'Tushum: bugun, kecha, hafta, oy (baza)'],
-  ['baza_qarzdorlar', 'Qarzdorlar ro‘yxati (baza)'],
-  ['baza_buyruqlar', 'Shu ro‘yxat'],
+export const GURUH_BUYRUQLARI: [string, string][] = [
+  ['hisobot_bugun', 'Bugungi hisobot'],
+  ['hisobot_kecha', 'Kechagi hisobot'],
+  ['hisobot_haftalik', 'Shu hafta hisoboti'],
+  ['hisobot_oylik', 'Shu oy hisoboti + oy rejasi'],
+  ['tushum', 'Tushum: bugun, kecha, hafta, oy'],
+  ['qarzdorlar', 'Qarzdorlar ro‘yxati'],
+  ['maslahat', 'Ertangi kun uchun maslahat'],
+  ['buyruqlar', 'Buyruqlar ro‘yxati'],
 ]
-
-const BELGI = '<b>[BAZA · sayt]</b> — saytdagi baza, Sheets emas'
 
 const USUL_NOMI: Record<string, string> = {
   naqd: 'Naqd',
@@ -102,7 +96,7 @@ async function yangiQoshilgan(dan: string, gacha: string) {
 /** Haftalik / oylik hisobot */
 async function oraliqMatn(dan: string, gacha: string, nom: 'HAFTALIK' | 'OYLIK'): Promise<string> {
   const [h, oq, yangi] = await Promise.all([hisobot(dan, gacha), oquvchiSoni(), yangiQoshilgan(dan, gacha)])
-  const t: string[] = [BELGI, '', `<b>${nom} HISOBOT</b>`, `${sana(dan)} — ${sana(gacha)}`, '']
+  const t: string[] = [`<b>${nom} HISOBOT</b>`, `${sana(dan)} — ${sana(gacha)}`, '']
 
   t.push('<b>TUSHUM</b>')
   for (const u of h?.usul ?? []) t.push(`${USUL_NOMI[u.nom] ?? html(u.nom)} — <b>${pul(u.summa)}</b> so‘m`)
@@ -152,8 +146,6 @@ async function tushumMatn(bugun: string): Promise<string> {
   const foiz = rj.kerak ? Math.round((rj.tushdi * 100) / rj.kerak) : 0
   const oy = davrNomi(bugun.slice(0, 7))
   return [
-    BELGI,
-    '',
     `<b>TUSHUM</b> — ${sana(bugun)}`,
     '',
     `Bugun — <b>${pul(yig(bugun, bugun))}</b> so‘m`,
@@ -182,7 +174,7 @@ async function qarzdorlarMatn(bugun: string): Promise<string> {
     jami += q
   }
   const soni = [...gur.values()].reduce((a, x) => a + x.length, 0)
-  const t = [BELGI, '', `<b>QARZDORLAR</b> — ${sana(bugun)}`, '']
+  const t = [`<b>QARZDORLAR</b> — ${sana(bugun)}`, '']
   const tartib = [...gur].sort((a, b) => b[1].reduce((s, o) => s + o.q, 0) - a[1].reduce((s, o) => s + o.q, 0))
   if (!tartib.length) t.push('— faol qarzdor yo‘q')
   for (const [g, r] of tartib) {
@@ -201,38 +193,66 @@ async function qarzdorlarMatn(bugun: string): Promise<string> {
 
 function yordam(): string {
   return [
-    BELGI,
-    '',
-    '<b>BAZA BUYRUQLARI</b> (sayt bazasidan)',
-    ...BAZA_BUYRUQLAR.map(([b, n]) => `/${b} — ${n}`),
-    '',
-    'Sheets buyruqlari (/tushum, /hisobot_bugun …) avvalgidek ishlaydi — /buyruqlar',
+    '<b>BUYRUQLAR</b>',
+    ...GURUH_BUYRUQLARI.map(([b, n]) => `/${b} — ${n}`),
   ].join('\n')
 }
 
-/** Buyruq bazaga tegishlimi (aks holda Apps Script'ga uzatiladi) */
-export function bazaBuyrugimi(matn: string): boolean {
-  return /^\/baza_[a-z_]+/i.test(matn.trim())
+/**
+ * Telegram bitta xabarda 4096 belgidan ko'pini qabul qilmaydi (/qarzdorlar undan uzun
+ * bo'ladi). Qator bo'yicha bo'linadi: <b> teglari bir qator ichida yopiladi, ya'ni buzilmaydi.
+ */
+export function xabarBolaklari(matn: string, chegara = 3800): string[] {
+  const bolaklar: string[] = []
+  let joriy = ''
+  const qosh = (qism: string, ajratgich: string) => {
+    if (joriy && joriy.length + ajratgich.length + qism.length > chegara) {
+      bolaklar.push(joriy)
+      joriy = qism
+    } else {
+      joriy = joriy ? joriy + ajratgich + qism : qism
+    }
+  }
+  for (const qator of matn.split('\n')) {
+    if (qator.length <= chegara) qosh(qator, '\n')
+    else {
+      // Juda uzun qator (ismlar ro'yxati) — ismlar orasidan
+      let birinchi = true
+      for (const q of qator.split(' · ')) {
+        qosh(q, birinchi ? '\n' : ' · ')
+        birinchi = false
+      }
+    }
+  }
+  if (joriy) bolaklar.push(joriy)
+  return bolaklar
 }
 
-/** /baza_* buyrug'iga javob matni. Noma'lum buyruq — ro'yxat. */
-export async function bazaBuyrugiMatn(matn: string): Promise<string> {
+/** Guruh buyrug'iga javob matni. Noma'lum buyruq — null, bot jim turadi. */
+export async function guruhBuyrugiMatn(matn: string): Promise<string | null> {
   const cmd = matn.trim().split(/[\s@]+/)[0].toLowerCase().slice(1)
   const bugun = bugunToshkent()
   switch (cmd) {
-    case 'baza_bugun':
-      return `${BELGI}\n\n${await kunlikHisobotMatn(bugun)}`
-    case 'baza_kecha':
-      return `${BELGI}\n\n${await kunlikHisobotMatn(kunQosh(bugun, -1))}`
-    case 'baza_haftalik':
+    case 'hisobot_bugun':
+      return kunlikHisobotMatn(bugun)
+    case 'hisobot_kecha':
+      return kunlikHisobotMatn(kunQosh(bugun, -1))
+    case 'hisobot_haftalik':
       return oraliqMatn(haftaBoshi(bugun), bugun, 'HAFTALIK')
-    case 'baza_oylik':
+    case 'hisobot_oylik':
       return oraliqMatn(`${bugun.slice(0, 7)}-01`, bugun, 'OYLIK')
-    case 'baza_tushum':
+    case 'tushum':
       return tushumMatn(bugun)
-    case 'baza_qarzdorlar':
+    case 'qarzdorlar':
       return qarzdorlarMatn(bugun)
-    default:
+    case 'maslahat':
+      return ertangiMaslahatMatn(bugun)
+    case 'buyruqlar':
+    case 'start':
+    case 'help':
+    case 'yordam':
       return yordam()
+    default:
+      return null
   }
 }
