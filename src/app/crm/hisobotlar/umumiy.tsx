@@ -1,3 +1,4 @@
+import { royxatNomi, type RoyxatBand } from '@/lib/royxat'
 import Link from 'next/link'
 import { Card, CardHeader, Empty } from '@/components/ui'
 import { ChiziqGrafik, HalqaGrafik, MaydonGrafik, Sparkline, UstunGrafik } from '@/components/grafiklar'
@@ -5,9 +6,8 @@ import { RANG } from '@/lib/grafik-rang'
 import { davrQisqa, pul } from '@/lib/format'
 import type { Hisobot, HisobotGrafik } from '@/lib/types'
 
-const USUL_NOMI: Record<string, string> = {
-  naqd: 'Naqd', terminal: 'Terminal', click: 'Click', payme: 'Payme', aniqlanmagan: 'Aniqlanmagan',
-}
+const usulNomi = (royxat: RoyxatBand[], kalit: string) =>
+  kalit === 'aniqlanmagan' ? 'Aniqlanmagan' : royxatNomi(royxat, kalit)
 
 const kunOy = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}`
 const foiz = (a: number, b: number) => (b > 0 ? (a * 100) / b : null)
@@ -57,7 +57,9 @@ export function UmumiyBolim({
   oylar,
   dan,
   gacha,
+  usulRoyxat,
 }: {
+  usulRoyxat: RoyxatBand[]
   h: Hisobot
   g: HisobotGrafik
   oylar: { davr: string; tushum: number }[]
@@ -71,7 +73,7 @@ export function UmumiyBolim({
   const davJ = foiz(g.joriy.kelgan, g.joriy.belgi)
   const davO = foiz(g.oldingi.kelgan, g.oldingi.belgi)
   const davKun = kun.filter((k) => k.belgi > 0).map((k) => ({ x: kunOy(k.sana), davomat: Math.round((k.kelgan * 100) / k.belgi) }))
-  const usullar = h.usul.map((u) => ({ nom: USUL_NOMI[u.nom] ?? u.nom, qiymat: Number(u.summa) }))
+  const usullar = h.usul.map((u) => ({ nom: usulNomi(usulRoyxat, u.nom), qiymat: Number(u.summa) }))
 
   return (
     <>
@@ -175,7 +177,7 @@ export function UmumiyBolim({
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-ink-3">
                   {h.usul.map((u) => (
                     <Link key={u.nom} href={r('tushum', u.nom)} className="min-h-8 underline underline-offset-2 hover:text-ink">
-                      {USUL_NOMI[u.nom] ?? u.nom}: {pul(u.summa)}
+                      {usulNomi(usulRoyxat, u.nom)}: {pul(u.summa)}
                     </Link>
                   ))}
                 </div>

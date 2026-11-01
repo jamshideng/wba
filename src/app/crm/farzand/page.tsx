@@ -1,5 +1,6 @@
 import { talabRol } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { royxatOl, royxatNomi } from '@/lib/royxat'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
@@ -11,7 +12,6 @@ import { OylikNatijalarKarta, type MeningOylikNatijam } from '@/components/oylik
 export const metadata = { title: 'Farzandim' }
 export const dynamic = 'force-dynamic'
 
-const USUL_NOMI: Record<PaymentMethod, string> = { naqd: 'Naqd', terminal: 'Terminal', click: 'Click', payme: 'Payme' }
 
 /**
  * OTA-ONA PANELI — faqat O'Z farzandini ko'radi (RLS *_parent_read,
@@ -22,6 +22,7 @@ export default async function Farzand() {
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Farzandim" />
 
   const supabase = await createClient()
+  const usulRoyxat = await royxatOl(supabase, 'tolov_usul')
   const davr = joriyDavr()
   const bugun = bugunToshkent()
 
@@ -158,7 +159,7 @@ export default async function Farzand() {
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span className="text-[12.5px] font-semibold">{davrNomi(t.davr)}</span>
                     <span className="text-[10.5px] text-ink-3">
-                      {sana(t.sana)} · {t.usul ? USUL_NOMI[t.usul] : '[ANIQLANMAGAN]'}
+                      {sana(t.sana)} · {t.usul ? royxatNomi(usulRoyxat, t.usul) : '[ANIQLANMAGAN]'}
                     </span>
                   </span>
                   <span className="flex items-center gap-2">

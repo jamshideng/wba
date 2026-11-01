@@ -1,9 +1,9 @@
 /**
- * Sozlanadigan ro'yxatlar (0108): lid manbasi, xarajat toifasi, ketish va
- * woblar sababi. Yozuvlar kalitni saqlaydi, ko'rinadigan nom shu jadvaldan.
+ * Sozlanadigan ro'yxatlar (0108, 0115): lid manbasi, xarajat toifasi, ketish va
+ * woblar sababi, to'lov usuli, vazifa turi, lavozim. Yozuvlar kalitni saqlaydi, ko'rinadigan nom shu jadvaldan.
  */
 
-export type RoyxatTur = 'lid_manba' | 'xarajat_toifa' | 'ketish_sabab' | 'woblar_sabab'
+export type RoyxatTur = 'lid_manba' | 'xarajat_toifa' | 'ketish_sabab' | 'woblar_sabab' | 'tolov_usul' | 'vazifa_turi' | 'lavozim'
 
 export type RoyxatBand = { kalit: string; nom: string; faol: boolean; tizim: boolean; tartib: number }
 
@@ -12,6 +12,9 @@ export const ROYXAT_NOMI: Record<RoyxatTur, { nom: string; izoh: string }> = {
   xarajat_toifa: { nom: 'Xarajat toifalari', izoh: 'Xarajat qo‘shishda tanlanadi' },
   ketish_sabab: { nom: 'Ketish sabablari', izoh: 'Arxivlash va ketish tahlili' },
   woblar_sabab: { nom: 'Woblar sabablari', izoh: 'Woblar berishda tanlanadi' },
+  tolov_usul: { nom: 'To‘lov usullari', izoh: 'To‘lov qo‘shishda tanlanadi' },
+  vazifa_turi: { nom: 'Vazifa turlari', izoh: 'Vazifa qo‘shishda tanlanadi' },
+  lavozim: { nom: 'Lavozimlar', izoh: 'Boshqa xodimlar uchun taklif' },
 }
 
 export const ROYXAT_TURLARI = Object.keys(ROYXAT_NOMI) as RoyxatTur[]

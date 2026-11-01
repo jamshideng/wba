@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { html } from '@/lib/telegram'
 import { pul, sana, davrNomi, bugunToshkent, HAFTA_KUNLARI, haftaKuni } from '@/lib/format'
 import { kunlikHisobotMatn, ertangiMaslahatMatn } from '@/lib/kunlik-hisobot'
+import { royxatOl, royxatNomi } from '@/lib/royxat'
 import type { Hisobot } from '@/lib/types'
 
 /**
@@ -24,13 +25,6 @@ export const GURUH_BUYRUQLARI: [string, string][] = [
   ['buyruqlar', 'Buyruqlar ro‘yxati'],
 ]
 
-const USUL_NOMI: Record<string, string> = {
-  naqd: 'Naqd',
-  terminal: 'Terminal',
-  click: 'Click',
-  payme: 'Payme',
-  aniqlanmagan: 'Usuli yozilmagan',
-}
 
 /** "2026-10-01" + n kun */
 function kunQosh(kun: string, n: number): string {
@@ -95,11 +89,11 @@ async function yangiQoshilgan(dan: string, gacha: string) {
 
 /** Haftalik / oylik hisobot */
 async function oraliqMatn(dan: string, gacha: string, nom: 'HAFTALIK' | 'OYLIK'): Promise<string> {
-  const [h, oq, yangi] = await Promise.all([hisobot(dan, gacha), oquvchiSoni(), yangiQoshilgan(dan, gacha)])
+  const [h, oq, yangi, usulRoyxat] = await Promise.all([hisobot(dan, gacha), oquvchiSoni(), yangiQoshilgan(dan, gacha), royxatOl(createAdminClient(), 'tolov_usul')])
   const t: string[] = [`<b>${nom} HISOBOT</b>`, `${sana(dan)} — ${sana(gacha)}`, '']
 
   t.push('<b>TUSHUM</b>')
-  for (const u of h?.usul ?? []) t.push(`${USUL_NOMI[u.nom] ?? html(u.nom)} — <b>${pul(u.summa)}</b> so‘m`)
+  for (const u of h?.usul ?? []) t.push(`${u.nom === 'aniqlanmagan' ? 'Usuli yozilmagan' : html(royxatNomi(usulRoyxat, u.nom))} — <b>${pul(u.summa)}</b> so‘m`)
   t.push(`<b>JAMI — ${pul(h?.tushum ?? 0)} so‘m</b> (${h?.soni ?? 0} ta to‘lov)`)
   if (h?.tasdiqlanmagan) t.push(`Direktor tasdiqlamagan — ${pul(h.tasdiqlanmagan)} so‘m`)
   t.push('')

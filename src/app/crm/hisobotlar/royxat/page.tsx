@@ -6,6 +6,7 @@ import { Card, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { IconArrowLeft } from '@/components/icons'
 import { davrNomi, sana, pul } from '@/lib/format'
+import { royxatOl, royxatNomi } from '@/lib/royxat'
 
 export const metadata = { title: 'Hisobot ro‘yxati' }
 export const dynamic = 'force-dynamic'
@@ -141,7 +142,9 @@ export default async function HisobotRoyxat({
     (a, b) => (b.sana ?? '').localeCompare(a.sana ?? '') || a.fish.localeCompare(b.fish, 'uz'),
   )
   const jamiSumma = t.summa ? qatorlar.reduce((a, q) => a + Number(q.summa ?? 0), 0) : null
-  const egasi = (kimNomi as { ism: string } | null)?.ism ?? (t.kim === 'fan' ? kim : t.kim === 'filtr' && kim ? (FILTR_NOMI[kim] ?? kim) : null)
+  // To'lov usuli ro'yxatdan: yangi qo'shilgani ham o'z nomi bilan
+  const usulYozuvi = t.kim === 'filtr' && kim ? royxatNomi(await royxatOl(supabase, 'tolov_usul'), kim) : null
+  const egasi = (kimNomi as { ism: string } | null)?.ism ?? (t.kim === 'fan' ? kim : t.kim === 'filtr' && kim ? (FILTR_NOMI[kim] ?? usulYozuvi ?? kim) : null)
   const nom = (t.kim === 'ustoz' || t.kim === 'fan' || t.kim === 'balans') && (egasi ?? kim) ? `${egasi ?? kim} — ${t.nom}` : egasi ? `${t.nom} · ${egasi}` : t.nom
   const vaqtMatn = davr ? davrNomi(davr) : dan && gacha ? `${sana(dan)} — ${sana(gacha)}` : 'hozirgi holat'
 

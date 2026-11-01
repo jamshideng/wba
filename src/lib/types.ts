@@ -14,7 +14,7 @@ export type DayType = 'toq' | 'juft' | 'dam_olish' | 'har_kuni'
 export type EnrollmentStatus = 'faol' | 'tanaffus' | 'tugagan'
 export type AttendanceStatus = 'keldi' | 'kechikdi' | 'sababli' | 'kelmadi'
 /** 'payme' — faqat eski yozuvlar uchun (0088); yangi to'lovda tanlanmaydi. */
-export type PaymentMethod = 'naqd' | 'terminal' | 'click' | 'payme'
+export type PaymentMethod = string
 export type InvoiceStatus = 'ochiq' | 'yopilgan' | 'bekor'
 /** Botdagi Probniylar: Probniy→yangi · Doimiy→yozildi · Kelmadi→kelmadi · Rad etdi→rad */
 export type LeadStatus = 'yangi' | 'qongiroq' | 'keldi' | 'kelmadi' | 'yozildi' | 'rad' | 'xato'
@@ -770,7 +770,7 @@ export type Hisobot = {
 
 /* ---------- 0059 · Vazifalar ---------- */
 
-export type VazifaTuri = 'qongiroq' | 'tolov_eslatish' | 'sinov_chaqirish' | 'boshqa'
+export type VazifaTuri = string
 export type VazifaHolat = 'yangi' | 'jarayonda' | 'bajarildi' | 'bekor'
 export type VazifaMuhimlik = 'past' | 'orta' | 'yuqori'
 

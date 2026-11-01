@@ -8,7 +8,6 @@ import { matn, xabarliYol, xatoMatni } from '@/lib/kiritish'
 import type { VazifaHolat, VazifaMuhimlik, VazifaTuri } from '@/lib/types'
 
 const XODIM = ['admin', 'direktor', 'manager', 'qabulxona'] as const
-const TURLAR: VazifaTuri[] = ['qongiroq', 'tolov_eslatish', 'sinov_chaqirish', 'boshqa']
 const MUHIM: VazifaMuhimlik[] = ['past', 'orta', 'yuqori']
 const HOLATLAR: VazifaHolat[] = ['yangi', 'jarayonda', 'bajarildi', 'bekor']
 
@@ -41,7 +40,8 @@ export async function vazifaQosh(fd: FormData) {
   const supabase = await createClient()
   const { error } = await supabase.from('crm_vazifalar').insert({
     nom: nom!.slice(0, 200),
-    turi: TURLAR.find((t) => t === fd.get('turi')) ?? 'qongiroq',
+    // Ro'yxatda borligini baza tekshiradi (0115)
+    turi: matn(fd.get('turi')) ?? 'qongiroq',
     muhimlik: MUHIM.find((m) => m === fd.get('muhimlik')) ?? 'orta',
     muddat: muddat!,
     lead_id,

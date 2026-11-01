@@ -5,9 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabRol } from '@/lib/auth'
 import { summaOqi, matn, davrOqi, sanaOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
-import type { PaymentMethod } from '@/lib/types'
 
-const USULLAR: PaymentMethod[] = ['naqd', 'click', 'terminal']
 
 /** Qaytish manzili faqat CRM ichida bo'lsin — tashqi saytga yo'naltirib bo'lmasin. */
 function qaytish(fd: FormData, zaxira: string): string {
@@ -27,7 +25,8 @@ export async function tolovQosh(fd: FormData) {
 
   const studentId = matn(fd.get('student_id'))
   const summa = summaOqi(fd.get('summa'))
-  const usul = USULLAR.find((u) => u === fd.get('usul'))
+  // Ro'yxatda borligini baza tekshiradi (0115)
+  const usul = matn(fd.get('usul'))
   const davr = davrOqi(fd.get('davr'))
   const sana = sanaOqi(fd.get('sana'))
 

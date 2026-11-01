@@ -1,5 +1,6 @@
 import { talabRol } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { royxatOl, royxatVariantlari } from '@/lib/royxat'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
@@ -12,7 +13,6 @@ import { xodimQosh, xodimTahrir } from './actions'
 export const metadata = { title: 'Boshqa xodimlar' }
 export const dynamic = 'force-dynamic'
 
-const LAVOZIMLAR = ['Farrosh', 'Qorovul', 'Oshpaz', 'Haydovchi', 'Texnik xodim', 'Bog‘bon']
 
 /**
  * Boshqa xodimlar (0068) — farrosh, qorovul va h.k. Tizimga kirmaydi,
@@ -24,6 +24,7 @@ export default async function BoshqaXodimlar({ searchParams }: { searchParams: P
   const xabar = await searchParams
 
   const supabase = await createClient()
+  const lavozimRoyxat = await royxatOl(supabase, 'lavozim')
   const { data } = await supabase
     .from('boshqa_xodimlar')
     .select('id, ism, lavozim, telefon, oylik, ishga_kirgan, holat, izoh, created_at, updated_at')
@@ -62,8 +63,8 @@ export default async function BoshqaXodimlar({ searchParams }: { searchParams: P
       <Sarlavha nom="Boshqa xodimlar" izoh={`${faollar.length} ta faol · farrosh, qorovul va h.k. — tizimga kirmaydi`} />
       <Xabar ok={xabar.ok} xato={xabar.xato} />
       <datalist id="lavozimlar">
-        {LAVOZIMLAR.map((l) => (
-          <option key={l} value={l} />
+        {royxatVariantlari(lavozimRoyxat).map((b) => (
+          <option key={b.kalit} value={b.nom} />
         ))}
       </datalist>
 

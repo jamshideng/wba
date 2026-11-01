@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { IconPayments, IconDebt, IconWoblr } from '@/components/icons'
 import { talabRol, tasdiqlaydimi, adminmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { royxatOl, royxatNomi } from '@/lib/royxat'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, Stat, Badge, Empty, Button } from '@/components/ui'
 import { Sarlavha, Ulanmagan, Sahifalash } from '@/components/crm'
@@ -18,12 +19,6 @@ export const dynamic = 'force-dynamic'
 
 const SAHIFA_SONI = 30
 
-const USUL_NOMI: Record<PaymentMethod, string> = {
-  naqd: 'Naqd',
-  terminal: 'Terminal',
-  click: 'Click',
-  payme: 'Payme',
-}
 
 type Sorov = {
   filtr?: string
@@ -62,7 +57,7 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
   const filtr = (['tasdiqlanmagan', 'bekor', 'faol'] as const).find((f) => f === s.filtr) ?? 'hammasi'
   const tolovId = /^\d+$/.test(s.id ?? '') ? Number(s.id) : null
   const davr = /^\d{4}-\d{2}$/.test(s.davr ?? '') ? s.davr! : ''
-  const usul = (['naqd', 'click', 'terminal', 'payme'] as const).find((u) => u === s.usul)
+  const usul = /^[a-z0-9_]+$/.test(s.usul ?? '') ? s.usul : undefined
   const qidiruv = (s.q ?? '').trim()
   const sahifa = Math.max(1, Number(s.sahifa ?? 1) || 1)
   const boshi = (sahifa - 1) * SAHIFA_SONI
@@ -71,6 +66,7 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
   const bekorQila = adminmi(profil.rol)
 
   const supabase = await createClient()
+  const usulRoyxat = await royxatOl(supabase, 'tolov_usul')
 
   const tanlov =
     'id, sana, davr, summa, usul, tasdiqlangan, tasdiqlangan_vaqt, bekor, bekor_sabab, izoh, manba, ' +
@@ -165,8 +161,8 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
           <span className="lbl">Usul</span>
           <select name="usul" defaultValue={usul ?? ''} className={kirishKlass}>
             <option value="">Hammasi</option>
-            {Object.entries(USUL_NOMI).filter(([k]) => k !== 'payme').map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
+            {usulRoyxat.map((b) => (
+              <option key={b.kalit} value={b.kalit}>{b.nom}</option>
             ))}
           </select>
         </label>
@@ -226,7 +222,7 @@ export default async function Tolovlar({ searchParams }: { searchParams: Promise
                       {pul(t.summa)}
                     </span>
                     <span className="flex flex-wrap justify-end gap-1.5">
-                      <Badge ton="jim">{t.usul ? USUL_NOMI[t.usul] : 'usul [ANIQLANMAGAN]'}</Badge>
+                      <Badge ton="jim">{t.usul ? royxatNomi(usulRoyxat, t.usul) : 'usul [ANIQLANMAGAN]'}</Badge>
                       {t.bekor ? (
                         <Badge ton="brand">bekor</Badge>
                       ) : t.tasdiqlangan ? (

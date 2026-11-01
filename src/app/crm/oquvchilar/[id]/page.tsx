@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ketishNomi } from '@/lib/ketish'
-import { royxatOl, royxatVariantlari } from '@/lib/royxat'
+import { royxatOl, royxatVariantlari, royxatNomi } from '@/lib/royxat'
 import { notFound } from 'next/navigation'
 import { talabRol, staffmi, adminmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
@@ -43,12 +43,6 @@ const HOLAT_TONI: Record<string, 'ok' | 'accent' | 'brand' | 'jim'> = {
   "Hisob yo'q": 'jim',
 }
 
-const USUL_NOMI: Record<PaymentMethod, string> = {
-  naqd: 'Naqd',
-  terminal: 'Terminal',
-  click: 'Click',
-  payme: 'Payme',
-}
 
 const DAVOMAT_NOMI: Record<AttendanceStatus, string> = {
   keldi: 'Keldi',
@@ -72,6 +66,7 @@ export default async function OquvchiProfil({
 
   const supabase = await createClient()
   const ketishRoyxat = await royxatOl(supabase, 'ketish_sabab')
+  const usulRoyxat = await royxatOl(supabase, 'tolov_usul')
   const pulKoradi = staffmi(profil.rol)
   const { data: tosiqlar } = pulKoradi
     ? await supabase.rpc('oquvchi_ochirish_tosiqlar', { p_student: id })
@@ -685,7 +680,7 @@ export default async function OquvchiProfil({
                     <span className="flex min-w-0 flex-col gap-0.5">
                       <span className="truncate text-[12.5px]">
                         {davrNomi(t.davr)} uchun
-                        {t.usul ? ` · ${USUL_NOMI[t.usul]}` : ' · usul [ANIQLANMAGAN]'}
+                        {t.usul ? ` · ${royxatNomi(usulRoyxat, t.usul)}` : ' · usul [ANIQLANMAGAN]'}
                       </span>
                       {(t.bekor || !t.tasdiqlangan) && (
                         <span className="text-[11px] text-ink-3">

@@ -2923,3 +2923,33 @@ begin
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+
+-- 0115 — to'lov usuli va vazifa turi ro'yxatdan
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+do $$
+declare v_id bigint;
+begin
+  insert into royxatlar (tur, kalit, nom) values ('tolov_usul', 'uzum', 'Uzum');
+  insert into payments (student_id, summa, usul, davr, sana, tasdiqlangan, manba, qabul_qildi) values ('S002', 1000, 'uzum', to_char(bugun_toshkent(), 'YYYY-MM'), bugun_toshkent(), false, 'crm', auth.uid()) returning id into v_id;
+  begin
+    insert into payments (student_id, summa, usul, davr, sana, tasdiqlangan, manba, qabul_qildi) values ('S002', 1000, 'yoq_usul', to_char(bugun_toshkent(), 'YYYY-MM'), bugun_toshkent(), false, 'crm', auth.uid());
+    raise exception 'XATO: ro''yxatda yo''q usul qabul qilindi';
+  exception when others then if sqlerrm not like 'Bu variant%' then raise; end if; end;
+  update royxatlar set faol = false where tur = 'tolov_usul' and kalit = 'uzum';
+  begin
+    insert into payments (student_id, summa, usul, davr, sana, tasdiqlangan, manba, qabul_qildi) values ('S002', 1000, 'uzum', to_char(bugun_toshkent(), 'YYYY-MM'), bugun_toshkent(), false, 'crm', auth.uid());
+    raise exception 'XATO: yashirilgan usul qabul qilindi';
+  exception when others then if sqlerrm not like 'Bu variant%' then raise; end if; end;
+  begin
+    update royxatlar set faol = false where tur = 'tolov_usul' and kalit = 'naqd';
+    raise exception 'XATO: naqd yashirildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  if not exists (select 1 from jsonb_array_elements(tushum_hisobot(bugun_toshkent(), bugun_toshkent()) -> 'usul') x where x ->> 'nom' = 'uzum') then
+    raise exception 'XATO: yangi usul hisobotda yo''q';
+  end if;
+  raise notice 'OK: 0115 — yangi usul, tekshiruv, yashirish, hisobot';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+

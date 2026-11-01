@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { html } from '@/lib/telegram'
 import { pul, sana, vaqt, bugunToshkent, haftaKuni, telefon } from '@/lib/format'
 import { ketishNomi } from '@/lib/ketish'
-import { royxatOl } from '@/lib/royxat'
+import { royxatOl, royxatNomi } from '@/lib/royxat'
 import type { Hisobot } from '@/lib/types'
 
 /**
@@ -95,7 +95,9 @@ export async function kunlikHisobotMatn(kun: string = bugunToshkent()): Promise<
   t.push(`To‘lov: <b>${h?.soni ?? 0}</b> ta · <b>${pul(h?.tushum ?? 0)} so‘m</b>`)
   t.push(`To‘lagan o‘quvchi: <b>${h?.odam ?? 0}</b>`)
   if (k) {
-    t.push(`Naqd: ${pul(k.naqd)} · Terminal: ${pul(k.terminal)} · Click: ${pul(k.click)}\n`)
+    // Hamma usul: ro'yxatga yangi qo'shilgani ham kunlik hisobotdan tushib qolmasin (0115)
+    const usulRoyxat = await royxatOl(db, 'tolov_usul')
+    t.push(`${(h?.usul ?? []).map((u) => `${u.nom === 'aniqlanmagan' ? 'Usuli yozilmagan' : html(royxatNomi(usulRoyxat, u.nom))}: ${pul(u.summa)}`).join(' · ')}\n`)
     const qoldi = Math.max(0, Number(k.reja) - Number(k.tushdi))
     const foizReja = Number(k.reja) > 0 ? Math.round((Number(k.tushdi) * 100) / Number(k.reja)) : 0
     t.push(`<b>${oyNomi(kun).toUpperCase()} OYI REJASI</b>`)

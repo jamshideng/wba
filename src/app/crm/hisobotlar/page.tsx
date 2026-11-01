@@ -7,6 +7,7 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, kirishKlass } from '@/components/forma'
 import { JonliForma } from '@/components/jonli-forma'
 import { AreaGrafik } from '@/components/grafik'
+import { royxatOl } from '@/lib/royxat'
 import { sana, bugunToshkent, joriyDavr, davrNomi } from '@/lib/format'
 import type { Hisobot, HisobotGrafik, HisobotDavomat, HisobotIlova, HisobotMoliya, HisobotOquvchilar, HisobotOrtacha, HisobotUstoz, MonthlyIncome } from '@/lib/types'
 import { DavomatBolimi, IlovaBolimi, MoliyaBolimi, OquvchilarBolimi, OrtachaTolovBolimi, UstozlarBolimi } from './bolimlar'
@@ -258,7 +259,7 @@ export default async function Hisobotlar({
         </Card>
       ) : (
         <>
-          <UmumiyBolim h={h} g={g} oylar={oylar} dan={o.dan} gacha={o.gacha} />
+          <UmumiyBolim h={h} g={g} oylar={oylar} dan={o.dan} gacha={o.gacha} usulRoyxat={await royxatOl(supabase, 'tolov_usul')} />
           {qilinmagan.size > 0 && (
             <Card className="flex flex-col">
               <CardHeader

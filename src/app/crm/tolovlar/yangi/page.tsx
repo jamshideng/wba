@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { talabRol } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { royxatOl, royxatVariantlari } from '@/lib/royxat'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
@@ -23,6 +24,7 @@ export default async function TolovQosh({ searchParams }: { searchParams: Promis
 
   const s = await searchParams
   const supabase = await createClient()
+  const usulRoyxat = await royxatOl(supabase, 'tolov_usul')
   const oquvchiId = (s.oquvchi ?? '').toUpperCase()
 
   /* ── 1-qadam: o'quvchini tanlash ── */
@@ -166,9 +168,9 @@ export default async function TolovQosh({ searchParams }: { searchParams: Promis
             <Maydon nom="Usul">
               <select name="usul" required defaultValue="" className={kirishKlass}>
                 <option value="" disabled>Tanlang…</option>
-                <option value="naqd">Naqd</option>
-                <option value="click">Click</option>
-                <option value="terminal">Terminal</option>
+                {royxatVariantlari(usulRoyxat).map((b) => (
+                  <option key={b.kalit} value={b.kalit}>{b.nom}</option>
+                ))}
               </select>
             </Maydon>
             <Maydon nom="Qaysi oy uchun">

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { talabProfil, panelYoli } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { royxatOl, royxatNomi } from '@/lib/royxat'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
@@ -14,12 +15,6 @@ import type { PaymentMethod, AttendanceStatus, KeyingiDars } from '@/lib/types'
 export const metadata = { title: 'Mening sahifam' }
 export const dynamic = 'force-dynamic'
 
-const USUL_NOMI: Record<PaymentMethod, string> = {
-  naqd: 'Naqd',
-  terminal: 'Terminal',
-  click: 'Click',
-  payme: 'Payme',
-}
 
 const DAVOMAT_NOMI: Record<AttendanceStatus, string> = {
   keldi: 'Keldi',
@@ -52,6 +47,7 @@ export default async function MeningSahifam({
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Mening sahifam" />
 
   const supabase = await createClient()
+  const usulRoyxat = await royxatOl(supabase, 'tolov_usul')
   const bugun = bugunToshkent()
   const davr = joriyDavr()
 
@@ -294,7 +290,7 @@ export default async function MeningSahifam({
                 <div key={t.id} data-belgi="tolov" className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-line-soft py-2.5 last:border-0">
                   <span className="tnum font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3">{sana(t.sana)}</span>
                   <span className="truncate text-[12.5px]">
-                    {davrNomi(t.davr)} uchun{t.usul ? ` · ${USUL_NOMI[t.usul]}` : ''}
+                    {davrNomi(t.davr)} uchun{t.usul ? ` · ${royxatNomi(usulRoyxat, t.usul)}` : ''}
                     {t.bekor ? ' · bekor qilingan' : t.tasdiqlangan ? '' : ' · tasdiq kutilmoqda'}
                   </span>
                   <span className={`tnum font-[family-name:var(--font-mono)] text-[13px] ${t.bekor ? 'text-ink-4 line-through' : t.tasdiqlangan ? 'text-ok' : 'text-accent'}`}>

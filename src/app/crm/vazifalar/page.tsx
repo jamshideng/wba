@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { talabRol } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
+import { royxatOl, royxatNomi, royxatVariantlari } from '@/lib/royxat'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Badge, Empty, Stat } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
@@ -16,12 +17,6 @@ import { vazifaHolat, vazifaQosh, vazifaSur } from './actions'
 export const metadata = { title: 'Vazifalar' }
 export const dynamic = 'force-dynamic'
 
-const TUR_NOMI: Record<VazifaTuri, string> = {
-  qongiroq: 'Qo‘ng‘iroq',
-  tolov_eslatish: 'To‘lov eslatish',
-  sinov_chaqirish: 'Sinov darsiga chaqirish',
-  boshqa: 'Boshqa',
-}
 const MUHIM_NOMI: Record<VazifaMuhimlik, string> = { past: 'Past', orta: 'O‘rta', yuqori: 'Yuqori' }
 
 const BOLIMLAR = {
@@ -79,7 +74,7 @@ export default async function Vazifalar({
   const bolim: Bolim = vazifaId
     ? 'bitta'
     : ([...Object.keys(BOLIMLAR), 'kechikkan', 'bugun_bajarildi'] as Bolim[]).find((b) => b === s.bolim) ?? 'bugun'
-  const turi = (Object.keys(TUR_NOMI) as VazifaTuri[]).find((t) => t === s.turi)
+  const turi = /^[a-z0-9_]+$/.test(s.turi ?? '') ? s.turi : undefined
   const bugun = bugunToshkent()
   const ertaga = kunQosh(bugun, 1)
   const kunOxiri = `${ertaga}T00:00:00+05:00`
@@ -93,6 +88,7 @@ export default async function Vazifalar({
   const yol = `/crm/vazifalar${sorov.size ? `?${sorov}` : ''}`
 
   const supabase = await createClient()
+  const turRoyxat = await royxatOl(supabase, 'vazifa_turi')
   const ustunlar =
     'id, nom, turi, muddat, holat, muhimlik, izoh, avto, lead_id, student_id, bajarildi_at, leads(ism, telefon), students(fish, ota_tel, ona_tel, shaxsiy_tel), masul_p:profiles!crm_vazifalar_masul_fkey(ism), bajardi_p:profiles!crm_vazifalar_bajardi_fkey(ism)'
 
@@ -159,8 +155,8 @@ export default async function Vazifalar({
             </Maydon>
             <Maydon nom="Turi">
               <select name="turi" defaultValue={s.oquvchi ? 'tolov_eslatish' : 'qongiroq'} className={kirishKlass}>
-                {(Object.keys(TUR_NOMI) as VazifaTuri[]).map((t) => (
-                  <option key={t} value={t}>{TUR_NOMI[t]}</option>
+                {turRoyxat.map((b) => (
+                  <option key={b.kalit} value={b.kalit}>{b.nom}</option>
                 ))}
               </select>
             </Maydon>
@@ -237,8 +233,8 @@ export default async function Vazifalar({
           {bolim !== 'bugun' && <input type="hidden" name="bolim" value={bolim} />}
           <select name="turi" defaultValue={turi ?? ''} aria-label="Turi" className={`${kirishKlass} !w-auto`}>
             <option value="">Barcha turlar</option>
-            {(Object.keys(TUR_NOMI) as VazifaTuri[]).map((t) => (
-              <option key={t} value={t}>{TUR_NOMI[t]}</option>
+            {royxatVariantlari(turRoyxat).map((b) => (
+              <option key={b.kalit} value={b.kalit}>{b.nom}</option>
             ))}
           </select>
         </JonliForma>
@@ -267,7 +263,7 @@ export default async function Vazifalar({
                   <div className="flex min-w-0 flex-col gap-1">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="text-[13.5px] font-semibold">{v.nom}</span>
-                      <Badge ton={v.turi === 'tolov_eslatish' ? 'accent' : 'jim'}>{TUR_NOMI[v.turi]}</Badge>
+                      <Badge ton={v.turi === 'tolov_eslatish' ? 'accent' : 'jim'}>{royxatNomi(turRoyxat, v.turi)}</Badge>
                       {v.muhimlik === 'yuqori' && <Badge ton="brand">Muhim</Badge>}
                       {v.avto && <Badge>avto</Badge>}
                       {v.holat === 'jarayonda' && <Badge ton="ok" nuqta>Jarayonda</Badge>}
