@@ -193,14 +193,27 @@ export function Bildirishnomalar({ royxat }: { royxat: MeningBildirishnomam[] })
     })
   }, [royxat])
 
-  const ochiqlar = items.filter((b) => !b.yopilgan && !yashirin.has(b.id))
+  // Shu sessiyada ko'rsatilganlar (serverdagi korilgan keyingi yuklanishda keladi)
+  const [korildi, setKorildi] = useState<Set<number>>(new Set())
+  // Qo'ng'iroqchadan qo'lda qayta ochilganlar — ko'rilgan bo'lsa ham chiqadi
+  const [qaytaOchildi, setQaytaOchildi] = useState<Set<number>>(new Set())
+
+  // Yangi = hali ko'rilmagan va yopilmagan. Ko'rilgan xabar raqamga ham, nuqtaga ham kirmaydi.
+  const yangimi = (b: MeningBildirishnomam) => !b.yopilgan && !b.korilgan && !korildi.has(b.id)
+  // Tepadan tushish: ko'rilmaganlar; muhim va javobsiz so'rovnoma — yopilmaguncha
+  const ochiqlar = items.filter(
+    (b) =>
+      !b.yopilgan &&
+      !yashirin.has(b.id) &&
+      (!b.korilgan || b.muhim || qaytaOchildi.has(b.id) || (b.turi === 'sorovnoma' && !b.javob_berdim)),
+  )
   const muhim = ochiqlar.find((b) => b.muhim)
   const toastlar = ochiqlar.filter((b) => !b.muhim).slice(0, 3)
-  const oqilmagan = items.filter((b) => !b.yopilgan).length
+  const oqilmagan = items.filter(yangimi).length
   const korinayotgan = (muhim ? [muhim] : toastlar).map((b) => b.id).join(',')
   const toastKalit = toastlar.map((b) => b.id).join(',')
 
-  // Ilova ikonkasidagi raqam = yopilmagan xabarlar (qo'ng'iroqchadagi bilan bir xil).
+  // Ilova ikonkasidagi raqam = ko'rilmagan xabarlar (qo'ng'iroqchadagi bilan bir xil).
   // Service worker push kelganda shu sondan davom ettiradi (public/sw.js, BELGI).
   useEffect(() => {
     void ikonkaRaqami(oqilmagan)
@@ -208,7 +221,9 @@ export function Bildirishnomalar({ royxat }: { royxat: MeningBildirishnomam[] })
 
   // Ko'rsatilganlarni "ko'rdi" deb belgilash (bir marta)
   useEffect(() => {
-    for (const id of korinayotgan.split(',').filter(Boolean).map(Number)) {
+    const idlar = korinayotgan.split(',').filter(Boolean).map(Number)
+    if (idlar.length) setKorildi((s) => (idlar.every((id) => s.has(id)) ? s : new Set([...s, ...idlar])))
+    for (const id of idlar) {
       const b = items.find((x) => x.id === id)
       if (b && !b.korilgan && !belgilangan.current.has(id)) {
         belgilangan.current.add(id)
@@ -247,6 +262,7 @@ export function Bildirishnomalar({ royxat }: { royxat: MeningBildirishnomam[] })
   const ochish = (id: number) => {
     setPanel(false)
     setYashirin((s) => { const n = new Set(s); n.delete(id); return n })
+    setQaytaOchildi((s) => new Set([...s, id]))
     setItems((s) => s.map((x) => (x.id === id ? { ...x, yopilgan: false } : x)))
   }
 
@@ -285,7 +301,7 @@ export function Bildirishnomalar({ royxat }: { royxat: MeningBildirishnomam[] })
                         <span className="truncate text-[13px] font-semibold text-ink">{b.sarlavha}</span>
                         <span className="text-[11.5px] text-ink-3">{BTUR_NOMI[b.turi]}{b.turi === 'sorovnoma' && !b.javob_berdim ? ' · javob kutilmoqda' : ''}</span>
                       </span>
-                      {!b.yopilgan && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-brand" aria-label="yangi" />}
+                      {yangimi(b) && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-brand" aria-label="yangi" />}
                     </button>
                   </li>
                 ))}
