@@ -352,7 +352,12 @@ export function Jurnal({
                   const ochiq = tahrirmi(q, k.sana)
                   const kutmoqda = kutilayotgan.has(`${q.student_id}|${k.sana}`)
                   const bugunmi = k.sana === bugun
-                  const guruhdami = k.sana >= q.boshlandi && (!q.tugadi || k.sana <= q.tugadi)
+                  // Guruhdan tashqari kun: qo'shilishdan oldin, chiqqandan keyin va chiqqan kuni
+                  // (ketgan o'quvchida, kelgani yozilmagan bo'lsa) — "—", belgilab bo'lmaydi.
+                  // Arxivga o'tkazishdan oldin qo'yilgan eski "kelmadi" ham shu yerda ko'rinmaydi.
+                  const tashqarida =
+                    k.sana < q.boshlandi ||
+                    (q.tugadi != null && (k.sana > q.tugadi || (q.ketgan && k.sana === q.tugadi && holat !== 'keldi')))
                   return (
                     <td
                       key={k.sana}
@@ -361,7 +366,9 @@ export function Jurnal({
                       className={`px-1 py-1 text-center ${k.dam ? 'bg-surface-2' : bugunmi ? 'bg-accent-soft/60' : ''}`}>
                       {k.dam && !holat ? (
                         <span className="text-[11px] text-ink-4" title={`Dars yo‘q: ${k.dam}`}>—</span>
-                      ) : guruhdami || holat ? (
+                      ) : tashqarida ? (
+                        <span className="text-[11px] text-ink-4" title="Guruhda emas">—</span>
+                      ) : (
                         <button
                           type="button"
                           disabled={!ochiq}
@@ -373,8 +380,6 @@ export function Jurnal({
                         >
                           {holat && <Belgi holat={holat} />}
                         </button>
-                      ) : (
-                        <span className="text-ink-4" aria-hidden="true">·</span>
                       )}
                     </td>
                   )
