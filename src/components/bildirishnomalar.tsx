@@ -210,6 +210,9 @@ export function Bildirishnomalar({ royxat }: { royxat: MeningBildirishnomam[] })
   const muhim = ochiqlar.find((b) => b.muhim)
   const toastlar = ochiqlar.filter((b) => !b.muhim).slice(0, 3)
   const oqilmagan = items.filter(yangimi).length
+  // Qo'ng'iroqcha ro'yxati: faqat ko'rilmaganlar va javob kutayotgan so'rovnoma.
+  // Ko'rilgan xabar qo'ng'iroqchada qolmaydi.
+  const panelRoyxat = items.filter((b) => yangimi(b) || (b.turi === 'sorovnoma' && !b.javob_berdim && !b.yopilgan))
   const korinayotgan = (muhim ? [muhim] : toastlar).map((b) => b.id).join(',')
   const toastKalit = toastlar.map((b) => b.id).join(',')
 
@@ -289,11 +292,11 @@ export function Bildirishnomalar({ royxat }: { royxat: MeningBildirishnomam[] })
         {panel && (
           <div className="bn-tushish absolute right-0 z-50 mt-2 flex max-h-[70vh] w-[min(92vw,380px)] flex-col overflow-hidden rounded-[14px] border border-line bg-surface shadow-xl">
             <div className="border-b border-line px-4 py-3 text-[13.5px] font-bold">Bildirishnomalar</div>
-            {items.length === 0 ? (
-              <p className="px-4 py-6 text-center text-[13px] text-ink-3">Hozircha xabar yo‘q.</p>
+            {panelRoyxat.length === 0 ? (
+              <p className="px-4 py-6 text-center text-[13px] text-ink-3">Yangi xabar yo‘q.</p>
             ) : (
               <ul className="flex flex-col divide-y divide-line overflow-y-auto">
-                {items.map((b) => (
+                {panelRoyxat.map((b) => (
                   <li key={b.id}>
                     <button type="button" onClick={() => ochish(b.id)} className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-surface-2">
                       <TurBelgisi turi={b.turi} />
