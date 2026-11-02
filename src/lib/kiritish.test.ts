@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { summaOqi, telefonOqi, sanaOqi, davrOqi, sonOqi, xabarliYol, xatoMatni, ichkiYol } from './kiritish'
+import { summaOqi, telefonOqi, sanaOqi, davrOqi, sonOqi, xabarliYol, xatoMatni, ichkiYol, telegramUserOqi } from './kiritish'
 
 test('summaOqi — botdagi qoida: 3000 dan kichik raqam minglarda', () => {
   assert.equal(summaOqi('550'), 550_000)
@@ -53,4 +53,20 @@ test('ichkiYol — faqat ichki yo‘l, ochiq yo‘naltirish rad etiladi', () => 
   assert.equal(ichkiYol('/%2F%2Fevil.com'), '/crm')
   assert.equal(ichkiYol(''), '/crm')
   assert.equal(ichkiYol(null), '/crm')
+})
+
+test('telegramUserOqi — username va havolalar (0116)', () => {
+  assert.equal(telegramUserOqi('@komila_ustoz'), 'komila_ustoz')
+  assert.equal(telegramUserOqi('komila_ustoz'), 'komila_ustoz')
+  assert.equal(telegramUserOqi('https://t.me/komila_ustoz'), 'komila_ustoz')
+  assert.equal(telegramUserOqi('t.me/komila_ustoz/'), 'komila_ustoz')
+  assert.equal(telegramUserOqi('telegram.me/Komila2026'), 'Komila2026')
+  assert.equal(telegramUserOqi(''), null)
+  assert.equal(telegramUserOqi(null), null)
+  assert.equal(telegramUserOqi('abc'), undefined) // 5 belgidan kam
+  assert.equal(telegramUserOqi('1komila'), undefined) // raqam bilan boshlanadi
+  assert.equal(telegramUserOqi('komila ustoz'), undefined)
+  assert.equal(telegramUserOqi('https://instagram.com/komila_ustoz'), undefined)
+  assert.equal(telegramUserOqi('+998901234567'), undefined)
+  assert.equal(telegramUserOqi('komila_'), undefined)
 })

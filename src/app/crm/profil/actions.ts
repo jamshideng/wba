@@ -46,8 +46,9 @@ async function iz(profileId: string, amal: string, yangi: Record<string, unknown
 
 export async function ismOzgartir(fd: FormData) {
   const men = await talabProfil()
-  if (YOPIQ_ROLLAR.includes(men.rol)) redirect(xabarliYol(YOL, { xato: OQUVCHIGA_YOPIQ }))
-  const ism = matn(fd.get('ism'))
+  // 0116 — ota-ona o'z ismini o'zgartira oladi; o'quvchi ismi jurnalga bog'liq — admin
+  if (men.rol === 'oquvchi') redirect(xabarliYol(YOL, { xato: OQUVCHIGA_YOPIQ }))
+  const ism = matn(fd.get('ism'))?.replace(/\s+/g, ' ').slice(0, 80)
   if (!ism || ism.length < 3) redirect(xabarliYol(YOL, { xato: 'Ism kamida 3 harf bo‘lsin.' }))
 
   const supabase = await createClient()

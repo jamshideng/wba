@@ -58,7 +58,10 @@ export function tekisBandlar(bolimlar: MenyuBolim[]): MenyuBand[] {
   return bolimlar.flatMap((b) => b.bandlar.flatMap((x) => (x.ichki ? x.ichki : [x])))
 }
 
-export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
+/** Ota-ona menyusi uchun farzandlar (0116) — layout RLS bilan oladi */
+export type MenyuFarzand = { id: string; fish: string }
+
+export function menyular(rol: UserRole, ustozmi: boolean, farzandlar: MenyuFarzand[] = []): MenyuBolim[] {
   const bolimlar: MenyuBolim[] = []
   const xodim = staffmi(rol)
   const admin = adminmi(rol)
@@ -102,6 +105,8 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
           ...(admin ? [{ href: '/crm/oquvchilar/takroriy', nom: 'Takroriylar', Icon: IconStudents, tayyor: true }] : []),
           // 0072 — kim botga ulangan, ulanmaganga taklif havolasi
           { href: '/crm/telegram', nom: 'Telegram ulanishi', Icon: IconSend, tayyor: true },
+          // 0116 — ota-ona hisoblari va farzand biriktirish (oxirgi band)
+          ...(admin ? [{ href: '/crm/ota-onalar', nom: 'Ota-onalar', Icon: IconStudents, tayyor: true }] : []),
         ]),
         ...guruh('Guruhlar', IconGroups, [
           { href: '/crm/guruhlar', nom: 'Guruhlar', Icon: IconGroups, tayyor: true, mobil: true },
@@ -192,10 +197,24 @@ export function menyular(rol: UserRole, ustozmi: boolean): MenyuBolim[] {
   }
 
   if (rol === 'ota_ona') {
+    /* 0116 — bir nechta farzand: har biri "Farzandlarim" ichida alohida band.
+       Bitta bo'lsa — guruh emas, to'g'ridan-to'g'ri o'sha farzand sahifasi. */
+    const farzandBandlar: MenyuBand[] = farzandlar.map((f) => ({
+      href: `/crm/farzand/${f.id}`,
+      nom: f.fish,
+      Icon: IconStudents,
+      tayyor: true,
+      mobil: farzandlar.length === 1,
+    }))
     bolimlar.push({
-      nom: 'Farzandim',
+      nom: 'Farzandlarim',
       bandlar: [
-        { href: '/crm/farzand', nom: 'Farzandim', Icon: IconStudents, tayyor: true, mobil: true },
+        ...(farzandBandlar.length > 1
+          ? guruh('Farzandlarim', IconStudents, farzandBandlar).map((b) => ({ ...b, href: '/crm/farzand', mobil: true }))
+          : farzandBandlar.length === 1
+            ? farzandBandlar
+            : [{ href: '/crm/farzand', nom: 'Farzandlarim', Icon: IconStudents, tayyor: true, mobil: true }]),
+        { href: '/crm/market', nom: 'Woblar market', Icon: IconMarket, tayyor: true, mobil: true },
         { href: '/crm/woblr/tarix', nom: 'Woblar tarixi', Icon: IconWoblr, tayyor: true },
       ],
     })

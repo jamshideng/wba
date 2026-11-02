@@ -95,6 +95,19 @@ export async function hisobOch(fd: FormData) {
     }
   }
 
+  /* 0116 — ota-ona: o'quvchida boshqa ota-ona bo'lsa — yangi hisob ochilmaydi
+     (bitta o'quvchi — bitta ota-ona); band login ota-onaniki bo'lmasa — tegilmaydi */
+  if (otaOnami) {
+    const { data: hozirgi } = await supabase.from('students').select('ota_ona_id').eq('id', nishon!).maybeSingle()
+    if (hozirgi?.ota_ona_id && hozirgi.ota_ona_id !== bor?.id) {
+      redirect(xabarliYol(yol, { xato: 'Bu o‘quvchiga boshqa ota-ona biriktirilgan. Avval uni uzing yoki “Ota-onalar” bo‘limida mavjud hisobga biriktiring.' }))
+    }
+    if (bor) {
+      const { data: egasi } = await supabase.from('profiles').select('rol').eq('id', bor.id).maybeSingle()
+      if (egasi?.rol !== 'ota_ona') redirect(xabarliYol(yol, { xato: 'Bu login band — boshqa login tanlang.' }))
+    }
+  }
+
   if (bor) {
     const { error } = await admin.auth.admin.updateUserById(bor.id, {
       password: parol,
@@ -125,6 +138,12 @@ export async function hisobOch(fd: FormData) {
   const profilYangi = otaOnami ? { ism, rol, oquvchi_id: nishon } : probniymi ? { ism, rol, lead_id: nishon } : { ism, rol }
   const { error: xatoProfil } = await supabase.from('profiles').update(profilYangi).eq('id', userId)
   if (xatoProfil) redirect(xabarliYol(yol, { xato: xatoMatni(xatoProfil) }))
+
+  // 0116 — ota-ona bog'lanishi students.ota_ona_id da (bir ota-onada bir nechta farzand)
+  if (otaOnami) {
+    const { error: xatoOta } = await supabase.rpc('ota_ona_biriktir', { p_ota_ona: userId, p_student: nishon! })
+    if (xatoOta) redirect(xabarliYol(yol, { xato: xatoMatni(xatoOta) }))
+  }
 
   // Ota-ona hisobi o'quvchi/ustoz yozuvini EGALLAMAYDI (u faqat kuzatuvchi).
   const jadval = ustozmi ? 'teachers' : 'students'

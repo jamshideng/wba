@@ -46,6 +46,19 @@ export function telefonOqi(v: FormDataEntryValue | null | undefined): string | n
   return telefonNormal(s) ?? undefined
 }
 
+/**
+ * Telegram username (0116): "@user", "user", "t.me/user", "https://t.me/user"
+ * — hammasi "user" ga keladi. Bo'sh — null; noto'g'ri — undefined.
+ * Telegram qoidasi: 5–32 belgi, harf bilan boshlanadi, faqat lotin harf, raqam, "_".
+ */
+export function telegramUserOqi(v: FormDataEntryValue | null | undefined): string | null | undefined {
+  const s = matn(v)
+  if (!s) return null
+  const m = s.match(/^(?:https?:\/\/)?(?:www\.)?(?:t\.me|telegram\.me|telegram\.dog)\/([^/?#\s]+)\/?$/i)
+  const nom = (m ? m[1] : s).replace(/^@/, '')
+  return /^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(nom) && !nom.endsWith('_') ? nom : undefined
+}
+
 /** "2026-09-17" — faqat shu ko'rinish qabul qilinadi (input type=date beradi). */
 export function sanaOqi(v: FormDataEntryValue | null | undefined): string | null {
   const s = matn(v)

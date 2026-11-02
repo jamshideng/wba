@@ -1593,8 +1593,10 @@ reset role;
 reset request.jwt.claim.sub;
 insert into auth.users (id, email) values ('88888888-8888-8888-8888-888888888888', 's001-ota@wba.uz')
   on conflict do nothing;
-update profiles set rol = 'ota_ona', ism = 'Sinov Ota', oquvchi_id = 'S001'
+update profiles set rol = 'ota_ona', ism = 'Sinov Ota'
   where id = '88888888-8888-8888-8888-888888888888';
+-- 0116: bog'lanish students.ota_ona_id da
+update students set ota_ona_id = '88888888-8888-8888-8888-888888888888' where id = 'S001';
 \echo '--- 0051: ota-ona qarzi = o''quvchi qarzi ---'
 set role authenticated;
 do $$
@@ -1611,6 +1613,54 @@ begin
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+
+-- ============================================================
+--  0116: ota-onada bir nechta farzand, begona bola yopiq, biriktirish
+-- ============================================================
+\echo '--- 0116: ota-ona — bir nechta farzand ---'
+select ota_ona_biriktir('88888888-8888-8888-8888-888888888888', 'S002');
+set role authenticated;
+do $$
+declare v_soni int; v_begona int; v_kod text;
+begin
+  perform set_config('request.jwt.claim.sub', '88888888-8888-8888-8888-888888888888', true);
+  select count(*) into v_soni from students;
+  if v_soni <> 2 then raise exception 'XATO: ota-ona % ta o''quvchini ko''rdi (2 kutilgan)', v_soni; end if;
+  select count(*) into v_begona from enrollments where student_id not in ('S001', 'S002');
+  if v_begona <> 0 then raise exception 'XATO: ota-ona begona yozilishni ko''rdi'; end if;
+  if not app_farzandmi('S002') or app_farzandmi('S003') then
+    raise exception 'XATO: app_farzandmi noto''g''ri';
+  end if;
+  begin
+    perform market_buyurtma_farzand('S003', gen_random_uuid(), 1);
+    raise exception 'XATO: begona bola nomidan buyurtma o''tdi';
+  exception when others then
+    if sqlerrm not like '%farzandingiz emas%' then raise; end if;
+  end;
+  begin
+    perform ota_ona_biriktir('88888888-8888-8888-8888-888888888888', 'S003');
+    raise exception 'XATO: ota-ona o''zi biriktirdi';
+  exception when others then
+    if sqlerrm not like '%huquqingiz yo%' then raise; end if;
+  end;
+  raise notice 'OK: ota-ona ikki farzandni ko''radi, begonasi yopiq';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+do $$
+begin
+  begin
+    update teachers set telegram_user = 'https://t.me/x' where id = (select min(id) from teachers);
+    raise exception 'XATO: noto''g''ri telegram user saqlandi';
+  exception when check_violation then null;
+  end;
+  update teachers set telegram_user = 'ustoz_wba' where id = (select min(id) from teachers);
+  perform ota_ona_uzish('S002');
+  if exists (select 1 from students where id = 'S002' and ota_ona_id is not null) then
+    raise exception 'XATO: uzish ishlamadi';
+  end if;
+  raise notice 'OK: telegram user tekshiruvi, uzish';
+end $$;
 
 \echo '--- 0052: bir nechta savolli so''rovnoma ---'
 reset role;

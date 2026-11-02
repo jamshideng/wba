@@ -66,6 +66,8 @@ export type Teacher = {
   id: string
   profile_id: string | null
   ism: string
+  /** 0116 — Telegram username (@ siz) */
+  telegram_user?: string | null
   ismi: string
   familiya: string | null
   telefon: string | null
@@ -80,6 +82,8 @@ export type Teacher = {
 export type Student = {
   id: string
   profile_id: string | null
+  /** 0116 — ota-ona hisobi (profiles.id) */
+  ota_ona_id?: string | null
   fish: string
   ismi: string
   familiya: string | null
@@ -923,6 +927,12 @@ export type Database = {
       oquvchi_ochirish_tosiqlar: { Args: { p_student: string }; Returns: string[] }
       oquvchi_xato_ochir: { Args: { p_student: string; p_sabab: string }; Returns: undefined }
       oylik_natijalarim: { Args: Record<string, never>; Returns: import('@/components/oylik-natijalar').MeningOylikNatijam[] }
+      // 0116 — ota-ona: bir nechta farzand
+      oylik_natijalari_farzand: { Args: { p_student: string }; Returns: import('@/components/oylik-natijalar').MeningOylikNatijam[] }
+      farzand_ustozi: { Args: { p_teacher: string }; Returns: { ism: string; telefon: string | null; telegram_user: string | null }[] }
+      ota_ona_biriktir: { Args: { p_ota_ona: string; p_student: string }; Returns: undefined }
+      ota_ona_uzish: { Args: { p_student: string }; Returns: undefined }
+      market_buyurtma_farzand: { Args: { p_student: string; p_reward: string; p_soni?: number }; Returns: string }
       oylik_xabar_manzil: { Args: { p_natija: string }; Returns: unknown }
       woblr_leaderboard: {
         Args: { p_group?: string | null; p_davr?: string | null; p_fan?: string | null }

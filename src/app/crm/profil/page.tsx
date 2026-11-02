@@ -52,6 +52,19 @@ export default async function Profil({
       />
       <Xabar ok={xabar.ok} xato={xabar.xato} />
 
+      {/* 0116 — ota-ona o'z FISH'ini o'zi to'g'rilaydi (admin xato yozgan bo'lsa) */}
+      {men.rol === 'ota_ona' && (
+        <Card className="flex flex-col">
+          <CardHeader title="Ism familya" />
+          <form action={ismOzgartir} className="flex flex-col gap-3 px-5 pb-5">
+            <Maydon nom="Ism familya" izoh="Markazda shu ism bilan ko‘rinasiz. Xato yozilgan bo‘lsa, shu yerda to‘g‘rilang.">
+              <input name="ism" required minLength={3} maxLength={80} defaultValue={men.ism} className={kirishKlass} />
+            </Maydon>
+            <Yuborish tur="ikkilamchi">Ismni saqlash</Yuborish>
+          </form>
+        </Card>
+      )}
+
       {!faqatTelegram && (
         <>
           <Card className="flex flex-col">

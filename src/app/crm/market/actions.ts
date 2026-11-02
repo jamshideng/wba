@@ -63,10 +63,17 @@ export async function buyurtmaBer(fd: FormData) {
   const soni = sonOqi(fd.get('soni')) ?? 1
   const qaytish = id ? `/crm/market/${id}` : '/crm/market'
   if (!id) redirect('/crm/market')
-  if (profil.rol !== 'oquvchi') redirect(xabarliYol(qaytish, { xato: 'Buyurtmani o‘quvchi o‘z hisobidan beradi.' }))
+  // 0116 — ota-ona farzandi nomidan (huquq va balans bazada: market_buyurtma_farzand)
+  const otaOnami = profil.rol === 'ota_ona'
+  const farzand = otaOnami ? matn(fd.get('farzand')) : null
+  if (profil.rol !== 'oquvchi' && !otaOnami) redirect(xabarliYol(qaytish, { xato: 'Buyurtmani o‘quvchi yoki ota-onasi beradi.' }))
+  if (otaOnami && !farzand) redirect(xabarliYol(qaytish, { xato: 'Qaysi farzand nomidan olishni tanlang.' }))
 
   const supabase = await createClient()
-  const { data: kod, error } = await supabase.rpc('market_buyurtma', { p_reward: id!, p_soni: soni })
+  const { data: kod, error } = otaOnami
+    ? await supabase.rpc('market_buyurtma_farzand', { p_student: farzand!, p_reward: id!, p_soni: soni })
+    : await supabase.rpc('market_buyurtma', { p_reward: id!, p_soni: soni })
+  const { data: fRow } = otaOnami ? await supabase.from('students').select('fish').eq('id', farzand!).maybeSingle() : { data: null }
   if (error || !kod) redirect(xabarliYol(qaytish, { xato: xatoMatni(error) }))
 
   // Adminlar darhol bilsin — xabar javobdan keyin, xato bo'lsa ham buyurtma saqlangan.
@@ -76,7 +83,7 @@ export async function buyurtmaBer(fd: FormData) {
       Number(HISOBOT_GURUH),
       [
         `<b>[SAYT] WOBLAR MARKET — ${m?.rejim === 'oldindan' ? 'oldindan buyurtma' : 'yangi buyurtma'}</b>`,
-        `${html(profil.ism)}: <b>${html(m?.nom ?? 'mahsulot')}</b>${soni > 1 ? ` × ${soni}` : ''} — ${(m?.narx_ball ?? 0) * soni} woblar`,
+        `${otaOnami ? `${html(fRow?.fish ?? farzand ?? '')} (ota-onasi ${html(profil.ism)})` : html(profil.ism)}: <b>${html(m?.nom ?? 'mahsulot')}</b>${soni > 1 ? ` × ${soni}` : ''} — ${(m?.narx_ball ?? 0) * soni} woblar`,
         `Kod: <b>${html(kod as string)}</b>`,
       ].join('\n'),
     )

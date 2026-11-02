@@ -49,7 +49,7 @@ export default async function UstozProfil({
 
   const { data: ustoz } = await supabase
     .from('teachers')
-    .select('id, ism, ismi, familiya, telefon, telegram_id, profile_id, holat')
+    .select('id, ism, ismi, familiya, telefon, telegram_id, telegram_user, profile_id, holat')
     .eq('id', id)
     .maybeSingle()
   if (!ustoz) notFound()
@@ -60,6 +60,7 @@ export default async function UstozProfil({
     familiya: string | null
     telefon: string | null
     telegram_id: number | null
+    telegram_user: string | null
     profile_id: string | null
     holat: 'faol' | 'bloklangan'
   }
@@ -305,6 +306,9 @@ export default async function UstozProfil({
             </Maydon>
             <Maydon nom="Telefon">
               <input name="telefon" type="tel" defaultValue={u.telefon ?? ''} className={kirishKlass} />
+            </Maydon>
+            <Maydon nom="Telegram user" izoh="Ixtiyoriy. @username yoki t.me havola — ota-onaga ko‘rinadi">
+              <input name="telegram_user" defaultValue={u.telegram_user ? `@${u.telegram_user}` : ''} placeholder="@komila_ustoz" pattern="^(?:(?:https?://)?(?:www\.)?(?:t\.me|telegram\.me)/)?@?[A-Za-z][A-Za-z0-9_]{4,31}/?$" title="@username yoki https://t.me/username (5–32 belgi: lotin harf, raqam, _)" className={kirishKlass} />
             </Maydon>
             <Maydon nom="Holat">
               <select name="holat" defaultValue={u.holat} className={kirishKlass}>

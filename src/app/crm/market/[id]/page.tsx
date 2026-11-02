@@ -1,3 +1,4 @@
+import { farzandlarim } from '@/lib/farzand'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { talabProfil, adminmi } from '@/lib/auth'
@@ -21,7 +22,7 @@ export default async function MahsulotSahifasi({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ xato?: string }>
+  searchParams: Promise<{ xato?: string; farzand?: string }>
 }) {
   const profil = await talabProfil()
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Woblar market" />
@@ -42,6 +43,15 @@ export default async function MahsulotSahifasi({
     ? await supabase.from('v_woblr_balance').select('balans').eq('student_id', men.id).maybeSingle()
     : { data: null }
   const balans = bal ? Number(bal.balans) || 0 : null
+  // 0116 — ota-ona farzandi nomidan oladi: har farzandning woblari
+  const otaOnami = profil.rol === 'ota_ona'
+  const farzandlar = otaOnami ? await farzandlarim() : []
+  const { data: fBal } = farzandlar.length
+    ? await supabase.from('v_woblr_balance').select('student_id, balans').in('student_id', farzandlar.map((f) => f.id))
+    : { data: [] }
+  const fBalans = farzandlar
+    .filter((f) => f.holat !== 'ketgan')
+    .map((f) => ({ id: f.id, fish: f.fish, balans: Number((fBal ?? []).find((b) => b.student_id === f.id)?.balans) || 0 }))
 
   const bozor = await bozorKuni(supabase)
   const oldindan = m.rejim === 'oldindan'
@@ -85,7 +95,13 @@ export default async function MahsulotSahifasi({
           {m.tavsif && <p className="text-[14px] leading-relaxed whitespace-pre-line text-ink-2">{m.tavsif}</p>}
 
           <Card className="flex flex-col gap-3 p-4">
-            {balans !== null ? (
+            {otaOnami && fBalans.length > 0 ? (
+              ombor.tugagan || m.holat !== 'faol' ? (
+                <span className="rounded-[10px] bg-surface-2 py-3 text-center text-[13.5px] text-ink-3">Hozir olib bo‘lmaydi</span>
+              ) : (
+                <SotibOlish rewardId={m.id} narx={m.narx_ball} balans={0} maks={maks} oldindan={oldindan} farzandlar={fBalans} boshlangich={s.farzand} />
+              )
+            ) : balans !== null ? (
               <>
                 <span className="flex items-center justify-between text-[13px] text-ink-2">
                   Sizning woblaringiz <Woblar son={balans} />
@@ -125,7 +141,7 @@ export default async function MahsulotSahifasi({
               </>
             )}
           </ol>
-          {profil.rol === 'oquvchi' && (
+          {(profil.rol === 'oquvchi' || profil.rol === 'ota_ona') && (
             <Button href="/crm/market/buyurtmalar" variant="ikkilamchi">Buyurtmalarim</Button>
           )}
         </div>

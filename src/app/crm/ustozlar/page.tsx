@@ -21,6 +21,7 @@ type Ustoz = {
   familiya: string | null
   telefon: string | null
   telegram_id: number | null
+  telegram_user: string | null
   profile_id: string | null
   holat: 'faol' | 'bloklangan'
 }
@@ -37,7 +38,7 @@ export default async function Ustozlar({
   const supabase = await createClient()
 
   const [{ data: ustozlar }, { data: stats }, { data: maosh }, { data: hisoblar }] = await Promise.all([
-    supabase.from('teachers').select('id, ism, ismi, familiya, telefon, telegram_id, profile_id, holat').order('holat').order('ism'),
+    supabase.from('teachers').select('id, ism, ismi, familiya, telefon, telegram_id, telegram_user, profile_id, holat').order('holat').order('ism'),
     supabase.from('v_teacher_stats').select('*'),
     supabase.from('settings').select('qiymat').eq('kalit', 'maosh.qoida').maybeSingle(),
     supabase.from('profiles').select('id, email'),
@@ -117,6 +118,9 @@ export default async function Ustozlar({
                       <Maydon nom="Telefon">
                         <input name="telefon" type="tel" defaultValue={u.telefon ?? ''} className={kirishKlass} />
                       </Maydon>
+                      <Maydon nom="Telegram user" izoh="Ixtiyoriy. @username yoki t.me havola — ota-onaga ko‘rinadi">
+                        <input name="telegram_user" defaultValue={u.telegram_user ? `@${u.telegram_user}` : ''} placeholder="@komila_ustoz" pattern="^(?:(?:https?://)?(?:www\.)?(?:t\.me|telegram\.me)/)?@?[A-Za-z][A-Za-z0-9_]{4,31}/?$" title="@username yoki https://t.me/username (5–32 belgi: lotin harf, raqam, _)" className={kirishKlass} />
+                      </Maydon>
                       <Maydon nom="Holat">
                         <select name="holat" defaultValue={u.holat} className={kirishKlass}>
                           <option value="faol">Faol</option>
@@ -135,7 +139,7 @@ export default async function Ustozlar({
 
       <Card className="flex flex-col">
         <CardHeader title="Yangi ustoz" />
-        <form action={ustozQosh} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-[1.5fr_1.5fr_1.5fr_auto] sm:items-end">
+        <form action={ustozQosh} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-[1.5fr_1.5fr_1.5fr_1.5fr_auto] sm:items-end">
           <Maydon nom="Ism">
             <input name="ismi" required placeholder="Masalan: Komila" className={kirishKlass} />
           </Maydon>
@@ -144,6 +148,9 @@ export default async function Ustozlar({
           </Maydon>
           <Maydon nom="Telefon">
             <input name="telefon" type="tel" placeholder="90 123 45 67" className={kirishKlass} />
+          </Maydon>
+          <Maydon nom="Telegram user" izoh="Ixtiyoriy">
+            <input name="telegram_user" placeholder="@komila_ustoz" pattern="^(?:(?:https?://)?(?:www\.)?(?:t\.me|telegram\.me)/)?@?[A-Za-z][A-Za-z0-9_]{4,31}/?$" title="@username yoki https://t.me/username (5–32 belgi: lotin harf, raqam, _)" className={kirishKlass} />
           </Maydon>
           <Yuborish>Qo‘shish</Yuborish>
         </form>

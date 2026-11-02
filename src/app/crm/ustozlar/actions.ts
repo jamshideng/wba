@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabRol } from '@/lib/auth'
-import { matn, telefonOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
+import { matn, telefonOqi, telegramUserOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
 
 const USTOZLAR = '/crm/ustozlar'
 const YOL = USTOZLAR
@@ -18,6 +18,8 @@ export async function ustozQosh(fd: FormData) {
   const telefon = telefonOqi(fd.get('telefon'))
   if (!ismi) redirect(xabarliYol(YOL, { xato: 'Ustoz ismini yozing.' }))
   if (telefon === undefined) redirect(xabarliYol(YOL, { xato: 'Telefon noto‘g‘ri. Masalan: 90 123 45 67' }))
+  const telegramUser = telegramUserOqi(fd.get('telegram_user'))
+  if (telegramUser === undefined) redirect(xabarliYol(YOL, { xato: 'Telegram user noto‘g‘ri. Masalan: @komila_ustoz yoki https://t.me/komila_ustoz (5–32 belgi: lotin harf, raqam, _)' }))
 
   const supabase = await createClient()
   // Sheets bilan bir xil ko'rinish: U01, U02 ...
@@ -28,7 +30,7 @@ export async function ustozQosh(fd: FormData) {
   })
   if (xatoId || !id) redirect(xabarliYol(YOL, { xato: xatoMatni(xatoId) }))
 
-  const { error } = await supabase.from('teachers').insert({ id: id!, ism, ismi: ismi!, familiya, telefon: telefon ?? null })
+  const { error } = await supabase.from('teachers').insert({ id: id!, ism, ismi: ismi!, familiya, telefon: telefon ?? null, telegram_user: telegramUser ?? null })
   if (error) redirect(xabarliYol(YOL, { xato: xatoMatni(error) }))
 
   revalidatePath('/crm', 'layout')
@@ -49,11 +51,13 @@ export async function ustozTahrir(fd: FormData) {
 
   if (!id || !ismi) redirect(xabarliYol(YOL, { xato: 'Ustoz ismini yozing.' }))
   if (telefon === undefined) redirect(xabarliYol(YOL, { xato: 'Telefon noto‘g‘ri. Masalan: 90 123 45 67' }))
+  const telegramUser = telegramUserOqi(fd.get('telegram_user'))
+  if (telegramUser === undefined) redirect(xabarliYol(YOL, { xato: 'Telegram user noto‘g‘ri. Masalan: @komila_ustoz yoki https://t.me/komila_ustoz (5–32 belgi: lotin harf, raqam, _)' }))
 
   const supabase = await createClient()
   const { error } = await supabase
     .from('teachers')
-    .update({ ismi: ismi!, familiya, telefon: telefon ?? null, holat })
+    .update({ ismi: ismi!, familiya, telefon: telefon ?? null, telegram_user: telegramUser ?? null, holat })
     .eq('id', id!)
   if (error) redirect(xabarliYol(YOL, { xato: xatoMatni(error) }))
 

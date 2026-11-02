@@ -1,4 +1,6 @@
+import { farzandBiriktir, farzandUzish } from '@/app/crm/ota-onalar/actions'
 import Link from 'next/link'
+import { loginNomi } from '@/lib/login'
 import { ketishNomi } from '@/lib/ketish'
 import { royxatOl, royxatVariantlari, royxatNomi } from '@/lib/royxat'
 import { notFound } from 'next/navigation'
@@ -75,7 +77,7 @@ export default async function OquvchiProfil({
 
   const { data: oquvchi } = await supabase
     .from('students')
-    .select('id, fish, tugilgan_sana, ota_tel, ona_tel, shaxsiy_tel, qoshilgan_sana, holat, izoh, profile_id, arxiv_sana, arxiv_sabab, ketish_sababi')
+    .select('id, fish, tugilgan_sana, ota_tel, ona_tel, shaxsiy_tel, qoshilgan_sana, holat, izoh, profile_id, ota_ona_id, arxiv_sana, arxiv_sabab, ketish_sababi')
     .eq('id', id)
     .maybeSingle()
 
@@ -134,10 +136,17 @@ export default async function OquvchiProfil({
     ? await supabase.from('profiles').select('email').eq('id', oquvchi.profile_id).maybeSingle()
     : { data: null }
 
-  /* Ota-ona hisobi bormi — profiles.oquvchi_id bo'yicha (0019) */
-  const { data: otaOnaHisob } = pulKoradi
-    ? await supabase.from('profiles').select('email, ism').eq('oquvchi_id', oquvchi.id).eq('rol', 'ota_ona').maybeSingle()
-    : { data: null }
+  /* Ota-ona hisobi — students.ota_ona_id (0116). Biriktirish uchun — ota-ona hisoblari ro'yxati */
+  const otaOnaAdmin = adminmi(profil.rol)
+  const [{ data: otaOnaHisob }, { data: otaOnalarXom }] = await Promise.all([
+    pulKoradi && oquvchi.ota_ona_id
+      ? supabase.from('profiles').select('id, email, ism').eq('id', oquvchi.ota_ona_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    otaOnaAdmin && !oquvchi.ota_ona_id
+      ? supabase.from('profiles').select('id, ism, email').eq('rol', 'ota_ona').eq('holat', 'faol').order('ism')
+      : Promise.resolve({ data: [] }),
+  ])
+  const otaOnalar = (otaOnalarXom ?? []) as { id: string; ism: string; email: string | null }[]
 
   type Yozilish = {
     id: string
@@ -654,6 +663,40 @@ export default async function OquvchiProfil({
                 bormi={Boolean(otaOnaHisob)}
                 email={otaOnaHisob?.email ?? null}
               />
+            )}
+
+            {/* 0116 — mavjud ota-onaga biriktirish / uzish (bir ota-onada bir nechta farzand) */}
+            {otaOnaAdmin && otaOnaHisob && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-line px-4 py-2.5 text-[13px]">
+                <span>
+                  Ota-ona:{' '}
+                  <Link href={`/crm/ota-onalar/${otaOnaHisob.id}`} className="font-semibold text-accent hover:text-brand">
+                    {otaOnaHisob.ism}
+                  </Link>
+                </span>
+                <form action={farzandUzish}>
+                  <input type="hidden" name="student" value={oquvchi.id} />
+                  <input type="hidden" name="qaytish" value={`/crm/oquvchilar/${oquvchi.id}`} />
+                  <Yuborish tur="ikkilamchi" kutish="…">Uzish</Yuborish>
+                </form>
+              </div>
+            )}
+            {otaOnaAdmin && !otaOnaHisob && otaOnalar.length > 0 && (
+              <form action={farzandBiriktir} className="flex flex-col gap-2 rounded-[10px] border border-dashed border-line px-4 py-3 sm:flex-row sm:items-end">
+                <input type="hidden" name="student" value={oquvchi.id} />
+                <input type="hidden" name="qaytish" value={`/crm/oquvchilar/${oquvchi.id}`} />
+                <Maydon nom="Mavjud ota-onaga biriktirish" izoh="Aka-uka / opa-singil: bir ota-ona hisobiga bir nechta farzand" className="flex-1">
+                  <select name="ota_ona" required defaultValue="" className={kirishKlass}>
+                    <option value="" disabled>Ota-onani tanlang</option>
+                    {otaOnalar.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.ism} · {loginNomi(o.email)}
+                      </option>
+                    ))}
+                  </select>
+                </Maydon>
+                <Yuborish tur="ikkilamchi">Biriktirish</Yuborish>
+              </form>
             )}
           </div>
         </Card>

@@ -1,3 +1,4 @@
+import { farzandlarim } from '@/lib/farzand'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { talabProfil, staffmi } from '@/lib/auth'
@@ -25,11 +26,15 @@ export default async function Buyurtmalarim({
   const s = await searchParams
   const supabase = await createClient()
   const { data: men } = await supabase.from('students').select('id').eq('profile_id', profil.id).maybeSingle()
-  const { data } = men
+  // 0116 — ota-ona: hamma farzandlarining buyurtmalari (RLS redemptions_parent_read)
+  const farzandlar = profil.rol === 'ota_ona' ? await farzandlarim() : []
+  const egalar = men ? [men.id] : farzandlar.map((f) => f.id)
+  const ismi = new Map(farzandlar.map((f) => [f.id, f.fish]))
+  const { data } = egalar.length
     ? await supabase
         .from('woblr_redemptions')
         .select('*')
-        .eq('student_id', men.id)
+        .in('student_id', egalar)
         .not('kod', 'is', null)
         .order('created_at', { ascending: false })
         .limit(100)
@@ -49,7 +54,10 @@ export default async function Buyurtmalarim({
           <span className="truncate text-[13.5px] font-semibold">
             {b.mahsulot_nomi ?? 'Mahsulot'}{b.soni > 1 ? ` × ${b.soni}` : ''}
           </span>
-          <span className="tnum text-[12px] text-ink-3">{b.kod} · {sanaVaqt(b.created_at)}</span>
+          <span className="tnum text-[12px] text-ink-3">
+            {b.kod} · {sanaVaqt(b.created_at)}
+            {farzandlar.length > 1 ? ` · ${ismi.get(b.student_id) ?? b.student_id}` : ''}
+          </span>
         </span>
         <span className="flex shrink-0 flex-col items-end gap-1">
           <Woblar son={b.ball} />

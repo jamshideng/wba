@@ -1,3 +1,4 @@
+import { farzandlarim } from '@/lib/farzand'
 import Link from 'next/link'
 import './telefon.css'
 import { Suspense } from 'react'
@@ -127,7 +128,9 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
      faqat ustoz paneli, xodim rolida faqat boshqaruv (Jamshid, 17.10) */
   const haqiqiyRol = profil.asl_rol ?? profil.rol
   const ikkiRol = Boolean(ustoz) && staffmi(haqiqiyRol)
-  const bolimlar = menyular(profil.rol, Boolean(ustoz) && (!ikkiRol || profil.rol === 'ustoz'))
+  // 0116 — ota-onaga menyuda farzandlari (RLS faqat o'zinikini beradi)
+  const farzandlar = profil.rol === 'ota_ona' ? await farzandlarim() : []
+  const bolimlar = menyular(profil.rol, Boolean(ustoz) && (!ikkiRol || profil.rol === 'ustoz'), farzandlar)
   const rollar = ikkiRol
     ? [
         { kalit: 'xodim' as const, nom: ROL_NOMI[haqiqiyRol], faol: profil.rol !== 'ustoz' },

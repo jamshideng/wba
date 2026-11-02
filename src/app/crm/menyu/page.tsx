@@ -1,3 +1,4 @@
+import { farzandlarim } from '@/lib/farzand'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
@@ -30,7 +31,9 @@ export default async function Menyu() {
   const ustoz = await getUstoz()
   // Ikki rolli — tanlangan rol bo'limlari (layout.tsx bilan bir xil)
   const ikkiRol = Boolean(ustoz) && staffmi(profil.asl_rol ?? profil.rol)
-  const bolimlar = menyular(profil.rol, Boolean(ustoz) && (!ikkiRol || profil.rol === 'ustoz'))
+  // 0116 — ota-onaga menyuda farzandlari (RLS faqat o'zinikini beradi)
+  const farzandlar = profil.rol === 'ota_ona' ? await farzandlarim() : []
+  const bolimlar = menyular(profil.rol, Boolean(ustoz) && (!ikkiRol || profil.rol === 'ustoz'), farzandlar)
 
   return (
     <div className="flex flex-col gap-5 px-5 py-5">

@@ -28,6 +28,8 @@ export function SotibOlish({
   balans,
   maks,
   oldindan = false,
+  farzandlar,
+  boshlangich,
 }: {
   rewardId: string
   narx: number
@@ -36,9 +38,17 @@ export function SotibOlish({
   maks: number
   /** Oldindan buyurtma — tovar keyin keladi */
   oldindan?: boolean
+  /** 0116 — ota-ona: qaysi farzand nomidan (woblar o'sha farzanddan yechiladi) */
+  farzandlar?: { id: string; fish: string; balans: number }[]
+  boshlangich?: string
 }) {
   const [soni, setSoni] = useState(1)
   const [tasdiq, setTasdiq] = useState(false)
+  const [farzandId, setFarzandId] = useState(
+    farzandlar?.find((f) => f.id === boshlangich)?.id ?? farzandlar?.[0]?.id ?? '',
+  )
+  const farzand = farzandlar?.find((f) => f.id === farzandId)
+  if (farzand) balans = farzand.balans
   const jami = narx * soni
   const qoladi = balans - jami
   const yetadi = qoladi >= 0
@@ -47,6 +57,23 @@ export function SotibOlish({
     <form action={buyurtmaBer} className="flex flex-col gap-3">
       <input type="hidden" name="reward_id" value={rewardId} />
       <input type="hidden" name="soni" value={soni} />
+      {farzandlar && farzandlar.length > 0 && (
+        <label className="flex flex-col gap-1.5">
+          <span className="lbl">Kimning nomidan</span>
+          <select
+            name="farzand"
+            value={farzandId}
+            onChange={(e) => { setFarzandId(e.target.value); setTasdiq(false) }}
+            className="min-h-11 rounded-[10px] border border-line bg-surface px-3 text-[14px]"
+          >
+            {farzandlar.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.fish} — {f.balans.toLocaleString('ru-RU')} woblar
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       {maks > 1 && (
         <div className="flex items-center gap-3">
@@ -89,7 +116,7 @@ export function SotibOlish({
       ) : (
         <div className="flex flex-col gap-3 rounded-[12px] border border-accent-line bg-accent-soft p-4">
           <p className="text-[13.5px] leading-relaxed text-ink">
-            <b>{jami.toLocaleString('ru-RU')} woblar</b> {oldindan ? 'band qilinadi' : 'yechiladi'}, sizda <b>{qoladi.toLocaleString('ru-RU')}</b> qoladi.{' '}
+            <b>{jami.toLocaleString('ru-RU')} woblar</b> {oldindan ? 'band qilinadi' : 'yechiladi'}, {farzand ? `${farzand.fish.split(' ')[0]}da` : 'sizda'} <b>{qoladi.toLocaleString('ru-RU')}</b> qoladi.{' '}
             {oldindan
               ? 'Chek kodi beriladi. Tovar kelganda xabar olasiz — keyin kodni adminga ko‘rsatib, sovg‘ani olasiz.'
               : 'Buyurtmadan keyin chek kodi beriladi — uni adminga ko‘rsatib, sovg‘ani olasiz.'}

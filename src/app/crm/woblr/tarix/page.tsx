@@ -47,7 +47,8 @@ export default async function WoblarTarixi({ searchParams }: { searchParams: Pro
       p_gacha: gacha,
       // Xodim "Ustoz" rolida — faqat o'zi bergan woblar (oddiy ustozga buni RLS qiladi)
       p_bergan: xodim && s.kim ? s.kim : ustozRejimi(profil) ? profil.id : null,
-      p_student: xodim && s.oquvchi ? s.oquvchi : null,
+      // 0116 — ota-ona: tanlangan farzand (huquqni bazadagi woblr_tarix tekshiradi)
+      p_student: (xodim || profil.rol === 'ota_ona') && s.oquvchi ? s.oquvchi : null,
       p_group: (xodim || ustozmi) && s.guruh ? s.guruh : null,
       p_limit: 1000,
     }),

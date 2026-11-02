@@ -1,3 +1,4 @@
+import { farzandlarim } from '@/lib/farzand'
 import Link from 'next/link'
 import { talabProfil, staffmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
@@ -26,7 +27,7 @@ const TURLAR = { sotuvda: 'Hozir bor', oldindan: 'Oldindan buyurtma' } as const
 export default async function Market({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; toifa?: string; tartib?: string; tur?: string; ok?: string; xato?: string }>
+  searchParams: Promise<{ q?: string; toifa?: string; tartib?: string; tur?: string; ok?: string; xato?: string; farzand?: string }>
 }) {
   const profil = await talabProfil()
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Woblar market" />
@@ -67,6 +68,12 @@ export default async function Market({
     : [{ data: null }, { count: 0 }]
 
   const balans = bal ? Number(bal.balans) || 0 : null
+  // 0116 — ota-ona: farzandlarining woblari, buyurtma farzand nomidan
+  const otaOnami = profil.rol === 'ota_ona'
+  const farzandlar = otaOnami ? (await farzandlarim()).filter((f) => f.holat !== 'ketgan') : []
+  const { data: fBal } = farzandlar.length
+    ? await supabase.from('v_woblr_balance').select('student_id, balans').in('student_id', farzandlar.map((f) => f.id))
+    : { data: [] }
   const mList = (mahsulotlar ?? []) as Mahsulot[]
   const toifalar = [...new Set((toifaQatorlar ?? []).map((t) => t.toifa as string))].sort((a, b) => a.localeCompare(b, 'uz'))
 
@@ -88,7 +95,7 @@ export default async function Market({
         amal={
           staffmi(profil.rol) ? (
             <Button href="/crm/market/boshqaruv">Boshqaruv</Button>
-          ) : oquvchimi ? (
+          ) : oquvchimi || otaOnami ? (
             <Button href="/crm/market/buyurtmalar" variant="ikkilamchi">
               Buyurtmalarim{kutilmoqda ? ` · ${kutilmoqda}` : ''}
             </Button>
@@ -96,6 +103,20 @@ export default async function Market({
         }
       />
       <Xabar ok={s.ok} xato={s.xato} />
+
+      {otaOnami && farzandlar.length > 0 && (
+        <Card className="flex flex-col gap-2 border-accent-line! bg-accent-soft! px-5 py-4">
+          <span className="lbl">Farzandlaringiz woblari</span>
+          <span className="flex flex-wrap gap-x-6 gap-y-2">
+            {farzandlar.map((f) => (
+              <span key={f.id} className="flex items-center gap-2 text-[13.5px] font-semibold">
+                {f.fish} <Woblar son={Number((fBal ?? []).find((b) => b.student_id === f.id)?.balans) || 0} />
+              </span>
+            ))}
+          </span>
+          <span className="text-[12.5px] text-ink-2">Sovg‘ani tanlang — buyurtma farzandingiz nomidan, uning woblaridan.</span>
+        </Card>
+      )}
 
       {balans !== null && (
         <Card className="flex flex-wrap items-center justify-between gap-3 border-accent-line! bg-accent-soft! px-5 py-4">
@@ -252,7 +273,7 @@ export default async function Market({
             return (
               <li key={m.id}>
                 <Link
-                  href={`/crm/market/${m.id}`}
+                  href={`/crm/market/${m.id}${s.farzand ? `?farzand=${encodeURIComponent(s.farzand)}` : ''}`}
                   className="group flex h-full flex-col overflow-hidden rounded-[14px] border border-line bg-surface transition hover:-translate-y-0.5 hover:border-ink-3 hover:shadow-md"
                 >
                   <span className="relative">
@@ -283,7 +304,7 @@ export default async function Market({
                         </span>
                       ) : (
                         <span className="block rounded-[9px] bg-brand py-2 text-center text-[13px] font-bold text-white transition group-hover:brightness-110">
-                          {oquvchimi ? (oldindan ? 'Oldindan olish' : 'Olish') : 'Ko‘rish'}
+                          {oquvchimi || otaOnami ? (oldindan ? 'Oldindan olish' : 'Olish') : 'Ko‘rish'}
                         </span>
                       )}
                     </span>
