@@ -1702,6 +1702,21 @@ begin
   end;
   raise notice 'OK: sinovdagi farzand — ko''rish, begona yopiq, o''quvchiga o''tish, oxirgi farzand uzilmaydi';
 end $$;
+
+\echo '--- 0117: farzand chiqib ketsa — ota-ona avtomatik o''chadi, qaytsa yoqiladi ---'
+do $$
+declare v_holat text; v_eski student_status;
+begin
+  -- 8888 ning yagona farzandi S001
+  select holat into v_eski from students where id = 'S001';
+  update students set holat = 'ketgan' where id = 'S001';
+  select holat into v_holat from profiles where id = '88888888-8888-8888-8888-888888888888';
+  if v_holat <> 'bloklangan' then raise exception 'XATO: farzand ketganda ota-ona % qoldi', v_holat; end if;
+  update students set holat = v_eski where id = 'S001';
+  select holat into v_holat from profiles where id = '88888888-8888-8888-8888-888888888888';
+  if v_holat <> 'faol' then raise exception 'XATO: farzand qaytganda ota-ona yoqilmadi (%)', v_holat; end if;
+  raise notice 'OK: ota-ona farzand bilan birga o''chadi va qaytadi';
+end $$;
 reset role;
 reset request.jwt.claim.sub;
 

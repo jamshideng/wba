@@ -170,3 +170,93 @@ begin
   update leads set ota_ona_id = null where id = p_lead;
 end;
 $$;
+
+-- ------------------------------------------------------------
+-- Bola chiqib ketsa yoki o'chirilsa — ota-ona hisobi avtomatik o'chadi
+-- (Jamshid, 03.11). O'chish = holat 'bloklangan' (kira olmaydi, ro'yxatda
+-- belgilanadi); hisob yo'q qilinmaydi — bola qaytsa, o'zi qayta yoqiladi.
+-- Faol farzand: arxivda bo'lmagan o'quvchi yoki xato/rad bo'lmagan sinovdagi bola.
+-- ------------------------------------------------------------
+create or replace function ota_ona_faol_farzand_soni(p_ota_ona uuid) returns int
+language sql stable security definer set search_path = public as $$
+  select (select count(*) from students where ota_ona_id = p_ota_ona and holat <> 'ketgan')::int
+       + (select count(*) from leads where ota_ona_id = p_ota_ona and student_id is null
+            and holat not in ('xato', 'rad'))::int
+$$;
+revoke execute on function ota_ona_faol_farzand_soni(uuid) from public, anon;
+grant  execute on function ota_ona_faol_farzand_soni(uuid) to authenticated, service_role;
+
+/* p_qaytdi = true — farzand qaytdi (arxivdan / xatodan): bloklangan ota-ona yoqiladi */
+create or replace function ota_ona_holat_yangila(p_ota_ona uuid, p_qaytdi boolean default false) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if p_ota_ona is null then return; end if;
+  if p_qaytdi then
+    update profiles set holat = 'faol' where id = p_ota_ona and rol = 'ota_ona' and holat = 'bloklangan';
+  elsif ota_ona_faol_farzand_soni(p_ota_ona) = 0 then
+    update profiles set holat = 'bloklangan' where id = p_ota_ona and rol = 'ota_ona' and holat = 'faol';
+  end if;
+end;
+$$;
+revoke execute on function ota_ona_holat_yangila(uuid, boolean) from public, anon, authenticated;
+
+-- O'quvchi: arxivga chiqdi / qaytdi / o'chirildi
+create or replace function students_ota_ona_holat() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'DELETE' then
+    perform ota_ona_holat_yangila(old.ota_ona_id);
+    return old;
+  end if;
+  if new.ota_ona_id is not null and old.holat is distinct from new.holat then
+    perform ota_ona_holat_yangila(new.ota_ona_id, old.holat = 'ketgan' and new.holat <> 'ketgan');
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists students_ota_ona_holat on students;
+create trigger students_ota_ona_holat after update of holat or delete on students
+  for each row execute function students_ota_ona_holat();
+
+-- O'quvchini o'chirishdan oldin: eski bog'lanish (profiles.oquvchi_id) bo'shatiladi
+create or replace function students_ota_ona_ochirish() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  update profiles set oquvchi_id = null where oquvchi_id = old.id;
+  return old;
+end;
+$$;
+drop trigger if exists students_ota_ona_ochirish on students;
+create trigger students_ota_ona_ochirish before delete on students
+  for each row execute function students_ota_ona_ochirish();
+
+-- Sinovdagi bola: xato/rad bo'ldi, qaytdi yoki o'chirildi
+create or replace function leads_ota_ona_holat() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'DELETE' then
+    perform ota_ona_holat_yangila(old.ota_ona_id);
+    return old;
+  end if;
+  if new.ota_ona_id is not null and new.student_id is null and old.holat is distinct from new.holat then
+    perform ota_ona_holat_yangila(new.ota_ona_id,
+      old.holat in ('xato', 'rad') and new.holat not in ('xato', 'rad'));
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists leads_ota_ona_holat on leads;
+create trigger leads_ota_ona_holat after update of holat or delete on leads
+  for each row execute function leads_ota_ona_holat();
+
+-- O'quvchini o'chirish: ota-ona endi to'siq emas (u avtomatik o'chadi)
+do $$
+declare
+  v_def text := pg_get_functiondef('oquvchi_ochirish_tosiqlar(text)'::regprocedure);
+  v_eski text := '(exists (select 1 from profiles where oquvchi_id = p_student) or exists (select 1 from students where id = p_student and ota_ona_id is not null))';
+begin
+  if position(v_eski in v_def) = 0 then
+    raise exception '0117: oquvchi_ochirish_tosiqlar kutilgan ko''rinishda emas';
+  end if;
+  execute replace(v_def, v_eski, 'false');
+end $$;
