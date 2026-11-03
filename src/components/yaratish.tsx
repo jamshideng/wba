@@ -30,6 +30,8 @@ export function Yaratish({ direktor }: { direktor: boolean }) {
     { href: '/crm/tolovlar/yangi', nom: 'To‘lov kiritish', Icon: IconPayments },
     { href: '/crm/lidlar?yangi=1', nom: 'Yangi lid', Icon: IconLeads },
     { href: '/crm/oquvchilar/yangi', nom: 'Yangi o‘quvchi', Icon: IconStudents },
+    // 0116 — ota-ona hisobi (admin, manager, direktor)
+    ...(direktor ? [{ href: '/crm/ota-onalar/yangi', nom: 'Yangi ota-ona', Icon: IconStudents }] : []),
     { href: '/crm/vazifalar?yangi=1', nom: 'Yangi vazifa', Icon: IconAlert },
     ...(direktor ? [{ href: '/crm/guruhlar/yangi', nom: 'Yangi guruh', Icon: IconGroups }] : []),
   ]

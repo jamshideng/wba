@@ -11,6 +11,7 @@ import type { PaymentMethod } from '@/lib/types'
 import { OylikNatijalarKarta, type MeningOylikNatijam } from '@/components/oylik-natijalar'
 import { UstozKarta, type UstozMalumot } from '@/components/ustoz-karta'
 import { farzandlarim } from '@/lib/farzand'
+import { SinovFarzand } from './sinov'
 
 export const metadata = { title: 'Farzandim' }
 export const dynamic = 'force-dynamic'
@@ -34,6 +35,8 @@ export default async function Farzand({ params }: { params: Promise<{ id: string
   // RLS faqat o'z farzandlarini beradi; begona ID — 404
   const oquvchi = farzandlar.find((f) => f.id === id) ?? null
   if (!oquvchi && farzandlar.length) notFound()
+  // 0117 — sinov darsidagi farzand: sinov kabineti ko'rinishi
+  if (oquvchi?.sinov) return <SinovFarzand f={oquvchi} farzandlar={farzandlar} />
 
   if (!oquvchi) {
     return (

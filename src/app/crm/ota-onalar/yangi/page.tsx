@@ -9,6 +9,7 @@ import { kirishKlass, Maydon, Xabar } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { ParolMaydon } from '@/components/parol-maydon'
 import { otaOnaYarat } from '@/app/crm/hisoblar/actions'
+import { FarzandTanlash } from '@/components/farzand-tanlash'
 
 export const metadata = { title: 'Yangi ota-ona' }
 export const dynamic = 'force-dynamic'
@@ -22,6 +23,15 @@ export default async function YangiOtaOna({ searchParams }: { searchParams: Prom
   // Ota-onasi biriktirilmagan faol o'quvchilar
   const { data } = await supabase.from('students').select('id, fish').is('ota_ona_id', null).neq('holat', 'ketgan').order('fish')
   const boshlar = (data ?? []) as { id: string; fish: string }[]
+  // 0117 — sinov darsidagi, hali o'quvchi bo'lmagan va ota-onasi yo'q bolalar
+  const { data: lXom } = await supabase
+    .from('leads')
+    .select('id, ism')
+    .is('student_id', null)
+    .is('ota_ona_id', null)
+    .not('holat', 'in', '(xato,rad)')
+    .order('ism')
+  const sinovdagilar = (lXom ?? []) as { id: string; ism: string }[]
 
   return (
     <div className="flex max-w-2xl flex-col gap-4 px-5 py-5 lg:px-7">
@@ -32,9 +42,14 @@ export default async function YangiOtaOna({ searchParams }: { searchParams: Prom
       <Xabar ok={s.ok} xato={s.xato} />
       <Card className="p-5">
         <form action={otaOnaYarat} className="flex flex-col gap-3">
-          <Maydon nom="FISH">
-            <input name="ism" required minLength={3} maxLength={80} placeholder="Familiya Ism Sharif" className={kirishKlass} />
-          </Maydon>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Maydon nom="Ism">
+              <input name="ism" required maxLength={40} placeholder="Ism" className={kirishKlass} />
+            </Maydon>
+            <Maydon nom="Familiya">
+              <input name="familiya" required maxLength={40} placeholder="Familiya" className={kirishKlass} />
+            </Maydon>
+          </div>
           <Maydon nom="Telefon (ixtiyoriy)">
             <input name="telefon" inputMode="tel" placeholder="90 123 45 67" className={kirishKlass} />
           </Maydon>
@@ -44,20 +59,12 @@ export default async function YangiOtaOna({ searchParams }: { searchParams: Prom
             </Maydon>
             <ParolMaydon />
           </div>
-          <Maydon nom="Farzand (ixtiyoriy)" izoh="Ism yoki ID yozing va ro‘yxatdan tanlang. Keyin ham biriktirish mumkin.">
-            <input
-              name="farzand"
-              list="yangi-farzand-royxat"
-              autoComplete="off"
-              defaultValue={s.farzand ?? ''}
-              placeholder="S012 · Ism Familiya"
-              className={kirishKlass}
+          <Maydon nom="Farzand" izoh="Majburiy: o‘quvchi yoki sinov darsidagi bola. Qolgan farzandlar keyin biriktiriladi.">
+            <FarzandTanlash
+              oquvchilar={boshlar}
+              sinovdagilar={sinovdagilar}
+              tanlangan={s.farzand ? (/^[SL]:/.test(s.farzand) ? s.farzand : `S:${s.farzand}`) : undefined}
             />
-            <datalist id="yangi-farzand-royxat">
-              {boshlar.map((b) => (
-                <option key={b.id} value={`${b.id} · ${b.fish}`} />
-              ))}
-            </datalist>
           </Maydon>
           <Yuborish>Hisob ochish</Yuborish>
         </form>

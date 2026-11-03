@@ -278,6 +278,8 @@ export type Payment = {
 }
 
 export type Lead = {
+  /** 0117 — sinov darsidagi bolaning ota-onasi */
+  ota_ona_id?: string | null
   id: string
   /** Sheets qatorining ID'si (Q001 / T0001 / P001); CRM'da yaratilganda null */
   sheets_id: string | null
@@ -932,6 +934,11 @@ export type Database = {
       farzand_ustozi: { Args: { p_teacher: string }; Returns: { ism: string; telefon: string | null; telegram_user: string | null }[] }
       ota_ona_biriktir: { Args: { p_ota_ona: string; p_student: string }; Returns: undefined }
       ota_ona_uzish: { Args: { p_student: string }; Returns: undefined }
+      // 0117 — sinov darsidagi farzand
+      ota_ona_lidlarim: { Args: Record<string, never>; Returns: { id: string; ism: string; holat: string }[] }
+      ota_ona_lid_kabinet: { Args: { p_lead: string }; Returns: unknown }
+      ota_ona_lid_biriktir: { Args: { p_ota_ona: string; p_lead: string }; Returns: undefined }
+      ota_ona_lid_uzish: { Args: { p_lead: string }; Returns: undefined }
       market_buyurtma_farzand: { Args: { p_student: string; p_reward: string; p_soni?: number }; Returns: string }
       oylik_xabar_manzil: { Args: { p_natija: string }; Returns: unknown }
       woblr_leaderboard: {

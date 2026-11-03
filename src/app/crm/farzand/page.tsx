@@ -41,9 +41,9 @@ export default async function Farzandlarim() {
               </span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-[14px] font-semibold">{f.fish}</span>
-                <span className="text-[12px] text-ink-3">{f.id}</span>
+                <span className="text-[12px] text-ink-3">{f.sinov ? 'sinov darsida' : f.id}</span>
               </span>
-              {f.holat !== 'faol' && <Badge ton="jim">{f.holat}</Badge>}
+              {!f.sinov && f.holat !== 'faol' && <Badge ton="jim">{f.holat}</Badge>}
             </Link>
           ))}
         </div>

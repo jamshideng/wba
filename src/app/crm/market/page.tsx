@@ -70,7 +70,7 @@ export default async function Market({
   const balans = bal ? Number(bal.balans) || 0 : null
   // 0116 — ota-ona: farzandlarining woblari, buyurtma farzand nomidan
   const otaOnami = profil.rol === 'ota_ona'
-  const farzandlar = otaOnami ? (await farzandlarim()).filter((f) => f.holat !== 'ketgan') : []
+  const farzandlar = otaOnami ? (await farzandlarim()).filter((f) => !f.sinov && f.holat !== 'ketgan') : []
   const { data: fBal } = farzandlar.length
     ? await supabase.from('v_woblr_balance').select('student_id, balans').in('student_id', farzandlar.map((f) => f.id))
     : { data: [] }

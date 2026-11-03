@@ -1662,6 +1662,43 @@ begin
   raise notice 'OK: telegram user tekshiruvi, uzish';
 end $$;
 
+-- ============================================================
+--  0117: sinov darsidagi farzand — biriktirish, ko'rish, o'quvchiga o'tish
+-- ============================================================
+\echo '--- 0117: ota-ona — sinov darsidagi farzand ---'
+do $$
+declare v_lid uuid; v_soni int; v_begona uuid;
+begin
+  insert into leads (ism, telefon, holat) values ('Sinov Farzand', '+998900000117', 'keldi') returning id into v_lid;
+  insert into leads (ism, telefon, holat) values ('Begona Lid', '+998900000118', 'keldi') returning id into v_begona;
+  perform ota_ona_lid_biriktir('88888888-8888-8888-8888-888888888888', v_lid);
+
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', '88888888-8888-8888-8888-888888888888', true);
+  select count(*) into v_soni from ota_ona_lidlarim();
+  if v_soni <> 1 then raise exception 'XATO: ota-ona % ta sinovdagi farzandni ko''rdi (1 kutilgan)', v_soni; end if;
+  begin
+    perform ota_ona_lid_kabinet(v_begona);
+    raise exception 'XATO: begona lid kabineti ochildi';
+  exception when others then
+    if sqlerrm not like '%farzandingiz emas%' then raise; end if;
+  end;
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('role', 'postgres', true);
+
+  -- Lid o'quvchiga aylandi — ota-ona o'quvchiga o'tadi
+  update students set ota_ona_id = null where id = 'S003';
+  update leads set student_id = 'S003' where id = v_lid;
+  if not exists (select 1 from students where id = 'S003' and ota_ona_id = '88888888-8888-8888-8888-888888888888') then
+    raise exception 'XATO: lid o''quvchiga aylanganda ota-ona o''tmadi';
+  end if;
+  update students set ota_ona_id = null where id = 'S003';
+  delete from leads where id in (v_lid, v_begona);
+  raise notice 'OK: sinovdagi farzand — ko''rish, begona yopiq, o''quvchiga o''tish';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+
 \echo '--- 0052: bir nechta savolli so''rovnoma ---'
 reset role;
 insert into bildirishnomalar (id, turi, sarlavha, kimga) values (9005, 'sorovnoma', 'Ikki savolli', array['oquvchi']);

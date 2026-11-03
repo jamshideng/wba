@@ -214,8 +214,13 @@ export function menyular(rol: UserRole, ustozmi: boolean, farzandlar: MenyuFarza
           : farzandBandlar.length === 1
             ? farzandBandlar
             : [{ href: '/crm/farzand', nom: 'Farzandlarim', Icon: IconStudents, tayyor: true, mobil: true }]),
-        { href: '/crm/market', nom: 'Woblar market', Icon: IconMarket, tayyor: true, mobil: true },
-        { href: '/crm/woblr/tarix', nom: 'Woblar tarixi', Icon: IconWoblr, tayyor: true },
+        // Market va woblar tarixi — faqat o'quvchi farzand bo'lsa (sinovdagi "L-" emas, 0117)
+        ...(farzandlar.some((f) => !f.id.startsWith('L-'))
+          ? [
+              { href: '/crm/market', nom: 'Woblar market', Icon: IconMarket, tayyor: true, mobil: true },
+              { href: '/crm/woblr/tarix', nom: 'Woblar tarixi', Icon: IconWoblr, tayyor: true },
+            ]
+          : []),
       ],
     })
   }

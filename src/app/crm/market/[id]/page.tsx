@@ -45,7 +45,7 @@ export default async function MahsulotSahifasi({
   const balans = bal ? Number(bal.balans) || 0 : null
   // 0116 — ota-ona farzandi nomidan oladi: har farzandning woblari
   const otaOnami = profil.rol === 'ota_ona'
-  const farzandlar = otaOnami ? await farzandlarim() : []
+  const farzandlar = otaOnami ? (await farzandlarim()).filter((f) => !f.sinov) : []
   const { data: fBal } = farzandlar.length
     ? await supabase.from('v_woblr_balance').select('student_id, balans').in('student_id', farzandlar.map((f) => f.id))
     : { data: [] }

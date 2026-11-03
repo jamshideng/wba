@@ -8,11 +8,11 @@ import { loginNomi } from '@/lib/login'
 import { telefon } from '@/lib/format'
 import { Card, CardHeader, Badge, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
-import { kirishKlass, Maydon, Xabar } from '@/components/forma'
+import { Maydon, Xabar } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { farzandBiriktir, farzandUzish } from '../actions'
-import { otaOnaParol } from '@/app/crm/hisoblar/actions'
-import { ParolMaydon } from '@/components/parol-maydon'
+import { OtaOnaTahrir } from './tahrir'
+import { FarzandTanlash } from '@/components/farzand-tanlash'
 
 export const metadata = { title: 'Ota-ona' }
 export const dynamic = 'force-dynamic'
@@ -37,6 +37,13 @@ export default async function OtaOna({
     // Biriktirish uchun: hali ota-onasi yo'q o'quvchilar
     supabase.from('students').select('id, fish').is('ota_ona_id', null).neq('holat', 'ketgan').order('fish'),
   ])
+  // 0117 — sinov darsidagi bolalar: shu ota-onaniki va biriktirish uchun bo'shlari
+  const [{ data: lidlarXom }, { data: bushLidXom }] = await Promise.all([
+    supabase.from('leads').select('id, ism, holat').eq('ota_ona_id', id).is('student_id', null).order('ism'),
+    supabase.from('leads').select('id, ism').is('ota_ona_id', null).is('student_id', null).not('holat', 'in', '(xato,rad)').order('ism'),
+  ])
+  const lidlar = (lidlarXom ?? []) as { id: string; ism: string; holat: string }[]
+  const bushLidlar = (bushLidXom ?? []) as { id: string; ism: string }[]
   if (!o || o.rol !== 'ota_ona') notFound()
   const bolalar = (bolalarXom ?? []) as { id: string; fish: string; holat: string }[]
   const boshlar = (boshlarXom ?? []) as { id: string; fish: string }[]
@@ -50,13 +57,24 @@ export default async function OtaOna({
       <Sarlavha
         nom={o.ism}
         izoh={[loginNomi(o.email), o.telefon ? telefon(o.telefon) : null].filter(Boolean).join(' · ')}
-        amal={o.holat === 'faol' ? <Badge ton="ok">Faol</Badge> : <Badge ton="jim">{o.holat}</Badge>}
+        amal={
+          <span className="flex items-center gap-2">
+            {o.holat === 'faol' ? <Badge ton="ok">Faol</Badge> : <Badge ton="jim">{o.holat}</Badge>}
+            <OtaOnaTahrir
+              id={id}
+              ism={o.ism.split(' ')[0] ?? ''}
+              familiya={o.ism.split(' ').slice(1).join(' ')}
+              telefon={o.telefon ? telefon(o.telefon) : ''}
+              login={loginNomi(o.email)}
+            />
+          </span>
+        }
       />
       <Xabar ok={s.ok} xato={s.xato} />
 
       <Card className="flex flex-col">
-        <CardHeader title="Farzandlari" meta={`${bolalar.length} ta`} />
-        {bolalar.length === 0 ? (
+        <CardHeader title="Farzandlari" meta={`${bolalar.length + lidlar.length} ta`} />
+        {bolalar.length + lidlar.length === 0 ? (
           <div className="px-5 pb-5">
             <Empty>Hali farzand biriktirilmagan.</Empty>
           </div>
@@ -78,19 +96,21 @@ export default async function OtaOna({
                 </form>
               </li>
             ))}
+            {lidlar.map((l) => (
+              <li key={l.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-2.5">
+                <Link href={`/crm/lidlar?b=lid:${l.id}`} className="flex min-h-11 flex-col justify-center hover:text-brand">
+                  <span className="text-[13.5px] font-semibold">{l.ism}</span>
+                  <span className="text-[12px] text-ink-3">sinov darsida</span>
+                </Link>
+                <form action={farzandUzish}>
+                  <input type="hidden" name="lid" value={l.id} />
+                  <input type="hidden" name="qaytish" value={yol} />
+                  <Yuborish tur="ikkilamchi" kutish="…">Uzish</Yuborish>
+                </form>
+              </li>
+            ))}
           </ul>
         )}
-      </Card>
-
-      <Card className="flex flex-col">
-        <CardHeader title="Parolni almashtirish" meta={`login: ${loginNomi(o.email)}`} />
-        <form action={otaOnaParol} className="flex flex-col gap-3 px-5 pb-5 sm:flex-row sm:items-end">
-          <input type="hidden" name="ota_ona" value={id} />
-          <div className="flex-1">
-            <ParolMaydon nom="Yangi parol" />
-          </div>
-          <Yuborish tur="ikkilamchi">Parolni almashtirish</Yuborish>
-        </form>
       </Card>
 
       <Card className="flex flex-col">
@@ -98,13 +118,8 @@ export default async function OtaOna({
         <form action={farzandBiriktir} className="flex flex-col gap-3 px-5 pb-5 sm:flex-row sm:items-end">
           <input type="hidden" name="ota_ona" value={id} />
           <input type="hidden" name="qaytish" value={yol} />
-          <Maydon nom="O‘quvchi" izoh="Ism yoki ID yozing va ro‘yxatdan tanlang. Faqat ota-onasi biriktirilmaganlar chiqadi." className="flex-1">
-            <input name="student" list="biriktirish-royxat" required autoComplete="off" placeholder="S012 · Ism Familiya" className={kirishKlass} />
-            <datalist id="biriktirish-royxat">
-              {boshlar.map((b) => (
-                <option key={b.id} value={`${b.id} · ${b.fish}`} />
-              ))}
-            </datalist>
+          <Maydon nom="Farzand" izoh="O‘quvchi yoki sinov darsidagi bola. Faqat ota-onasi biriktirilmaganlar chiqadi." className="flex-1">
+            <FarzandTanlash oquvchilar={boshlar} sinovdagilar={bushLidlar} />
           </Maydon>
           <Yuborish>Biriktirish</Yuborish>
         </form>
