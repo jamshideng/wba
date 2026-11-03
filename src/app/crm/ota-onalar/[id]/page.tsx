@@ -11,6 +11,8 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { kirishKlass, Maydon, Xabar } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { farzandBiriktir, farzandUzish } from '../actions'
+import { otaOnaParol } from '@/app/crm/hisoblar/actions'
+import { ParolMaydon } from '@/components/parol-maydon'
 
 export const metadata = { title: 'Ota-ona' }
 export const dynamic = 'force-dynamic'
@@ -78,6 +80,17 @@ export default async function OtaOna({
             ))}
           </ul>
         )}
+      </Card>
+
+      <Card className="flex flex-col">
+        <CardHeader title="Parolni almashtirish" meta={`login: ${loginNomi(o.email)}`} />
+        <form action={otaOnaParol} className="flex flex-col gap-3 px-5 pb-5 sm:flex-row sm:items-end">
+          <input type="hidden" name="ota_ona" value={id} />
+          <div className="flex-1">
+            <ParolMaydon nom="Yangi parol" />
+          </div>
+          <Yuborish tur="ikkilamchi">Parolni almashtirish</Yuborish>
+        </form>
       </Card>
 
       <Card className="flex flex-col">

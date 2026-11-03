@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { talabRol } from '@/lib/auth'
 import { matn, xabarliYol, xatoMatni } from '@/lib/kiritish'
 import { loginEmail, loginNomi, LOGIN_QOIDASI } from '@/lib/login'
+import { telefonNormal } from '@/lib/format'
 
 /**
  * O'QUVCHI VA USTOZ UCHUN HISOB OCHISH.
@@ -171,4 +172,108 @@ export async function hisobOch(fd: FormData) {
         : `${ism} uchun hisob ochildi — login: ${loginNomi(email)}. Parolni o‘ziga yetkazing — u boshqa ko‘rinmaydi.`,
     }),
   )
+}
+
+/* ── 0116: Ota-onalar bo'limi ─────────────────────────────────────────
+ * O'quvchi yaratilgandek ota-onani ham alohida yaratish va parolini
+ * almashtirish. Tartib hisobOch bilan bir xil: huquq — oddiy (RLS) klient
+ * bilan; service_role FAQAT auth foydalanuvchisini yaratish / parolini
+ * almashtirish uchun; qolgan yozuvlar oddiy klient bilan; audit_log'ga iz.
+ */
+
+async function loginBormi(admin: ReturnType<typeof createAdminClient>, email: string, yol: string) {
+  for (let sahifa = 1; ; sahifa++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page: sahifa, perPage: 1000 })
+    if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+    if (data.users.some((u) => u.email?.toLowerCase() === email)) return true
+    if (data.users.length < 1000) return false
+  }
+}
+
+/** "S012 · Ali Valiyev" yoki "S012" — datalist qiymatidan ID */
+function farzandId(v: FormDataEntryValue | null): string | null {
+  const m = matn(v)?.match(/^\s*(S\d+)\b/i)
+  return m ? m[1].toUpperCase() : null
+}
+
+export async function otaOnaYarat(fd: FormData) {
+  const men = await talabRol('admin', 'direktor', 'manager')
+  const yol = '/crm/ota-onalar/yangi'
+  const ism = matn(fd.get('ism'))?.replace(/\s+/g, ' ').slice(0, 80)
+  const tel = matn(fd.get('telefon'))
+  const telNorm = tel ? telefonNormal(tel) : null
+  const email = loginEmail(fd.get('email'))
+  const parol = String(fd.get('parol') ?? '')
+  const farzand = farzandId(fd.get('farzand'))
+
+  if (!ism || ism.length < 3) redirect(xabarliYol(yol, { xato: 'Ota-ona FISH ini kiriting (kamida 3 harf).' }))
+  if (tel && !telNorm) redirect(xabarliYol(yol, { xato: 'Telefon noto‘g‘ri: 90 123 45 67 yoki +998 90 123 45 67.' }))
+  if (!email) redirect(xabarliYol(yol, { xato: `Login noto‘g‘ri. ${LOGIN_QOIDASI}` }))
+  if (parol.length < 8) redirect(xabarliYol(yol, { xato: 'Parol kamida 8 belgidan bo‘lsin.' }))
+
+  const supabase = await createClient()
+  if (farzand) {
+    const { data: f } = await supabase.from('students').select('id, ota_ona_id').eq('id', farzand).maybeSingle()
+    if (!f) redirect(xabarliYol(yol, { xato: `${farzand} topilmadi.` }))
+    if (f!.ota_ona_id) redirect(xabarliYol(yol, { xato: `${farzand} ga boshqa ota-ona biriktirilgan — avval uni uzing.` }))
+  }
+
+  /* ── Faqat shu qadam admin kaliti bilan ── */
+  const admin = createAdminClient()
+  if (await loginBormi(admin, email!, yol)) redirect(xabarliYol(yol, { xato: 'Bu login band — boshqa login tanlang.' }))
+  const { data, error } = await admin.auth.admin.createUser({
+    email: email!,
+    password: parol,
+    email_confirm: true,
+    user_metadata: { ism },
+    app_metadata: { rol: 'ota_ona' },
+  })
+  if (error || !data.user) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+  const userId = data.user!.id
+
+  /* ── Qolgani oddiy huquq bilan (rol ustun yoziladi — hisobOch dagi sabab bilan) ── */
+  const { error: xatoProfil } = await supabase.from('profiles').update({ ism, rol: 'ota_ona', telefon: telNorm }).eq('id', userId)
+  if (xatoProfil) redirect(xabarliYol(yol, { xato: xatoMatni(xatoProfil) }))
+  if (farzand) {
+    const { error: xatoOta } = await supabase.rpc('ota_ona_biriktir', { p_ota_ona: userId, p_student: farzand })
+    if (xatoOta) redirect(xabarliYol(`/crm/ota-onalar/${userId}`, { xato: xatoMatni(xatoOta) }))
+  }
+
+  await admin.from('audit_log').insert({
+    profile_id: men.id,
+    amal: 'HISOB_OCHILDI',
+    jadval: 'profiles',
+    obyekt_id: userId,
+    yangi: { email, ism, rol: 'ota_ona', farzand },
+  })
+
+  revalidatePath('/crm', 'layout')
+  redirect(
+    xabarliYol(`/crm/ota-onalar/${userId}`, {
+      ok: `${ism} uchun hisob ochildi — login: ${loginNomi(email)}. Parolni o‘ziga yetkazing — u boshqa ko‘rinmaydi.`,
+    }),
+  )
+}
+
+export async function otaOnaParol(fd: FormData) {
+  const men = await talabRol('admin', 'direktor', 'manager')
+  const id = matn(fd.get('ota_ona'))
+  const yol = id ? `/crm/ota-onalar/${id}` : '/crm/ota-onalar'
+  const parol = String(fd.get('parol') ?? '')
+  if (!id) redirect(xabarliYol('/crm/ota-onalar', { xato: 'Ota-ona topilmadi.' }))
+  if (parol.length < 8) redirect(xabarliYol(yol, { xato: 'Parol kamida 8 belgidan bo‘lsin.' }))
+
+  // Faqat ota-ona hisobining paroli — boshqa rol (ustoz, xodim) bu yerdan o'zgarmaydi
+  const supabase = await createClient()
+  const { data: o } = await supabase.from('profiles').select('id, ism, email, rol').eq('id', id!).maybeSingle()
+  if (!o || o.rol !== 'ota_ona') redirect(xabarliYol(yol, { xato: 'Bu ota-ona hisobi emas.' }))
+
+  /* ── Faqat shu qadam admin kaliti bilan ── */
+  const admin = createAdminClient()
+  const { error } = await admin.auth.admin.updateUserById(id!, { password: parol })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  await admin.from('audit_log').insert({ profile_id: men.id, amal: 'HISOB_PAROL', jadval: 'profiles', obyekt_id: id!, yangi: { email: o!.email } })
+
+  redirect(xabarliYol(yol, { ok: `${o!.ism} uchun parol almashtirildi (login: ${loginNomi(o!.email)}). Parolni o‘ziga yetkazing.` }))
 }

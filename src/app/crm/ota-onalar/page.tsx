@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { loginNomi } from '@/lib/login'
 import { telefon } from '@/lib/format'
-import { Card, CardHeader, Badge, Empty } from '@/components/ui'
+import { Card, CardHeader, Badge, Empty, Button } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { kirishKlass, Xabar } from '@/components/forma'
 import { JonliForma } from '@/components/jonli-forma'
@@ -44,10 +44,10 @@ export default async function OtaOnalar({ searchParams }: { searchParams: Promis
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
-      <Sarlavha nom="Ota-onalar" izoh={`${royxat.length} ta hisob`} />
+      <Sarlavha nom="Ota-onalar" izoh={`${royxat.length} ta hisob`} amal={<Button href="/crm/ota-onalar/yangi">+ Yangi ota-ona</Button>} />
       <Xabar ok={s.ok} xato={s.xato} />
       <p className="text-[12.5px] text-ink-3">
-        Ota-onaga hisob o‘quvchi sahifasida ochiladi. Bu yerda bir ota-onaga bir nechta farzand biriktiriladi yoki uziladi.
+        Ota-onaga hisob shu yerda (“+ Yangi ota-ona”) yoki o‘quvchi sahifasida ochiladi. Bu yerda bir ota-onaga bir nechta farzand biriktiriladi yoki uziladi.
       </p>
 
       <JonliForma className="flex flex-wrap items-end gap-2.5">

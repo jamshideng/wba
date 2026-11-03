@@ -655,16 +655,6 @@ export default async function OquvchiProfil({
               />
             )}
 
-            {pulKoradi && (
-              <HisobForma
-                turi="ota_ona"
-                nishon={oquvchi.id}
-                ism={oquvchi.fish}
-                bormi={Boolean(otaOnaHisob)}
-                email={otaOnaHisob?.email ?? null}
-              />
-            )}
-
             {/* 0116 — mavjud ota-onaga biriktirish / uzish (bir ota-onada bir nechta farzand) */}
             {otaOnaAdmin && otaOnaHisob && (
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-line px-4 py-2.5 text-[13px]">
@@ -679,6 +669,15 @@ export default async function OquvchiProfil({
                   <input type="hidden" name="qaytish" value={`/crm/oquvchilar/${oquvchi.id}`} />
                   <Yuborish tur="ikkilamchi" kutish="…">Uzish</Yuborish>
                 </form>
+              </div>
+            )}
+            {/* Ota-ona hisobi faqat "Ota-onalar" bo'limida yaratiladi (Jamshid, 03.11) — bu yerda faqat biriktirish */}
+            {otaOnaAdmin && !otaOnaHisob && otaOnalar.length === 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-dashed border-line px-4 py-2.5 text-[13px] text-ink-3">
+                Ota-ona hisobi hali yo‘q.
+                <Link href={`/crm/ota-onalar/yangi?farzand=${oquvchi.id}`} className="font-semibold text-accent hover:text-brand">
+                  Ota-ona yaratish →
+                </Link>
               </div>
             )}
             {otaOnaAdmin && !otaOnaHisob && otaOnalar.length > 0 && (
@@ -696,6 +695,9 @@ export default async function OquvchiProfil({
                   </select>
                 </Maydon>
                 <Yuborish tur="ikkilamchi">Biriktirish</Yuborish>
+                <Link href={`/crm/ota-onalar/yangi?farzand=${oquvchi.id}`} className="inline-flex min-h-11 items-center text-[12.5px] font-semibold text-accent hover:text-brand">
+                  yoki yangi ota-ona
+                </Link>
               </form>
             )}
           </div>
