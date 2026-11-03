@@ -124,3 +124,49 @@ end;
 $$;
 revoke execute on function ota_ona_lid_uzish(uuid) from public, anon;
 grant  execute on function ota_ona_lid_uzish(uuid) to authenticated, service_role;
+
+-- ------------------------------------------------------------
+-- Ota-ona farzandsiz qolmaydi (Jamshid, 03.11): oxirgi farzandni uzib bo'lmaydi
+-- ------------------------------------------------------------
+create or replace function ota_ona_farzand_soni(p_ota_ona uuid) returns int
+language sql stable security definer set search_path = public as $$
+  select (select count(*) from students where ota_ona_id = p_ota_ona)::int
+       + (select count(*) from leads where ota_ona_id = p_ota_ona and student_id is null)::int
+$$;
+revoke execute on function ota_ona_farzand_soni(uuid) from public, anon;
+grant  execute on function ota_ona_farzand_soni(uuid) to authenticated, service_role;
+
+create or replace function ota_ona_uzish(p_student text) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_ota uuid;
+begin
+  if auth.uid() is not null and not app_is_admin() then
+    raise exception 'Ota-onani uzish huquqingiz yo''q.';
+  end if;
+  select ota_ona_id into v_ota from students where id = p_student;
+  if v_ota is not null and ota_ona_farzand_soni(v_ota) <= 1 then
+    raise exception 'Bu ota-onaning oxirgi farzandi — uzib bo''lmaydi. Avval boshqa farzand biriktiring.';
+  end if;
+  update students set ota_ona_id = null where id = p_student;
+  update profiles set oquvchi_id = null where oquvchi_id = p_student and rol = 'ota_ona';
+  -- Bot ulanishi shu farzand bo'yicha uziladi (ulanish yozuvi — biznes ma'lumoti emas)
+  delete from telegram_ulanish where kim = 'ota_ona' and student_id = p_student;
+end;
+$$;
+
+create or replace function ota_ona_lid_uzish(p_lead uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_ota uuid;
+begin
+  if auth.uid() is not null and not app_is_admin() then
+    raise exception 'Ota-onani uzish huquqingiz yo''q.';
+  end if;
+  select ota_ona_id into v_ota from leads where id = p_lead;
+  if v_ota is not null and ota_ona_farzand_soni(v_ota) <= 1 then
+    raise exception 'Bu ota-onaning oxirgi farzandi — uzib bo''lmaydi. Avval boshqa farzand biriktiring.';
+  end if;
+  update leads set ota_ona_id = null where id = p_lead;
+end;
+$$;

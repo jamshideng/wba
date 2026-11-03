@@ -48,6 +48,8 @@ export default async function OtaOna({
   const bolalar = (bolalarXom ?? []) as { id: string; fish: string; holat: string }[]
   const boshlar = (boshlarXom ?? []) as { id: string; fish: string }[]
   const yol = `/crm/ota-onalar/${id}`
+  // Ota-ona farzandsiz qolmaydi: oxirgi farzandni uzish tugmasi yo'q (bazada ham taqiq, 0117)
+  const yagona = bolalar.length + lidlar.length <= 1
 
   return (
     <div className="flex max-w-3xl flex-col gap-4 px-5 py-5 lg:px-7">
@@ -89,11 +91,15 @@ export default async function OtaOna({
                     {b.holat !== 'faol' ? ` · ${b.holat}` : ''}
                   </span>
                 </Link>
+                {yagona ? (
+                  <span className="text-[12px] text-ink-3">oxirgi farzand</span>
+                ) : (
                 <form action={farzandUzish}>
                   <input type="hidden" name="student" value={b.id} />
                   <input type="hidden" name="qaytish" value={yol} />
                   <Yuborish tur="ikkilamchi" kutish="…">Uzish</Yuborish>
                 </form>
+                )}
               </li>
             ))}
             {lidlar.map((l) => (
@@ -102,11 +108,15 @@ export default async function OtaOna({
                   <span className="text-[13.5px] font-semibold">{l.ism}</span>
                   <span className="text-[12px] text-ink-3">sinov darsida</span>
                 </Link>
+                {yagona ? (
+                  <span className="text-[12px] text-ink-3">oxirgi farzand</span>
+                ) : (
                 <form action={farzandUzish}>
                   <input type="hidden" name="lid" value={l.id} />
                   <input type="hidden" name="qaytish" value={yol} />
                   <Yuborish tur="ikkilamchi" kutish="…">Uzish</Yuborish>
                 </form>
+                )}
               </li>
             ))}
           </ul>

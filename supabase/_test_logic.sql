@@ -1694,7 +1694,13 @@ begin
   end if;
   update students set ota_ona_id = null where id = 'S003';
   delete from leads where id in (v_lid, v_begona);
-  raise notice 'OK: sinovdagi farzand — ko''rish, begona yopiq, o''quvchiga o''tish';
+  begin
+    perform ota_ona_uzish('S001');
+    raise exception 'XATO: oxirgi farzand uzildi';
+  exception when others then
+    if sqlerrm not like '%oxirgi farzandi%' then raise; end if;
+  end;
+  raise notice 'OK: sinovdagi farzand — ko''rish, begona yopiq, o''quvchiga o''tish, oxirgi farzand uzilmaydi';
 end $$;
 reset role;
 reset request.jwt.claim.sub;
