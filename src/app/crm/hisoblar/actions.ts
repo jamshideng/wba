@@ -202,7 +202,7 @@ export async function otaOnaYarat(fd: FormData) {
   // 0117 — kamida bitta farzand majburiy: o'quvchi yoki sinov darsidagi bola
   const farzand = farzandQiymati(fd.get('farzand'))
 
-  if (!ism) redirect(xabarliYol(yol, { xato: 'Ota-onaning ismi va familiyasini kiriting.' }))
+  if (!ism) redirect(xabarliYol(yol, { xato: 'Ota-onaning ismini kiriting.' }))
   // Ota-ona telefoni majburiy (Jamshid, 03.11)
   if (!telNorm) redirect(xabarliYol(yol, { xato: 'Telefon raqamini kiriting: 90 123 45 67 yoki +998 90 123 45 67.' }))
   if (!email) redirect(xabarliYol(yol, { xato: `Login noto‘g‘ri. ${LOGIN_QOIDASI}` }))
@@ -256,12 +256,12 @@ export async function otaOnaYarat(fd: FormData) {
   )
 }
 
-/** Ism + familiya (Vertix shabloni: ikki maydon) → profiles.ism "Ism Familiya" */
+/** Ism (majburiy) + familiya (ixtiyoriy) → profiles.ism "Ism Familiya" (Jamshid, 03.11) */
 function toliqIsm(fd: FormData): string | null {
   const i = matn(fd.get('ism'))?.replace(/\s+/g, ' ')
+  if (!i || i.length < 2) return null
   const f = matn(fd.get('familiya'))?.replace(/\s+/g, ' ')
-  const t = [i, f].filter(Boolean).join(' ').slice(0, 80)
-  return t.length >= 3 ? t : null
+  return [i, f].filter(Boolean).join(' ').slice(0, 80)
 }
 
 /**
@@ -282,7 +282,7 @@ export async function otaOnaTahrir(fd: FormData) {
   const parolKerak = fd.get('parol_turi') === 'avto' || fd.get('parol_turi') === 'qolda'
   const parol = String(fd.get('parol') ?? '')
 
-  if (!ism) redirect(xabarliYol(yol, { xato: 'Ism va familiyani kiriting.' }))
+  if (!ism) redirect(xabarliYol(yol, { xato: 'Ota-onaning ismini kiriting.' }))
   if (!telNorm) redirect(xabarliYol(yol, { xato: 'Telefon raqamini kiriting: 90 123 45 67.' }))
   if (!email) redirect(xabarliYol(yol, { xato: `Login noto‘g‘ri. ${LOGIN_QOIDASI}` }))
   if (parolKerak && parol.length < 8) redirect(xabarliYol(yol, { xato: 'Parol kamida 8 belgidan bo‘lsin.' }))

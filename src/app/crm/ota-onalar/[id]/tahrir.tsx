@@ -100,8 +100,8 @@ export function OtaOnaTahrir({
                     <Maydon nom="Ism">
                       <input name="ism" required maxLength={40} defaultValue={ism} className={kirishKlass} />
                     </Maydon>
-                    <Maydon nom="Familiya">
-                      <input name="familiya" required maxLength={40} defaultValue={familiya} className={kirishKlass} />
+                    <Maydon nom="Familiya (ixtiyoriy)">
+                      <input name="familiya" maxLength={40} defaultValue={familiya} className={kirishKlass} />
                     </Maydon>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

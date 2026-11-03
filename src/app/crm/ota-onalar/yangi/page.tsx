@@ -46,8 +46,8 @@ export default async function YangiOtaOna({ searchParams }: { searchParams: Prom
             <Maydon nom="Ism">
               <input name="ism" required maxLength={40} placeholder="Ism" className={kirishKlass} />
             </Maydon>
-            <Maydon nom="Familiya">
-              <input name="familiya" required maxLength={40} placeholder="Familiya" className={kirishKlass} />
+            <Maydon nom="Familiya (ixtiyoriy)">
+              <input name="familiya" maxLength={40} placeholder="Familiya" className={kirishKlass} />
             </Maydon>
           </div>
           <Maydon nom="Telefon raqami">
