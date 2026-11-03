@@ -50,8 +50,8 @@ export default async function YangiOtaOna({ searchParams }: { searchParams: Prom
               <input name="familiya" required maxLength={40} placeholder="Familiya" className={kirishKlass} />
             </Maydon>
           </div>
-          <Maydon nom="Telefon (ixtiyoriy)">
-            <input name="telefon" inputMode="tel" placeholder="90 123 45 67" className={kirishKlass} />
+          <Maydon nom="Telefon raqami">
+            <input name="telefon" required inputMode="tel" placeholder="90 123 45 67" className={kirishKlass} />
           </Maydon>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Maydon nom="Login" izoh="Oddiy so‘z, masalan: ota-ali">

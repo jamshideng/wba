@@ -106,7 +106,7 @@ export function OtaOnaTahrir({
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Maydon nom="Telefon raqami">
-                      <input name="telefon" inputMode="tel" defaultValue={telefon} placeholder="90 123 45 67" className={kirishKlass} />
+                      <input name="telefon" required inputMode="tel" defaultValue={telefon} placeholder="90 123 45 67" className={kirishKlass} />
                     </Maydon>
                     <Maydon nom="Login">
                       <input name="email" required autoComplete="off" defaultValue={login} className={kirishKlass} />

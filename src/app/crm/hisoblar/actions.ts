@@ -203,7 +203,8 @@ export async function otaOnaYarat(fd: FormData) {
   const farzand = farzandQiymati(fd.get('farzand'))
 
   if (!ism) redirect(xabarliYol(yol, { xato: 'Ota-onaning ismi va familiyasini kiriting.' }))
-  if (tel && !telNorm) redirect(xabarliYol(yol, { xato: 'Telefon noto‘g‘ri: 90 123 45 67 yoki +998 90 123 45 67.' }))
+  // Ota-ona telefoni majburiy (Jamshid, 03.11)
+  if (!telNorm) redirect(xabarliYol(yol, { xato: 'Telefon raqamini kiriting: 90 123 45 67 yoki +998 90 123 45 67.' }))
   if (!email) redirect(xabarliYol(yol, { xato: `Login noto‘g‘ri. ${LOGIN_QOIDASI}` }))
   if (parol.length < 8) redirect(xabarliYol(yol, { xato: 'Parol kamida 8 belgidan bo‘lsin.' }))
 
@@ -282,7 +283,7 @@ export async function otaOnaTahrir(fd: FormData) {
   const parol = String(fd.get('parol') ?? '')
 
   if (!ism) redirect(xabarliYol(yol, { xato: 'Ism va familiyani kiriting.' }))
-  if (tel && !telNorm) redirect(xabarliYol(yol, { xato: 'Telefon noto‘g‘ri: 90 123 45 67.' }))
+  if (!telNorm) redirect(xabarliYol(yol, { xato: 'Telefon raqamini kiriting: 90 123 45 67.' }))
   if (!email) redirect(xabarliYol(yol, { xato: `Login noto‘g‘ri. ${LOGIN_QOIDASI}` }))
   if (parolKerak && parol.length < 8) redirect(xabarliYol(yol, { xato: 'Parol kamida 8 belgidan bo‘lsin.' }))
 
