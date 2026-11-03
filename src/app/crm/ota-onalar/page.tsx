@@ -13,7 +13,7 @@ export const metadata = { title: 'Ota-onalar' }
 export const dynamic = 'force-dynamic'
 
 type OtaOna = { id: string; ism: string; email: string | null; telefon: string | null; holat: string }
-type Bola = { id: string; fish: string; holat: string; ota_ona_id: string }
+type Bola = { id: string; fish: string; holat: string; ota_ona_id: string; sinov?: boolean }
 
 /**
  * Ota-onalar (0116) — admin, manager, direktor. Har ota-ona hisobi va unga
@@ -26,11 +26,22 @@ export default async function OtaOnalar({ searchParams }: { searchParams: Promis
   const s = await searchParams
   const q = (s.q ?? '').trim().toLowerCase()
   const supabase = await createClient()
-  const [{ data: oXom }, { data: bXom }] = await Promise.all([
+  const [{ data: oXom }, { data: bXom }, { data: lXom }] = await Promise.all([
     supabase.from('profiles').select('id, ism, email, telefon, holat').eq('rol', 'ota_ona').order('ism'),
     supabase.from('students').select('id, fish, holat, ota_ona_id').not('ota_ona_id', 'is', null).order('fish'),
+    // 0117 — sinov darsidagi farzandlar (hali o'quvchi emas)
+    supabase.from('leads').select('id, ism, ota_ona_id').not('ota_ona_id', 'is', null).is('student_id', null).order('ism'),
   ])
-  const bolalar = (bXom ?? []) as Bola[]
+  const bolalar = [
+    ...((bXom ?? []) as Bola[]),
+    ...((lXom ?? []) as { id: string; ism: string; ota_ona_id: string }[]).map((l) => ({
+      id: l.id,
+      fish: l.ism,
+      holat: 'sinov',
+      ota_ona_id: l.ota_ona_id,
+      sinov: true,
+    })),
+  ]
   const royxat = ((oXom ?? []) as OtaOna[])
     .map((o) => ({ ...o, farzandlar: bolalar.filter((b) => b.ota_ona_id === o.id) }))
     .filter(
@@ -80,8 +91,9 @@ export default async function OtaOnalar({ searchParams }: { searchParams: Promis
                       <Badge ton="accent">farzand biriktirilmagan</Badge>
                     ) : (
                       o.farzandlar.map((b) => (
-                        <Badge key={b.id} ton={b.holat === 'ketgan' ? 'jim' : 'brand'}>
+                        <Badge key={b.id} ton={b.holat === 'ketgan' ? 'jim' : b.sinov ? 'accent' : 'brand'}>
                           {b.fish}
+                          {b.sinov ? ' · sinov' : ''}
                         </Badge>
                       ))
                     )}
