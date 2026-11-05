@@ -99,8 +99,8 @@ export default async function UstozMaoshi({
         <Stat label="Darslar bo‘yicha" value={pul(jam?.hisob ?? 0)} sub={`${jam?.oquvchilar ?? 0} o‘quvchi`} href={shu('oq')} />
         <Stat
           href={shu('ayir')}
-          label="Avans va jarima"
-          value={pul(Number(jam?.avans ?? 0) + Number(jam?.jarima ?? 0))}
+          label="Avans, jarima, soliq"
+          value={pul(Number(jam?.avans ?? 0) + Number(jam?.jarima ?? 0) + Math.max(0, -Number(jam?.doimiy ?? 0)))}
           sub="ayiriladi"
         />
         <Stat
@@ -188,6 +188,27 @@ export default async function UstozMaoshi({
             </Card>
           )
         })
+      )}
+
+      {(jam?.doimiy_tafsilot ?? []).length > 0 && (
+        <Card className="flex flex-col">
+          <CardHeader title="Doimiy" meta="har oy avtomatik" />
+          <ul className="flex flex-col">
+            {(jam?.doimiy_tafsilot ?? []).map((d) => (
+              <li
+                key={d.nom}
+                data-belgi={`harakat ${Number(d.summa) < 0 ? 'ayir' : 'qosh'}`}
+                className="flex items-start justify-between gap-3 border-t border-line-soft px-5 py-3"
+              >
+                <span className="text-[13px] font-semibold">{d.nom}</span>
+                <span className={`tnum font-[family-name:var(--font-mono)] text-[13px] font-semibold ${Number(d.summa) > 0 ? 'text-ok' : 'text-brand'}`}>
+                  {Number(d.summa) > 0 ? '+' : '−'}
+                  {pul(Math.abs(Number(d.summa)))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
 
       {harakatlar.length > 0 && (

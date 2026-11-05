@@ -140,6 +140,7 @@ export function menyular(rol: UserRole, ustozmi: boolean, farzandlar: MenyuFarza
                 { href: '/crm/xodimlar', nom: 'Administratorlar', Icon: IconStudents, tayyor: true },
                 { href: '/crm/ustozlar', nom: 'Ustozlar', Icon: IconTeacher, tayyor: true },
                 { href: '/crm/maosh', nom: 'Ustoz maoshi', Icon: IconPayments, tayyor: true },
+                { href: '/crm/maosh/sozlamalar', nom: 'Maosh sozlamalari', Icon: IconSettings, tayyor: true },
               ]
             : []),
           { href: '/crm/ustoz-davomati', nom: 'Ustozlar davomati', Icon: IconTeacher, tayyor: true },

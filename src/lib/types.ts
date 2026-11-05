@@ -605,7 +605,16 @@ export type UstozMaosh = {
   yakuniy: number
   aniqmas: boolean
   tasdiqlangan: boolean
+  /** 0118 — doimiy summalar yig'indisi (soliq — manfiy) va tafsiloti */
+  doimiy: number
+  doimiy_tafsilot: { nom: string; summa: number }[]
 }
+
+/** maosh_turlar (0118) — Jamshid yaratadigan doimiy tur. ishora -1 ayiriladi, 1 qo'shiladi */
+export type MaoshTur = { id: number; nom: string; ishora: -1 | 1; faol: boolean }
+
+/** maosh_doimiy (0118) — ustozga doimiy summa, dan..gacha oylarida */
+export type MaoshDoimiy = { id: number; teacher_id: string; tur_id: number; summa: number; dan: string; gacha: string | null }
 
 /** xodim_maosh(davr) qatori (0077) — admin/qabulxona/manager oyligi */
 export type XodimMaosh = {
@@ -854,6 +863,8 @@ export type Database = {
       subjects: Table<Subject>
       levels: Table<Level>
       maosh_tolovlar: Table<{ id: number; davr: string; turi: 'avans' | 'maosh'; teacher_id: string | null; profile_id: string | null; boshqa_xodim_id: number | null; summa: number; sana: string; izoh: string | null; xarajat_id: number; bekor: boolean }>
+      maosh_turlar: Table<MaoshTur>
+      maosh_doimiy: Table<MaoshDoimiy & { updated_at: string }>
       guruh_jadvali: Table<{ group_id: string; dan: string; kunlar: number[] }>
       teachers: Table<Teacher>
       students: Table<Student>

@@ -3165,3 +3165,64 @@ begin
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+
+
+-- 0118 — doimiy ushlanma/qo'shimcha (soliq): tur, ustozga summa, oy oralig'i, tasdiq nusxasi
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare v_oldin numeric; v_keyin numeric; v_tur bigint; v_r record;
+begin
+  select yakuniy into v_oldin from ustoz_maosh('2026-08') where teacher_id = 'U01';
+  insert into maosh_turlar (nom, ishora) values ('Soliq', -1) returning id into v_tur;
+  insert into maosh_doimiy (teacher_id, tur_id, summa, dan) values ('U01', v_tur, 300000, '2026-08');
+  select * into v_r from ustoz_maosh('2026-08') where teacher_id = 'U01';
+  if v_r.yakuniy <> v_oldin - 300000 or v_r.doimiy <> -300000 or v_r.doimiy_tafsilot -> 0 ->> 'nom' <> 'Soliq' then
+    raise exception 'XATO: soliq ayirilmadi (% → %, %)', v_oldin, v_r.yakuniy, v_r.doimiy_tafsilot;
+  end if;
+  -- oralig'idan tashqari oy
+  update maosh_doimiy set dan = '2026-09' where teacher_id = 'U01';
+  select yakuniy into v_keyin from ustoz_maosh('2026-08') where teacher_id = 'U01';
+  if v_keyin <> v_oldin then raise exception 'XATO: oraliqdan tashqari oyda ayirildi'; end if;
+  update maosh_doimiy set dan = '2026-08' where teacher_id = 'U01';
+  -- o'chirilgan tur qo'llanmaydi
+  update maosh_turlar set faol = false where id = v_tur;
+  select yakuniy into v_keyin from ustoz_maosh('2026-08') where teacher_id = 'U01';
+  if v_keyin <> v_oldin then raise exception 'XATO: o''chirilgan tur qo''llandi'; end if;
+  update maosh_turlar set faol = true where id = v_tur;
+  raise notice 'OK: 0118 — soliq ayiriladi, oy oralig''i, faol emas tur';
+end $$;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  if (select count(*) from maosh_doimiy) > 0 or (select count(*) from maosh_turlar) > 0 then
+    raise exception 'XATO: ustoz sozlamalarni ko''rdi';
+  end if;
+  if (select doimiy from ustoz_maosh('2026-08') where teacher_id = 'U01') <> -300000 then
+    raise exception 'XATO: ustoz o''z soliqini maoshida ko''rmadi';
+  end if;
+  begin
+    insert into maosh_turlar (nom, ishora) values ('Bonusim', 1);
+    raise exception 'XATO: ustoz tur yaratdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  raise notice 'OK: 0118 — ustoz sozlamani o''zgartira olmaydi, o''z maoshida ko''radi';
+end $$;
+
+set request.jwt.claim.sub = '66666666-6666-6666-6666-666666666666';   -- direktor
+do $$
+declare v_yak numeric;
+begin
+  select yakuniy into v_yak from ustoz_maosh('2026-08') where teacher_id = 'U01';
+  perform maosh_tasdiqla('2026-08');
+  update maosh_doimiy set summa = 1 where teacher_id = 'U01';
+  if (select doimiy from maosh_tasdiq where davr = '2026-08' and teacher_id = 'U01') <> -300000
+     or (select yakuniy from ustoz_maosh('2026-08') where teacher_id = 'U01') <> v_yak then
+    raise exception 'XATO: tasdiqlangan oy nusxasi o''zgardi';
+  end if;
+  perform maosh_qayta_och('2026-08', 'test');
+  delete from maosh_doimiy where teacher_id = 'U01';
+  raise notice 'OK: 0118 — tasdiqda nusxa, keyingi o''zgarish eski oyga tegmaydi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
