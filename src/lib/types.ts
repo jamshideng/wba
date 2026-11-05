@@ -682,6 +682,8 @@ export type Bildirishnoma = {
   tugash: string | null
   holat: 'faol' | 'yopilgan'
   yaratdi: string | null
+  /** 0071: null — admin yozgan; 'woblar', 'qarz' (qarzdorlarga eslatma) … — avtomatik/tizim */
+  manba?: string | null
   created_at: string
 }
 

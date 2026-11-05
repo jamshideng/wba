@@ -26,7 +26,8 @@ export default async function Qarzdorlar({
 }: {
   searchParams: Promise<{ q?: string; sahifa?: string }>
 }) {
-  await talabRol('admin', 'direktor', 'qabulxona')
+  const profil = await talabRol('admin', 'direktor', 'qabulxona')
+  const eslataOladi = profil.rol === 'admin' || profil.rol === 'direktor' || profil.rol === 'manager'
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Qarzdorlar" />
 
   const s = await searchParams
@@ -58,9 +59,19 @@ export default async function Qarzdorlar({
         <Stat label="Qarzdorlar" value={Number(panel?.qarzdorlar ?? 0)} sub="faol o‘quvchi" Icon={IconStudents} href="/crm/qarzdorlar?b=qarzdor" />
       </div>
 
-      <JonliForma className="flex gap-2.5">
-        <input name="q" type="search" autoComplete="off" defaultValue={qidiruv} placeholder="Ism, ID yoki telefon…" aria-label="Qidiruv" className={`${kirishKlass} sm:max-w-xs`} />
-      </JonliForma>
+      <div className="flex flex-wrap items-center gap-2.5">
+        <JonliForma className="flex flex-1 gap-2.5">
+          <input name="q" type="search" autoComplete="off" defaultValue={qidiruv} placeholder="Ism, ID yoki telefon…" aria-label="Qidiruv" className={`${kirishKlass} sm:max-w-xs`} />
+        </JonliForma>
+        {eslataOladi && (
+          <Link
+            href="/crm/qarzdorlar/eslatma"
+            className="flex min-h-11 items-center rounded-[9px] bg-brand px-4 text-[13px] font-semibold text-white hover:brightness-110"
+          >
+            Qarzdorlarga eslatma yuborish
+          </Link>
+        )}
+      </div>
 
       <Card className="flex flex-col">
         {royxat.length === 0 ? (
