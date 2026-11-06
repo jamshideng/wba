@@ -293,6 +293,10 @@ export type Lead = {
   group_id: string | null
   tugilgan_sana: string | null
   sinov_sana: string | null
+  /** 0101 — "Sinov darsi" ustuniga o'tgan kun */
+  sinov_otkazildi: string | null
+  /** 0119 — joriy guruh jurnalida shu kundan */
+  guruh_dan: string | null
   /** 0059 · keyingi aloqa sanasi (Toshkent), teglar, bosqich sababi */
   keyingi_aloqa: string | null
   teglar: string[]
@@ -992,6 +996,7 @@ export type Database = {
         Args: { p_enrollment: string; p_group: string; p_sana: string }
         Returns: { eski: string; yangi: string; tolovlar: number; davomat: number; davomat_qoldi: number; woblar: number }
       }
+      sinov_guruh_almashtir: { Args: { p_lead: string; p_group: string; p_sana: string }; Returns: { ochirildi: number } }
       qoshilgan_sana_ozgartir: {
         Args: { p_enrollment: string; p_sana: string }
         Returns: { olindi: number; qoshildi: number }

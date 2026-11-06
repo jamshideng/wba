@@ -344,10 +344,20 @@ function Oynalar({
       <form action={lidBosqich} className="flex flex-col gap-3">
         <Yashirin yol={yol} id={oyna.lid.id} />
         <input type="hidden" name="bosqich" value="sinov" />
-        <Maydon nom="Sinov darsi kuni">
-          <input name="sinov_sana" type="date" required min={bugun} defaultValue={eskiSana && eskiSana >= bugun ? eskiSana : ertaga} className={kirishKlass} />
+        <Maydon
+          nom={ozgartirish ? 'Sinov kuni / yangi guruhga o‘tgan kun' : 'Sinov darsi kuni'}
+          izoh={ozgartirish ? 'Guruh almashsa — o‘tgan kunni ham tanlash mumkin: shu kundan yangi jurnalda' : undefined}
+        >
+          <input
+            name="sinov_sana"
+            type="date"
+            required
+            min={ozgartirish ? undefined : bugun}
+            defaultValue={ozgartirish ? (eskiSana ?? bugun) : eskiSana && eskiSana >= bugun ? eskiSana : ertaga}
+            className={kirishKlass}
+          />
         </Maydon>
-        <Maydon nom="Guruh" izoh={ozgartirish ? 'Bola yangi ustoz jurnalida chiqadi, eski guruh jurnalidan chiqadi' : 'Keyin o‘quvchi qilish uchun kerak bo‘ladi'}>
+        <Maydon nom="Guruh" izoh={ozgartirish ? 'Bola yangi ustoz jurnalida chiqadi, eski guruh jurnalidan davomati bilan chiqadi' : 'Keyin o‘quvchi qilish uchun kerak bo‘ladi'}>
           <select name="group_id" defaultValue={oyna.lid.group_id ?? ''} className={kirishKlass}>
             <option value="">Hali tanlanmagan</option>
             {guruhlar.map((g) => (

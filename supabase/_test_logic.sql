@@ -3061,3 +3061,55 @@ end $$;
 reset role;
 reset request.jwt.claim.sub;
 
+
+-- 0119 — sinovdagi bola guruhini o'tgan sana bilan almashtirish
+reset role;
+reset request.jwt.claim.sub;
+do $$
+declare v_lid uuid; v_dars uuid; v_b date := bugun_toshkent();
+begin
+  insert into leads (ism, telefon, holat, sinov_sana, group_id, created_at)
+  values ('Sakrovchi Bola', '+998900000919', 'qongiroq', v_b - 8, 'N01', now() - interval '10 days') returning id into v_lid;
+  insert into lessons (group_id, sana) values ('N01', v_b - 8) on conflict do nothing;
+  select id into v_dars from lessons where group_id = 'N01' and sana = v_b - 8;
+  insert into probniy_davomat (lesson_id, lead_id, holat) values (v_dars, v_lid, 'keldi');
+end $$;
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare v_lid uuid := (select id from leads where ism = 'Sakrovchi Bola'); v_b date := bugun_toshkent(); v_r jsonb;
+begin
+  begin
+    perform sinov_guruh_almashtir(v_lid, 'N02', v_b + 1);
+    raise exception 'XATO: kelasi sana qabul qilindi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  v_r := sinov_guruh_almashtir(v_lid, 'N02', v_b - 3);
+  if (v_r ->> 'ochirildi')::int <> 1 or exists (select 1 from probniy_davomat where lead_id = v_lid) then
+    raise exception 'XATO: eski guruh belgisi o''chmadi (%)', v_r;
+  end if;
+  if exists (select 1 from jurnal_probniylar('N01', v_b - 30, v_b) j where j.lead_id = v_lid) then
+    raise exception 'XATO: eski jurnalda qoldi';
+  end if;
+  if (select j.dan from jurnal_probniylar('N02', v_b - 30, v_b) j where j.lead_id = v_lid) <> v_b - 3 then
+    raise exception 'XATO: yangi jurnal sanasi noto''g''ri';
+  end if;
+  -- shu guruhda boshlanishni yana orqaga surish
+  perform sinov_guruh_almashtir(v_lid, 'N02', v_b - 5);
+  if (select j.dan from jurnal_probniylar('N02', v_b - 30, v_b) j where j.lead_id = v_lid) <> v_b - 5 then
+    raise exception 'XATO: orqaga surilmadi';
+  end if;
+  begin
+    perform sinov_guruh_almashtir(v_lid, 'N01', v_b - 20);
+    raise exception 'XATO: lid kiritilganidan oldingi sana qabul qilindi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  -- o'quvchi bo'lsa — xato
+  update leads set student_id = 'S001', holat = 'yozildi' where id = v_lid;
+  begin
+    perform sinov_guruh_almashtir(v_lid, 'N01', v_b);
+    raise exception 'XATO: rasmiy o''quvchi almashtirildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  if (select guruh_dan from leads where id = v_lid) is not null then raise exception 'XATO: guruh_dan tozalanmadi'; end if;
+  raise notice 'OK: 0119 — o''tgan sana, eski belgilar o''chadi, orqaga surish, o''quvchiga xato';
+end $$;
+reset role;
+reset request.jwt.claim.sub;

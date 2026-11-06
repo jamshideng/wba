@@ -5,7 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabRol } from '@/lib/auth'
 import { matn, sanaOqi, telefonOqi, xabarliYol, xatoMatni } from '@/lib/kiritish'
-import { aloqaVaqtga, type Bosqich } from '@/lib/lidlar'
+import { aloqaVaqtga, bosqichi, type Bosqich } from '@/lib/lidlar'
+import { bugunToshkent } from '@/lib/format'
 import type { Lead, LeadSource } from '@/lib/types'
 
 const XODIM = ['admin', 'direktor', 'manager', 'qabulxona'] as const
@@ -109,12 +110,50 @@ export async function lidBosqich(fd: FormData) {
     case 'sinov': {
       const sinov = sanaOqi(fd.get('sinov_sana'))
       if (!sinov) redirect(xabarliYol(yol, { xato: 'Sinov darsi kunini tanlang.' }))
+      const guruh = matn(fd.get('group_id'))
+
+      // 0119 — sinovdagi bola boshqa guruhga: sana o'tgan kun ham bo'ladi,
+      // eski guruh jurnalidagi belgilar o'chadi, yangi jurnalda shu kundan
+      const supabase = await createClient()
+      const { data: eski } = await supabase
+        .from('leads')
+        .select('group_id, holat, sinov_sana, student_id, sinov_otkazildi, guruh_dan')
+        .eq('id', id!)
+        .maybeSingle()
+      const bugun = bugunToshkent()
+      // Guruh almashsa yoki o'sha guruhda boshlanish kuni o'tgan kunga surilsa
+      // Jurnaldagi hozirgi boshlanish (jurnal_probniylar bilan bir xil)
+      const boshi = eski
+        ? (eski.guruh_dan ?? [eski.sinov_otkazildi, eski.sinov_sana].filter(Boolean).sort()[0] ?? null)
+        : null
+      if (eski && guruh && bosqichi(eski) === 'sinov' && (eski.group_id !== guruh || (boshi && sinov! < boshi))) {
+        const { error } = await supabase.rpc('sinov_guruh_almashtir', {
+          p_lead: id!,
+          p_group: guruh,
+          p_sana: sinov! > bugun ? bugun : sinov!,
+        })
+        if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+        const { error: e2 } = await supabase
+          .from('leads')
+          .update({
+            sinov_sana: sinov!,
+            ...(sinov! > bugun ? { keyingi_aloqa: aloqaVaqtga(sinov) } : {}),
+            sabab: sabab ?? 'Sinovda guruh almashtirildi',
+          })
+          .eq('id', id!)
+          .is('student_id', null)
+        if (e2) redirect(xabarliYol(yol, { xato: xatoMatni(e2) }))
+        tugat(yol, eski.group_id !== guruh
+          ? `Guruh almashtirildi: ${sinov! > bugun ? 'bugundan' : sinov!.split('-').reverse().join('.') + ' dan'} yangi jurnalda, eski jurnaldan chiqdi.`
+          : `Jurnalda ${sinov!.split('-').reverse().join('.')} dan ochildi.`)
+      }
+
       ozgarish = {
         holat: 'qongiroq',
         sinov_sana: sinov,
         group_id: matn(fd.get('group_id')),
-        // Sinov kuni — shu kuni eslatma ham
-        keyingi_aloqa: aloqaVaqtga(sinov),
+        // Sinov kuni — shu kuni eslatma ham (o'tgan kun bo'lsa — eslatma o'zgarmaydi)
+        ...(sinov! >= bugunToshkent() ? { keyingi_aloqa: aloqaVaqtga(sinov) } : {}),
       }
       break
     }
