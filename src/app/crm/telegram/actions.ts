@@ -8,7 +8,7 @@ import { matn, xabarliYol, xatoMatni } from '@/lib/kiritish'
 import { BOT_NOMI } from '@/lib/telegram'
 import { TAKLIF_COOKIE, type Taklif, type TaklifKim as Kim } from '@/lib/telegram-taklif'
 
-const YOL = '/crm/telegram'
+const YOL = '/crm/hisobotlar' // 0121 — Hisobotlar › Ulanishlar ga ko'chdi
 const kimOqi = (v: FormDataEntryValue | null): Kim => (v === 'oquvchi' ? 'oquvchi' : 'ota_ona')
 
 async function saqla(royxat: Taklif[], qaytish: string) {

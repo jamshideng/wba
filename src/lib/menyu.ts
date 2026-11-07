@@ -103,8 +103,6 @@ export function menyular(rol: UserRole, ustozmi: boolean, farzandlar: MenyuFarza
           // 0083 — ketish sabablari tahlili
           { href: '/crm/oquvchilar/ketish', nom: 'Ketish tahlili', Icon: IconReports, tayyor: true },
           ...(admin ? [{ href: '/crm/oquvchilar/takroriy', nom: 'Takroriylar', Icon: IconStudents, tayyor: true }] : []),
-          // 0072 — kim botga ulangan, ulanmaganga taklif havolasi
-          { href: '/crm/telegram', nom: 'Telegram ulanishi', Icon: IconSend, tayyor: true },
           // 0116 — ota-ona hisoblari va farzand biriktirish (oxirgi band)
           ...(admin ? [{ href: '/crm/ota-onalar', nom: 'Ota-onalar', Icon: IconStudents, tayyor: true }] : []),
         ]),

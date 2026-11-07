@@ -1100,6 +1100,8 @@ export type Database = {
       hisobot_ortacha_tolov: { Args: { p_oylar?: number }; Returns: HisobotOrtacha }
       hisobot_ilova: { Args: Record<string, never>; Returns: HisobotIlova }
       ilova_belgi: { Args: { p_qurilma: string; p_platforma: string }; Returns: boolean }
+      profil_belgi: { Args: Record<string, never>; Returns: boolean }
+      ulanishlar_holati: { Args: Record<string, never>; Returns: unknown[] }
       hisobot_ustozlar: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotUstoz[] }
       hisobot_davomat: { Args: { p_dan: string; p_gacha: string }; Returns: HisobotDavomat }
       ustoz_woblar_limiti: { Args: { p_ustoz?: string | null; p_davr?: string | null }; Returns: import('./woblar-chegara').WoblarLimiti | null }

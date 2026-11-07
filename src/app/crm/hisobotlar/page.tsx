@@ -9,9 +9,10 @@ import { JonliForma } from '@/components/jonli-forma'
 import { AreaGrafik } from '@/components/grafik'
 import { royxatOl } from '@/lib/royxat'
 import { sana, bugunToshkent, joriyDavr, davrNomi } from '@/lib/format'
-import type { Hisobot, HisobotGrafik, HisobotDavomat, HisobotIlova, HisobotMoliya, HisobotOquvchilar, HisobotOrtacha, HisobotUstoz, MonthlyIncome } from '@/lib/types'
-import { DavomatBolimi, IlovaBolimi, MoliyaBolimi, OquvchilarBolimi, OrtachaTolovBolimi, UstozlarBolimi } from './bolimlar'
+import type { Hisobot, HisobotGrafik, HisobotDavomat, HisobotMoliya, HisobotOquvchilar, HisobotOrtacha, HisobotUstoz, MonthlyIncome } from '@/lib/types'
+import { DavomatBolimi, MoliyaBolimi, OquvchilarBolimi, OrtachaTolovBolimi, UstozlarBolimi } from './bolimlar'
 import { UmumiyBolim } from './umumiy'
+import { UlanishlarBolimi, type UlanishQidiruv } from './ulanishlar'
 import { KECHIKISH_USTUNLAR, KechikishJadval, KechikishJamlanma, type KechikishYozuv } from '@/components/kechikish'
 
 export const metadata = { title: 'Hisobotlar' }
@@ -24,6 +25,8 @@ const BOLIMLAR = {
   oquvchilar: 'O‘quvchilar',
   ustozlar: 'Ustozlar',
   davomat: 'Davomat',
+  // 0121 — profilga kirish, ilova, Telegram bot (eski /crm/telegram)
+  ulanishlar: 'Ulanishlar',
 } as const
 type Bolim = keyof typeof BOLIMLAR
 /** Oylik bo'limlar (Moliya, O'quvchilar) sana oralig'i emas, oxirgi N oy bilan */
@@ -71,7 +74,7 @@ function oraliq(tur: string, dan?: string, gacha?: string): { tur: string; dan: 
 export default async function Hisobotlar({
   searchParams,
 }: {
-  searchParams: Promise<{ tur?: string; dan?: string; gacha?: string; bolim?: string; oy?: string }>
+  searchParams: Promise<{ tur?: string; dan?: string; gacha?: string; bolim?: string; oy?: string } & UlanishQidiruv>
 }) {
   await talabRol('admin', 'direktor', 'qabulxona')
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Hisobotlar" />
@@ -92,7 +95,7 @@ export default async function Hisobotlar({
     yol({ ...(b === 'umumiy' ? {} : { bolim: b }), ...(OYLIK.includes(b) ? (s.oy ? { oy: s.oy } : {}) : oraliqQs) })
 
   const supabase = await createClient()
-  const [{ data: hisobot, error }, { data: oylik }, bolimData, { data: grafik }, { data: kechikish }, { data: ortachaTolov }, { data: ilova }] = await Promise.all([
+  const [{ data: hisobot, error }, { data: oylik }, bolimData, { data: grafik }, { data: kechikish }, { data: ortachaTolov }] = await Promise.all([
     bolim === 'umumiy'
       ? supabase.rpc('tushum_hisobot', { p_dan: o.dan, p_gacha: o.gacha })
       : Promise.resolve({ data: null, error: null }),
@@ -122,8 +125,6 @@ export default async function Hisobotlar({
     bolim === 'moliya'
       ? supabase.rpc('hisobot_ortacha_tolov', { p_oylar: oyNechta })
       : Promise.resolve({ data: null }),
-    // 0092 — ilovani o'rnatganlar (O'quvchilar)
-    bolim === 'oquvchilar' ? supabase.rpc('hisobot_ilova') : Promise.resolve({ data: null }),
   ])
 
   const h = hisobot as Hisobot | null
@@ -155,7 +156,7 @@ export default async function Hisobotlar({
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha
         nom="Hisobotlar"
-        izoh={oylikmi ? `oxirgi ${oyNechta} oy` : o.dan === o.gacha ? sana(o.dan) : `${sana(o.dan)} — ${sana(o.gacha)}`}
+        izoh={bolim === 'ulanishlar' ? 'profilga kirish · ilova · Telegram bot' : oylikmi ? `oxirgi ${oyNechta} oy` : o.dan === o.gacha ? sana(o.dan) : `${sana(o.dan)} — ${sana(o.gacha)}`}
       />
 
       <nav aria-label="Hisobot bo‘limlari" className="-mx-1 flex gap-1 overflow-x-auto border-b border-line px-1">
@@ -173,7 +174,7 @@ export default async function Hisobotlar({
         ))}
       </nav>
 
-      {oylikmi ? (
+      {bolim === 'ulanishlar' ? null : oylikmi ? (
         <div className="flex flex-wrap items-center gap-2">
           {OY_TANLOV.map((n) => (
             <Link
@@ -209,7 +210,9 @@ export default async function Hisobotlar({
       </div>
       )}
 
-      {bolim !== 'umumiy' ? (
+      {bolim === 'ulanishlar' ? (
+        <UlanishlarBolimi s={s} />
+      ) : bolim !== 'umumiy' ? (
         bolimData.error || !bolimData.data ? (
           <Card className="p-5">
             <Empty>Hisobotni olib bo‘lmadi{bolimData.error ? `: ${bolimData.error.message}` : ''}.</Empty>
@@ -230,7 +233,6 @@ export default async function Hisobotlar({
         ) : bolim === 'oquvchilar' ? (
           <>
             <OquvchilarBolimi o={bolimData.data as HisobotOquvchilar} />
-            {ilova && <IlovaBolimi i={ilova as HisobotIlova} />}
           </>
         ) : bolim === 'ustozlar' ? (
           <>

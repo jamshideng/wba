@@ -45,6 +45,7 @@ export function IlovaSW() {
   // Kirish sahifasidan CRM'ga o'tilganda ham tekshirilsin (root layout qayta chizilmaydi)
   useEffect(() => {
     ilovaBelgi()
+    profilBelgi()
   }, [yol])
 
   useEffect(() => {
@@ -83,6 +84,29 @@ async function ilovaBelgi() {
   } catch {
   } finally {
     belgiKetmoqda = false
+  }
+}
+
+const KIRISH_KALIT = 'wba-profil-belgi'
+
+/**
+ * Profilga kirish (0121) — sayt yoki ilova ochilganda, kuniga ko'pi bilan
+ * bir marta. Hisobotlar › Ulanishlar: kim kirdi, kim kirmadi.
+ */
+let kirishKetmoqda = false
+async function profilBelgi() {
+  try {
+    if (kirishKetmoqda) return
+    if (Date.now() - Number(localStorage.getItem(KIRISH_KALIT) ?? 0) < 86_400_000) return
+    kirishKetmoqda = true
+    const supabase = createClient()
+    const { data: sessiya } = await supabase.auth.getSession()
+    if (!sessiya.session) return
+    const { data } = await supabase.rpc('profil_belgi')
+    if (data === true) localStorage.setItem(KIRISH_KALIT, String(Date.now()))
+  } catch {
+  } finally {
+    kirishKetmoqda = false
   }
 }
 
