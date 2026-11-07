@@ -10,7 +10,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty, Button } from '@/components/ui'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { guruhgaBiriktir, guruhAlmashtir, qoshilganSanaOzgartir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor, vipOzgartir, oquvchiArxivla, oquvchiArxivdan, oquvchiXatoOchir } from '../actions'
+import { guruhgaBiriktir, guruhAlmashtir, qoshilganSanaOzgartir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor, tuzatishTahrir, vipOzgartir, oquvchiArxivla, oquvchiXatoOchir } from '../actions'
 import { ChegirmaMaydonlari } from '../bolaklar'
 import { HisobForma } from '@/components/hisob'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
@@ -267,10 +267,7 @@ export default async function OquvchiProfil({
             {oquvchi.arxiv_sabab ? ` · ${oquvchi.arxiv_sabab}` : ''} — qarzi saqlanadi.
           </span>
           {pulKoradi && (
-            <form action={oquvchiArxivdan}>
-              <input type="hidden" name="student_id" value={oquvchi.id} />
-              <Yuborish kutish="…">Arxivdan qaytarish</Yuborish>
-            </form>
+            <Button href={`/crm/oquvchilar/${oquvchi.id}/qaytarish`}>Arxivdan qaytarish</Button>
           )}
         </div>
       )}
@@ -426,13 +423,29 @@ export default async function OquvchiProfil({
                                 <span className="text-[11px] text-ink-4">bekor{t.bekor_sabab ? `: ${t.bekor_sabab}` : ''}</span>
                               ) : (
                                 tuzatishAdmin && (
-                                  <form action={tuzatishBekor}>
-                                    <input type="hidden" name="student_id" value={oquvchi.id} />
-                                    <input type="hidden" name="id" value={t.id} />
-                                    <button type="submit" className="min-h-11 px-2 text-[12px] text-ink-3 transition hover:text-brand">
-                                      Bekor qilish
-                                    </button>
-                                  </form>
+                                  <span className="flex flex-wrap items-center gap-1">
+                                    <details className="group">
+                                      <summary className="flex min-h-11 cursor-pointer items-center px-2 text-[12px] text-ink-3 hover:text-ink">Tahrirlash</summary>
+                                      <form action={tuzatishTahrir} className="mt-1 flex flex-wrap items-end gap-2">
+                                        <input type="hidden" name="student_id" value={oquvchi.id} />
+                                        <input type="hidden" name="id" value={t.id} />
+                                        <Maydon nom="Ayiriladi">
+                                          <input name="summa" required inputMode="decimal" defaultValue={t.summa} className={`${kirishKlass} w-32`} />
+                                        </Maydon>
+                                        <Maydon nom="Sabab">
+                                          <input name="sabab" required defaultValue={t.sabab} className={kirishKlass} />
+                                        </Maydon>
+                                        <Yuborish kutish="…">Saqlash</Yuborish>
+                                      </form>
+                                    </details>
+                                    <form action={tuzatishBekor}>
+                                      <input type="hidden" name="student_id" value={oquvchi.id} />
+                                      <input type="hidden" name="id" value={t.id} />
+                                      <button type="submit" className="min-h-11 px-2 text-[12px] text-ink-3 transition hover:text-brand">
+                                        Bekor qilish
+                                      </button>
+                                    </form>
+                                  </span>
                                 )
                               )}
                             </div>
@@ -440,7 +453,7 @@ export default async function OquvchiProfil({
                       </div>
                     )}
 
-                    {tuzatishAdmin && y.holat !== 'tugagan' && (
+                    {tuzatishAdmin && (
                       <details className="w-full">
                         <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Tuzatish — shu oydan ayirish</summary>
                         <form action={tuzatishQosh} className="mt-2 flex flex-col gap-2">
@@ -448,7 +461,15 @@ export default async function OquvchiProfil({
                           <input type="hidden" name="enrollment_id" value={y.id} />
                           <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_2fr]">
                             <Maydon nom="Oy">
-                              <input type="month" name="davr" required defaultValue={davr} className={kirishKlass} />
+                              <input
+                                type="month"
+                                name="davr"
+                                required
+                                min={y.boshlandi.slice(0, 7)}
+                                max={y.tugadi ? y.tugadi.slice(0, 7) : undefined}
+                                defaultValue={y.tugadi && y.tugadi.slice(0, 7) < davr ? y.tugadi.slice(0, 7) : davr}
+                                className={kirishKlass}
+                              />
                             </Maydon>
                             <Maydon nom="Ayiriladi">
                               <input name="summa" required inputMode="decimal" placeholder="150 000" className={kirishKlass} />

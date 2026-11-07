@@ -3113,3 +3113,55 @@ begin
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+
+-- 0120 — arxivdagi o'quvchiga tuzatish, tahrir, qaytarish ustasi
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
+do $$
+declare v_e uuid; v_t bigint; v_yangi uuid; v_tuz numeric;
+begin
+  select id into v_e from enrollments where student_id = 'S002' and group_id = 'N01' and holat <> 'tugagan';
+  perform oquvchi_arxivla('S002', '2026-10-15', 'test', null);
+  -- yopilgan yozilishga tuzatish — o'qigan oyga mumkin, keyingisiga yo'q
+  v_t := tuzatish_qosh(v_e, '2026-10', 100000, '1 dars kelgan');
+  begin
+    perform tuzatish_qosh(v_e, '2026-12', 1000, 'xato oy');
+    raise exception 'XATO: o''qimagan oyga tuzatish yozildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  perform tuzatish_tahrir(v_t, 120000, '2 dars kelgan');
+  select tuzatish into v_tuz from invoices where enrollment_id = v_e and davr = '2026-10';
+  if v_tuz is distinct from 120000 or (select sabab from tuzatishlar where id = v_t) <> '2 dars kelgan' then
+    raise exception 'XATO: tahrir hisobga tushmadi (%)', v_tuz;
+  end if;
+  -- qaytarish: chiqqan kundan oldin — xato; keyin — yangi yozilish chegirmasi bilan
+  begin
+    perform oquvchi_qaytar('S002', 'N01', '2026-10-10', '{}'::jsonb);
+    raise exception 'XATO: chiqqan kundan oldingi qaytish qabul qilindi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  v_yangi := oquvchi_qaytar('S002', 'N01', '2026-11-02', '{"chegirma_summa": 50000, "chegirma_sabab": "qaytdi"}'::jsonb);
+  if (select holat from students where id = 'S002') <> 'faol' then raise exception 'XATO: faol bo''lmadi'; end if;
+  if not exists (select 1 from enrollments where id = v_yangi and boshlandi = '2026-11-02' and holat <> 'tugagan' and chegirma_summa = 50000) then
+    raise exception 'XATO: yangi yozilish noto''g''ri';
+  end if;
+  if (select holat from enrollments where id = v_e) <> 'tugagan' then raise exception 'XATO: eski yozilish ochilib ketdi'; end if;
+  -- guruhsiz qaytarish
+  perform oquvchi_arxivla('S002', '2026-11-03', 'test', null);
+  perform oquvchi_qaytar('S002', null, null, '{}'::jsonb);
+  if (select holat from students where id = 'S002') <> 'faol'
+     or exists (select 1 from enrollments where student_id = 'S002' and holat <> 'tugagan') then
+    raise exception 'XATO: guruhsiz qaytarish noto''g''ri';
+  end if;
+  raise notice 'OK: 0120 — arxivda tuzatish va tahrir, qaytarish (guruh+sana+chegirma, guruhsiz)';
+end $$;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';   -- ustoz
+do $$
+begin
+  begin
+    perform tuzatish_tahrir((select min(id) from tuzatishlar), 1, 'x');
+    raise exception 'XATO: ustoz tuzatishni tahrirladi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if; end;
+  raise notice 'OK: 0120 — ustoz tuzatishni tahrirlay olmaydi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;

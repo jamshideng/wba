@@ -1019,6 +1019,8 @@ export type Database = {
       sheets_muzlatilganmi: { Args: Record<string, never>; Returns: boolean }
       sheets_muzlat: { Args: { p_muzlat: boolean }; Returns: boolean }
       oquvchi_arxivdan: { Args: { p_student: string }; Returns: undefined }
+      oquvchi_qaytar: { Args: { p_student: string; p_group?: string | null; p_sana?: string | null; p_chegirma?: Record<string, unknown> }; Returns: string | null }
+      tuzatish_tahrir: { Args: { p_id: number; p_summa: number; p_sabab: string }; Returns: undefined }
       yozilish_oylari: {
         Args: { p_student: string }
         Returns: { enrollment_id: string; davr: string; narx: number; chegirma: number; tuzatish: number; kerak: number; tolangan: number; holat: string }[]

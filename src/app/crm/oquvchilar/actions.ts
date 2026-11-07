@@ -308,6 +308,24 @@ export async function tuzatishBekor(fd: FormData) {
   redirect(xabarliYol(yol, { ok: 'Tuzatish bekor qilindi — o‘sha oy qayta hisoblandi.' }))
 }
 
+/** Tuzatishni tahrirlash (0120): summa va sabab, o'sha oy qayta hisoblanadi. */
+export async function tuzatishTahrir(fd: FormData) {
+  await talabRol('admin', 'direktor')
+  const studentId = matn(fd.get('student_id'))
+  const id = sonOqi(fd.get('id'))
+  const yol = `/crm/oquvchilar/${studentId}`
+  if (!studentId || !id) redirect('/crm/oquvchilar')
+  const summa = summaOqi(fd.get('summa'))
+  if (!summa) redirect(xabarliYol(yol, { xato: 'Summa noto‘g‘ri. Masalan: 150000 yoki 150 ming.' }))
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('tuzatish_tahrir', { p_id: id!, p_summa: summa!, p_sabab: matn(fd.get('sabab')) ?? '' })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(yol, { ok: 'Tuzatish o‘zgartirildi — o‘sha oy qayta hisoblandi.' }))
+}
+
 /** VIP — to'lamaydi, lekin faol hisobda (0030). Faqat admin va direktor. */
 export async function vipOzgartir(fd: FormData) {
   await talabRol('admin', 'direktor')
@@ -368,6 +386,29 @@ export async function oquvchiXatoOchir(fd: FormData) {
 
   revalidatePath('/crm', 'layout')
   redirect(xabarliYol('/crm/oquvchilar', { ok: `${studentId} o‘chirildi.` }))
+}
+
+/** Arxivdan qaytarish ustasi (0120): faol + tanlangan guruhga shu kundan, chegirmasi bilan. */
+export async function oquvchiQaytar(fd: FormData) {
+  await talabRol('admin', 'direktor', 'qabulxona')
+  const studentId = matn(fd.get('student_id'))
+  if (!studentId) redirect('/crm/oquvchilar')
+  const yol = `/crm/oquvchilar/${studentId}`
+  const guruh = matn(fd.get('group_id'))
+  const sanaQ = sanaOqi(fd.get('boshlandi'))
+  if (guruh && !sanaQ) redirect(xabarliYol(`${yol}/qaytarish`, { xato: 'Qaysi kundan — sanani tanlang.' }))
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('oquvchi_qaytar', {
+    p_student: studentId!,
+    p_group: guruh,
+    p_sana: sanaQ,
+    p_chegirma: chegirma(fd),
+  })
+  if (error) redirect(xabarliYol(`${yol}/qaytarish`, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(yol, { ok: guruh ? 'Arxivdan qaytarildi va guruhga qo‘shildi. Oylar hisobi yozildi.' : 'Arxivdan qaytarildi (guruhsiz).' }))
 }
 
 export async function oquvchiArxivdan(fd: FormData) {
