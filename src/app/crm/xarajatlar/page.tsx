@@ -5,6 +5,7 @@ import { Card, CardHeader, Stat, BarRow, Empty, Badge } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
+import { JonliForma } from '@/components/jonli-forma'
 import { pul, sana, davrNomi, joriyDavr, bugunToshkent } from '@/lib/format'
 import { xarajatQosh, xarajatBekor } from './actions'
 import { royxatOl, royxatNomi, royxatVariantlari } from '@/lib/royxat'
@@ -20,8 +21,13 @@ type Xarajat = {
   izoh: string | null
   bekor: boolean
   bekor_sabab: string | null
+  kiritgan: string | null
   profiles: { ism: string } | null
 }
+
+type Oluvchi = { kalit: string; ism: string }
+
+const SANA = /^\d{4}-\d{2}-\d{2}$/
 
 type Moliya = {
   tushum: number
@@ -40,7 +46,10 @@ type Moliya = {
 export default async function Xarajatlar({
   searchParams,
 }: {
-  searchParams: Promise<{ davr?: string; toifa?: string; ok?: string; xato?: string }>
+  searchParams: Promise<{
+    davr?: string; toifa?: string; q?: string; kim?: string; xodim?: string
+    holat?: string; dan?: string; gacha?: string; ok?: string; xato?: string
+  }>
 }) {
   const profil = await talabRol('admin', 'direktor', 'qabulxona')
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Xarajatlar" />
@@ -52,17 +61,86 @@ export default async function Xarajatlar({
   const toifalar = await royxatOl(supabase, 'xarajat_toifa')
   const toifa = toifalar.find((t) => t.kalit === s.toifa)?.kalit
 
-  const dan = `${davr}-01`
+  const oyBoshi = `${davr}-01`
   const [y, m] = davr.split('-').map(Number)
-  const gacha = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10)
-  const joriy = `/crm/xarajatlar?davr=${davr}${toifa ? `&toifa=${toifa}` : ''}`
+  const oyOxiri = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10)
+
+  // Filtrlar (jonli): sana oralig'i oyni almashtiradi; toifa, xodim, kim yozgan, holat, qidiruv
+  const fDan = SANA.test(s.dan ?? '') ? s.dan! : null
+  const fGacha = SANA.test(s.gacha ?? '') ? s.gacha! : null
+  const dan = fDan ?? (fGacha ? '2000-01-01' : oyBoshi)
+  const gacha = fGacha ?? (fDan ? '2100-01-01' : oyOxiri)
+  const oraliq = !!(fDan || fGacha)
+  const q = (s.q ?? '').trim().slice(0, 80)
+  const holat = s.holat === 'faol' || s.holat === 'bekor' ? s.holat : null
+  const kim = /^[0-9a-f-]{36}$/i.test(s.kim ?? '') ? s.kim! : null
+  const xodim = /^[tpb]:.+$/.test(s.xodim ?? '') ? s.xodim! : null
+
+  const parametr = new URLSearchParams()
+  parametr.set('davr', davr)
+  for (const [k, v] of [['toifa', toifa], ['q', q], ['kim', kim], ['xodim', xodim], ['holat', holat], ['dan', fDan], ['gacha', fGacha]] as const) {
+    if (v) parametr.set(k, v)
+  }
+  const joriy = `/crm/xarajatlar?${parametr.toString()}`
+
+  // Oraliqdagi barcha xarajatlar (filtrsiz) — variantlar va xodim bog'lanishi uchun
+  const [{ data: hammaXom }, { data: tolovXom }, { data: tasdiqXom }] = await Promise.all([
+    supabase.from('xarajatlar').select('kiritgan, profiles(ism)').gte('sana', dan).lte('sana', gacha),
+    supabase.from('maosh_tolovlar').select('xarajat_id, teacher_id, profile_id, boshqa_xodim_id').gte('sana', dan).lte('sana', gacha),
+    // maosh_tasdiq (0075, 0112 gacha maosh xarajati shu orqali) — types.ts da yo'q
+    (supabase as unknown as { from: (t: string) => typeof supabase extends { from: (t: 'maosh_tolovlar') => infer Q } ? Q : never })
+      .from('maosh_tasdiq')
+      .select('xarajat_id, teacher_id, ism')
+      .not('xarajat_id', 'is', null),
+  ])
+
+  const kiritganlar = new Map<string, string>()
+  for (const r of (hammaXom ?? []) as unknown as { kiritgan: string | null; profiles: { ism: string } | null }[]) {
+    if (r.kiritgan) kiritganlar.set(r.kiritgan, r.profiles?.ism ?? '—')
+  }
+
+  // Xarajat → kimga berilgan (maosh/avans): kalit t:ustoz / p:profil / b:boshqa xodim
+  const xarajatXodim = new Map<number, string>()
+  for (const t of (tolovXom ?? []) as { xarajat_id: number; teacher_id: string | null; profile_id: string | null; boshqa_xodim_id: number | null }[]) {
+    const k = t.teacher_id ? `t:${t.teacher_id}` : t.profile_id ? `p:${t.profile_id}` : `b:${t.boshqa_xodim_id}`
+    xarajatXodim.set(Number(t.xarajat_id), k)
+  }
+  const xodimIsm = new Map<string, string>()
+  for (const t of (tasdiqXom ?? []) as unknown as { xarajat_id: number; teacher_id: string; ism: string }[]) {
+    if (!xarajatXodim.has(Number(t.xarajat_id))) xarajatXodim.set(Number(t.xarajat_id), `t:${t.teacher_id}`)
+    xodimIsm.set(`t:${t.teacher_id}`, t.ism)
+  }
+  const idlar = (p: string) => [...new Set([...xarajatXodim.values()].filter((k) => k.startsWith(p)).map((k) => k.slice(2)))]
+  const bosh = Promise.resolve({ data: [] as { id: string | number; ism: string }[] })
+  const [tIsm, pIsm, bIsm] = await Promise.all([
+    idlar('t:').length ? supabase.from('teachers').select('id, ism').in('id', idlar('t:')) : bosh,
+    idlar('p:').length ? supabase.from('profiles').select('id, ism').in('id', idlar('p:')) : bosh,
+    idlar('b:').length ? supabase.from('boshqa_xodimlar').select('id, ism').in('id', idlar('b:').map(Number)) : bosh,
+  ])
+  for (const [p, r] of [['t', tIsm], ['p', pIsm], ['b', bIsm]] as const) {
+    for (const x of (r.data ?? []) as { id: string | number; ism: string }[]) xodimIsm.set(`${p}:${x.id}`, x.ism)
+  }
+  const xodimlar: Oluvchi[] = [...new Set(xarajatXodim.values())]
+    .map((k) => ({ kalit: k, ism: xodimIsm.get(k) ?? '—' }))
+    .sort((a, b) => a.ism.localeCompare(b.ism))
 
   let sorov = supabase
     .from('xarajatlar')
-    .select('id, sana, toifa, summa, izoh, bekor, bekor_sabab, profiles(ism)')
+    .select('id, sana, toifa, summa, izoh, bekor, bekor_sabab, kiritgan, profiles(ism)')
     .gte('sana', dan)
     .lte('sana', gacha)
   if (toifa) sorov = sorov.eq('toifa', toifa)
+  if (kim) sorov = sorov.eq('kiritgan', kim)
+  if (holat) sorov = sorov.eq('bekor', holat === 'bekor')
+  if (xodim) {
+    const ids = [...xarajatXodim].filter(([, k]) => k === xodim).map(([id]) => id)
+    sorov = sorov.in('id', ids.length ? ids : [-1])
+  }
+  if (q) {
+    const toza = q.replace(/[,()*%\\"]/g, ' ').trim()
+    const raqam = /^#?\d+$/.test(toza) ? toza.replace('#', '') : null
+    if (toza) sorov = sorov.or(raqam ? `id.eq.${raqam},izoh.ilike.*${toza}*` : `izoh.ilike.*${toza}*`)
+  }
 
   const [{ data }, { data: moliyaXom }] = await Promise.all([
     sorov.order('sana', { ascending: false }).order('id', { ascending: false }),
@@ -74,21 +152,70 @@ export default async function Xarajatlar({
   const foyda = Number(mo.foyda)
   const maxToifa = Math.max(1, ...mo.toifalar.map((t) => Number(t.summa)))
   const toifaNomi = (t: string) => royxatNomi(toifalar, t)
+  const filtrda = !!(toifa || q || kim || xodim || holat || oraliq)
+  const faollar = royxat.filter((x) => !x.bekor)
+  const filtrJami = faollar.reduce((a, x) => a + Number(x.summa), 0)
+  const davrMatn = oraliq ? `${fDan ? sana(dan) : '…'} – ${fGacha ? sana(gacha) : '…'}` : davrNomi(davr)
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
       <Sarlavha
         nom="Xarajatlar"
-        izoh={`${davrNomi(davr)} · ${royxat.filter((x) => !x.bekor).length} ta yozuv`}
-        amal={
-          <form className="flex items-end gap-2">
-            <input type="month" name="davr" defaultValue={davr} className={kirishKlass} />
-            <button type="submit" className="min-h-11 rounded-[9px] border border-line px-4 text-[13px] text-ink-2 hover:text-ink">
-              Ko‘rish
-            </button>
-          </form>
-        }
+        izoh={`${davrMatn} · ${faollar.length} ta yozuv`}
       />
+
+      <Card className="flex flex-col gap-3 px-5 py-4">
+        <JonliForma className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Maydon nom="Oy">
+            <input type="month" name="davr" defaultValue={davr} className={kirishKlass} />
+          </Maydon>
+          <Maydon nom="Sanadan" izoh="to‘ldirilsa, oy o‘rniga">
+            <input type="date" name="dan" defaultValue={fDan ?? ''} className={kirishKlass} />
+          </Maydon>
+          <Maydon nom="Sanagacha">
+            <input type="date" name="gacha" defaultValue={fGacha ?? ''} className={kirishKlass} />
+          </Maydon>
+          <Maydon nom="Toifa">
+            <select name="toifa" defaultValue={toifa ?? ''} className={kirishKlass}>
+              <option value="">Hamma toifa</option>
+              {toifalar.map((t) => (
+                <option key={t.kalit} value={t.kalit}>{t.nom}</option>
+              ))}
+            </select>
+          </Maydon>
+          <Maydon nom="Xodim" izoh="maosh/avans kimga berilgan">
+            <select name="xodim" defaultValue={xodim ?? ''} className={kirishKlass}>
+              <option value="">Hamma xodim</option>
+              {xodimlar.map((x) => (
+                <option key={x.kalit} value={x.kalit}>{x.ism}</option>
+              ))}
+            </select>
+          </Maydon>
+          <Maydon nom="Kim yozgan">
+            <select name="kim" defaultValue={kim ?? ''} className={kirishKlass}>
+              <option value="">Hamma</option>
+              {[...kiritganlar].sort((a, b) => a[1].localeCompare(b[1])).map(([id, ism]) => (
+                <option key={id} value={id}>{ism}</option>
+              ))}
+            </select>
+          </Maydon>
+          <Maydon nom="Holat">
+            <select name="holat" defaultValue={holat ?? ''} className={kirishKlass}>
+              <option value="">Hammasi</option>
+              <option value="faol">Faol</option>
+              <option value="bekor">Bekor qilingan</option>
+            </select>
+          </Maydon>
+          <Maydon nom="Qidirish">
+            <input name="q" defaultValue={q} placeholder="Izoh yoki #raqam" className={kirishKlass} />
+          </Maydon>
+        </JonliForma>
+        {filtrda && (
+          <a href={`/crm/xarajatlar?davr=${davr}`} className="self-start text-[12px] text-ink-3 hover:text-ink">
+            Filtrni tozalash ×
+          </a>
+        )}
+      </Card>
 
       <Xabar ok={s.ok} xato={s.xato} />
 
@@ -111,10 +238,10 @@ export default async function Xarajatlar({
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_340px]">
         <Card className="flex flex-col">
-          <CardHeader title="Yozuvlar" meta={toifa ? toifaNomi(toifa) : 'hamma toifa'} />
+          <CardHeader title="Yozuvlar" meta={`${faollar.length} ta · ${pul(filtrJami)} so‘m${filtrda ? ' · filtr bo‘yicha' : ''}`} />
           {royxat.length === 0 ? (
             <div className="px-5 pb-5">
-              <Empty>{toifa ? 'Bu oyda shu toifada xarajat yo‘q.' : 'Bu oyda xarajat yozilmagan.'}</Empty>
+              <Empty>{filtrda ? 'Filtr bo‘yicha xarajat topilmadi.' : 'Bu oyda xarajat yozilmagan.'}</Empty>
             </div>
           ) : (
             <ul className="flex flex-col">
@@ -129,6 +256,7 @@ export default async function Xarajatlar({
                       <span className="font-[family-name:var(--font-mono)] text-[11px] text-ink-3">
                         #{x.id} · {sana(x.sana)}
                         {x.profiles?.ism ? ` · ${x.profiles.ism}` : ''}
+                        {xarajatXodim.has(x.id) ? ` · → ${xodimIsm.get(xarajatXodim.get(x.id)!) ?? '—'}` : ''}
                       </span>
                       {x.izoh && <span className="text-[12.5px] text-ink-2">{x.izoh}</span>}
                       {x.bekor && x.bekor_sabab && <span className="text-[12px] text-ink-3">Sabab: {x.bekor_sabab}</span>}
