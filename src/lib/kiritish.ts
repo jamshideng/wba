@@ -12,11 +12,12 @@ import { telefonNormal } from '@/lib/format'
  *   "650 000"  → 650 000
  *   "1.2 mln"  → 1 200 000
  *   "600 ming" → 600 000
+ *   "1360 so'm" → 1 360  ("so'm"/"som"/"сум" — aynan yozilgani, ×1000 yo'q)
  * Tushunarsiz yoki musbat bo'lmasa — null.
  */
 export function summaOqi(xom: FormDataEntryValue | string | null | undefined): number | null {
   const s = String(xom ?? '').trim().toLowerCase()
-  const m = s.match(/(\d[\d\s,]*(?:\.\d+)?)\s*(mln|million|ming)?/)
+  const m = s.match(/(\d[\d\s,]*(?:\.\d+)?)\s*(mln|million|ming|so['‘’ʻʼ`]?m|сум|сўм)?/)
   if (!m) return null
 
   let n = parseFloat(m[1].replace(/[\s,]/g, ''))
@@ -25,6 +26,7 @@ export function summaOqi(xom: FormDataEntryValue | string | null | undefined): n
   const birlik = m[2] ?? ''
   if (birlik.startsWith('ml')) n *= 1_000_000
   else if (birlik === 'ming') n *= 1_000
+  else if (birlik) { /* so'm — aynan */ }
   else if (n < 3000) n *= 1_000
 
   return Math.round(n)
