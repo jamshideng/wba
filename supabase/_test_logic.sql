@@ -2908,7 +2908,7 @@ begin
 end $$;
 reset role;
 
--- 0111 — haftada 2 kunlik guruhda N = jadval darslari, 3 kunlikda kamida 12
+-- 0111/0122 — 2 kunlik va 3 kunlik guruhda ham N kamida 12 (0122)
 do $$
 declare
   v_davr text := to_char(bugun_toshkent() - 40, 'YYYY-MM');
@@ -2929,8 +2929,8 @@ begin
   select q.n into v_n3 from maosh_qatorlari(v_davr) q where q.group_id = 'GM3' limit 1;
   if v_n2 is null or v_n3 is null then raise exception 'XATO: maosh qatori chiqmadi: %, %', v_n2, v_n3; end if;
   if v_n3 < 12 then raise exception 'XATO: 3 kunlik N 12 dan kam: %', v_n3; end if;
-  if v_n2 >= 12 or v_n2 <> guruh_oy_darslari('GM2', v_davr) then raise exception 'XATO: 2 kunlik N jadvalga teng emas: %', v_n2; end if;
-  raise notice 'OK: 0111 — 2 kunlik N=%, 3 kunlik N=%', v_n2, v_n3;
+  if v_n2 <> 12 then raise exception 'XATO: 2 kunlik N 12 emas: %', v_n2; end if;
+  raise notice 'OK: 0122 — 2 kunlik N=%, 3 kunlik N=%', v_n2, v_n3;
 end $$;
 reset request.jwt.claim.sub;
 
@@ -3226,3 +3226,12 @@ begin
 end $$;
 reset role;
 reset request.jwt.claim.sub;
+
+-- 0122 — maosh: N kamida 12 hamma guruhga (2 kunlik ham)
+do $$
+begin
+  if exists (select 1 from maosh_qatorlari(to_char(bugun_toshkent(), 'YYYY-MM')) where n < 12) then
+    raise exception 'XATO: N 12 dan kam qator bor';
+  end if;
+  raise notice 'OK: 0122 — N kamida 12';
+end $$;
