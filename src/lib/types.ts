@@ -909,6 +909,14 @@ export type Database = {
       maosh_harakatlar: Table<MaoshHarakat>
       dars_kam_eslatma: Table<{ group_id: string; davr: string; soni: number; teacher_id: string | null; yuborildi: boolean; created_at: string }>
       xodim_oylik: Table<{ profile_id: string; summa: number; updated_at: string }>
+      /** 0123 — davomat qilinmasa ustozga eslatma */
+      davomat_eslatma: Table<{
+        id: number; group_id: string; sana: string; turi: 1 | 2; teacher_id: string | null
+        jami: number | null; belgilangan: number | null
+        telegram: 'kutilmoqda' | 'yetkazildi' | 'ulanmagan' | 'xato'; telegram_xato: string | null
+        bildirishnoma_id: number | null; hal_qilindi_at: string | null; created_at: string
+      }>
+      push_obunalar: Table<{ id: number; profile_id: string; endpoint: string; p256dh: string; auth: string; qurilma: string | null; created_at: string }>
       nazorat_hodisalar: Table<{
         id: number; turi: string; sana: string; teacher_id: string | null; profile_id: string | null
         group_id: string | null; student_id: string | null; lead_id: string | null; vazifa_id: string | null
@@ -1085,6 +1093,13 @@ export type Database = {
       nazorat_direktorga: { Args: Record<string, never>; Returns: boolean }
       nazorat_direktorga_ozgartir: { Args: { p_yoq: boolean }; Returns: boolean }
       nazorat_chatlar: { Args: { p_teacher: string | null; p_profile: string | null }; Returns: number[] }
+      davomat_eslatma_nomzodlar: {
+        Args: Record<string, never>
+        Returns: {
+          group_id: string; nom: string; teacher_id: string; profile_id: string | null
+          boshlanish: string | null; tugash: string; jami: number; belgilangan: number; yuborilgan: number[]
+        }[]
+      }
       ogohlantir: { Args: { p_hodisa: number | null; p_teacher: string | null; p_profile: string | null; p_matn: string }; Returns: number }
       nazorat_jarima: { Args: { p_teacher: string | null; p_profile: string | null; p_summa: number; p_sabab: string }; Returns: number }
       maosh_qayta_och: { Args: { p_davr: string; p_sabab: string }; Returns: number }

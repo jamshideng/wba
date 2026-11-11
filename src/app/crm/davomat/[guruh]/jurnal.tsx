@@ -74,7 +74,14 @@ function OquvchiOynasi({ q, yop }: { q: JurnalQatori; yop: () => void }) {
 }
 
 /** dam — kanikul/bayram sababi (0036): bu kun davomat qo'yilmaydi */
-export type DarsKuni = { sana: string; kun: number; hafta: string; dam?: string | null }
+export type DarsKuni = {
+  sana: string
+  kun: number
+  hafta: string
+  dam?: string | null
+  /** 0123 — zamena kuni: yopiq — bu odam uchun belgilab bo'lmaydi (davomatni o'rinbosar qiladi) */
+  zamena?: { ism: string; yopiq: boolean } | null
+}
 
 /** Kim nimani o'zgartira oladi: admin — o'tgan kunlar ham, ustoz — faqat bugun (Q5). */
 export type Huquq = 'hammasi' | 'bugun' | 'yoq'
@@ -150,7 +157,7 @@ export function Jurnal({
     if (quti && ustun) quti.scrollLeft = Math.max(0, ustun.offsetLeft - quti.clientWidth / 2)
   }, [])
 
-  const damKunlar = new Set(kunlar.filter((k) => k.dam).map((k) => k.sana))
+  const damKunlar = new Set(kunlar.filter((k) => k.dam || k.zamena?.yopiq).map((k) => k.sana))
 
   const tahrirmi = (q: JurnalQatori, sana: string) =>
     !damKunlar.has(sana) &&
@@ -207,7 +214,7 @@ export function Jurnal({
     saqla(sana, { [q.student_id]: keyingi }, q.probniy)
   }
 
-  const bugunUstunmi = kunlar.some((k) => k.sana === bugun && !k.dam)
+  const bugunUstunmi = kunlar.some((k) => k.sana === bugun && !k.dam && !k.zamena?.yopiq)
   const bugunTahrir = bugunUstunmi && huquq !== 'yoq'
 
   function hammasiKeldi() {
@@ -300,11 +307,11 @@ export function Jurnal({
                     data-belgi={`kun:${k.sana}${k.dam ? ' dam' : ''}`}
                     data-bugun={bugunmi ? '1' : undefined}
                     data-otgan={k.sana < bugun ? '1' : undefined}
-                    title={k.dam ? `Dars yo‘q: ${k.dam}` : undefined}
-                    className={`min-w-[52px] px-1 py-2 text-center font-[family-name:var(--font-mono)] text-[11.5px] font-medium ${k.dam ? 'bg-surface-2 text-ink-4' : bugunmi ? 'bg-accent-soft text-accent' : ''}`}
+                    title={k.dam ? `Dars yo‘q: ${k.dam}` : k.zamena ? `Zamena — ${k.zamena.ism}${k.zamena.yopiq ? ': davomatni o‘rinbosar ustoz qiladi' : ''}` : undefined}
+                    className={`min-w-[52px] px-1 py-2 text-center font-[family-name:var(--font-mono)] text-[11.5px] font-medium ${k.dam ? 'bg-surface-2 text-ink-4' : k.zamena?.yopiq ? 'bg-surface-2 text-ink-3' : bugunmi ? 'bg-accent-soft text-accent' : ''}`}
                   >
                     <span className="block">{k.sana.slice(8, 10)}.{k.sana.slice(5, 7)}</span>
-                    <span className="block text-[10px] text-ink-4">{k.dam ? 'dam' : k.hafta}</span>
+                    <span className="block text-[10px] text-ink-4">{k.dam ? 'dam' : k.zamena ? 'zamena' : k.hafta}</span>
                   </th>
                 )
               })}

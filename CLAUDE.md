@@ -178,6 +178,25 @@ Kun turi uchta: `Toq kun`, `Juft kun`, `Dam olish` (shanba + yakshanba).
 **Shanba ikkala turga ham kiradi** — juft guruh ham, dam olish guruhi ham
 o'sha kuni o'qiydi.
 
+## Davomat eslatmasi (0123)
+
+Dars tugagach davomat **to'liq** qilinmagan bo'lsa (har bir faol o'quvchiga
+belgi), ustozga eslatma: 1-si tugagach 10 daq, 2-si 60 daq keyin
+(`ESLATMA_DAQIQA`, `src/lib/davomat-eslatma.ts`).
+
+- pg_cron `davomat-eslatma` har 5 daqiqa → `POST /api/cron/davomat`,
+  `Authorization: Bearer <CRON_SIR>` (kalit Vault'da `cron_sir`); kalitsiz — 401.
+  `?sinov=1` — kimga ketishini ko'rsatadi, yubormaydi.
+- Nomzodlar bazada (`davomat_eslatma_nomzodlar`): dars kuni (`guruh_dars_kuni`,
+  dam kuni chiqariladi), ustoz — `dars_ustozi` (zamena bo'lsa o'rinbosar).
+- `davomat_eslatma` — unique(group_id, sana, turi): qator yuborishdan oldin
+  band qilinadi, takror ketmaydi. Kanallar: Telegram ("Davomat qilish"
+  tugmasi), sayt bildirishnomasi (`manba='davomat'`, `filtr.ustoz`), push.
+- Davomat to'lganda attendance trigger eslatma va bildirishnomani yopadi.
+- Eslatma vaqti yarim tundan o'tsa yuborilmaydi: ustoz o'tgan kunni kiritmaydi (0085).
+- Zamena kuni davomatni faqat o'rinbosar (yoki admin) qiladi; guruh ustozi
+  jurnalida o'sha kun "zamena" deb yopiq (`davomat_belgila` ham to'sadi).
+
 ---
 
 ## Nima qilinmaydi

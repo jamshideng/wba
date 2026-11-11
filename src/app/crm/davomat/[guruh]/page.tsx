@@ -247,6 +247,13 @@ export default async function DavomatJurnali({
   const barchaUstoz = (ustozXom ?? []) as { id: string; ism: string }[]
   const ustozIsmi = new Map(barchaUstoz.map((u) => [u.id, u.ism]))
   const zamenalar = dList.filter((d) => d.zamena_teacher_id).sort((a, b) => a.sana.localeCompare(b.sana))
+  /* 0123 — zamena kuni: davomatni o'rinbosar ustoz qiladi; guruh ustozida o'sha kun yopiq */
+  const zamenaKuni = new Map(zamenalar.map((z) => [z.sana, z.zamena_teacher_id!]))
+  const jurnalKunlari = kunlar.map((k) => {
+    const kim = zamenaKuni.get(k.sana)
+    if (!kim || k.dam) return k
+    return { ...k, zamena: { ism: ustozIsmi.get(kim) ?? 'o‘rinbosar ustoz', yopiq: !admin && kim !== ustoz?.id } }
+  })
   const zamenaKunlari = kunlar.filter((k) => !k.dam && (admin || k.sana >= bugun))
   const qaytish = davr === joriy ? `/crm/davomat/${guruh}` : `/crm/davomat/${guruh}?oy=${davr}`
 
@@ -357,7 +364,7 @@ export default async function DavomatJurnali({
         <Jurnal
           key={davr}
           guruhId={guruh}
-          kunlar={kunlar}
+          kunlar={jurnalKunlari}
           bugun={bugun}
           boshlangich={qatorlar}
           huquq={huquq}
