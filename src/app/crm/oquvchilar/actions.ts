@@ -404,6 +404,7 @@ export async function oquvchiQaytar(fd: FormData) {
     p_group: guruh,
     p_sana: sanaQ,
     p_chegirma: chegirma(fd),
+    p_shu_oy: matn(fd.get('shu_oy')) ? summaOqi(fd.get('shu_oy')) : null,
   })
   if (error) redirect(xabarliYol(`${yol}/qaytarish`, { xato: xatoMatni(error) }))
 
@@ -423,6 +424,79 @@ export async function oquvchiArxivdan(fd: FormData) {
 
   revalidatePath('/crm', 'layout')
   redirect(xabarliYol(yol, { ok: 'Arxivdan qaytarildi (shu ID bilan). Endi guruhga biriktiring.' }))
+}
+
+/** Bitta fanni arxivga (0124) — qolgan fanlari faol qoladi; oxirgi fan bo'lsa o'quvchi ham arxivga. */
+export async function fanArxivla(fd: FormData) {
+  await talabRol('admin', 'direktor', 'qabulxona')
+  const studentId = matn(fd.get('student_id'))
+  const enrollmentId = matn(fd.get('enrollment_id'))
+  const turi = matn(fd.get('turi'))
+  const yol = `/crm/oquvchilar/${studentId}`
+  if (!studentId || !enrollmentId) redirect('/crm/oquvchilar')
+  if (!turi) redirect(xabarliYol(yol, { xato: 'Ketish sababini tanlang.' }))
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('fan_arxivla', {
+    p_enrollment: enrollmentId!,
+    p_sana: sanaOqi(fd.get('sana')),
+    p_turi: turi!,
+    p_izoh: matn(fd.get('izoh')),
+  })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(yol, {
+    ok: data === 'oquvchi'
+      ? 'Fan arxivga o‘tkazildi. Bu oxirgi fani edi — o‘quvchi ham arxivga o‘tdi. Qarzi saqlanadi.'
+      : 'Fan arxivga o‘tkazildi. Qolgan fanlari faol; shu fanning keyingi oylari hisobdan olindi.',
+  }))
+}
+
+/**
+ * Arxivdagi fanni qayta o'qish (0124): shu fanning faol guruhiga, tanlangan kundan.
+ * Ketgan oyida qaytsa — shu oy uchun summa qo'lda (shu_oy), oy ikki marta hisoblanmaydi.
+ * O'quvchi butunlay arxivda bo'lsa — faol bo'ladi.
+ */
+export async function fanQayta(fd: FormData) {
+  await talabRol('admin', 'direktor', 'qabulxona')
+  const studentId = matn(fd.get('student_id'))
+  const enrollmentId = matn(fd.get('enrollment_id'))
+  const guruh = matn(fd.get('group_id'))
+  const yol = `/crm/oquvchilar/${studentId}`
+  if (!studentId || !enrollmentId) redirect('/crm/oquvchilar')
+  if (!guruh) redirect(xabarliYol(yol, { xato: 'Guruhni tanlang.' }))
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('fan_qayta', {
+    p_enrollment: enrollmentId!,
+    p_group: guruh!,
+    p_sana: sanaOqi(fd.get('sana')),
+    p_chegirma: chegirma(fd),
+    p_shu_oy: matn(fd.get('shu_oy')) ? summaOqi(fd.get('shu_oy')) : null,
+    p_izoh: matn(fd.get('izoh')),
+  })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(yol, { ok: 'Fan qayta ochildi: yangi yozilish tanlangan kundan, hisob yozildi.' }))
+}
+
+/** Arxivdagi fanga ketish sababini qo'yish yoki o'zgartirish (0124) */
+export async function fanKetishSababiBelgila(fd: FormData) {
+  await talabRol('admin', 'direktor', 'qabulxona')
+  const enrollmentId = matn(fd.get('enrollment_id'))
+  const turi = matn(fd.get('turi'))
+  const y = ichkiYol(fd.get('qaytish'))
+  const orqaga = y.startsWith('/crm/') ? y : '/crm/arxiv'
+  if (!enrollmentId || !turi) redirect(xabarliYol(orqaga, { xato: 'Sababni tanlang.' }))
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('fan_ketish_sababi_belgila', { p_enrollment: enrollmentId!, p_turi: turi!, p_izoh: matn(fd.get('izoh')) })
+  if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+  revalidatePath('/crm/arxiv')
+  revalidatePath('/crm/oquvchilar/ketish')
+  redirect(xabarliYol(orqaga, { ok: 'Sabab saqlandi.' }))
 }
 
 /** Arxivdagi o'quvchiga ketish sababini qo'yish yoki o'zgartirish (0083) */

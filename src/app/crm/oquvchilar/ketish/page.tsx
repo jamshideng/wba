@@ -65,16 +65,17 @@ export default async function KetishTahliliSahifa({
 
       {error && <p className="text-[13px] text-brand">Tahlilni o‘qib bo‘lmadi.</p>}
 
-      <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <Stat label="Ketganlar" value={t?.jami ?? 0} sub={`${t?.boshida ?? 0} ta o‘qiyotgan + ${t?.yangi ?? 0} ta yangi`} ton={t?.jami ? 'brand' : undefined} href={shu('ket')} />
+      <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-5">
+        <Stat label="Ketganlar" value={t?.jami ?? 0} sub={`butunlay · ${t?.boshida ?? 0} ta o‘qiyotgan + ${t?.yangi ?? 0} ta yangi`} ton={t?.jami ? 'brand' : undefined} href={shu('ket')} />
+        <Stat label="Fandan ketganlar" value={t?.fan_jami ?? 0} sub="bitta fanidan, o‘zi faol" href={shu('fanket')} />
         <Stat label="Ketish koeffitsienti" value={t?.koeffitsient == null ? '—' : `${t.koeffitsient}%`} sub="ketganlar ÷ o‘qiganlar" href={shu('ket')} />
-        <Stat label="Yo‘qotilgan daromad" value={pul(t?.yoqotilgan ?? 0)} sub="oyiga · so‘m" href={shu('ket')} />
+        <Stat label="Yo‘qotilgan daromad" value={pul(t?.yoqotilgan ?? 0)} sub="oyiga · so‘m · fandan ketish ham" href={shu('ket')} />
         <Stat label="O‘rtacha o‘qigan" value={t?.orta_oy == null ? '—' : `${t.orta_oy} oy`} sub="kelgandan ketguncha" href={shu('ket')} />
       </div>
 
       {belgilanmagan > 0 && (
         <Card className="px-5 py-3.5 text-[12.5px] text-ink-2">
-          {belgilanmagan} ta o‘quvchining ketish sababi belgilanmagan.{' '}
+          {belgilanmagan} ta ketishning (o‘quvchi yoki fan) sababi belgilanmagan.{' '}
           <Link href="/crm/arxiv" className="text-accent underline underline-offset-2 hover:text-brand">
             Arxivda sabab qo‘yish
           </Link>
@@ -83,7 +84,7 @@ export default async function KetishTahliliSahifa({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="flex flex-col">
-          <CardHeader title="Sabablar" meta="kishi" />
+          <CardHeader title="Sabablar" meta="ketish" />
           <div className="px-5 pb-4">
             {(t?.sabablar ?? []).length === 0 ? (
               <Empty>Bu davrda ketgan yo‘q.</Empty>
@@ -127,7 +128,7 @@ export default async function KetishTahliliSahifa({
         ) : (
           <ul className="flex flex-col">
             {t!.royxat.map((x) => (
-              <li key={x.id} data-belgi={`ket sabab:${x.sabab}`}>
+              <li key={`${x.id}-${x.fan ?? ''}-${x.sana}`} data-belgi={`${x.fan ? 'fanket' : 'ket'} sabab:${x.sabab}`}>
                 <Link
                   href={`/crm/oquvchilar/${x.id}`}
                   className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft px-5 py-3 transition hover:bg-surface-2"
@@ -139,7 +140,10 @@ export default async function KetishTahliliSahifa({
                       {x.izoh ? ` · ${x.izoh}` : ''}
                     </span>
                   </span>
-                  <Badge ton={x.sabab === 'belgilanmagan' ? 'accent' : 'jim'}>{ketishNomi(x.sabab, ketishRoyxat)}</Badge>
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <Badge ton="jim">{x.fan ? `fandan: ${x.fan}` : 'butunlay'}</Badge>
+                    <Badge ton={x.sabab === 'belgilanmagan' ? 'accent' : 'jim'}>{ketishNomi(x.sabab, ketishRoyxat)}</Badge>
+                  </span>
                 </Link>
               </li>
             ))}

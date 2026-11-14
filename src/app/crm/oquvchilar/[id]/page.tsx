@@ -10,7 +10,7 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty, Button } from '@/components/ui'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { guruhgaBiriktir, guruhAlmashtir, qoshilganSanaOzgartir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor, tuzatishTahrir, vipOzgartir, oquvchiArxivla, oquvchiXatoOchir } from '../actions'
+import { guruhgaBiriktir, guruhAlmashtir, qoshilganSanaOzgartir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor, tuzatishTahrir, vipOzgartir, oquvchiArxivla, fanArxivla, fanQayta, oquvchiXatoOchir } from '../actions'
 import { ChegirmaMaydonlari } from '../bolaklar'
 import { HisobForma } from '@/components/hisob'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
@@ -58,7 +58,7 @@ export default async function OquvchiProfil({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ ok?: string; xato?: string }>
+  searchParams: Promise<{ ok?: string; xato?: string; qayta?: string }>
 }) {
   const [{ id }, xabar] = await Promise.all([params, searchParams])
   // Ustozda faqat botdagi huquq: davomat, guruhlari, woblar. O'quvchi
@@ -99,7 +99,7 @@ export default async function OquvchiProfil({
     supabase
       .from('enrollments')
       .select(
-        'id, group_id, boshlandi, tugadi, holat, chegirma_summa, chegirma_oy, chegirma2_summa, chegirma2_oy, chegirma_sabab, vip, vip_dan, groups(nom, subject_id, boshlanish, tugash, kunlar, oylik_narx, teachers(ism))',
+        'id, group_id, boshlandi, tugadi, holat, ketish_sababi, ketish_izoh, chegirma_summa, chegirma_oy, chegirma2_summa, chegirma2_oy, chegirma_sabab, vip, vip_dan, groups(nom, subject_id, boshlanish, tugash, kunlar, oylik_narx, teachers(ism))',
       )
       .eq('student_id', id)
       .order('boshlandi', { ascending: false }),
@@ -154,6 +154,8 @@ export default async function OquvchiProfil({
     boshlandi: string
     tugadi: string | null
     holat: string
+    ketish_sababi: string | null
+    ketish_izoh: string | null
     chegirma_summa: number
     chegirma_oy: number | null
     chegirma2_summa: number
@@ -193,6 +195,38 @@ export default async function OquvchiProfil({
       .map((k) => [k.enrollment_id, Number(k.summa)]),
   )
   const arxivda = oquvchi.holat === 'ketgan'
+  // Bir guruhdagi yozilishlar bitta kartada (14.11): ketib qaytgan davrlar ichida alohida
+  const toplamlar: Yozilish[][] = []
+  {
+    const joy = new Map<string, Yozilish[]>()
+    for (const y of yList) {
+      const t = joy.get(y.group_id)
+      if (t) t.push(y)
+      else {
+        const yangi = [y]
+        joy.set(y.group_id, yangi)
+        toplamlar.push(yangi)
+      }
+    }
+  }
+  // Qayta o'qish (0124): har fanning eng oxirgi yopilgan yozilishi, shu fanda faol yozilish bo'lmasa
+  const faolGuruhlar = (barchaGuruhlar ?? []) as { id: string; nom: string; subject_id: string | null }[]
+  const qaytaMumkin = new Set<string>()
+  {
+    const korilgan = new Set<string>()
+    const tartib = [...yList].sort((a, b) => (b.tugadi ?? b.boshlandi).localeCompare(a.tugadi ?? a.boshlandi))
+    for (const y of tartib) {
+      const fan = y.groups?.subject_id ?? `g:${y.group_id}`
+      if (korilgan.has(fan)) continue
+      korilgan.add(fan)
+      if (y.holat === 'tugagan') qaytaMumkin.add(y.id)
+    }
+  }
+  const ertasi = (d: string) => {
+    const x = new Date(`${d}T00:00:00Z`)
+    x.setUTCDate(x.getUTCDate() + 1)
+    return x.toISOString().slice(0, 10)
+  }
 
   const jamiQarz = [...bMap.values()].reduce((a, b) => a + (Number(b.qarz) || 0), 0)
   const jamiTolangan = [...bMap.values()].reduce((a, b) => a + (Number(b.tolangan) || 0), 0)
@@ -297,33 +331,54 @@ export default async function OquvchiProfil({
       <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         {/* ── Guruhlari ── */}
         <Card className="flex flex-col">
-          <CardHeader title="Guruhlari" meta={`${yList.length} ta`} />
+          <CardHeader title="Guruhlari" meta={`${toplamlar.length} ta`} />
           <div className="flex flex-col gap-2.5 px-5 pb-4">
             {yList.length === 0 ? (
               <Empty>Hech qaysi guruhga yozilmagan.</Empty>
             ) : (
-              yList.map((y) => {
+              (() => {
+              const blok = (y: Yozilish, ichki: boolean) => {
                 const b = bMap.get(y.id)
                 const qarz = Number(b?.qarz ?? 0)
                 return (
                   <div
                     key={y.id}
-                    data-belgi={`${y.holat !== 'tugagan' ? 'guruh' : ''}${qarz > 0 ? ' qarz' : ''}`}
-                    className="flex flex-wrap items-start justify-between gap-3 rounded-[10px] border border-line px-4 py-3"
+                    data-belgi={ichki ? undefined : `${y.holat !== 'tugagan' ? 'guruh' : ''}${qarz > 0 ? ' qarz' : ''}`}
+                    className={
+                      ichki
+                        ? 'flex flex-wrap items-start justify-between gap-3 border-t border-line-soft pt-3'
+                        : 'flex flex-wrap items-start justify-between gap-3 rounded-[10px] border border-line px-4 py-3'
+                    }
                   >
                     <div className="flex min-w-0 flex-col gap-1">
-                      <span className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold">
-                        <Link href={`/crm/guruhlar/${y.group_id}`} className="hover:text-brand hover:underline">
-                          {y.groups?.nom ?? '—'}
-                        </Link>
-                        {y.vip && <Badge ton="accent">VIP</Badge>}
-                      </span>
-                      <span className="text-[12px] text-ink-3">
-                        {y.groups?.teachers?.ism ?? '[ANIQLANMAGAN]'} ·{' '}
-                        {jadval(y.groups?.boshlanish ?? null, y.groups?.tugash ?? null, y.groups?.kunlar ?? null)}
-                      </span>
+                      {ichki ? (
+                        <span className="flex flex-wrap items-center gap-2 text-[12.5px] font-semibold">
+                          <Badge ton={y.holat === 'tugagan' ? 'jim' : 'ok'}>{y.holat === 'tugagan' ? 'oldingi davr' : 'hozirgi davr'}</Badge>
+                          {y.vip && <Badge ton="accent">VIP</Badge>}
+                        </span>
+                      ) : (
+                        <>
+                          <span className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold">
+                            <Link href={`/crm/guruhlar/${y.group_id}`} className="hover:text-brand hover:underline">
+                              {y.groups?.nom ?? '—'}
+                            </Link>
+                            {y.vip && <Badge ton="accent">VIP</Badge>}
+                          </span>
+                          <span className="text-[12px] text-ink-3">
+                            {y.groups?.teachers?.ism ?? '[ANIQLANMAGAN]'} ·{' '}
+                            {jadval(y.groups?.boshlanish ?? null, y.groups?.tugash ?? null, y.groups?.kunlar ?? null)}
+                          </span>
+                        </>
+                      )}
                       <span className="text-[12px] text-ink-3">
                         {sana(y.boshlandi)} dan {y.tugadi ? `${sana(y.tugadi)} gacha` : 'hozirgacha'}
+                        {y.holat === 'tugagan' && (
+                          <>
+                            {' · ketdi: '}
+                            {ketishNomi(y.ketish_sababi, ketishRoyxat)}
+                            {y.ketish_izoh ? ` (${y.ketish_izoh})` : ''}
+                          </>
+                        )}
                         {y.chegirma_summa > 0 && (
                           <>
                             {' · chegirma '}
@@ -338,7 +393,7 @@ export default async function OquvchiProfil({
 
                     {pulKoradi && (
                       <div className="flex flex-col items-end gap-0.5">
-                        <span className="lbl">oyiga {pul(y.groups?.oylik_narx ?? 0)}</span>
+                        {!ichki && <span className="lbl">oyiga {pul(y.groups?.oylik_narx ?? 0)}</span>}
                         <span
                           className={`tnum font-[family-name:var(--font-mono)] text-[13px] ${
                             qarz > 0 ? 'text-brand' : 'text-ok'
@@ -539,7 +594,39 @@ export default async function OquvchiProfil({
                     )}
                     {pulKoradi && y.holat !== 'tugagan' && (
                       <details className="w-full">
-                        <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Guruhdan chiqarish</summary>
+                        <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Fanni arxivga</summary>
+                        <form action={fanArxivla} className="mt-2 flex flex-wrap items-end gap-2">
+                          <input type="hidden" name="student_id" value={oquvchi.id} />
+                          <input type="hidden" name="enrollment_id" value={y.id} />
+                          <Maydon nom="Oxirgi kuni">
+                            <input type="date" name="sana" required defaultValue={bugunToshkent()} min={y.boshlandi} className={kirishKlass} />
+                          </Maydon>
+                          <Maydon nom="Ketish sababi">
+                            <select name="turi" required defaultValue="" className={kirishKlass}>
+                              <option value="" disabled>
+                                Tanlang…
+                              </option>
+                              {royxatVariantlari(ketishRoyxat).map((b) => (
+                                <option key={b.kalit} value={b.kalit}>
+                                  {b.nom}
+                                </option>
+                              ))}
+                            </select>
+                          </Maydon>
+                          <Maydon nom="Izoh" izoh="“Boshqa” bo‘lsa — majburiy">
+                            <input name="izoh" placeholder="Masalan: vaqti to‘g‘ri kelmadi" className={kirishKlass} />
+                          </Maydon>
+                          <Yuborish tur="xavfli" kutish="…">Arxivga</Yuborish>
+                          <p className="w-full text-[11.5px] text-ink-3">
+                            Faqat shu fan yopiladi, qolgan fanlari faol qoladi. Keyingi oylar hisoblanmaydi, qarzi saqlanadi.
+                            {yList.filter((z) => z.holat !== 'tugagan').length === 1 && ' Bu oxirgi faol fani — o‘quvchi ham arxivga o‘tadi.'}
+                          </p>
+                        </form>
+                      </details>
+                    )}
+                    {pulKoradi && y.holat !== 'tugagan' && (
+                      <details className="w-full">
+                        <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Guruhdan chiqarish (sababsiz)</summary>
                         <form action={guruhdanChiqar} className="mt-2 flex flex-wrap items-end gap-2">
                           <input type="hidden" name="student_id" value={oquvchi.id} />
                           <input type="hidden" name="enrollment_id" value={y.id} />
@@ -550,9 +637,111 @@ export default async function OquvchiProfil({
                         </form>
                       </details>
                     )}
+                    {pulKoradi && qaytaMumkin.has(y.id) && y.tugadi && (() => {
+                      const fanGuruhlari = faolGuruhlar.filter((g) => g.subject_id === (y.groups?.subject_id ?? null))
+                      const boshla = ertasi(y.tugadi) > bugunToshkent() ? ertasi(y.tugadi) : bugunToshkent()
+                      const oy = davrNomi(y.tugadi.slice(0, 7))
+                      return (
+                        <details className="w-full scroll-mt-24" id={`qayta-${y.id}`} open={xabar.qayta === y.id}>
+                          <summary className="cursor-pointer text-[12px] font-semibold text-accent hover:text-ink">Qayta o‘qish</summary>
+                          {fanGuruhlari.length === 0 ? (
+                            <p className="mt-2 text-[12px] text-ink-3">Bu fanning ochiq guruhi yo‘q — avval guruh oching.</p>
+                          ) : (
+                            <form action={fanQayta} className="mt-2 flex flex-col gap-3">
+                              <input type="hidden" name="student_id" value={oquvchi.id} />
+                              <input type="hidden" name="enrollment_id" value={y.id} />
+                              <input type="hidden" name="chegirma2_summa" value={y.chegirma2_summa || ''} />
+                              <input type="hidden" name="chegirma2_oy" value={y.chegirma2_summa ? (y.chegirma2_oy ?? '') : ''} />
+                              <input type="hidden" name="chegirma_sabab" value={y.chegirma_sabab ?? ''} />
+                              <div className="flex flex-wrap items-end gap-2">
+                                <Maydon nom="Guruh">
+                                  <select name="group_id" required defaultValue={fanGuruhlari.some((g) => g.id === y.group_id) ? y.group_id : ''} className={kirishKlass}>
+                                    <option value="" disabled>Tanlang…</option>
+                                    {fanGuruhlari.map((g) => (
+                                      <option key={g.id} value={g.id}>{g.nom}</option>
+                                    ))}
+                                  </select>
+                                </Maydon>
+                                <Maydon nom="Qaysi kundan" izoh={`${sana(y.tugadi)} dan keyin`}>
+                                  <input type="date" name="sana" required min={ertasi(y.tugadi)} defaultValue={boshla} className={kirishKlass} />
+                                </Maydon>
+                                <Maydon nom="Chegirma (oyiga)" izoh="Bo‘sh — chegirmasiz">
+                                  <input name="chegirma_summa" inputMode="numeric" defaultValue={y.chegirma_summa || ''} className={kirishKlass} />
+                                </Maydon>
+                                <Maydon nom="Necha oy" izoh="Bo‘sh — muddatsiz">
+                                  <input name="chegirma_oy" inputMode="numeric" defaultValue={y.chegirma_summa && y.chegirma_oy ? y.chegirma_oy : ''} className={kirishKlass} />
+                                </Maydon>
+                              </div>
+                              <div className="flex flex-col gap-2 rounded-[9px] bg-surface-2 px-3 py-2.5">
+                                <span className="text-[12.5px] text-ink-2">
+                                  <b>{oy}</b> ichida qaytsa (shu oyda ketgan): eski yozuvdagi shu oy hisobi qoladi. Yangisida shu oy uchun qancha to‘laydi — o‘zingiz yozing.
+                                </span>
+                                <div className="flex flex-wrap items-end gap-2">
+                                  <Maydon nom="Shu oy uchun summa" izoh={`Faqat ${oy} da qaytsa majburiy`}>
+                                    <input name="shu_oy" inputMode="numeric" placeholder="Masalan: 300 000" className={kirishKlass} />
+                                  </Maydon>
+                                  <Maydon nom="Izoh" izoh="Masalan: qolgan 4 dars">
+                                    <input name="izoh" className={kirishKlass} />
+                                  </Maydon>
+                                </div>
+                              </div>
+                              <div>
+                                <Yuborish tur="ok" kutish="…">Qayta ochish</Yuborish>
+                              </div>
+                            </form>
+                          )}
+                        </details>
+                      )
+                    })()}
+                  </div>
+                )
+              }
+              return toplamlar.map((t) => {
+                if (t.length === 1) return blok(t[0], false)
+                const g = t[0].groups
+                const jamiQarz = t.reduce((a, y) => a + Number(bMap.get(y.id)?.qarz ?? 0), 0)
+                const faol = t.some((y) => y.holat !== 'tugagan')
+                const davrlar = [...t].sort((a, b) => a.boshlandi.localeCompare(b.boshlandi))
+                return (
+                  <div
+                    key={`g-${t[0].group_id}`}
+                    data-belgi={`${faol ? 'guruh' : ''}${jamiQarz > 0 ? ' qarz' : ''}`}
+                    className="flex flex-col gap-3 rounded-[10px] border border-line px-4 py-3"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <span className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold">
+                          <Link href={`/crm/guruhlar/${t[0].group_id}`} className="hover:text-brand hover:underline">
+                            {g?.nom ?? '—'}
+                          </Link>
+                          <Badge ton="jim">{t.length} davr</Badge>
+                        </span>
+                        <span className="text-[12px] text-ink-3">
+                          {g?.teachers?.ism ?? '[ANIQLANMAGAN]'} · {jadval(g?.boshlanish ?? null, g?.tugash ?? null, g?.kunlar ?? null)}
+                        </span>
+                        <span className="text-[12px] text-ink-2">
+                          {davrlar.map((y, i) => (
+                            <span key={y.id}>
+                              {i > 0 && ' · '}
+                              {sana(y.boshlandi)} – {y.tugadi ? sana(y.tugadi) : 'hozirgacha'}
+                            </span>
+                          ))}
+                        </span>
+                      </div>
+                      {pulKoradi && (
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span className="lbl">oyiga {pul(g?.oylik_narx ?? 0)}</span>
+                          <span className={`tnum font-[family-name:var(--font-mono)] text-[13px] ${jamiQarz > 0 ? 'text-brand' : 'text-ok'}`}>
+                            {jamiQarz > 0 ? `jami qarz ${pul(jamiQarz)}` : 'qarzi yo‘q'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {t.map((y) => blok(y, true))}
                   </div>
                 )
               })
+              })()
             )}
 
             {pulKoradi && (

@@ -8,6 +8,8 @@ export function ketishNomi(s: string | null | undefined, royxat: RoyxatBand[]): 
 /** ketish_tahlili() natijasi */
 export type KetishTahlili = {
   jami: number
+  /** Bitta fanidan ketib, o'zi faol qolganlar (0124) */
+  fan_jami: number
   boshida: number
   yangi: number
   koeffitsient: number | null
@@ -16,5 +18,6 @@ export type KetishTahlili = {
   sabablar: { sabab: string; soni: number }[]
   ustozlar: { ism: string; soni: number }[]
   fanlar: { nom: string; soni: number }[]
-  royxat: { id: string; fish: string; sana: string; sabab: string; izoh: string | null }[]
+  /** fan bo'sh — butunlay ketgan; to'la — shu fandan ketgan (0124) */
+  royxat: { id: string; fish: string; sana: string; sabab: string; izoh: string | null; fan: string | null }[]
 }

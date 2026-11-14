@@ -144,8 +144,29 @@ export type Enrollment = {
   vip: boolean
   vip_dan: string | null
   holat: EnrollmentStatus
+  /** Shu fandan ketish sababi (0124) — royxatlar.ketish_sabab */
+  ketish_sababi: string | null
+  ketish_izoh: string | null
   created_at: string
   updated_at: string
+}
+
+/** v_arxiv_fanlar (0124): o'quvchi faol, lekin shu fanni endi o'qimaydi */
+export type ArxivFan = {
+  enrollment_id: string
+  student_id: string
+  fish: string
+  group_id: string
+  guruh: string
+  subject_id: string | null
+  fan: string | null
+  teacher_id: string | null
+  ustoz: string | null
+  boshlandi: string
+  tugadi: string | null
+  ketish_sababi: string | null
+  ketish_izoh: string | null
+  qarz: number
 }
 
 export type Lesson = {
@@ -928,6 +949,7 @@ export type Database = {
       v_bugungi_darslar: View<BugungiDars>
       v_ustoz_kechikish_oylik: View<UstozKechikishOylik>
       v_oylik_natijalar: View<import('./oylik-test').OylikNatija>
+      v_arxiv_fanlar: View<ArxivFan>
       v_arxiv_oquvchilar: View<{ student_id: string; fish: string; arxiv_sana: string | null; arxiv_sabab: string | null; qarz: number; guruhlar: string | null; ketish_sababi: string | null }>
     }
     Functions: {
@@ -1024,13 +1046,16 @@ export type Database = {
       vip_ozgartir: { Args: { p_enrollment: string; p_vip: boolean; p_dan?: string | null }; Returns: number }
       oquvchi_arxivla: { Args: { p_student: string; p_sana?: string | null; p_sabab?: string | null; p_turi?: string | null }; Returns: number }
       ketish_sababi_belgila: { Args: { p_student: string; p_turi: string; p_izoh?: string | null }; Returns: undefined }
+      fan_arxivla: { Args: { p_enrollment: string; p_sana?: string | null; p_turi: string; p_izoh?: string | null }; Returns: 'fan' | 'oquvchi' }
+      fan_ketish_sababi_belgila: { Args: { p_enrollment: string; p_turi: string; p_izoh?: string | null }; Returns: undefined }
       ketish_tahlili: { Args: { p_dan: string; p_gacha: string }; Returns: import('./ketish').KetishTahlili }
       kunlik_qoshimcha: { Args: { p_kun: string }; Returns: Record<string, unknown> }
       ertangi_maslahat: { Args: { p_kun: string }; Returns: Record<string, unknown> }
       sheets_muzlatilganmi: { Args: Record<string, never>; Returns: boolean }
       sheets_muzlat: { Args: { p_muzlat: boolean }; Returns: boolean }
       oquvchi_arxivdan: { Args: { p_student: string }; Returns: undefined }
-      oquvchi_qaytar: { Args: { p_student: string; p_group?: string | null; p_sana?: string | null; p_chegirma?: Record<string, unknown> }; Returns: string | null }
+      oquvchi_qaytar: { Args: { p_student: string; p_group?: string | null; p_sana?: string | null; p_chegirma?: Record<string, unknown>; p_shu_oy?: number | null }; Returns: string | null }
+      fan_qayta: { Args: { p_enrollment: string; p_group: string; p_sana?: string | null; p_chegirma?: Record<string, unknown>; p_shu_oy?: number | null; p_izoh?: string | null }; Returns: string }
       tuzatish_tahrir: { Args: { p_id: number; p_summa: number; p_sabab: string }; Returns: undefined }
       yozilish_oylari: {
         Args: { p_student: string }

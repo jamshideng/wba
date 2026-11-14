@@ -8,7 +8,7 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { IconArrowLeft } from '@/components/icons'
-import { pul, sana, bugunToshkent } from '@/lib/format'
+import { pul, sana, bugunToshkent, davrNomi } from '@/lib/format'
 import { oquvchiQaytar } from '../../actions'
 
 export const metadata = { title: 'Arxivdan qaytarish' }
@@ -24,10 +24,10 @@ type Yozilish = {
   chegirma2_summa: number
   chegirma2_oy: number | null
   chegirma_sabab: string | null
-  groups: { nom: string; oylik_narx: number; holat: string } | null
+  groups: { nom: string; oylik_narx: number; holat: string; subject_id: string | null } | null
 }
 
-type Q = { q?: string; g?: string; s?: string; c1?: string; c1oy?: string; c2?: string; c2oy?: string; cs?: string; xato?: string }
+type Q = { q?: string; g?: string; s?: string; c1?: string; c1oy?: string; c2?: string; c2oy?: string; cs?: string; so?: string; xato?: string }
 
 /** Keyingi kun (YYYY-MM-DD) */
 function ertasi(d: string): string {
@@ -60,16 +60,16 @@ export default async function Qaytarish({
     supabase.from('students').select('id, fish, holat, arxiv_sana').eq('id', id).maybeSingle(),
     supabase
       .from('enrollments')
-      .select('id, group_id, boshlandi, tugadi, chegirma_summa, chegirma_oy, chegirma2_summa, chegirma2_oy, chegirma_sabab, groups(nom, oylik_narx, holat)')
+      .select('id, group_id, boshlandi, tugadi, chegirma_summa, chegirma_oy, chegirma2_summa, chegirma2_oy, chegirma_sabab, groups(nom, oylik_narx, holat, subject_id)')
       .eq('student_id', id)
       .order('boshlandi', { ascending: false }),
-    supabase.from('groups').select('id, nom, oylik_narx').eq('holat', 'faol').order('nom'),
+    supabase.from('groups').select('id, nom, oylik_narx, subject_id').eq('holat', 'faol').order('nom'),
   ])
   if (!oq) notFound()
   if (oq.holat !== 'ketgan') redirect(`/crm/oquvchilar/${id}`)
 
   const yozilishlar = (yXom ?? []) as unknown as Yozilish[]
-  const guruhlar = (gXom ?? []) as { id: string; nom: string; oylik_narx: number }[]
+  const guruhlar = (gXom ?? []) as { id: string; nom: string; oylik_narx: number; subject_id: string | null }[]
   const { data: bXom } = yozilishlar.length
     ? await supabase.from('v_enrollment_balance').select('enrollment_id, qarz').in('enrollment_id', yozilishlar.map((y) => y.id))
     : { data: [] }
@@ -95,6 +95,13 @@ export default async function Qaytarish({
     return `${asos}?${u.toString()}`
   }
   const eskiQarz = [...qarz.values()].reduce((a, b) => a + b, 0)
+  // Shu fandan ketgan oyining o'zida qaytyaptimi (0124) — shu oy summasi qo'lda
+  const eskiFan = guruh
+    ? yozilishlar
+        .filter((y) => y.tugadi && (y.groups?.subject_id ?? null) === guruh.subject_id)
+        .sort((a, b) => b.tugadi!.localeCompare(a.tugadi!))[0] ?? null
+    : null
+  const shuOy = Boolean(eskiFan?.tugadi && eskiFan.tugadi.slice(0, 7) === tanlanganSana.slice(0, 7))
 
   const Tugma = ({ href, nom, izoh }: { href: string; nom: string; izoh?: string }) => (
     <Link href={href} className="flex min-h-14 flex-col justify-center gap-0.5 rounded-[11px] border border-line bg-surface px-4 py-3 transition hover:border-brand hover:bg-surface-2">
@@ -200,6 +207,17 @@ export default async function Qaytarish({
             <Maydon nom="Chegirma sababi">
               <input name="cs" defaultValue={hal('cs', cheg?.chegirma_sabab ?? '')} className={kirishKlass} />
             </Maydon>
+            {shuOy && (
+              <div className="flex flex-col gap-2 rounded-[9px] border border-accent/40 bg-surface-2 px-3 py-3">
+                <span className="text-[12.5px] text-ink-2">
+                  Bu fandan <b>{sana(eskiFan!.tugadi!)}</b> da ketgan va <b>shu oyning o‘zida</b> qaytyapti. Eski yozuvdagi {davrNomi(tanlanganSana.slice(0, 7))} hisobi
+                  (tuzatish bilan) o‘z joyida qoladi.
+                </span>
+                <Maydon nom={`${davrNomi(tanlanganSana.slice(0, 7))} uchun yana qancha to‘laydi?`} izoh={`Masalan, qolgan darslar uchun. 0 dan ${pul(guruh.oylik_narx)} gacha`}>
+                  <input name="so" required inputMode="numeric" defaultValue={s.so ?? ''} placeholder="Masalan: 300 000" className={kirishKlass} />
+                </Maydon>
+              </div>
+            )}
             {cheg && (cheg.chegirma_summa > 0 || cheg.chegirma2_summa > 0) && !s.c1 && (
               <p className="text-[11.5px] text-ink-3">Oldingi yozilishdagi chegirma qo‘yildi — kerak bo‘lmasa o‘chiring.</p>
             )}
@@ -229,6 +247,12 @@ export default async function Qaytarish({
                   {s.c2 ? ` + ${pul(s.c2)}${s.c2oy ? ` · ${s.c2oy} oy` : ' · muddatsiz'}` : ''}
                   {s.cs ? ` · ${s.cs}` : ''}
                 </dd>
+                {shuOy && (
+                  <>
+                    <dt className="text-ink-3">{davrNomi(tanlanganSana.slice(0, 7))} uchun</dt>
+                    <dd className="font-semibold">{s.so ? `${pul(Number(s.so.replace(/\D/g, '')))} (ketgan oyida qaytdi)` : <span className="text-brand">kiritilmagan — orqaga qayting</span>}</dd>
+                  </>
+                )}
               </>
             )}
             {eskiQarz !== 0 && (
@@ -252,6 +276,7 @@ export default async function Qaytarish({
                 <input type="hidden" name="chegirma2_summa" value={s.c2 ?? ''} />
                 <input type="hidden" name="chegirma2_oy" value={s.c2oy ?? ''} />
                 <input type="hidden" name="chegirma_sabab" value={s.cs ?? ''} />
+                {shuOy && <input type="hidden" name="shu_oy" value={s.so ?? ''} />}
               </>
             )}
             <Button href={yolQ({ q: guruh ? '3' : '1' })} variant="ikkilamchi">Orqaga</Button>
