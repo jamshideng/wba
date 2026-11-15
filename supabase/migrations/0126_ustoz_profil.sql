@@ -362,6 +362,15 @@ $$;
 revoke execute on function ustoz_slug_yasa(text) from public, anon;
 
 
+/* Ustozning ulangan Telegram chatlari + tayyor matn (faqat boshqa funksiyalar ichidan) */
+create or replace function ustoz_tg_chatlar(p_teacher text, p_sarlavha text, p_matn text) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(jsonb_build_object('chat', u.chat_id, 'sarlavha', p_sarlavha, 'matn', p_matn)), '[]'::jsonb)
+  from telegram_ulanish u
+  where u.holat = 'faol' and (u.teacher_id = p_teacher or u.profile_id = (select profile_id from teachers where id = p_teacher))
+$$;
+revoke execute on function ustoz_tg_chatlar(text, text, text) from public, anon, authenticated;
+
 -- ------------------------------------------------------------
 -- 5. Tasdiq (manager / direktor)
 -- ------------------------------------------------------------
@@ -392,7 +401,8 @@ $$;
 revoke execute on function ustoz_cv_nusxa(text) from public, anon;
 grant execute on function ustoz_cv_nusxa(text) to authenticated, service_role;
 
-create or replace function ustoz_cv_tasdiqla(p_teacher text) returns void
+drop function if exists ustoz_cv_tasdiqla(text);
+create or replace function ustoz_cv_tasdiqla(p_teacher text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 begin
   if auth.uid() is not null and not app_is_manager() then
@@ -413,12 +423,14 @@ begin
   values ('eslatma', 'Ma''lumotlaringiz tasdiqlandi', 'CV dagi o''zgarishlar tasdiqlandi.',
           '/crm/malumotlarim', 'Ko''rish', array['ustoz'], jsonb_build_object('ustoz', p_teacher),
           now() + interval '7 days', auth.uid(), 'ustoz_profil');
+  return jsonb_build_object('tg', ustoz_tg_chatlar(p_teacher, 'CV tasdiqlandi', 'Ma''lumotlaringiz saytga chiqishga tasdiqlandi.'));
 end;
 $$;
 revoke execute on function ustoz_cv_tasdiqla(text) from public, anon;
 grant execute on function ustoz_cv_tasdiqla(text) to authenticated, service_role;
 
-create or replace function ustoz_cv_qaytar(p_teacher text, p_izoh text) returns void
+drop function if exists ustoz_cv_qaytar(text, text);
+create or replace function ustoz_cv_qaytar(p_teacher text, p_izoh text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 begin
   if auth.uid() is not null and not app_is_manager() then
@@ -437,6 +449,7 @@ begin
   insert into bildirishnomalar (turi, sarlavha, matn, havola, havola_matn, kimga, filtr, muhim, tugash, yaratdi, manba)
   values ('eslatma', 'CV qaytarildi', trim(p_izoh), '/crm/malumotlarim', 'Tuzatish',
           array['ustoz'], jsonb_build_object('ustoz', p_teacher), true, now() + interval '14 days', auth.uid(), 'ustoz_profil');
+  return jsonb_build_object('tg', ustoz_tg_chatlar(p_teacher, 'CV qaytarildi', trim(p_izoh)));
 end;
 $$;
 revoke execute on function ustoz_cv_qaytar(text, text) from public, anon;
@@ -447,14 +460,17 @@ grant execute on function ustoz_cv_qaytar(text, text) to authenticated, service_
 -- 6. Xabar: kim o'zgartirsa — ikkinchi tomonga (30 daq ichida bir marta)
 -- ------------------------------------------------------------
 
+drop function if exists ustoz_profil_xabar(text, text);
 create or replace function ustoz_profil_xabar(p_teacher text, p_bolim text default null)
-returns int
+returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   v_ustoz boolean := coalesce(p_teacher = app_teacher_id(), false);
   v_ism   text;
   v_cv    boolean := coalesce(p_bolim, '') not in ('obyektivka', 'mehnat');
   v_soni  int := 0;
+  v_tg    jsonb := '[]'::jsonb;
+  v_sar   text;
   r       record;
 begin
   if not ustoz_profil_huquq(p_teacher) then
@@ -469,12 +485,15 @@ begin
       continue when exists (select 1 from bildirishnomalar b where b.manba = 'ustoz_profil'
                               and b.filtr ->> 'profil' = r.id::text and b.filtr ->> 'ustoz_id' = p_teacher
                               and b.created_at > now() - interval '30 minutes');
+      v_sar := case when r.rol = 'manager' and v_cv then format('%s CV ni o''zgartirdi — tasdiq kutilmoqda', v_ism)
+                    else format('%s ma''lumotlarini o''zgartirdi', v_ism) end;
+      v_tg := v_tg || coalesce((select jsonb_agg(jsonb_build_object('chat', u.chat_id, 'sarlavha', v_sar,
+                                  'matn', coalesce('Bo''lim: ' || p_bolim, ''), 'havola', '/crm/ustozlar/' || p_teacher || '/profil'))
+                                from telegram_ulanish u where u.holat = 'faol' and u.profile_id = r.id), '[]'::jsonb);
       insert into bildirishnomalar (turi, sarlavha, matn, havola, havola_matn, kimga, filtr, tugash, yaratdi, manba)
-      values ('eslatma',
-              case when r.rol = 'manager' and v_cv then format('%s CV ni o''zgartirdi — tasdiq kutilmoqda', v_ism)
-                   else format('%s ma''lumotlarini o''zgartirdi', v_ism) end,
+      values ('eslatma', v_sar,
               coalesce('Bo''lim: ' || p_bolim, null),
-              '/crm/ustozlar/' || p_teacher || '?bolim=profil', 'Ko''rish', array['xodim'],
+              '/crm/ustozlar/' || p_teacher || '/profil', 'Ko''rish', array['xodim'],
               jsonb_build_object('profil', r.id, 'ustoz_id', p_teacher), now() + interval '7 days', auth.uid(), 'ustoz_profil');
       v_soni := v_soni + 1;
     end loop;
@@ -487,9 +506,10 @@ begin
               '/crm/malumotlarim', 'Ko''rish', array['ustoz'], jsonb_build_object('ustoz', p_teacher),
               now() + interval '7 days', auth.uid(), 'ustoz_profil');
       v_soni := 1;
+      v_tg := ustoz_tg_chatlar(p_teacher, 'Ma''lumotlaringiz o''zgartirildi', coalesce('Bo''lim: ' || p_bolim, ''));
     end if;
   end if;
-  return v_soni;
+  return jsonb_build_object('soni', v_soni, 'tg', v_tg);
 end;
 $$;
 revoke execute on function ustoz_profil_xabar(text, text) from public, anon;

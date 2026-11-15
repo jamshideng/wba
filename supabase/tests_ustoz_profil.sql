@@ -13,15 +13,15 @@ set local role authenticated;
 update teacher_profil set tavsif = 'Ingliz tili ustozi, 5 yil tajriba', fanlar = '{Ingliz tili,IELTS}' where teacher_id = 'U03';
 insert into teacher_sertifikat (teacher_id, turi, ball, qayerda, sana, fayl_saytda) values ('U03', 'IELTS', '8.0', 'British Council, Toshkent', '2025-03-10', true);
 insert into teacher_talim (teacher_id, otm, yonalish, daraja, dan_yil, gacha_yil) values ('U03', 'O''zDJTU', 'Ingliz filologiyasi', 'bakalavr', 2016, 2020);
-insert into teacher_shaxsiy (teacher_id, tugilgan_sana, pasport, jshshir, manzil) values ('U03', '1998-05-01', 'AB1234567', '12345678901234', 'Toshkent');
+insert into teacher_shaxsiy (teacher_id, tugilgan_sana, pasport, jshshir, manzil) values ('U03', '1998-05-01', 'AB1234567', '12345678901234', 'Toshkent') on conflict (teacher_id) do update set pasport = excluded.pasport, jshshir = excluded.jshshir;
 insert into teacher_mehnat (teacher_id, dan_yil, ish_joyi, lavozim) values ('U03', 2021, 'WBA', 'Ustoz');
 select 'ustoz: holat', holat from teacher_profil where teacher_id = 'U03';
 select 'ustoz: fayl_saytda majburan false', fayl_saytda from teacher_sertifikat where teacher_id = 'U03';
 select 'ustoz: boshqa ustozni ko''radi (0 bo''lishi kerak)', count(*) from teacher_shaxsiy where teacher_id <> 'U03';
 select 'ustoz: boshqa ustoz profili (0)', count(*) from teacher_profil where teacher_id <> 'U03';
 do $$ begin
-  update teacher_profil set saytda = true where teacher_id = 'U03';
-  raise exception 'XATO: ustoz saytda ni yoqdi';
+  update teacher_profil set saytda = not saytda where teacher_id = 'U03';
+  raise exception 'XATO: ustoz saytda ni o''zgartirdi';
 exception when others then if sqlerrm like 'XATO%' then raise; end if; raise notice 'ok rad (saytda): %', sqlerrm; end $$;
 do $$ begin
   perform ustoz_cv_tasdiqla('U03');
@@ -33,8 +33,8 @@ do $$ declare n int; begin
   if n > 0 then raise exception 'XATO: ustoz boshqaning obyektivkasini o''zgartirdi'; end if;
   raise notice 'ok: boshqa ustoz obyektivkasiga tegolmadi';
 end $$;
-select 'ustoz xabari (admin/managerga)', ustoz_profil_xabar('U03', 'cv');
-select 'takror (30 daq) — 0', ustoz_profil_xabar('U03', 'cv');
+select 'ustoz xabari (admin/managerga)', ustoz_profil_xabar('U03', 'cv') ->> 'soni';
+select 'takror (30 daq) — 0', ustoz_profil_xabar('U03', 'cv') ->> 'soni';
 reset role;
 
 -- ===== 2) O'QUVCHI =====

@@ -888,6 +888,14 @@ export type Database = {
       maosh_doimiy: Table<MaoshDoimiy & { updated_at: string }>
       guruh_jadvali: Table<{ group_id: string; dan: string; kunlar: number[] }>
       teachers: Table<Teacher>
+      /** 0126 — ustoz profili (CV, obyektivka) */
+      teacher_profil: Table<import('./ustoz-profil').Profil & { tasdiqladi: string | null; updated_at: string }>
+      teacher_sertifikat: Table<import('./ustoz-profil').Sertifikat & { teacher_id: string; tartib: number; created_at: string }>
+      teacher_yutuq: Table<import('./ustoz-profil').Yutuq & { teacher_id: string; tartib: number; created_at: string }>
+      teacher_talim: Table<import('./ustoz-profil').Talim & { teacher_id: string; created_at: string }>
+      teacher_mehnat: Table<import('./ustoz-profil').Mehnat & { teacher_id: string; created_at: string }>
+      teacher_shaxsiy: Table<import('./ustoz-profil').Shaxsiy & { teacher_id: string; updated_at: string }>
+      teacher_profil_tarix: Table<Omit<import('./ustoz-profil').Tarix, 'profiles'> & { teacher_id: string; yozuv_id: string | null; kim: string | null }>
       students: Table<Student>
       groups: Table<Group>
       enrollments: Table<Enrollment>
@@ -949,6 +957,7 @@ export type Database = {
       v_qarzdorlar: View<Qarzdor>
       v_dashboard: View<DashboardStats>
       v_teacher_stats: View<TeacherStats>
+      v_ustoz_toldirish: View<import('./ustoz-profil').Toldirish & { teacher_id: string; holat: string; saytda: boolean }>
       v_teacher_monthly_income: View<TeacherMonthlyIncome>
       v_group_stats: View<GroupStats>
       v_attendance_monthly: View<AttendanceMonthly>
@@ -961,6 +970,11 @@ export type Database = {
       v_arxiv_oquvchilar: View<{ student_id: string; fish: string; arxiv_sana: string | null; arxiv_sabab: string | null; qarz: number; guruhlar: string | null; ketish_sababi: string | null }>
     }
     Functions: {
+      ustoz_profil_xabar: { Args: { p_teacher: string; p_bolim?: string | null }; Returns: { soni: number; tg: import('./ustoz-profil-xabar').TgManzil[] } }
+      ustoz_cv_tasdiqla: { Args: { p_teacher: string }; Returns: { tg: import('./ustoz-profil-xabar').TgManzil[] } }
+      ustoz_cv_qaytar: { Args: { p_teacher: string; p_izoh: string }; Returns: { tg: import('./ustoz-profil-xabar').TgManzil[] } }
+      ustoz_cv_nusxa: { Args: { p_teacher: string }; Returns: Record<string, unknown> | null }
+      ommaviy_ustozlar: { Args: { p_slug?: string | null }; Returns: import('./ustoz-profil').OmmaviyUstoz[] }
       lid_xato_belgila: { Args: { p_lid: string; p_sabab: string }; Returns: undefined }
       lid_xato_qaytar: { Args: { p_lid: string }; Returns: undefined }
       lid_xato_ochir: { Args: { p_lid: string }; Returns: undefined }

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { IconLogout, IconSettings, IconChevronDown, IconCheck } from '@/components/icons'
+import { IconLogout, IconSettings, IconChevronDown, IconCheck, IconTeacher } from '@/components/icons'
 
 /**
  * Yuqori o'ng burchak: ism (yoki telefonda — bosh harflar) bosilganda
@@ -17,6 +17,7 @@ export function ProfilMenyu({
   chiqish,
   rollar,
   rolTanla,
+  malumotlar = false,
   ixcham = false,
 }: {
   ism: string
@@ -26,6 +27,8 @@ export function ProfilMenyu({
   /** Ikki rolli odam (xodim + ustoz) — rolni almashtirish */
   rollar?: { kalit: 'xodim' | 'ustoz'; nom: string; faol: boolean }[]
   rolTanla?: (rol: 'xodim' | 'ustoz') => Promise<void>
+  /** Ustoz hisobi — "Ma'lumotlarim" (CV, obyektivka; 0126) */
+  malumotlar?: boolean
   /** Telefon sarlavhasi — faqat doira va rol */
   ixcham?: boolean
 }) {
@@ -106,6 +109,16 @@ export function ProfilMenyu({
             <IconSettings size={16} />
             Profil sozlamalari
           </Link>
+          {malumotlar && (
+            <Link
+              role="menuitem"
+              href="/crm/malumotlarim"
+              className="flex min-h-11 items-center gap-3 px-4 text-[13.5px] text-ink-2 transition hover:bg-surface-2 hover:text-ink"
+            >
+              <IconTeacher size={16} />
+              Ma’lumotlarim
+            </Link>
+          )}
           <form action={chiqish} className="border-t border-line-soft">
             <button
               role="menuitem"

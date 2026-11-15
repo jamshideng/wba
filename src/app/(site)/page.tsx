@@ -15,9 +15,12 @@ import { TestOyna } from '@/components/lending/test-oyna'
 import { VaqtTanlash } from '@/components/lending/vaqt-tanlash'
 import { Narx } from '@/components/lending/narx'
 import { Savollar } from '@/components/lending/savollar'
+import { Ustozlarimiz } from '@/components/lending/ustozlar'
 import './lending.css'
 
 export const metadata = { alternates: { canonical: '/' } }
+/* Ustozlarimiz (0126) — ISR; admin/manager o'zgartirsa revalidatePath('/') */
+export const revalidate = 300
 
 /** Asosiy tugma — sahifada bir necha joyda */
 function YozilishTugma({ katta = false, oq = false }: { katta?: boolean; oq?: boolean }) {
@@ -61,7 +64,7 @@ function Sarlavha({ yorliq, matn, izoh }: { yorliq: string; matn: string; izoh?:
   )
 }
 
-export default function Bosh() {
+export default async function Bosh() {
   const yil = new Date().getFullYear() - MARKAZ.tashkilYili
 
   return (
@@ -265,6 +268,9 @@ export default function Bosh() {
             ))}
           </div>
         </section>
+
+        {/* ================= Ustozlarimiz (admin yoqqan bo'lsa) ================= */}
+        <Ustozlarimiz sarlavha={<Sarlavha yorliq="Ustozlarimiz" matn="Siz bilan kim ishlaydi" izoh="Sertifikatlari va tajribasi — har bir ustoz sahifasida." />} />
 
         {/* ================= Narxlar ================= */}
         <section id="narxlar" className="flex flex-col gap-8 py-14 sm:gap-10 sm:py-20">

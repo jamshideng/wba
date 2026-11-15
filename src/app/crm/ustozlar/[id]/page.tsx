@@ -158,6 +158,12 @@ export default async function UstozProfil({
             {u.holat === 'faol' ? <Badge ton="ok">Faol</Badge> : <Badge ton="jim">Ishdan ketgan</Badge>}
             <Badge ton={u.profile_id ? 'ok' : 'jim'}>{u.profile_id ? 'hisobi bor' : 'hisobi yo‘q'}</Badge>
             <Badge ton={u.telegram_id ? 'brand' : 'jim'}>{u.telegram_id ? 'botda' : 'botda yo‘q'}</Badge>
+            <Link
+              href={`/crm/ustozlar/${u.id}/profil`}
+              className="ml-1 inline-flex min-h-11 items-center rounded-[10px] border border-line bg-surface px-4 text-[13px] font-semibold text-ink-2 hover:border-ink-3 hover:text-ink"
+            >
+              Ma’lumotlari (CV, obyektivka)
+            </Link>
           </span>
         }
       />

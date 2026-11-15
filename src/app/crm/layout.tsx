@@ -240,6 +240,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
           chiqish={chiqish}
           rollar={rollar}
           rolTanla={rolTanla}
+          malumotlar={Boolean(ustoz)}
         />
       </header>
 
@@ -280,6 +281,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
             chiqish={chiqish}
             rollar={rollar}
             rolTanla={rolTanla}
+            malumotlar={Boolean(ustoz)}
           />
         </header>
 
