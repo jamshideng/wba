@@ -247,7 +247,7 @@ export default async function DavomatJurnali({
   const barchaUstoz = (ustozXom ?? []) as { id: string; ism: string }[]
   const ustozIsmi = new Map(barchaUstoz.map((u) => [u.id, u.ism]))
   const zamenalar = dList.filter((d) => d.zamena_teacher_id).sort((a, b) => a.sana.localeCompare(b.sana))
-  /* 0123 — zamena kuni: davomatni o'rinbosar ustoz qiladi; guruh ustozida o'sha kun yopiq */
+  /* 0125 — zamena kuni: davomatni o'rinbosar ustoz qiladi; guruh ustozida o'sha kun yopiq */
   const zamenaKuni = new Map(zamenalar.map((z) => [z.sana, z.zamena_teacher_id!]))
   const jurnalKunlari = kunlar.map((k) => {
     const kim = zamenaKuni.get(k.sana)

@@ -7,7 +7,7 @@ import { pushYoqilganmi, pushYubor } from '@/lib/push'
 import { navbatdagiEslatma, soatMinut, type EslatmaTuri } from '@/lib/davomat-eslatma'
 
 /**
- * Davomat qilinmasa ustozga eslatma (0123) — har 5 daqiqa.
+ * Davomat qilinmasa ustozga eslatma (0125) — har 5 daqiqa.
  * Chaqiruvchi: Supabase pg_cron + pg_net, `Authorization: Bearer <CRON_SIR>`
  * (kalit Vault'da 'cron_sir'). Kalitsiz — 401.
  *

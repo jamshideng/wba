@@ -1,5 +1,5 @@
 -- ============================================================
--- 0123 — davomat qilinmasa ustozga eslatma (Jamshid, 11.11)
+-- 0125 — davomat qilinmasa ustozga eslatma (Jamshid, 11.11)
 --
 -- 1. davomat_eslatma: bitta guruh + sana + tur (1 — tugagach 10 daq,
 --    2 — 60 daq) uchun bitta qator. unique(group_id, sana, turi) —
@@ -44,7 +44,7 @@ create index if not exists davomat_eslatma_ochiq on davomat_eslatma (group_id, s
 create index if not exists davomat_eslatma_ustoz on davomat_eslatma (teacher_id, sana desc);
 
 comment on table davomat_eslatma is
-  'Davomat qilinmagan dars uchun ustozga eslatma (0123). turi 1 — tugagach 10 daq, 2 — 60 daq. Yozish faqat cron (service_role) va trigger orqali.';
+  'Davomat qilinmagan dars uchun ustozga eslatma (0125). turi 1 — tugagach 10 daq, 2 — 60 daq. Yozish faqat cron (service_role) va trigger orqali.';
 
 alter table davomat_eslatma enable row level security;
 alter table davomat_eslatma force row level security;
@@ -196,7 +196,7 @@ begin
     raise exception 'O''tgan kun davomatini faqat admin tuzatadi.';
   end if;
 
-  -- 0123: zamena berilgan kun guruh ustozida yopiq
+  -- 0125: zamena berilgan kun guruh ustozida yopiq
   if auth.uid() is not null and not app_is_admin() then
     select l.zamena_teacher_id into v_zamena from lessons l where l.group_id = p_group and l.sana = p_sana;
     if v_zamena is not null and v_zamena is distinct from app_teacher_id() then

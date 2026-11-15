@@ -178,7 +178,7 @@ Kun turi uchta: `Toq kun`, `Juft kun`, `Dam olish` (shanba + yakshanba).
 **Shanba ikkala turga ham kiradi** — juft guruh ham, dam olish guruhi ham
 o'sha kuni o'qiydi.
 
-## Davomat eslatmasi (0123)
+## Davomat eslatmasi (0125)
 
 Dars tugagach davomat **to'liq** qilinmagan bo'lsa (har bir faol o'quvchiga
 belgi), ustozga eslatma: 1-si tugagach 10 daq, 2-si 60 daq keyin

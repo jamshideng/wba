@@ -909,7 +909,7 @@ export type Database = {
       maosh_harakatlar: Table<MaoshHarakat>
       dars_kam_eslatma: Table<{ group_id: string; davr: string; soni: number; teacher_id: string | null; yuborildi: boolean; created_at: string }>
       xodim_oylik: Table<{ profile_id: string; summa: number; updated_at: string }>
-      /** 0123 — davomat qilinmasa ustozga eslatma */
+      /** 0125 — davomat qilinmasa ustozga eslatma */
       davomat_eslatma: Table<{
         id: number; group_id: string; sana: string; turi: 1 | 2; teacher_id: string | null
         jami: number | null; belgilangan: number | null

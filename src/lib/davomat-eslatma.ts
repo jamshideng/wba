@@ -1,5 +1,5 @@
 /**
- * Davomat eslatmasi (0123) — vaqt qoidasi bitta joyda.
+ * Davomat eslatmasi (0125) — vaqt qoidasi bitta joyda.
  * Barcha vaqtlar Asia/Tashkent bo'yicha "HH:MM" (yoki "HH:MM:SS").
  */
 

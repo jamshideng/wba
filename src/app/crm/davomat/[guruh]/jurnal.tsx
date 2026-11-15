@@ -79,7 +79,7 @@ export type DarsKuni = {
   kun: number
   hafta: string
   dam?: string | null
-  /** 0123 — zamena kuni: yopiq — bu odam uchun belgilab bo'lmaydi (davomatni o'rinbosar qiladi) */
+  /** 0125 — zamena kuni: yopiq — bu odam uchun belgilab bo'lmaydi (davomatni o'rinbosar qiladi) */
   zamena?: { ism: string; yopiq: boolean } | null
 }
 
