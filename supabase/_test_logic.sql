@@ -2988,6 +2988,8 @@ begin
   if (select coalesce(sum(summa), 0) from xarajatlar where not bekor) <> v_oldin then
     raise exception 'XATO: tasdiq xarajat yozdi';
   end if;
+  -- Oyni qayta ochamiz: v_davr sanaga bog'liq (bugun−100) va keyingi testlar (0118, 2026-08) qulfga urilmasin
+  perform maosh_qayta_och(v_davr, 'test');
   raise notice 'OK: 0112 — tasdiq xarajat yozmaydi';
 end $$;
 reset request.jwt.claim.sub;
