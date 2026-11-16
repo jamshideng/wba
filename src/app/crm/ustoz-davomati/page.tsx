@@ -11,6 +11,7 @@ import { IconAlert, IconAttendance, IconTeacher, IconJadval } from '@/components
 import { KECHIKISH_USTUNLAR, KechikishJadval, KechikishJamlanma, type KechikishYozuv } from '@/components/kechikish'
 import { bugunToshkent, davrNomi, joriyDavr } from '@/lib/format'
 import { davrOqi } from '@/lib/kiritish'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Ustozlar davomati' }
 export const dynamic = 'force-dynamic'
@@ -74,7 +75,7 @@ export default async function UstozDavomati({
           <form action={kechikishQosh} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-[150px_minmax(0,1fr)_120px]">
             <input type="hidden" name="qaytish" value={yol} />
             <Maydon nom="Sana">
-              <input name="sana" type="date" required defaultValue={bugun} max={bugun} className={kirishKlass} />
+              <SanaKiritish name="sana" required defaultValue={bugun} max={bugun} className={kirishKlass} />
             </Maydon>
             <Maydon nom="Guruh" izoh="Ustoz guruhdan o‘zi olinadi">
               <select name="group_id" required defaultValue="" className={kirishKlass}>
@@ -146,7 +147,7 @@ export default async function UstozDavomati({
                         <input type="hidden" name="qaytish" value={yol} />
                         <input type="hidden" name="id" value={k.id} />
                         <Maydon nom="Sana">
-                          <input name="sana" type="date" required defaultValue={k.sana} max={bugun} className={kirishKlass} />
+                          <SanaKiritish name="sana" required defaultValue={k.sana} max={bugun} className={kirishKlass} />
                         </Maydon>
                         <Maydon nom="Kech (daqiqa)">
                           <input name="daqiqa" type="number" required min={1} max={300} defaultValue={k.daqiqa} className={kirishKlass} />

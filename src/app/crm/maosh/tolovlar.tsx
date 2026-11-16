@@ -4,6 +4,7 @@ import { Maydon, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { pul, sana, bugunToshkent } from '@/lib/format'
 import { maoshTolovQosh, maoshTolovBekor } from './actions'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 type Holat = { tur: string; kim: string; ism: string; lavozim: string; hisob: number; avans: number; maosh: number; qoldi: number }
 type Tolov = {
@@ -102,7 +103,7 @@ export async function MaoshTolovlari({ davr, qaytish }: { davr: string; qaytish:
                         <input name="summa" required inputMode="numeric" defaultValue={qoldi > 0 ? qoldi : ''} className={kirishKlass} />
                       </Maydon>
                       <Maydon nom="Berilgan sana">
-                        <input type="date" name="sana" required max={bugunToshkent()} defaultValue={bugunToshkent()} className={kirishKlass} />
+                        <SanaKiritish name="sana" required max={bugunToshkent()} defaultValue={bugunToshkent()} className={kirishKlass} />
                       </Maydon>
                       <Maydon nom="Izoh">
                         <input name="izoh" className={kirishKlass} />

@@ -10,6 +10,7 @@ import { bugunToshkent, sana } from '@/lib/format'
 import { xatoMatni } from '@/lib/kiritish'
 import { royxatOl, royxatNomi } from '@/lib/royxat'
 import type { WoblrTarixQatori } from '@/lib/types'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Woblar tarixi' }
 
@@ -98,10 +99,10 @@ export default async function WoblarTarixi({ searchParams }: { searchParams: Pro
 
       <JonliForma className="flex flex-wrap items-end gap-2.5">
         <Maydon nom="Dan">
-          <input type="date" name="dan" defaultValue={dan} max={bugun} className={kirishKlass} />
+          <SanaKiritish name="dan" defaultValue={dan} max={bugun} className={kirishKlass} />
         </Maydon>
         <Maydon nom="Gacha">
-          <input type="date" name="gacha" defaultValue={gacha} max={bugun} className={kirishKlass} />
+          <SanaKiritish name="gacha" defaultValue={gacha} max={bugun} className={kirishKlass} />
         </Maydon>
         {xodim && (
           <Maydon nom="Kim berdi">
@@ -182,7 +183,7 @@ export default async function WoblarTarixi({ searchParams }: { searchParams: Pro
           <ul>
             {qatorlar.map((q) => {
               const vaqt = new Date(q.vaqt).toLocaleString('uz-UZ', {
-                timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
+                timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
               })
               return (
                 <li key={q.id} className="flex items-start gap-3 border-t border-line-soft px-5 py-3">

@@ -90,7 +90,7 @@ export function nazoratManba(h: Pick<NazoratHodisa, 'turi' | 'sana' | 'group_id'
 /** Tayyor ogohlantirish matni — manager xohlasa o'zgartiradi */
 export function ogohlantirishMatni(h: Pick<NazoratHodisa, 'turi' | 'sana' | 'tafsilot'>, ism: string): string {
   const [y, m, d] = h.sana.split('-')
-  return `Hurmatli ${ism}, ${d}.${m}.${y} kuni ${NAZORAT_TURLAR[h.turi].shablon} (${h.tafsilot}). Iltimos, bunday holat takrorlanmasin. Bir oyda 3 ta ogohlantirishdan keyin jarima qo‘llanadi.`
+  return `Hurmatli ${ism}, ${d}/${m}/${y} kuni ${NAZORAT_TURLAR[h.turi].shablon} (${h.tafsilot}). Iltimos, bunday holat takrorlanmasin. Bir oyda 3 ta ogohlantirishdan keyin jarima qo‘llanadi.`
 }
 
 type Klient = Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient>

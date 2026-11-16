@@ -31,6 +31,7 @@ import {
   type Talim,
   type Mehnat,
 } from '@/lib/ustoz-profil'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 const vaqtFmt = new Intl.DateTimeFormat('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
@@ -316,7 +317,7 @@ export function UstozProfilSahifa({
               <Yashirin teacherId={tid} qaytish={qaytish} />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Maydon nom="Tug‘ilgan sana *">
-                  <input type="date" name="tugilgan_sana" defaultValue={sh?.tugilgan_sana ?? ''} max={`${yil - 14}-12-31`} className={kirishKlass} />
+                  <SanaKiritish name="tugilgan_sana" defaultValue={sh?.tugilgan_sana ?? ''} max={`${yil - 14}-12-31`} className={kirishKlass} />
                 </Maydon>
                 <Maydon nom="Tug‘ilgan joyi">
                   <input name="tugilgan_joy" placeholder="Toshkent sh." defaultValue={sh?.tugilgan_joy ?? ''} className={kirishKlass} />
@@ -468,10 +469,10 @@ function SertifikatForma({ tid, qaytish, s, havola }: { tid: string; qaytish: st
           <input name="qayerda" placeholder="British Council, Toshkent" defaultValue={s?.qayerda ?? ''} className={kirishKlass} />
         </Maydon>
         <Maydon nom="Olingan sana">
-          <input type="date" name="sana" defaultValue={s?.sana ?? ''} className={kirishKlass} />
+          <SanaKiritish name="sana" defaultValue={s?.sana ?? ''} className={kirishKlass} />
         </Maydon>
         <Maydon nom="Amal qilish muddati" izoh="Bo‘sh — muddatsiz">
-          <input type="date" name="muddat" defaultValue={s?.muddat ?? ''} className={kirishKlass} />
+          <SanaKiritish name="muddat" defaultValue={s?.muddat ?? ''} className={kirishKlass} />
         </Maydon>
       </div>
       <FaylYuklash nom="fayl_yol" teacherId={tid} bucket="ustoz-hujjat" papka="sertifikat" yorliq="Sertifikat nusxasi" joriy={s?.fayl_yol} joriyHavola={s?.fayl_yol ? havola[s.fayl_yol] : null} />
@@ -492,7 +493,7 @@ function YutuqForma({ tid, qaytish, y, havola }: { tid: string; qaytish: string;
       </Maydon>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[160px_1fr]">
         <Maydon nom="Sana">
-          <input type="date" name="sana" defaultValue={y?.sana ?? ''} className={kirishKlass} />
+          <SanaKiritish name="sana" defaultValue={y?.sana ?? ''} className={kirishKlass} />
         </Maydon>
         <Maydon nom="Izoh">
           <input name="izoh" defaultValue={y?.izoh ?? ''} className={kirishKlass} />

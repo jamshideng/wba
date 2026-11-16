@@ -9,6 +9,7 @@ import { IconArrowLeft } from '@/components/icons'
 import { bugunToshkent } from '@/lib/format'
 import { oquvchiQosh } from '../actions'
 import { ChegirmaMaydonlari, TelefonMaydonlari } from '../bolaklar'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Yangi o‘quvchi' }
 export const dynamic = 'force-dynamic'
@@ -39,7 +40,7 @@ export default async function YangiOquvchi({ searchParams }: { searchParams: Pro
               <input name="familiya" className={kirishKlass} />
             </Maydon>
             <Maydon nom="Tug‘ilgan sana">
-              <input name="tugilgan_sana" type="date" max={bugunToshkent()} className={kirishKlass} />
+              <SanaKiritish name="tugilgan_sana" max={bugunToshkent()} className={kirishKlass} />
             </Maydon>
           </div>
           <TelefonMaydonlari />
@@ -59,7 +60,7 @@ export default async function YangiOquvchi({ searchParams }: { searchParams: Pro
               </select>
             </Maydon>
             <Maydon nom="Boshlagan sana" izoh="O‘tgan oylar ham hisoblanadi">
-              <input name="boshlandi" type="date" defaultValue={bugunToshkent()} className={kirishKlass} />
+              <SanaKiritish name="boshlandi" defaultValue={bugunToshkent()} className={kirishKlass} />
             </Maydon>
           </div>
           <details className="rounded-[10px] border border-dashed border-line px-4 py-3">
@@ -76,7 +77,7 @@ export default async function YangiOquvchi({ searchParams }: { searchParams: Pro
                     </select>
                   </Maydon>
                   <Maydon nom="Boshlagan sana">
-                    <input name={`boshlandi_${n}`} type="date" defaultValue={bugunToshkent()} className={kirishKlass} />
+                    <SanaKiritish name={`boshlandi_${n}`} defaultValue={bugunToshkent()} className={kirishKlass} />
                   </Maydon>
                 </div>
               ))}

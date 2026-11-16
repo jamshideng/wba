@@ -14,6 +14,7 @@ import { DavomatBolimi, MoliyaBolimi, OquvchilarBolimi, OrtachaTolovBolimi, Usto
 import { UmumiyBolim } from './umumiy'
 import { UlanishlarBolimi, type UlanishQidiruv } from './ulanishlar'
 import { KECHIKISH_USTUNLAR, KechikishJadval, KechikishJamlanma, type KechikishYozuv } from '@/components/kechikish'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Hisobotlar' }
 export const dynamic = 'force-dynamic'
@@ -201,10 +202,10 @@ export default async function Hisobotlar({
           {bolim !== 'umumiy' && <input type="hidden" name="bolim" value={bolim} />}
           <input type="hidden" name="tur" value="oraliq" />
           <Maydon nom="Dan">
-            <input type="date" name="dan" defaultValue={o.dan} className={kirishKlass} />
+            <SanaKiritish name="dan" defaultValue={o.dan} className={kirishKlass} />
           </Maydon>
           <Maydon nom="Gacha">
-            <input type="date" name="gacha" defaultValue={o.gacha} className={kirishKlass} />
+            <SanaKiritish name="gacha" defaultValue={o.gacha} className={kirishKlass} />
           </Maydon>
         </JonliForma>
       </div>

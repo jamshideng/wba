@@ -20,6 +20,6 @@ test('omborMatni — cheksiz, tugagan, kam qolgan', () => {
 })
 
 test('sanaVaqt — Toshkent vaqtida', () => {
-  assert.equal(sanaVaqt('2026-10-01T14:05:00Z'), '01.10.2026, 19:05')
+  assert.equal(sanaVaqt('2026-10-01T14:05:00Z'), '01/10/2026, 19:05')
   assert.equal(sanaVaqt(null), '—')
 })

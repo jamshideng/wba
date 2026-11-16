@@ -9,6 +9,7 @@ import { Yuborish } from '@/components/yuborish'
 import { pul, telefon, sanaQisqa } from '@/lib/format'
 import type { BoshqaXodim } from '@/lib/types'
 import { xodimQosh, xodimTahrir } from './actions'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Boshqa xodimlar' }
 export const dynamic = 'force-dynamic'
@@ -50,7 +51,7 @@ export default async function BoshqaXodimlar({ searchParams }: { searchParams: P
         <input name="oylik" inputMode="numeric" defaultValue={x?.oylik ?? ''} placeholder="2000000" className={kirishKlass} />
       </Maydon>
       <Maydon nom="Ishga kirgan">
-        <input name="ishga_kirgan" type="date" defaultValue={x?.ishga_kirgan ?? ''} className={kirishKlass} />
+        <SanaKiritish name="ishga_kirgan" defaultValue={x?.ishga_kirgan ?? ''} className={kirishKlass} />
       </Maydon>
       <Maydon nom="Izoh">
         <input name="izoh" defaultValue={x?.izoh ?? ''} className={kirishKlass} />

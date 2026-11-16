@@ -93,7 +93,7 @@ export function rasmlarniOqi(xom: unknown, supabaseUrl: string): string[] {
   return [...new Set(toza)].slice(0, RASM_MAKS_SONI)
 }
 
-/** "2026-10-01T14:05:00Z" → "01.10.2026, 19:05" (Toshkent vaqti) */
+/** "2026-10-01T14:05:00Z" → "01/10/2026, 19:05" (Toshkent vaqti) */
 export function sanaVaqt(iso: string | null | undefined): string {
   if (!iso) return '—'
   const d = new Date(iso)
@@ -103,7 +103,7 @@ export function sanaVaqt(iso: string | null | undefined): string {
       timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
     }).formatToParts(d).map((p) => [p.type, p.value]),
   )
-  return `${q.day}.${q.month}.${q.year}, ${q.hour}:${q.minute}`
+  return `${q.day}/${q.month}/${q.year}, ${q.hour}:${q.minute}`
 }
 
 /** Oldindan buyurtma tovari qachon keladi: o'z sanasi, bo'lmasa bozor kuni */
@@ -112,12 +112,11 @@ export function kelishSanasi(m: Pick<Mahsulot, 'rejim' | 'kelish_sana'>, bozor: 
   return m.kelish_sana ?? bozor
 }
 
-/** "2026-10-30" → "30-oktabr" */
+/** "2026-10-30" → "30/10/2026" */
 export function kunOy(sana: string | null | undefined): string {
   if (!sana) return ''
-  const OY = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr']
-  const [, o, k] = sana.split('-').map(Number)
-  return o && k ? `${k}-${OY[o - 1]}` : ''
+  const [y, o, k] = sana.split('-')
+  return y && o && k ? `${k}/${o}/${y}` : ''
 }
 
 /** Bozor kunigacha necha kun: 0 — bugun, manfiy — o'tib ketgan */

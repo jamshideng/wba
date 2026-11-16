@@ -9,6 +9,7 @@ import { JonliForma } from '@/components/jonli-forma'
 import { pul, sana, bugunToshkent } from '@/lib/format'
 import { ketishNomi, type KetishTahlili } from '@/lib/ketish'
 import { royxatOl } from '@/lib/royxat'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Ketish tahlili' }
 export const dynamic = 'force-dynamic'
@@ -54,10 +55,10 @@ export default async function KetishTahliliSahifa({
         amal={
           <JonliForma className="flex flex-wrap items-end gap-2">
             <Maydon nom="Dan">
-              <input type="date" name="dan" defaultValue={dan} className={kirishKlass} />
+              <SanaKiritish name="dan" defaultValue={dan} className={kirishKlass} />
             </Maydon>
             <Maydon nom="Gacha">
-              <input type="date" name="gacha" defaultValue={gacha} className={kirishKlass} />
+              <SanaKiritish name="gacha" defaultValue={gacha} className={kirishKlass} />
             </Maydon>
           </JonliForma>
         }

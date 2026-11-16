@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { mahsulotSaqla } from '../../actions'
 import { RASM_MAKS_BAYT, RASM_MAKS_SONI, RASM_TURLARI, kunOy, type Mahsulot } from '@/lib/market'
 import { MahsulotRasm } from '../../bolaklar'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 type Rejim = 'sotuvda' | 'oldindan' | 'yopilgan'
 
@@ -211,7 +212,7 @@ export function MahsulotForma({
             nom="Qachon keladi"
             izoh={bozor ? `Bo‘sh qoldirsangiz — keyingi bozor kuni (${kunOy(bozor)}).` : 'Bo‘sh qoldirsangiz — bozor kuni (Boshqaruvda belgilanadi).'}
           >
-            <input name="kelish_sana" type="date" defaultValue={m?.kelish_sana ?? ''} className={kirishKlass} />
+            <SanaKiritish name="kelish_sana" defaultValue={m?.kelish_sana ?? ''} className={kirishKlass} />
           </Maydon>
         )}
 

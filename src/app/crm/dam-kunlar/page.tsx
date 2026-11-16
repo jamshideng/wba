@@ -7,6 +7,7 @@ import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { sana, bugunToshkent, haftaKuni, HAFTA_KUNLARI } from '@/lib/format'
 import { damKunQosh, damKunOchir } from './actions'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Dam olish kunlari' }
 export const dynamic = 'force-dynamic'
@@ -60,10 +61,10 @@ export default async function DamKunlar({ searchParams }: { searchParams: Promis
           <form action={damKunQosh} className="flex flex-col gap-3 px-5 pb-5">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_2fr]">
               <Maydon nom="Sana (dan)">
-                <input type="date" name="dan" required defaultValue={bugun} className={kirishKlass} />
+                <SanaKiritish name="dan" required defaultValue={bugun} className={kirishKlass} />
               </Maydon>
               <Maydon nom="Gacha" izoh="bo‘sh — bitta kun">
-                <input type="date" name="gacha" className={kirishKlass} />
+                <SanaKiritish name="gacha" className={kirishKlass} />
               </Maydon>
               <Maydon nom="Sabab">
                 <input name="sabab" required placeholder="Masalan: Ustozlar kuni" className={kirishKlass} />

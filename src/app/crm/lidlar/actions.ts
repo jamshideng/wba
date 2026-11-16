@@ -144,8 +144,8 @@ export async function lidBosqich(fd: FormData) {
           .is('student_id', null)
         if (e2) redirect(xabarliYol(yol, { xato: xatoMatni(e2) }))
         tugat(yol, eski.group_id !== guruh
-          ? `Guruh almashtirildi: ${sinov! > bugun ? 'bugundan' : sinov!.split('-').reverse().join('.') + ' dan'} yangi jurnalda, eski jurnaldan chiqdi.`
-          : `Jurnalda ${sinov!.split('-').reverse().join('.')} dan ochildi.`)
+          ? `Guruh almashtirildi: ${sinov! > bugun ? 'bugundan' : sinov!.split('-').reverse().join('/') + ' dan'} yangi jurnalda, eski jurnaldan chiqdi.`
+          : `Jurnalda ${sinov!.split('-').reverse().join('/')} dan ochildi.`)
       }
 
       ozgarish = {

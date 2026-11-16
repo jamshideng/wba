@@ -11,6 +11,7 @@ import { bugunToshkent, sana } from '@/lib/format'
 import { oquvchiTahrir } from '../../actions'
 import { TelefonMaydonlari } from '../../bolaklar'
 import { HolatMaydoni } from './holat-maydoni'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'O‘quvchini tahrirlash' }
 export const dynamic = 'force-dynamic'
@@ -63,7 +64,7 @@ export default async function OquvchiTahrir({
               <input name="familiya" defaultValue={o.familiya ?? ''} className={kirishKlass} />
             </Maydon>
             <Maydon nom="Tug‘ilgan sana">
-              <input name="tugilgan_sana" type="date" max={bugunToshkent()} defaultValue={o.tugilgan_sana ?? ''} className={kirishKlass} />
+              <SanaKiritish name="tugilgan_sana" max={bugunToshkent()} defaultValue={o.tugilgan_sana ?? ''} className={kirishKlass} />
             </Maydon>
           </div>
           <TelefonMaydonlari qiymat={o} />
@@ -76,14 +77,14 @@ export default async function OquvchiTahrir({
         <FormaBolim nom="Qo‘shilgan sana">
           {yList.length === 0 ? (
             <Maydon nom="Markazga qo‘shilgan sana">
-              <input name="qoshilgan_sana" type="date" required max={bugunToshkent()} defaultValue={o.qoshilgan_sana} className={kirishKlass} />
+              <SanaKiritish name="qoshilgan_sana" required max={bugunToshkent()} defaultValue={o.qoshilgan_sana} className={kirishKlass} />
             </Maydon>
           ) : (
             <>
               {yList.map((y) => (
                 <Maydon key={y.id} nom={`${y.groups?.nom ?? 'Guruh'}${y.tugadi ? ` · ${sana(y.tugadi)} da chiqqan` : ''}`}>
                   <input type="hidden" name={`eski_${y.id}`} value={y.boshlandi} />
-                  <input name={`sana_${y.id}`} type="date" required max={y.tugadi ?? bugunToshkent()} defaultValue={y.boshlandi} className={kirishKlass} />
+                  <SanaKiritish name={`sana_${y.id}`} required max={y.tugadi ?? bugunToshkent()} defaultValue={y.boshlandi} className={kirishKlass} />
                 </Maydon>
               ))}
               <p className="text-[12px] leading-snug text-ink-3">

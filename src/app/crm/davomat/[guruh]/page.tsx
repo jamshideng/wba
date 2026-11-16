@@ -15,6 +15,7 @@ import type { AttendanceStatus } from '@/lib/types'
 import type { WoblarLimiti } from '@/lib/woblar-chegara'
 import { WoblarLimitKartasi } from '@/components/woblar-limit'
 import { zamenaSaqla, darsKochir } from './actions'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Davomat jurnali' }
 export const dynamic = 'force-dynamic'
@@ -508,7 +509,7 @@ export default async function DavomatJurnali({
                 </select>
               </Maydon>
               <Maydon nom="Qaysi kunga">
-                <input type="date" name="yangi" required min={admin ? undefined : bugun} className={kirishKlass} />
+                <SanaKiritish name="yangi" required min={admin ? undefined : bugun} className={kirishKlass} />
               </Maydon>
               <Maydon nom="Sabab" izoh="Majburiy">
                 <input name="sabab" required placeholder="Masalan: bayram kuni, ertasi juft kun" className={kirishKlass} />

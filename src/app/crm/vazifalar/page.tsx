@@ -58,7 +58,7 @@ function muddatMatn(iso: string, bugun: string): string {
   if (sana === kunQosh(bugun, 1)) return `Ertaga, ${soat}`
   if (sana === kunQosh(bugun, -1)) return `Kecha, ${soat}`
   const [y, m, d] = sana.split('-')
-  return `${d}.${m}.${y.slice(2)}, ${soat}`
+  return `${d}/${m}/${y}, ${soat}`
 }
 
 export default async function Vazifalar({

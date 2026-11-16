@@ -7,6 +7,7 @@ import { Sarlavha, Ulanmagan, Sahifalash } from '@/components/crm'
 import { kirishKlass } from '@/components/forma'
 import { JonliForma } from '@/components/jonli-forma'
 import { auditFarqi, qiymatMatni, AMAL_NOMI, JADVAL_NOMI, WOBLR_SABAB } from '@/lib/audit'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Audit' }
 export const dynamic = 'force-dynamic'
@@ -138,7 +139,7 @@ export default async function Audit({
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="lbl">Kun</span>
-          <input type="date" name="sana" defaultValue={sana} className={kirishKlass} />
+          <SanaKiritish name="sana" defaultValue={sana} className={kirishKlass} />
         </label>
         <label className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-[200px]">
           <span className="lbl">ID</span>

@@ -13,6 +13,7 @@ import { bozorSanasi, buyurtmaBerildi, buyurtmaKeldi, kodniOch, mahsulotKeldi } 
 import { MahsulotRasm, Woblar } from '../bolaklar'
 import { TakliflarBolimi } from './takliflar'
 import { bozorKuni } from '../bozor'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Market boshqaruvi' }
 export const dynamic = 'force-dynamic'
@@ -93,7 +94,7 @@ export default async function Boshqaruv({
           <span className="lbl">Bozor kuni</span>
           {admin ? (
             <form action={bozorSanasi} className="flex items-center gap-2">
-              <input type="date" name="sana" defaultValue={bozor ?? ''} aria-label="Bozor kuni" className={`${kirishKlass} min-w-0 flex-1`} />
+              <SanaKiritish name="sana" defaultValue={bozor ?? ''} aria-label="Bozor kuni" className={`${kirishKlass} min-w-0 flex-1`} />
               <Button type="submit" variant="ikkilamchi" className="px-3!">Saqlash</Button>
             </form>
           ) : (

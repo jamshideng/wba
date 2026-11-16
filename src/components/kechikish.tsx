@@ -22,7 +22,7 @@ export const KECHIKISH_USTUNLAR =
 
 function sanaQisqa(iso: string): string {
   const [y, m, d] = iso.split('-')
-  return `${d}.${m}.${y}`
+  return `${d}/${m}/${y}`
 }
 
 function vaqtToshkent(iso: string | null): string {

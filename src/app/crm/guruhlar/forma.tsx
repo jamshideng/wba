@@ -3,6 +3,7 @@ import { Maydon, FormaBolim, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { HAFTA_KUNLARI, bugunToshkent } from '@/lib/format'
 import { bosqichQosh, bosqichSaqla, bosqichOchir } from './actions'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 /** 0093 — guruh turi: umumiy — ustoz stavkasi, qolganlari — tur stavkasi (Sozlamalar) */
 export const GURUH_TURI_NOMI: Record<string, string> = {
@@ -84,7 +85,7 @@ export async function GuruhFormasi({
           <p className="text-[12px] leading-relaxed text-ink-3">Guruh qaysi kunlari o‘qiydi — bir yoki bir nechta kunni tanlang. Davomat jurnalida faqat shu kunlar chiqadi.</p>
           {qiymat.id && (
             <Maydon nom="Kunlar o‘zgarsa, qaysi sanadan" izoh="Undan oldingi kunlar eski jadvalda qoladi. O‘sha oyda belgilanmagan dars bo‘lsa, saqlanmaydi.">
-              <input type="date" name="kunlar_dan" required defaultValue={bugunToshkent()} className={kirishKlass} />
+              <SanaKiritish name="kunlar_dan" required defaultValue={bugunToshkent()} className={kirishKlass} />
             </Maydon>
           )}
         </fieldset>

@@ -34,7 +34,7 @@ function p(children: TextRun[], o: { markaz?: boolean; oldin?: number; keyin?: n
 function sana(s: string | null | undefined): string {
   if (!s) return '—'
   const [y, mo, d] = s.split('-')
-  return `${d}.${mo}.${y}`
+  return `${d}/${mo}/${y}`
 }
 const qiymat = (v: string | null | undefined) => (v && v.trim() ? v : 'yo‘q')
 

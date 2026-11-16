@@ -12,6 +12,7 @@ import { ketishSababiBelgila, fanKetishSababiBelgila } from '../oquvchilar/actio
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { pul, sana, jadval } from '@/lib/format'
 import type { ArxivFan } from '@/lib/types'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Arxiv' }
 export const dynamic = 'force-dynamic'
@@ -165,10 +166,10 @@ export default async function Arxiv({ searchParams }: { searchParams: Promise<Fi
             </select>
           </Maydon>
           <Maydon nom="Dan">
-            <input type="date" name="dan" defaultValue={dan} className={kirishKlass} />
+            <SanaKiritish name="dan" defaultValue={dan} className={kirishKlass} />
           </Maydon>
           <Maydon nom="Gacha">
-            <input type="date" name="gacha" defaultValue={gacha} className={kirishKlass} />
+            <SanaKiritish name="gacha" defaultValue={gacha} className={kirishKlass} />
           </Maydon>
           <label className="flex min-h-11 cursor-pointer items-center gap-2 text-[13px] text-ink-2">
             <input type="checkbox" name="qarz" value="1" defaultChecked={faqatQarz} className="size-4" />

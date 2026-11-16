@@ -12,6 +12,7 @@ import { davrOqi } from '@/lib/kiritish'
 import { asosiy, foizTon, son, type OylikNatija, type OylikTest } from '@/lib/oylik-test'
 import { testSaqla, natijalarSaqla, elonQil, bittaElon } from '../actions'
 import { TestSozlamasi } from './test-sozlamasi'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Oylik test — guruh' }
 export const dynamic = 'force-dynamic'
@@ -86,7 +87,7 @@ export default async function GuruhTesti({
           <input type="hidden" name="davr" value={davr} />
           <div className="flex flex-wrap gap-3">
             <Maydon nom="Test sanasi" className="w-48">
-              <input type="date" name="sana" defaultValue={test?.sana ?? ''} min={boshi} max={oxiri} disabled={qulf} className={kirishKlass} />
+              <SanaKiritish name="sana" defaultValue={test?.sana ?? ''} min={boshi} max={oxiri} disabled={qulf} className={kirishKlass} />
             </Maydon>
             <Maydon nom="Izoh (ixtiyoriy)" className="min-w-56 flex-1">
               <input name="izoh" defaultValue={test?.izoh ?? ''} maxLength={200} disabled={qulf} placeholder="Masalan: Unit 1–4" className={kirishKlass} />

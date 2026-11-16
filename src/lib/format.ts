@@ -32,23 +32,24 @@ function toshkentQismlari(dt: Date): { kun: number; oy: number; yil: number } {
   return { kun: Number(q.day), oy: Number(q.month), yil: Number(q.year) }
 }
 
-/** "2026-09-15" → "15 sentabr 2026" */
+/** Saytdagi barcha sanalar bitta ko'rinishda: kun/oy/yil — "2026-09-15" → "15/09/2026" */
 export function sana(d: string | Date | null | undefined): string {
-  if (!d) return '—'
-  const dt = typeof d === 'string' ? new Date(d) : d
-  if (Number.isNaN(dt.getTime())) return '—'
-  const q = toshkentQismlari(dt)
-  return `${q.kun} ${OYLAR[q.oy - 1]} ${q.yil}`
-}
-
-/** "2026-09-15" → "15.09.2026" */
-export function sanaQisqa(d: string | Date | null | undefined): string {
   if (!d) return '—'
   const dt = typeof d === 'string' ? new Date(d) : d
   if (Number.isNaN(dt.getTime())) return '—'
   const p = (n: number) => String(n).padStart(2, '0')
   const q = toshkentQismlari(dt)
-  return `${p(q.kun)}.${p(q.oy)}.${q.yil}`
+  return `${p(q.kun)}/${p(q.oy)}/${q.yil}`
+}
+
+/** sana() bilan bir xil (eski nom) — "15/09/2026" */
+export const sanaQisqa = sana
+
+/** ISO kun matni (vaqt mintaqasisiz) — "2026-09-15" → "15/09/2026" */
+export function kunOyYil(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const [y, m, d] = iso.slice(0, 10).split('-')
+  return y && m && d ? `${d}/${m}/${y}` : '—'
 }
 
 /** "2026-09" → "Sentabr 2026" */

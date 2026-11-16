@@ -9,6 +9,7 @@ import { JonliForma } from '@/components/jonli-forma'
 import { pul, sana, davrNomi, joriyDavr, bugunToshkent } from '@/lib/format'
 import { xarajatQosh, xarajatBekor } from './actions'
 import { royxatOl, royxatNomi, royxatVariantlari } from '@/lib/royxat'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Xarajatlar' }
 export const dynamic = 'force-dynamic'
@@ -170,10 +171,10 @@ export default async function Xarajatlar({
             <input type="month" name="davr" defaultValue={davr} className={kirishKlass} />
           </Maydon>
           <Maydon nom="Sanadan" izoh="to‘ldirilsa, oy o‘rniga">
-            <input type="date" name="dan" defaultValue={fDan ?? ''} className={kirishKlass} />
+            <SanaKiritish name="dan" defaultValue={fDan ?? ''} className={kirishKlass} />
           </Maydon>
           <Maydon nom="Sanagacha">
-            <input type="date" name="gacha" defaultValue={fGacha ?? ''} className={kirishKlass} />
+            <SanaKiritish name="gacha" defaultValue={fGacha ?? ''} className={kirishKlass} />
           </Maydon>
           <Maydon nom="Toifa">
             <select name="toifa" defaultValue={toifa ?? ''} className={kirishKlass}>
@@ -308,7 +309,7 @@ export default async function Xarajatlar({
                   <input name="summa" required inputMode="numeric" className={kirishKlass} />
                 </Maydon>
                 <Maydon nom="Sana">
-                  <input type="date" name="sana" required defaultValue={bugunToshkent()} className={kirishKlass} />
+                  <SanaKiritish name="sana" required defaultValue={bugunToshkent()} className={kirishKlass} />
                 </Maydon>
                 <Maydon nom="Izoh">
                   <input name="izoh" placeholder="Masalan: oktabr ijarasi" className={kirishKlass} />

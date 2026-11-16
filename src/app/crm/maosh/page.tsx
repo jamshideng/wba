@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic'
 
 const TURLAR: Record<MaoshHarakat['turi'], string> = { avans: 'Avans', bonus: 'Bonus', jarima: 'Jarima', tuzatish: 'Tuzatish' }
 
-const vaqtFmt = new Intl.DateTimeFormat('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit' })
+const vaqtFmt = new Intl.DateTimeFormat('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', year: 'numeric' })
 
 /** Harakatning maoshga ta'siri: avans/jarima −, bonus +, tuzatish o'z ishorasi bilan */
 function tasir(h: Pick<MaoshHarakat, 'turi' | 'summa'>): number {

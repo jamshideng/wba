@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { kirishKlass } from '@/components/forma'
 import type { StudentStatus } from '@/lib/types'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 const SABABLAR = ['Ta’til', 'Kasallik', 'Safar / ko‘chish', 'Imtihon / maktab', 'Moliyaviy']
 
@@ -30,7 +31,7 @@ export function HolatMaydoni({
         <div className="grid grid-cols-1 gap-3 rounded-[10px] border border-accent-line bg-accent-soft p-3 sm:grid-cols-2">
           <label className="flex min-w-0 flex-col gap-1.5">
             <span className="lbl">Qachon qaytadi</span>
-            <input name="qaytish_sana" type="date" min={bugun} defaultValue={qaytish ?? ''} className={kirishKlass} />
+            <SanaKiritish name="qaytish_sana" min={bugun} defaultValue={qaytish ?? ''} className={kirishKlass} />
             <span className="text-[11.5px] leading-snug text-ink-3">Shu kuni va bir kun oldin dashboard eslatadi</span>
           </label>
           <label className="flex min-w-0 flex-col gap-1.5">

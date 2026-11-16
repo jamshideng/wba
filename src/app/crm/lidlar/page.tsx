@@ -14,6 +14,7 @@ import { royxatOl, royxatVariantlari } from '@/lib/royxat'
 import { BOSQICHLAR, aloqaSanasi, bosqichi, kunQosh, type LidKarta } from '@/lib/lidlar'
 import { lidQosh } from './actions'
 import { Kanban } from './kanban'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Lidlar' }
 export const dynamic = 'force-dynamic'
@@ -173,10 +174,10 @@ export default async function Lidlar({
               </select>
             </Maydon>
             <Maydon nom="Qachon bog‘lanish kerak" izoh="Shu kuni 09:00 da Vazifalarga eslatma tushadi">
-              <input name="keyingi_aloqa" type="date" min={bugun} defaultValue={kunQosh(bugun, 1)} className={kirishKlass} />
+              <SanaKiritish name="keyingi_aloqa" min={bugun} defaultValue={kunQosh(bugun, 1)} className={kirishKlass} />
             </Maydon>
             <Maydon nom="Sinov darsi kuni" izoh="Bo‘lsa — lid darhol “Sinov darsi” ustuniga tushadi">
-              <input name="sinov_sana" type="date" className={kirishKlass} />
+              <SanaKiritish name="sinov_sana" className={kirishKlass} />
             </Maydon>
             <Maydon nom="Guruh" izoh="O‘quvchi qilish uchun kerak">
               <select name="group_id" defaultValue="" className={kirishKlass}>
@@ -187,7 +188,7 @@ export default async function Lidlar({
               </select>
             </Maydon>
             <Maydon nom="Tug‘ilgan sana">
-              <input name="tugilgan_sana" type="date" max={bugun} className={kirishKlass} />
+              <SanaKiritish name="tugilgan_sana" max={bugun} className={kirishKlass} />
             </Maydon>
             <Maydon nom="Teglar" izoh="Vergul bilan: issiq, ielts, chegirma">
               <input name="teglar" maxLength={200} className={kirishKlass} />

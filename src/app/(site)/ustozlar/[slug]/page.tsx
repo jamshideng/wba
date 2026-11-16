@@ -10,8 +10,8 @@ export const revalidate = 300
 
 function sana(s: string | null | undefined): string | null {
   if (!s) return null
-  const [y, m] = s.split('-')
-  return `${m}.${y}`
+  const [y, m, d] = s.split('-')
+  return d ? `${d}/${m}/${y}` : `${m}/${y}`
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {

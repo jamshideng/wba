@@ -17,6 +17,7 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { IconArrowLeft, IconPhone } from '@/components/icons'
 import { pul, sana, telefon, jadval, davrNomi, joriyDavr, bugunToshkent } from '@/lib/format'
 import type { StudentStatus, PaymentMethod, AttendanceStatus } from '@/lib/types'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'O‘quvchi profili' }
 
@@ -549,7 +550,7 @@ export default async function OquvchiProfil({
                           <input type="hidden" name="enrollment_id" value={y.id} />
                           <div className="flex flex-wrap items-end gap-2">
                             <Maydon nom="Guruhga qo‘shilgan sana">
-                              <input type="date" name="sana" required defaultValue={y.boshlandi} max={y.tugadi ?? bugunToshkent()} className={kirishKlass} />
+                              <SanaKiritish name="sana" required defaultValue={y.boshlandi} max={y.tugadi ?? bugunToshkent()} className={kirishKlass} />
                             </Maydon>
                             <Yuborish kutish="…">Saqlash</Yuborish>
                           </div>
@@ -582,7 +583,7 @@ export default async function OquvchiProfil({
                               </select>
                             </Maydon>
                             <Maydon nom="Qaysi kundan">
-                              <input type="date" name="sana" required defaultValue={bugunToshkent()} min={kunKeyin(y.boshlandi)} max={bugunToshkent()} className={kirishKlass} />
+                              <SanaKiritish name="sana" required defaultValue={bugunToshkent()} min={kunKeyin(y.boshlandi)} max={bugunToshkent()} className={kirishKlass} />
                             </Maydon>
                           </div>
                           <p className="text-[12px] leading-snug text-ink-3">
@@ -599,7 +600,7 @@ export default async function OquvchiProfil({
                           <input type="hidden" name="student_id" value={oquvchi.id} />
                           <input type="hidden" name="enrollment_id" value={y.id} />
                           <Maydon nom="Oxirgi kuni">
-                            <input type="date" name="sana" required defaultValue={bugunToshkent()} min={y.boshlandi} className={kirishKlass} />
+                            <SanaKiritish name="sana" required defaultValue={bugunToshkent()} min={y.boshlandi} className={kirishKlass} />
                           </Maydon>
                           <Maydon nom="Ketish sababi">
                             <select name="turi" required defaultValue="" className={kirishKlass}>
@@ -631,7 +632,7 @@ export default async function OquvchiProfil({
                           <input type="hidden" name="student_id" value={oquvchi.id} />
                           <input type="hidden" name="enrollment_id" value={y.id} />
                           <Maydon nom="Oxirgi kuni" izoh="Keyingi oylar hisobdan olinadi">
-                            <input type="date" name="sana" required defaultValue={bugunToshkent()} min={y.boshlandi} className={kirishKlass} />
+                            <SanaKiritish name="sana" required defaultValue={bugunToshkent()} min={y.boshlandi} className={kirishKlass} />
                           </Maydon>
                           <Yuborish tur="xavfli" kutish="…">Chiqarish</Yuborish>
                         </form>
@@ -663,7 +664,7 @@ export default async function OquvchiProfil({
                                   </select>
                                 </Maydon>
                                 <Maydon nom="Qaysi kundan" izoh={`${sana(y.tugadi)} dan keyin`}>
-                                  <input type="date" name="sana" required min={ertasi(y.tugadi)} defaultValue={boshla} className={kirishKlass} />
+                                  <SanaKiritish name="sana" required min={ertasi(y.tugadi)} defaultValue={boshla} className={kirishKlass} />
                                 </Maydon>
                                 <Maydon nom="Chegirma (oyiga)" izoh="Bo‘sh — chegirmasiz">
                                   <input name="chegirma_summa" inputMode="numeric" defaultValue={y.chegirma_summa || ''} className={kirishKlass} />
@@ -761,7 +762,7 @@ export default async function OquvchiProfil({
                       </select>
                     </Maydon>
                     <Maydon nom="Boshlagan sana">
-                      <input type="date" name="boshlandi" defaultValue={bugunToshkent()} className={kirishKlass} />
+                      <SanaKiritish name="boshlandi" defaultValue={bugunToshkent()} className={kirishKlass} />
                     </Maydon>
                   </div>
                   <ChegirmaMaydonlari />
@@ -776,7 +777,7 @@ export default async function OquvchiProfil({
                 <form action={oquvchiArxivla} className="mt-3 flex flex-wrap items-end gap-2">
                   <input type="hidden" name="student_id" value={oquvchi.id} />
                   <Maydon nom="Oxirgi kuni">
-                    <input type="date" name="sana" required defaultValue={bugunToshkent()} className={kirishKlass} />
+                    <SanaKiritish name="sana" required defaultValue={bugunToshkent()} className={kirishKlass} />
                   </Maydon>
                   <Maydon nom="Ketish sababi">
                     <select name="turi" required defaultValue="" className={kirishKlass}>

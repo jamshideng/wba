@@ -10,6 +10,7 @@ import { Yuborish } from '@/components/yuborish'
 import { IconArrowLeft } from '@/components/icons'
 import { pul, sana, bugunToshkent, davrNomi } from '@/lib/format'
 import { oquvchiQaytar } from '../../actions'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'Arxivdan qaytarish' }
 export const dynamic = 'force-dynamic'
@@ -168,7 +169,7 @@ export default async function Qaytarish({
               nom="Guruhga qo‘shilgan sana"
               izoh={minSana ? `Bu guruhdan ${sana(oxirgi!.tugadi)} da chiqqan — undan keyingi kun bo‘lsin. Oradagi kunlar hisoblanmaydi.` : 'Shu kundan hisob va davomat boshlanadi.'}
             >
-              <input type="date" name="s" required min={minSana} defaultValue={tanlanganSana} className={kirishKlass} />
+              <SanaKiritish name="s" required min={minSana} defaultValue={tanlanganSana} className={kirishKlass} />
             </Maydon>
             <div className="flex gap-2">
               <Button href={yolQ({ q: oldingi.has(guruh.id) ? '1' : '1b' })} variant="ikkilamchi">Orqaga</Button>

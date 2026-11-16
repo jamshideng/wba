@@ -18,6 +18,7 @@ import { royxatNomi, royxatVariantlari, type RoyxatBand } from '@/lib/royxat'
 import { izohniAjrat } from '@/lib/ariza-izoh'
 import { lidBosqich, lidBoglanildi, lidOquvchi, lidSaqla } from './actions'
 import { hisobOch } from '@/app/crm/hisoblar/actions'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 type Guruh = { id: string; nom: string }
 type Oyna =
@@ -28,7 +29,7 @@ type Oyna =
 
 function sanaKorinish(iso: string): string {
   const [y, m, d] = iso.split('-')
-  return `${d}.${m}.${y.slice(2)}`
+  return `${d}/${m}/${y}`
 }
 
 function telKorinish(t: string): string {
@@ -348,9 +349,8 @@ function Oynalar({
           nom={ozgartirish ? 'Sinov kuni / yangi guruhga o‘tgan kun' : 'Sinov darsi kuni'}
           izoh={ozgartirish ? 'Guruh almashsa — o‘tgan kunni ham tanlash mumkin: shu kundan yangi jurnalda' : undefined}
         >
-          <input
+          <SanaKiritish
             name="sinov_sana"
-            type="date"
             required
             min={ozgartirish ? undefined : bugun}
             defaultValue={ozgartirish ? (eskiSana ?? bugun) : eskiSana && eskiSana >= bugun ? eskiSana : ertaga}
@@ -388,7 +388,7 @@ function Oynalar({
           </select>
         </Maydon>
         <Maydon nom="Boshlagan sana">
-          <input name="boshlandi" type="date" defaultValue={bugun} className={kirishKlass} />
+          <SanaKiritish name="boshlandi" defaultValue={bugun} className={kirishKlass} />
         </Maydon>
         <Tugmalar yop={yop}>O‘quvchi qilish</Tugmalar>
       </form>
@@ -422,7 +422,7 @@ function Oynalar({
           <input name="izoh" maxLength={300} placeholder="Masalan: narxni so‘radi, ertaga javob beradi" className={kirishKlass} />
         </Maydon>
         <Maydon nom="Keyingi aloqa" izoh="Bo‘sh qoldirilsa eslatma qo‘yilmaydi">
-          <input name="keyingi_aloqa" type="date" min={bugun} defaultValue={kunQosh(bugun, 2)} className={kirishKlass} />
+          <SanaKiritish name="keyingi_aloqa" min={bugun} defaultValue={kunQosh(bugun, 2)} className={kirishKlass} />
         </Maydon>
         <Tugmalar yop={yop}>Yozib qo‘yish</Tugmalar>
       </form>
@@ -448,7 +448,7 @@ function Oynalar({
           </select>
         </Maydon>
         <Maydon nom="Keyingi aloqa">
-          <input name="keyingi_aloqa" type="date" defaultValue={l.keyingi_aloqa ?? ''} className={kirishKlass} />
+          <SanaKiritish name="keyingi_aloqa" defaultValue={l.keyingi_aloqa ?? ''} className={kirishKlass} />
         </Maydon>
         <Maydon nom="Teglar" izoh="Vergul bilan" className="sm:col-span-2">
           <input name="teglar" maxLength={200} defaultValue={l.teglar.join(', ')} className={kirishKlass} />
@@ -458,7 +458,7 @@ function Oynalar({
         </Maydon>
         {l.oxirgi_aloqa && (
           <p className="text-[12px] text-ink-3 sm:col-span-2">
-            Oxirgi aloqa: {new Date(l.oxirgi_aloqa).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent', dateStyle: 'short', timeStyle: 'short' })} · jami {l.aloqa_soni} marta
+            Oxirgi aloqa: {new Date(l.oxirgi_aloqa).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} · jami {l.aloqa_soni} marta
           </p>
         )}
         <div className="sm:col-span-2">

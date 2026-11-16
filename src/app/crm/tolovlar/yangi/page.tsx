@@ -12,6 +12,7 @@ import { pul, joriyDavr, bugunToshkent, telefon } from '@/lib/format'
 import { tolovQosh } from '../actions'
 import { qidiruvTuri, telefonFiltri } from '@/lib/qidiruv'
 import { JonliForma } from '@/components/jonli-forma'
+import { SanaKiritish } from '@/components/sana-kiritish'
 
 export const metadata = { title: 'To‘lov qo‘shish' }
 export const dynamic = 'force-dynamic'
@@ -177,7 +178,7 @@ export default async function TolovQosh({ searchParams }: { searchParams: Promis
               <input type="month" name="davr" required defaultValue={joriyDavr()} className={kirishKlass} />
             </Maydon>
             <Maydon nom="To‘langan sana">
-              <input type="date" name="sana" required defaultValue={bugunToshkent()} max={bugunToshkent()} className={kirishKlass} />
+              <SanaKiritish name="sana" required defaultValue={bugunToshkent()} max={bugunToshkent()} className={kirishKlass} />
             </Maydon>
           </div>
           <Maydon nom="Izoh">
