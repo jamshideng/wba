@@ -42,7 +42,7 @@ export const QOLGAN_NOMI: Record<string, string> = {
   tugilgan_sana: 'tug‘ilgan sana',
   talim: 'ta’lim',
   mehnat: 'mehnat faoliyati',
-  pasport: 'pasport, JSHSHIR, manzil',
+  manzil: 'yashash manzili',
 }
 
 export const KORINISH_MAYDONLARI = [
@@ -170,7 +170,6 @@ export async function ustozProfilOl(supabase: SupabaseClient, teacherId: string)
     ...sertifikatlar.map((x) => x.fayl_yol),
     ...yutuqlar.map((x) => x.fayl_yol),
     ...talim.map((x) => x.diplom_yol),
-    shaxsiy?.pasport_yol ?? null,
   ].filter((x): x is string => Boolean(x))
   if (hujjatlar.length) {
     const { data } = await supabase.storage.from(HUJJAT_BUCKET).createSignedUrls(hujjatlar, 3600)

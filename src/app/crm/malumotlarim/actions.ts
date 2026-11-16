@@ -147,10 +147,6 @@ export async function mehnatSaqla(fd: FormData) {
 export async function shaxsiySaqla(fd: FormData) {
   await talabProfil()
   const { teacherId, qaytish } = oqi(fd)
-  const pasport = (bosh(fd.get('pasport')) ?? '').toUpperCase().replace(/\s+/g, '') || null
-  const jshshir = (bosh(fd.get('jshshir')) ?? '').replace(/\D/g, '') || null
-  if (pasport && !/^[A-Z]{2}\d{7}$/.test(pasport)) redirect(xabarliYol(qaytish, { xato: 'Pasport: 2 harf + 7 raqam (masalan AB1234567).' }))
-  if (jshshir && jshshir.length !== 14) redirect(xabarliYol(qaytish, { xato: 'JSHSHIR 14 ta raqam.' }))
   const supabase = await createClient()
   const r = await supabase.from('teacher_shaxsiy').upsert({
     teacher_id: teacherId,
@@ -163,9 +159,7 @@ export async function shaxsiySaqla(fd: FormData) {
     ilmiy_unvon: bosh(fd.get('ilmiy_unvon')),
     chet_tillari: bosh(fd.get('chet_tillari')),
     mukofotlar: bosh(fd.get('mukofotlar')),
-    pasport,
-    pasport_yol: bosh(fd.get('pasport_yol')),
-    jshshir,
+    // Pasport, JSHSHIR va pasport nusxasi kiritilmaydi (16.11) — upsert'da yo'q, bazadagisi o'zgarmaydi
     manzil: bosh(fd.get('manzil')),
     updated_at: new Date().toISOString(),
   })

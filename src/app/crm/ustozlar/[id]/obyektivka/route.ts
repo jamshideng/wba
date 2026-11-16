@@ -144,8 +144,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const shaxsiy = [
     p([m('SHAXSIY MA’LUMOTLAR', { qalin: true })], { markaz: true, oldin: 240, keyin: 120 }),
-    p([m('Pasport: ', { qalin: true }), m(sh?.pasport ?? '—')]),
-    p([m('JSHSHIR: ', { qalin: true }), m(sh?.jshshir ?? '—')]),
     p([m('Yashash manzili: ', { qalin: true }), m(sh?.manzil ?? '—')]),
     p([m('Telefon: ', { qalin: true }), m(d.ustoz.telefon ?? '—')]),
   ]

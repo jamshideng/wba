@@ -348,17 +348,10 @@ export function UstozProfilSahifa({
                 <Maydon nom="Davlat mukofotlari" className="sm:col-span-2">
                   <input name="mukofotlar" placeholder="yo‘q" defaultValue={sh?.mukofotlar ?? ''} className={kirishKlass} />
                 </Maydon>
-                <Maydon nom="Pasport (seriya, raqam)">
-                  <input name="pasport" placeholder="AB1234567" defaultValue={sh?.pasport ?? ''} autoComplete="off" className={`${kirishKlass} uppercase`} />
-                </Maydon>
-                <Maydon nom="JSHSHIR (14 raqam)">
-                  <input name="jshshir" inputMode="numeric" maxLength={14} defaultValue={sh?.jshshir ?? ''} autoComplete="off" className={kirishKlass} />
-                </Maydon>
                 <Maydon nom="Yashash manzili" className="sm:col-span-2">
                   <input name="manzil" defaultValue={sh?.manzil ?? ''} className={kirishKlass} />
                 </Maydon>
               </div>
-              <FaylYuklash nom="pasport_yol" teacherId={tid} bucket="ustoz-hujjat" papka="pasport" yorliq="Pasport nusxasi" joriy={sh?.pasport_yol} joriyHavola={sh?.pasport_yol ? m.havola[sh.pasport_yol] : null} />
               <p className="text-[11.5px] text-ink-3">Bu bo‘lim saytga chiqmaydi. Faqat siz va rahbariyat ko‘radi.</p>
               <div>
                 <Yuborish kutish="…">Saqlash</Yuborish>
