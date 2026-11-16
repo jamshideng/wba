@@ -970,6 +970,8 @@ export type Database = {
       v_arxiv_oquvchilar: View<{ student_id: string; fish: string; arxiv_sana: string | null; arxiv_sabab: string | null; qarz: number; guruhlar: string | null; ketish_sababi: string | null }>
     }
     Functions: {
+      tugilgan_kunlar: { Args: { p_kun: string; p_oldin?: number }; Returns: import('./tugilgan-kun').TugilganKunlar }
+      tugilgan_band: { Args: { p_kun: string }; Returns: boolean }
       ustoz_profil_xabar: { Args: { p_teacher: string; p_bolim?: string | null }; Returns: { soni: number; tg: import('./ustoz-profil-xabar').TgManzil[] } }
       ustoz_cv_tasdiqla: { Args: { p_teacher: string }; Returns: { tg: import('./ustoz-profil-xabar').TgManzil[] } }
       ustoz_cv_qaytar: { Args: { p_teacher: string; p_izoh: string }; Returns: { tg: import('./ustoz-profil-xabar').TgManzil[] } }
