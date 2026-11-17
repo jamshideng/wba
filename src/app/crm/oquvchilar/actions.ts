@@ -227,7 +227,7 @@ export async function guruhdanChiqar(fd: FormData) {
   if (!studentId || !enrollmentId) redirect('/crm/oquvchilar')
 
   const supabase = await createClient()
-  const { error } = await supabase.rpc('guruhdan_chiqar', {
+  const { data, error } = await supabase.rpc('guruhdan_chiqar', {
     p_enrollment: enrollmentId!,
     p_sana: sanaOqi(fd.get('sana')),
   })
@@ -235,7 +235,9 @@ export async function guruhdanChiqar(fd: FormData) {
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
 
   revalidatePath('/crm', 'layout')
-  redirect(xabarliYol(yol, { ok: 'Guruhdan chiqarildi. Keyingi oylar hisobdan olindi.' }))
+  // 0132: oxirgi faol fan bo'lsa o'quvchi ham arxivga o'tadi
+  const arxiv = data === 'oquvchi' ? ' Boshqa faol fani yo‘q — o‘quvchi arxivga o‘tdi.' : ''
+  redirect(xabarliYol(yol, { ok: `Guruhdan chiqarildi. Keyingi oylar hisobdan olindi.${arxiv}` }))
 }
 
 /**

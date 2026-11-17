@@ -3237,3 +3237,24 @@ begin
   end if;
   raise notice 'OK: 0122 — N kamida 12';
 end $$;
+
+-- 0132 — guruhdan chiqarish: oxirgi faol fanda o'quvchi ham arxivga
+do $$
+declare v_e uuid; v_n text;
+begin
+  insert into students (id, fish, qoshilgan_sana) values ('S932', 'Chiqarish Sinov', '2026-09-01');
+  insert into enrollments (student_id, group_id, boshlandi) values ('S932', 'N01', '2026-09-01'), ('S932', 'N02', '2026-09-01');
+  perform set_config('request.jwt.claim.sub', (select id::text from profiles where rol = 'admin' limit 1), true);
+  select id into v_e from enrollments where student_id = 'S932' and group_id = 'N01';
+  v_n := guruhdan_chiqar(v_e, '2026-10-31');
+  if v_n <> 'fan' or (select holat from students where id = 'S932') <> 'faol' then
+    raise exception 'XATO: 0132 — birinchi fanda o''quvchi arxivga o''tmasligi kerak (%)', v_n;
+  end if;
+  select id into v_e from enrollments where student_id = 'S932' and group_id = 'N02';
+  v_n := guruhdan_chiqar(v_e, '2026-10-31');
+  if v_n <> 'oquvchi' or (select holat from students where id = 'S932') <> 'ketgan'
+     or (select arxiv_sana from students where id = 'S932') <> '2026-10-31' then
+    raise exception 'XATO: 0132 — oxirgi fanda o''quvchi arxivga o''tishi kerak (%)', v_n;
+  end if;
+  raise notice 'OK: 0132 — oxirgi fan chiqarilganda o''quvchi arxivga';
+end $$;

@@ -1142,7 +1142,7 @@ export type Database = {
         Args: { p_student: string; p_group: string; p_boshlandi?: string | null; p_chegirma?: Record<string, unknown> }
         Returns: string
       }
-      guruhdan_chiqar: { Args: { p_enrollment: string; p_sana?: string | null }; Returns: undefined }
+      guruhdan_chiqar: { Args: { p_enrollment: string; p_sana?: string | null }; Returns: string }
       yozilish_hisoblari: { Args: { p_enrollment: string }; Returns: number }
       probniy_doimiy: { Args: { p_lead: string; p_boshlandi?: string | null }; Returns: string }
       tushum_hisobot: { Args: { p_dan: string; p_gacha: string }; Returns: Hisobot }
