@@ -184,6 +184,11 @@ async function xabarniIshla(m: TgMessage) {
     return
   }
 
+  // 0133 — tadbirga ro'yxat: guruhdagi "Kela olaman" tugmasidan (t.me/<bot>?start=tadbir_<kod>)
+  const tadbirStart = matn.match(/^\/start\s+tadbir_([a-z0-9]+)$/)
+  if (tadbirStart && m.from) return tadbirBoshla(chat, m.from, tadbirStart[1])
+  if (m.from && matn && !matn.startsWith('/') && (await tadbirDavom(chat, m.from.id, matn))) return
+
   // /start <token> — saytdagi "Telegramga ulash" tugmasidan
   const start = matn.match(/^\/start(?:\s+([a-f0-9]{32}))?$/)
   if (start?.[1]) {
@@ -271,6 +276,11 @@ async function tugmaniIshla(cq: NonNullable<TgUpdate['callback_query']>) {
   const chat = cq.message?.chat.id
   if (!chat || cq.message?.chat.type !== 'private') return
 
+  // 0133 — tadbir: mehmon soni / qayta yozilish (cq.from.id bo'yicha, boshqa birovning qatoriga tegmaydi)
+  const [amal0, kod0, son0] = (cq.data ?? '').split('|')
+  if (amal0 === 'tm') return tadbirMehmon(chat, cq.from, kod0, Number(son0))
+  if (amal0 === 'tq') return tadbirBoshla(chat, cq.from, kod0, true)
+
   const u = await ulanishlar(chat)
   const [amal, nishon] = (cq.data ?? '').split('|')
 
@@ -296,6 +306,103 @@ async function tugmaniIshla(cq: NonNullable<TgUpdate['callback_query']>) {
 }
 
 const orqaga: Tugma[][] = [[{ text: '← Menyu', callback_data: 'm' }]]
+
+/* ------------------------------------------------------------------ */
+/*  Tadbirga ro'yxat (0133)                                             */
+/* ------------------------------------------------------------------ */
+
+/** Ochiq tadbirlar: kod → nom. Ro'yxatni yopish uchun shu yerdan olib tashlanadi. */
+const TADBIRLAR: Record<string, string> = {
+  yak22: '22-noyabr (yakshanba) WBA tadbiri',
+}
+
+async function tadbirBoshla(chat: number, u: TgUser, kod: string, qayta = false) {
+  const nom = TADBIRLAR[kod]
+  if (!nom) return xabar(chat, 'Bu tadbirga ro‘yxat yopilgan.')
+  if (!qayta) {
+    const { data: bor, error } = await db().from('tadbir_royxat').select('holat, ism, yosh, mehmon')
+      .eq('tadbir', kod).eq('tg_id', u.id).maybeSingle()
+    if (bazaXato('tadbir oqish', error)) return xabar(chat, TEXNIK)
+    if (bor?.holat === 'tayyor') {
+      return xabar(
+        chat,
+        `Siz <b>${html(nom)}</b> ro‘yxatidasiz:\n${html(bor.ism)}, ${bor.yosh} yosh` + (bor.mehmon ? `, +${bor.mehmon} kishi` : ''),
+        [[{ text: 'Qayta yozish', callback_data: `tq|${kod}` }]],
+      )
+    }
+  }
+  const { error } = await db().from('tadbir_royxat').upsert(
+    { tadbir: kod, tg_id: u.id, tg_ism: ism(u), tg_username: u.username ?? null, ism: null, yosh: null, mehmon: 0, holat: 'ism', updated_at: new Date().toISOString() },
+    { onConflict: 'tadbir,tg_id' },
+  )
+  if (bazaXato('tadbir boshla', error)) return xabar(chat, TEXNIK)
+  await xabar(chat, `<b>${html(nom)}</b>\n\nRo‘yxatdan o‘tish uchun <b>ism va familiyangizni</b> yozing:`)
+}
+
+/** Suhbat davomi (ism → yosh). Ochiq ro'yxat bo'lmasa false — xabar odatdagidek ishlanadi. */
+async function tadbirDavom(chat: number, tgId: number, matn: string): Promise<boolean> {
+  const { data: q, error } = await db().from('tadbir_royxat').select('id, tadbir, holat')
+    .eq('tg_id', tgId).in('holat', ['ism', 'yosh', 'mehmon']).order('updated_at', { ascending: false }).limit(1).maybeSingle()
+  if (bazaXato('tadbir davom', error) || !q || !TADBIRLAR[q.tadbir]) return false
+  const yangila = (v: Record<string, unknown>) =>
+    db().from('tadbir_royxat').update({ ...v, updated_at: new Date().toISOString() }).eq('id', q.id)
+
+  if (q.holat === 'ism') {
+    const ismFam = matn.replace(/\s+/g, ' ').trim()
+    if (ismFam.length < 3 || ismFam.length > 80 || !/\p{L}/u.test(ismFam)) {
+      await xabar(chat, 'Ism va familiyangizni harflar bilan yozing (masalan: <i>Ali Valiyev</i>):')
+      return true
+    }
+    if (bazaXato('tadbir ism', (await yangila({ ism: ismFam, holat: 'yosh' })).error)) await xabar(chat, TEXNIK)
+    else await xabar(chat, 'Yoshingiz nechada? Raqam bilan yozing:')
+    return true
+  }
+  if (q.holat === 'yosh') {
+    const yosh = Number(matn.replace(/\D/g, ''))
+    if (!Number.isInteger(yosh) || yosh < 3 || yosh > 99) {
+      await xabar(chat, 'Yoshingizni raqam bilan yozing (masalan: <i>12</i>):')
+      return true
+    }
+    if (bazaXato('tadbir yosh', (await yangila({ yosh, holat: 'mehmon' })).error)) await xabar(chat, TEXNIK)
+    else await mehmonSorash(chat, q.tadbir)
+    return true
+  }
+  await mehmonSorash(chat, q.tadbir) // holat 'mehmon' — tugmani bosish kerak
+  return true
+}
+
+function mehmonSorash(chat: number, kod: string) {
+  return xabar(chat, 'Siz bilan yana nechta kishi keladi (do‘st, uka-singil)?', [
+    [0, 1, 2, 3].map((n) => ({ text: n ? `+${n}` : 'Yolg‘iz o‘zim', callback_data: `tm|${kod}|${n}` })),
+    [{ text: '+4 va undan ko‘p', callback_data: `tm|${kod}|4` }],
+  ])
+}
+
+async function tadbirMehmon(chat: number, u: TgUser, kod: string, son: number) {
+  const nom = TADBIRLAR[kod]
+  if (!nom || !Number.isInteger(son) || son < 0 || son > 4) return
+  const { data, error } = await db().from('tadbir_royxat')
+    .update({ mehmon: son, holat: 'tayyor', updated_at: new Date().toISOString() })
+    .eq('tadbir', kod).eq('tg_id', u.id).eq('holat', 'mehmon')
+    .select('ism, yosh, tg_username').maybeSingle()
+  if (bazaXato('tadbir mehmon', error)) return xabar(chat, TEXNIK)
+  if (!data) return // takroriy bosish yoki eski tugma
+  await xabar(chat, `Rahmat, <b>${html(data.ism)}</b>! Siz ro‘yxatga yozildingiz.\nYakshanba kuni kutib qolamiz!`)
+
+  // Rahbariyatga (WBA Hisobot guruhi) — yangi yozilgan va jami son
+  const { data: hammasi } = await db().from('tadbir_royxat').select('mehmon').eq('tadbir', kod).eq('holat', 'tayyor')
+  const royxat = hammasi?.length ?? 0
+  const jami = (hammasi ?? []).reduce((s, r) => s + 1 + (r.mehmon ?? 0), 0)
+  await tg('sendMessage', {
+    chat_id: HISOBOT_GURUH,
+    parse_mode: 'HTML',
+    text:
+      `<b>${html(nom)}</b> — yangi ro‘yxat\n` +
+      `${html(data.ism)}, ${data.yosh} yosh` + (son ? `, +${son === 4 ? '4 va ko‘p' : son} kishi` : '') +
+      (data.tg_username ? ` (@${html(data.tg_username)})` : '') +
+      `\n\nJami: <b>${jami}</b> kishi (${royxat} ta ro‘yxat)`,
+  })
+}
 
 async function qarz(chat: number, o: Ulanish) {
   const davr = bugunToshkent().slice(0, 7)

@@ -478,6 +478,21 @@ export type LeaderboardRow = {
 
 export type TelegramKim = 'oquvchi' | 'ota_ona' | 'ustoz' | 'xodim'
 
+/** 0133 — tadbirga ro'yxat (bot orqali, faqat admin o'qiydi) */
+export type TadbirRoyxat = {
+  id: number
+  tadbir: string
+  tg_id: number
+  tg_ism: string | null
+  tg_username: string | null
+  ism: string | null
+  yosh: number | null
+  mehmon: number
+  holat: 'ism' | 'yosh' | 'mehmon' | 'tayyor'
+  created_at: string
+  updated_at: string
+}
+
 export type TelegramUlanish = {
   id: number
   chat_id: number
@@ -876,6 +891,7 @@ export type Database = {
     Tables: {
       profiles: Table<Profile>
       telegram_ulanish: Table<TelegramUlanish>
+      tadbir_royxat: Table<TadbirRoyxat>
       elonlar: Table<Elon>
       bildirishnomalar: Table<Bildirishnoma>
       bildirishnoma_variantlar: Table<{ id: number; bildirishnoma_id: number; savol_id: number; matn: string; tartib: number }>
