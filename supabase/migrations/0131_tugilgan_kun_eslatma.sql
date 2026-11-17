@@ -1,5 +1,5 @@
 -- ============================================================
--- 0129 — Tug'ilgan kun eslatmasi (Jamshid, 16.11.2026)
+-- 0131 — Tug'ilgan kun eslatmasi (Jamshid, 16.11.2026)
 --   Ustoz va o'quvchilarning tug'ilgan kuni 3 kun oldindan HAR KUNI
 --   (3 kun qoldi → 2 → ertaga → bugun) "WBA Hisobot" guruhiga, alohida-alohida xabar.
 --   Har kuni 09:00 (Toshkent) pg_cron → POST /api/cron/tugilgan (Vault cron_sir).

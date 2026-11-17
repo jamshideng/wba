@@ -1,5 +1,5 @@
 /**
- * Tug'ilgan kun eslatmasi (0129) — "WBA Hisobot" guruhiga, ustozlar va o'quvchilar alohida xabar.
+ * Tug'ilgan kun eslatmasi (0131) — "WBA Hisobot" guruhiga, ustozlar va o'quvchilar alohida xabar.
  * 3 kun oldindan har kuni: "3 kundan keyin" → "2 kundan keyin" → "Ertaga" → "Bugun".
  */
 import { kunOyYil, guruhQisqa } from '@/lib/format'

@@ -5,7 +5,7 @@ import { bugunToshkent } from '@/lib/format'
 import { tugilganMatn, type TugilganKunlar } from '@/lib/tugilgan-kun'
 
 /**
- * Tug'ilgan kun eslatmasi (0129) — har kuni 09:00 (Toshkent), "WBA Hisobot" guruhiga.
+ * Tug'ilgan kun eslatmasi (0131) — har kuni 09:00 (Toshkent), "WBA Hisobot" guruhiga.
  * Ustozlar va o'quvchilar alohida xabar; 3 kun oldindan har kuni eslatiladi.
  *
  * Chaqiruvchi: Supabase pg_cron + pg_net, `Authorization: Bearer <CRON_SIR>`.
