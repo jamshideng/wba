@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { faolHavola } from '@/components/menyu-guruh'
@@ -22,11 +23,18 @@ export function MenyuHavola({
   children: React.ReactNode
 }) {
   const yol = usePathname()
+  /* Bo'lim sahifasi sekin keladi (Gonkong → Frankfurt): kursor tegishi bilanoq
+     to'liq oldindan yuklaymiz — bosilgunga qadar ma'lumot keshda bo'ladi.
+     Hammasini birdan emas, faqat qaysi biriga qo'l cho'zilsa. */
+  const [yuklash, setYuklash] = useState(false)
   const faol = faolHavola(yol, [href, ...(qoshnilar ?? [])]) === href
   return (
     <Link
       href={href}
       title={title}
+      prefetch={yuklash}
+      onPointerEnter={() => setYuklash(true)}
+      onTouchStart={() => setYuklash(true)}
       aria-current={faol ? 'page' : undefined}
       className={`relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-[13.5px] whitespace-nowrap transition group-data-[menyu=yopiq]/qobiq:justify-center group-data-[menyu=yopiq]/qobiq:px-0 ${
         faol
