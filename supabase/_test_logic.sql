@@ -473,6 +473,21 @@ end $$;
 
 \echo '--- ustoz hisobotda pulni ko''rmasligi kerak (tushum 0) ---'
 select tushum_hisobot('2026-09-01', '2026-09-30') ->> 'tushum' as ustoz_korgan_tushum;
+do $$
+begin
+  -- 0135: tezkor yo'l (RLS'siz) faqat xodimga; ustoz avvalgidek RLS bilan — pulni ko'rmaydi
+  if coalesce((tushum_hisobot('2026-09-01', '2026-09-30') ->> 'tushum')::numeric, 0) <> 0 then
+    raise exception 'XATO: ustoz tushum_hisobot orqali pulni ko''rdi (RLS chetlab o''tildi)!';
+  end if;
+  begin
+    perform tushum_hisobot_tez('2026-09-01', '2026-09-30');
+    raise exception 'XATO: ustoz tezkor hisobotga kirdi!';
+  exception when others then
+    if sqlerrm like '%faqat xodimlar uchun%' then
+      raise notice 'OK: ustoz tezkor hisobotga kira olmaydi, RLS saqlangan';
+    else raise; end if;
+  end;
+end $$;
 
 reset role;
 
