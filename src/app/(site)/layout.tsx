@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Logo } from '@/components/ui'
-import { MARKAZ } from '@/lib/markaz'
+import { MARKAZ, YONALISHLAR } from '@/lib/markaz'
 import { SarlavhaBalandligi } from '@/components/sarlavha-balandligi'
 import { SaytMenyu } from '@/components/sayt-menyu'
 import { TemaTugma } from '@/components/tema'
@@ -74,6 +74,14 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       <footer className="border-t border-line-soft">
+        {/* Har kurs sahifasiga ichki havola — qidiruv boti ularni shu yerdan topadi */}
+        <nav aria-label="Kurslar" className="mx-auto flex max-w-[1260px] flex-wrap gap-x-5 px-5 pt-6 lg:px-8">
+          {YONALISHLAR.map((y) => (
+            <Link key={y.id} href={`/kurslar/${y.id}`} className="inline-flex min-h-11 items-center text-[13px] text-ink-3 hover:text-ink">
+              {y.nom}
+            </Link>
+          ))}
+        </nav>
         <div className="mx-auto flex max-w-[1260px] flex-wrap items-center justify-between gap-5 px-5 py-6 lg:px-8">
           <span className="lbl">
             {MARKAZ.nom} · Toshkent · {MARKAZ.tashkilYili}

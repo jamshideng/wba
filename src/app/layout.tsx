@@ -25,20 +25,31 @@ const plexMono = IBM_Plex_Mono({
   display: 'swap',
 })
 
+const SARLAVHA = 'World Bridge Academy — Toshkentda o‘quv markazi'
+const TAVSIF =
+  '2018 yildan beri Toshkentda. Ingliz, rus, arab, turk tili, matematika, Почемучка va IT — guruhda 12 kishidan ortiq emas, ' +
+  'birinchi dars va daraja aniqlash bepul.'
+
 export const metadata: Metadata = {
   metadataBase: new URL(saytManzil()),
+  applicationName: 'World Bridge Academy',
   title: {
-    default: 'World Bridge Academy — Toshkentda o‘quv markazi',
+    default: SARLAVHA,
     template: '%s · World Bridge Academy',
   },
-  description:
-    '2018 yildan beri Toshkentda. Ingliz, rus, arab, turk tili, matematika, Почемучка va IT — guruhda 12 kishidan ortiq emas, ' +
-    'birinchi dars va daraja aniqlash bepul.',
+  description: TAVSIF,
+  // Next openGraph/twitter'ga title va description'ni o'zi ko'chirmaydi —
+  // yozilmasa Telegram/Facebook ulashganda sarlavha bo'sh chiqadi.
   openGraph: {
     type: 'website',
     locale: 'uz_UZ',
     siteName: 'World Bridge Academy',
+    title: SARLAVHA,
+    description: TAVSIF,
   },
+  twitter: { card: 'summary_large_image', title: SARLAVHA, description: TAVSIF },
+  // Telefon raqami iOS'da avtomatik havola bo'lib, dizaynni buzmasin
+  formatDetection: { telephone: false },
   // iPhone: ekranga qo'shilganda ilova kabi (brauzer panelisiz) ochilsin.
   // Status bar 'black' — 'black-translucent' bo'lsa CRM sarlavhasi uning ostiga kirib qolardi.
   appleWebApp: { capable: true, title: 'WBA', statusBarStyle: 'black' },
