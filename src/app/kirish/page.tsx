@@ -9,7 +9,7 @@ import { loginEmail } from '@/lib/login'
 import { ichkiYol } from '@/lib/kiritish'
 import { MARKAZ } from '@/lib/markaz'
 
-export const metadata = { title: 'Tizimga kirish' }
+export const metadata = { title: 'Tizimga kirish', robots: { index: false, follow: false } }
 
 const XATOLAR: Record<string, string> = {
   notogri: 'Login yoki parol noto‘g‘ri.',

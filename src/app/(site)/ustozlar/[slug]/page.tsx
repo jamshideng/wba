@@ -4,6 +4,8 @@ import type { Metadata } from 'next'
 import { MARKAZ } from '@/lib/markaz'
 import { ommaviyUstozlar, rasmHavola, hujjatHavolalari, tajribaMatn } from '@/lib/ustoz-ommaviy'
 import { DARAJA_NOMI } from '@/lib/ustoz-profil'
+import { JsonLd } from '@/components/json-ld'
+import { nonKroshkaSchema, ustozSchema } from '@/lib/seo'
 
 /* Ustoz sahifasi (0126) — faqat admin yoqqan va manager tasdiqlagan nusxa */
 export const revalidate = 300
@@ -41,6 +43,15 @@ export default async function UstozSahifa({ params }: { params: Promise<{ slug: 
 
   return (
     <main id="asosiy" className="mx-auto flex w-full max-w-[1100px] flex-col gap-10 px-4 py-10 sm:px-5 sm:py-14 lg:px-8">
+      <JsonLd
+        data={[
+          ustozSchema({ ism: u.ism, slug, fanlar: u.fanlar, rasm: u.rasm_yol ? rasmHavola(u.rasm_yol) : null }),
+          nonKroshkaSchema([
+            { nom: 'Ustozlar', yol: '/#ustozlar' },
+            { nom: u.ism, yol: `/ustozlar/${encodeURIComponent(slug)}` },
+          ]),
+        ]}
+      />
       <Link href="/#ustozlar" className="inline-flex min-h-11 w-fit items-center text-[14px] text-ink-3 hover:text-ink">
         ← Barcha ustozlar
       </Link>

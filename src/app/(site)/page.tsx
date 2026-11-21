@@ -16,6 +16,8 @@ import { VaqtTanlash } from '@/components/lending/vaqt-tanlash'
 import { Narx } from '@/components/lending/narx'
 import { Savollar } from '@/components/lending/savollar'
 import { Ustozlarimiz } from '@/components/lending/ustozlar'
+import { JsonLd } from '@/components/json-ld'
+import { kurslarSchema, savollarSchema, tashkilotSchema } from '@/lib/seo'
 import './lending.css'
 
 export const metadata = { alternates: { canonical: '/' } }
@@ -69,6 +71,7 @@ export default async function Bosh() {
 
   return (
     <main className={`${arabShrift.variable} overflow-x-clip pb-24 sm:pb-0`}>
+      <JsonLd data={[tashkilotSchema(), kurslarSchema(), savollarSchema()]} />
       <Preloader />
       <Harakat />
 
