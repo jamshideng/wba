@@ -444,26 +444,27 @@ export function DavomatBolimi({ d, dan, gacha }: { d: HisobotDavomat; dan: strin
 /* ================================================================== */
 
 const ortacha = (tushum: number, soni: number) => (soni > 0 ? Math.round(tushum / soni) : 0)
+const son1 = (n: number) => Number(n).toLocaleString('ru-RU', { maximumFractionDigits: 1 })
 
 export function OrtachaTolovBolimi({ o }: { o: HisobotOrtacha }) {
   const oylar = o.filter((m) => Number(m.fan) > 0 || Number(m.tushum) > 0)
   const joriy = oylar.at(-1)
   return (
     <Card className="flex flex-col overflow-hidden">
-      <CardHeader title="O‘rtacha to‘lov — 1 fan uchun" meta="oy uchun tushum ÷ shu oyda o‘qigan fanlar" />
+      <CardHeader title="O‘rtacha to‘lov — 1 fan uchun" meta="oy tushumi ÷ oydagi o‘rtacha kunlik fanlar (yakshanbasiz)" />
       {!joriy ? (
         <div className="px-5 pb-5"><Empty>Bu oraliqda ma’lumot yo‘q.</Empty></div>
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3.5 px-5 pb-4 sm:grid-cols-3">
-            <Stat label={`${davrNomi(joriy.davr)} — o‘rtacha`} value={ortacha(Number(joriy.tushum), Number(joriy.fan))} sub="1 fan uchun · so‘m" ton="brand" href={royxat('ortacha_fan', joriy.davr)} />
+            <Stat label={`${davrNomi(joriy.davr)} — o‘rtacha`} value={ortacha(Number(joriy.tushum), Number(joriy.orta_fan))} sub="1 fan uchun · so‘m" ton="brand" href={royxat('ortacha_fan', joriy.davr)} />
             <Stat label="Tushum" value={Number(joriy.tushum)} sub="shu oy uchun to‘langan · so‘m" href={royxat('ortacha_tolov', joriy.davr)} />
-            <Stat label="Fanlar" value={String(joriy.fan)} sub={`${joriy.bola} bola · ${joriy.vip_fan} VIP`} href={royxat('ortacha_fan', joriy.davr)} />
+            <Stat label="O‘rtacha fanlar (a)" value={son1(joriy.orta_fan)} sub={`${joriy.kunlar} kun · ${son1(joriy.orta_vip)} VIP`} href={royxat('ortacha_fan', joriy.davr)} />
           </div>
           <Jadval>
             <thead className="border-y border-line bg-surface-2/60">
               <tr>
-                <th className={th}>Oy</th><th className={th}>Tushum</th><th className={th}>Fanlar</th><th className={th}>Bola</th>
+                <th className={th}>Oy</th><th className={th}>Tushum</th><th className={th}>Kunlar (y)</th><th className={th}>O‘rtacha fan (a)</th>
                 <th className={th}>O‘rtacha</th><th className={th}>VIPsiz o‘rtacha</th>
               </tr>
             </thead>
@@ -472,10 +473,10 @@ export function OrtachaTolovBolimi({ o }: { o: HisobotOrtacha }) {
                 <tr key={m.davr}>
                   <td className={`${td} font-semibold`}>{davrNomi(m.davr)}</td>
                   <td className={td}><Link href={royxat('ortacha_tolov', m.davr)} className={rq}>{pul(m.tushum)}</Link></td>
-                  <td className={td}><Link href={royxat('ortacha_fan', m.davr)} className={rq}>{m.fan}</Link></td>
-                  <td className={`${td} text-ink-3`}>{m.bola}</td>
-                  <td className={`${td} font-bold`}>{pul(ortacha(Number(m.tushum), Number(m.fan)))}</td>
-                  <td className={`${td} text-ink-3`}>{pul(ortacha(Number(m.tushum), Number(m.fan) - Number(m.vip_fan)))}</td>
+                  <td className={`${td} text-ink-3`}>{m.kunlar}</td>
+                  <td className={td}><Link href={royxat('ortacha_fan', m.davr)} className={rq}>{son1(m.orta_fan)}</Link></td>
+                  <td className={`${td} font-bold`}>{pul(ortacha(Number(m.tushum), Number(m.orta_fan)))}</td>
+                  <td className={`${td} text-ink-3`}>{pul(ortacha(Number(m.tushum), Number(m.orta_fan) - Number(m.orta_vip)))}</td>
                 </tr>
               ))}
             </tbody>
@@ -486,18 +487,18 @@ export function OrtachaTolovBolimi({ o }: { o: HisobotOrtacha }) {
               <div key={f.nom} className="flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
                 <span>
                   {f.nom}{' '}
-                  <Link href={`${royxat('ortacha_fan', joriy.davr)}&kim=${encodeURIComponent(f.nom)}`} className={`text-ink-3 ${rq}`}>· {f.soni} ta</Link>
+                  <Link href={`${royxat('ortacha_fan', joriy.davr)}&kim=${encodeURIComponent(f.nom)}`} className={`text-ink-3 ${rq}`}>· {son1(f.orta)} ta</Link>
                 </span>
                 <span className="tnum">
-                  <b>{pul(ortacha(Number(f.tushum), Number(f.soni)))}</b>{' '}
+                  <b>{pul(ortacha(Number(f.tushum), Number(f.orta)))}</b>{' '}
                   <Link href={`${royxat('ortacha_tolov', joriy.davr)}&kim=${encodeURIComponent(f.nom)}`} className={`text-ink-3 ${rq}`}>({pul(f.tushum)})</Link>
                 </span>
               </div>
             ))}
           </div>
           <p className="px-5 pb-4 text-[11.5px] leading-relaxed text-ink-3">
-            Oyning kamida bir kunida o‘qigan har kim sanaladi — oy ichida qo‘shilgan yoki ketgan ham; to‘lagani tushumga kiradi.
-            2 fanda o‘qigan bola — 2 fan. To‘lov, yangi o‘quvchi yoki ketish darhol shu yerda aks etadi.
+            O‘rtacha = tushum (z) ÷ a. a = yakshanbadan tashqari har kun oxiridagi rasmiy fanlar yig‘indisi (x) ÷ yakshanbasiz kunlar (y).
+            2 fanda o‘qigan bola — 2 fan. Joriy oyda kunlar bugungacha sanaladi. To‘lov, yangi o‘quvchi yoki ketish darhol aks etadi.
           </p>
         </>
       )}

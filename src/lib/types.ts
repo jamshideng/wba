@@ -763,7 +763,11 @@ export type HisobotOrtacha = {
   fan: number
   vip_fan: number
   bola: number
-  fanlar: { nom: string; soni: number; tushum: number }[]
+  /** 0134 — yakshanbasiz kunlar, kunlik rasmiy fanlarning o'rtachasi (a), shundan VIP */
+  kunlar: number
+  orta_fan: number
+  orta_vip: number
+  fanlar: { nom: string; soni: number; tushum: number; orta: number }[]
 }[]
 /** 0092 — ilovani (PWA) o'rnatganlar */
 export type HisobotIlova = {
