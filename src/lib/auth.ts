@@ -21,15 +21,20 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
   const userId = claims?.claims?.sub
   if (!userId) return null
 
-  const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+  /* Profil va (ikki rolli xodim "Ustoz" rolini tanlagan bo'lsa) ustoz yozuvi —
+     parallel: ikki ketma-ket tarmoq so'rovi o'rniga bitta. */
+  const ustozRolida = (await cookies()).get(ROL_COOKIE)?.value === 'ustoz'
+  const [{ data }, ustozQ] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', userId).single(),
+    ustozRolida
+      ? supabase.from('teachers').select('id').eq('profile_id', userId).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ])
   if (!data) return null
 
   /* Ikki rolli xodim "Ustoz" rolini tanlagan bo'lsa — sayt uni oddiy ustozdek
      ko'rsatadi (rol-holat.ts). asl_rol — haqiqiy roli, almashtirish menyusi uchun. */
-  if (staffmi(data.rol) && (await cookies()).get(ROL_COOKIE)?.value === 'ustoz') {
-    const { data: t } = await supabase.from('teachers').select('id').eq('profile_id', data.id).maybeSingle()
-    if (t) return { ...data, rol: 'ustoz', asl_rol: data.rol }
-  }
+  if (staffmi(data.rol) && ustozQ.data) return { ...data, rol: 'ustoz', asl_rol: data.rol }
   return data
 })
 
