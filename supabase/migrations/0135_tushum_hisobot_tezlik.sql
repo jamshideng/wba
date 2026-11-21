@@ -8,15 +8,18 @@
 --  chaqiradi — eng sekin sahifalar.
 --
 --  Endi (0049 bilan bir xil naqsh), natija O'ZGARMAYDI:
---    · xodim (admin/qabulxona) yoki service_role  → tezkor ichki funksiya
---      (egasi huquqi bilan, RLS'siz; hech kimga to'g'ridan-to'g'ri ochiq emas)
---    · boshqa rollar → avvalgidek RLS bilan (tushum_hisobot_rls)
+--    · xodim (app_is_staff) yoki service_role → tezkor yo'l (tushum_hisobot_tez:
+--      egasi huquqi bilan, RLS'siz; ichida o'zi xodimligini tekshiradi)
+--    · boshqa rollar → avvalgidek RLS bilan (tushum_hisobot_rls, INVOKER)
+--  Tashqi funksiya SECURITY INVOKER: aks holda boshqa rollar uchun ham RLS
+--  o'chib qolardi.
 --  Hisobot mazmuni va imzosi bir xil: chaqiruvchi kod o'zgarmaydi.
 -- ============================================================
 
 -- 1) Eski (invoker) funksiya — boshqa rollar uchun o'zgarmay qoladi
 alter function tushum_hisobot(date, date) rename to tushum_hisobot_rls;
-revoke execute on function tushum_hisobot_rls(date, date) from public, anon, authenticated;
+revoke execute on function tushum_hisobot_rls(date, date) from public, anon;
+grant  execute on function tushum_hisobot_rls(date, date) to authenticated, service_role;
 
 -- 2) Tezkor ichki nusxa: matni bir xil, faqat security definer
 create or replace function tushum_hisobot_ichki(p_dan date, p_gacha date)
@@ -107,13 +110,28 @@ $$;
 
 revoke execute on function tushum_hisobot_ichki(date, date) from public, anon, authenticated;
 
--- 3) Tashqi funksiya: kim chaqirayotganiga qarab yo'l tanlaydi
-create or replace function tushum_hisobot(p_dan date, p_gacha date)
+-- 3) Qo'riqchi: tezkor yo'lga faqat xodim yoki service_role kira oladi
+create or replace function tushum_hisobot_tez(p_dan date, p_gacha date)
 returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 begin
-  if app_is_staff() or coalesce(auth.role(), '') = 'service_role' then
-    return tushum_hisobot_ichki(p_dan, p_gacha);
+  if not (app_is_staff() or coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', '') = 'service_role') then
+    raise exception 'Hisobot faqat xodimlar uchun.';
+  end if;
+  return tushum_hisobot_ichki(p_dan, p_gacha);
+end;
+$$;
+
+revoke execute on function tushum_hisobot_tez(date, date) from public, anon;
+grant  execute on function tushum_hisobot_tez(date, date) to authenticated, service_role;
+
+-- 4) Tashqi funksiya (imzo o'sha): INVOKER — yo'l tanlaydi, huquqni o'zgartirmaydi
+create or replace function tushum_hisobot(p_dan date, p_gacha date)
+returns jsonb
+language plpgsql stable security invoker set search_path = public as $$
+begin
+  if app_is_staff() or coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', '') = 'service_role' then
+    return tushum_hisobot_tez(p_dan, p_gacha);
   end if;
   return tushum_hisobot_rls(p_dan, p_gacha);
 end;
