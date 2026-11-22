@@ -17,8 +17,6 @@ import type { AttendanceStatus } from '@/lib/types'
 
 const BELGI: Record<AttendanceStatus, string> = {
   keldi: '+',
-  kechikdi: 'K',
-  sababli: 'S',
   kelmadi: '-',
 }
 
@@ -88,7 +86,7 @@ export async function GET(req: NextRequest) {
   const sanalar = dList.map((d) => d.sana.slice(8, 10) + '.' + d.sana.slice(5, 7))
   const qatorlar: (string | number)[][] = [
     [`${g.nom} — ${davr}`],
-    ['+ keldi', 'K kechikdi', 'S sababli', '- kelmadi'],
+    ['+ keldi', '- kelmadi'],
     [],
     ['№', 'ID', 'F.I.Sh', ...sanalar, 'Kelgan', 'Darslar', 'Foiz'],
   ]
@@ -100,7 +98,7 @@ export async function GET(req: NextRequest) {
       const h = xarita.get(`${d.id}|${o.student_id}`)
       if (!h) return ''
       jami += 1
-      if (h === 'keldi' || h === 'kechikdi') kelgan += 1
+      if (h === 'keldi') kelgan += 1
       return BELGI[h]
     })
     const foiz = jami ? `${Math.round((kelgan * 100) / jami)}%` : ''

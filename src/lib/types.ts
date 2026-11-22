@@ -12,7 +12,7 @@ export type StudentStatus = 'faol' | 'tanaffus' | 'ketgan'
 export type GroupStatus = 'faol' | 'yopilgan'
 export type DayType = 'toq' | 'juft' | 'dam_olish' | 'har_kuni'
 export type EnrollmentStatus = 'faol' | 'tanaffus' | 'tugagan'
-export type AttendanceStatus = 'keldi' | 'kechikdi' | 'sababli' | 'kelmadi'
+export type AttendanceStatus = 'keldi' | 'kelmadi'
 /** 'payme' — faqat eski yozuvlar uchun (0088); yangi to'lovda tanlanmaydi. */
 export type PaymentMethod = string
 export type InvoiceStatus = 'ochiq' | 'yopilgan' | 'bekor'
@@ -802,12 +802,12 @@ export type HisobotDavomat = {
   /** 0062 — jadval bo'yicha darslar (bugungacha) */
   darslar: { reja: number; otildi: number; belgilanmagan: number }
   /** 0062 — kutilgan belgi = dars kuni × o'sha kuni guruhdagi o'quvchi */
-  belgilar: { kutilgan: number; keldi: number; kechikdi: number; sababli: number; kelmadi: number; belgilanmagan: number }
+  belgilar: { kutilgan: number; keldi: number; kelmadi: number; belgilanmagan: number }
   haftalar: { hafta: string; belgi: number; kelgan: number }[]
   guruhlar: {
     id: string; nom: string; ustoz: string; oquvchi: number; belgi: number; kelgan: number
     dars_reja: number; dars_otildi: number
-    kutilgan: number; s_keldi: number; s_kelmadi: number; s_sababli: number; s_belgilanmagan: number
+    kutilgan: number; s_keldi: number; s_kelmadi: number; s_belgilanmagan: number
   }[]
   qoldiruvchilar: { student_id: string; fish: string; guruh: string; belgi: number; kelmadi: number }[]
 }
@@ -823,7 +823,7 @@ export type Hisobot = {
   ustoz: HisobotQator[]
   yonalish: HisobotQator[]
   kunlar: { sana: string; summa: number; soni: number }[]
-  davomat: { belgilar: number; kelgan: number; kelmadi: number; sababli: number }
+  davomat: { belgilar: number; kelgan: number; kelmadi: number }
   darslar: { kutilgan: number; qilinmagan: number }
   qilinmagan: { ustoz: string; nom: string; sana: string }[]
   probniy: { jami: number; kutilmoqda: number; yozildi: number; kelmadi: number; rad: number }

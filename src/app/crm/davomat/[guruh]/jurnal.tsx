@@ -87,14 +87,13 @@ export type DarsKuni = {
 export type Huquq = 'hammasi' | 'bugun' | 'yoq'
 
 /* Faqat ikki holat: keldi (✓) va kelmadi (✗). Bosilganda navbat:
-   bo'sh → keldi → kelmadi → bo'sh. Eski yozuvlardagi "kechikdi" keldi,
-   "sababli" kelmadi bo'lib ko'rinadi (bazada o'zgarmaydi). */
+   bo'sh → keldi → kelmadi → bo'sh (0137). */
 type Ikki = 'keldi' | 'kelmadi'
 const NAVBAT: (Ikki | null)[] = [null, 'keldi', 'kelmadi']
 
 function ikkiga(h: AttendanceStatus | null | undefined): Ikki | null {
   if (!h) return null
-  return h === 'keldi' || h === 'kechikdi' ? 'keldi' : 'kelmadi'
+  return h
 }
 
 const BELGI: Record<Ikki, { nom: string; ton: string }> = {

@@ -48,10 +48,9 @@ export async function kunlikHisobotMatn(kun: string = bugunToshkent()): Promise<
     .filter((g) => (g.kunlar ?? []).includes(hk) && (soni.get(g.id) ?? 0) > 0)
     .map((g) => ({ nom: g.nom, boshlanish: g.boshlanish, teacher_id: g.teacher_id, belgilangan: otkazildi.get(g.id) ?? false }))
   const b = (belgilar ?? []) as { holat: string }[]
-  const keldi = b.filter((x) => x.holat === 'keldi' || x.holat === 'kechikdi').length
+  const keldi = b.filter((x) => x.holat === 'keldi').length
   const kelmadi = b.filter((x) => x.holat === 'kelmadi').length
-  const sababli = b.filter((x) => x.holat === 'sababli').length
-  const foiz = keldi + kelmadi + sababli ? Math.round((keldi * 100) / (keldi + kelmadi + sababli)) : null
+  const foiz = keldi + kelmadi ? Math.round((keldi * 100) / (keldi + kelmadi)) : null
 
   /* Belgilanmagan darslar — ustoz kesimida, "Beginner 08:30" ko'rinishida */
   const ustozIsmi = new Map((ustozlar ?? []).map((u) => [u.id, u.ism]))
@@ -73,7 +72,7 @@ export async function kunlikHisobotMatn(kun: string = bugunToshkent()): Promise<
 
   t.push('<b>DAVOMAT</b>')
   t.push(`Darslar: <b>${darslar.length}</b> ta`)
-  t.push(`Keldi: <b>${keldi}</b> · kelmadi: <b>${kelmadi}</b>${sababli ? ` · sababli: <b>${sababli}</b>` : ''}${foiz === null ? '' : `  (${foiz}%)`}\n`)
+  t.push(`Keldi: <b>${keldi}</b> · kelmadi: <b>${kelmadi}</b>${foiz === null ? '' : `  (${foiz}%)`}\n`)
 
   t.push('<b>DAVOMAT QO‘YILMAGAN DARSLAR</b>')
   if (!jamiQ) {

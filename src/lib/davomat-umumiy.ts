@@ -3,14 +3,14 @@
  * har guruhning foizi va belgilanmay qolgan dars kunlari.
  *
  * Foiz qoidasi oylik eksport va v_attendance_monthly bilan bir xil:
- * kelgan (keldi + kechikdi) / qo'yilgan belgilar. Kelajak kunlar sanalmaydi.
+ * keldi / qo'yilgan belgilar. Kelajak kunlar sanalmaydi.
  */
 
 import { haftaKuni } from '@/lib/format'
 
 import { kunlarSanada, type JadvalQatori } from './guruh-jadval'
 
-export type Belgi = 'keldi' | 'kechikdi' | 'sababli' | 'kelmadi'
+export type Belgi = 'keldi' | 'kelmadi'
 
 export type GuruhKirish = { id: string; nom: string; kunlar: number[] | null; jadval?: JadvalQatori[] }
 export type YozilishKirish = { group_id: string; boshlandi: string; tugadi: string | null }
@@ -23,7 +23,6 @@ export type GuruhQatori = {
   darslar: number
   keldi: number
   kelmadi: number
-  sababli: number
   belgilar: number
   foiz: number | null
   /** Dars kuni bo'lgan, guruhda o'quvchi bor, lekin bitta ham belgi qo'yilmagan kunlar */
@@ -61,7 +60,7 @@ export function umumiyDavomat(
 
   return guruhlar
     .map((g) => {
-      const q: GuruhQatori = { id: g.id, nom: g.nom, darslar: 0, keldi: 0, kelmadi: 0, sababli: 0, belgilar: 0, foiz: null, belgilanmagan: [] }
+      const q: GuruhQatori = { id: g.id, nom: g.nom, darslar: 0, keldi: 0, kelmadi: 0, belgilar: 0, foiz: null, belgilanmagan: [] }
       const yz = yozilishlar.filter((y) => y.group_id === g.id)
       for (const kun of kunlar) {
         const dars = kunDarsi.get(`${g.id}|${kun}`)
@@ -70,8 +69,7 @@ export function umumiyDavomat(
           q.darslar += 1
           for (const h of b) {
             q.belgilar += 1
-            if (h === 'keldi' || h === 'kechikdi') q.keldi += 1
-            else if (h === 'sababli') q.sababli += 1
+            if (h === 'keldi') q.keldi += 1
             else q.kelmadi += 1
           }
           continue

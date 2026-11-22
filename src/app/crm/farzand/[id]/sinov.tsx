@@ -23,7 +23,7 @@ export async function SinovFarzand({ f, farzandlar }: { f: Farzand; farzandlar: 
   const supabase = await createClient()
   const { data } = await supabase.rpc('ota_ona_lid_kabinet', { p_lead: f.id.slice(2) })
   const k = data as unknown as Kabinet | null
-  const kelgan = k ? k.davomat.filter((d) => d.holat === 'keldi' || d.holat === 'kechikdi').length : 0
+  const kelgan = k ? k.davomat.filter((d) => d.holat === 'keldi').length : 0
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
@@ -106,8 +106,8 @@ export async function SinovFarzand({ f, farzandlar }: { f: Farzand; farzandlar: 
                 {k.davomat.map((d) => (
                   <li key={d.sana} className="flex items-center justify-between py-2.5 text-[13.5px]">
                     <span>{sana(d.sana)}</span>
-                    <Badge ton={d.holat === 'keldi' || d.holat === 'kechikdi' ? 'ok' : 'brand'}>
-                      {d.holat === 'keldi' || d.holat === 'kechikdi' ? 'Keldi' : 'Kelmadi'}
+                    <Badge ton={d.holat === 'keldi' ? 'ok' : 'brand'}>
+                      {d.holat === 'keldi' ? 'Keldi' : 'Kelmadi'}
                     </Badge>
                   </li>
                 ))}

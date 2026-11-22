@@ -120,7 +120,7 @@ async function oraliqMatn(dan: string, gacha: string, nom: 'HAFTALIK' | 'OYLIK')
 
   t.push('<b>DAVOMAT</b>')
   const d = h?.davomat
-  t.push(`Keldi: <b>${d?.kelgan ?? 0}</b> · kelmadi: <b>${(d?.kelmadi ?? 0) + (d?.sababli ?? 0)}</b> · belgilanmagan dars: <b>${h?.darslar.qilinmagan ?? 0}</b>`)
+  t.push(`Keldi: <b>${d?.kelgan ?? 0}</b> · kelmadi: <b>${d?.kelmadi ?? 0}</b> · belgilanmagan dars: <b>${h?.darslar.qilinmagan ?? 0}</b>`)
   t.push('')
   t.push('<b>O‘QUVCHILAR</b>')
   t.push(`Probniyga yozilgan — <b>${h?.probniy.jami ?? 0}</b> ta · doimiyga o‘tgan — <b>${h?.probniy.yozildi ?? 0}</b> ta`)

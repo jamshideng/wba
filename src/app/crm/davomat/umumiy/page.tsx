@@ -133,7 +133,6 @@ export default async function UmumiyDavomat({ searchParams }: { searchParams: Pr
                   <span className="flex items-center gap-3">
                     <span className="font-[family-name:var(--font-mono)] text-[11.5px] text-ink-3">
                       {q.darslar} dars · {q.keldi}/{q.belgilar}
-                      {q.sababli ? ` · ${q.sababli} sababli` : ''}
                     </span>
                     <Badge ton={q.foiz === null ? 'jim' : q.foiz >= 85 ? 'ok' : q.foiz >= 70 ? 'accent' : 'brand'}>
                       {q.foiz === null ? '—' : `${q.foiz}%`}

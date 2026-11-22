@@ -301,7 +301,7 @@ export function UstozlarBolimi({ u, dan, gacha }: { u: HisobotUstoz[]; dan: stri
 export function DavomatBolimi({ d, dan, gacha }: { d: HisobotDavomat; dan: string; gacha: string }) {
   const r = (tur: string, kim?: string) => oraliqRoyxat(tur, dan, gacha, kim)
   const b = d.belgilar
-  const keldi = b.keldi + b.kechikdi
+  const keldi = b.keldi
   const qoyilgan = b.kutilgan - b.belgilanmagan
   const tola = d.guruhlar.filter((g) => g.oquvchi >= sigim(g.nom)).length
   const bosh = d.guruhlar.reduce((a, g) => a + Math.max(0, sigim(g.nom) - g.oquvchi), 0)
@@ -324,10 +324,10 @@ export function DavomatBolimi({ d, dan, gacha }: { d: HisobotDavomat; dan: strin
           href={r('dav_keldi')}
           label="Keldi"
           value={String(keldi)}
-          sub={`${foiz(keldi, qoyilgan) ?? '—'}% belgilanganlardan${b.kechikdi ? ` · ${b.kechikdi} kechikdi` : ''}`}
+          sub={`${foiz(keldi, qoyilgan) ?? '—'}% belgilanganlardan`}
           ton="ok"
         />
-        <Stat label="Kelmadi" value={String(b.kelmadi)} sub={b.sababli ? `+ ${b.sababli} sababli` : 'sababli yo‘q'} ton={b.kelmadi ? 'accent' : 'ok'} href={r('dav_kelmadi')} />
+        <Stat label="Kelmadi" value={String(b.kelmadi)} sub={`${foiz(b.kelmadi, qoyilgan) ?? '—'}% belgilanganlardan`} ton={b.kelmadi ? 'accent' : 'ok'} href={r('dav_kelmadi')} />
         <Stat
           href={r('dav_belgisiz')}
           label="Belgilanmagan"
@@ -348,7 +348,7 @@ export function DavomatBolimi({ d, dan, gacha }: { d: HisobotDavomat; dan: strin
               <tr>
                 <th className={th}>Guruh</th><th className={th}>Ustoz</th><th className={th}>Darslar</th>
                 <th className={th}>Belgi</th><th className={th}>Keldi</th><th className={th}>Kelmadi</th>
-                <th className={th}>Sababli</th><th className={th}>Belgilanmagan</th><th className={th}>Davomat</th>
+                <th className={th}>Belgilanmagan</th><th className={th}>Davomat</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -365,9 +365,8 @@ export function DavomatBolimi({ d, dan, gacha }: { d: HisobotDavomat; dan: strin
                   <td className={td}><Link href={r('dav_kutilgan', g.id)} className={rq}>{g.kutilgan}</Link></td>
                   <td className={`${td} text-ok`}><Link href={r('dav_keldi', g.id)} className={rq}>{g.s_keldi}</Link></td>
                   <td className={td}>{g.s_kelmadi ? <Link href={r('dav_kelmadi', g.id)} className={rq}>{g.s_kelmadi}</Link> : <span className="text-ink-4">0</span>}</td>
-                  <td className={td}>{g.s_sababli ? <Link href={r('dav_sababli', g.id)} className={rq}>{g.s_sababli}</Link> : <span className="text-ink-4">0</span>}</td>
                   <td className={td}>{g.s_belgilanmagan ? <Link href={r('dav_belgisiz', g.id)} className={`font-bold text-brand ${rq}`}>{g.s_belgilanmagan}</Link> : <span className="text-ink-4">0</span>}</td>
-                  <td className={td}><FoizBelgi f={foiz(g.s_keldi, g.s_keldi + g.s_kelmadi + g.s_sababli)} yaxshi={85} /></td>
+                  <td className={td}><FoizBelgi f={foiz(g.s_keldi, g.s_keldi + g.s_kelmadi)} yaxshi={85} /></td>
                 </tr>
               ))}
             </tbody>
@@ -378,7 +377,6 @@ export function DavomatBolimi({ d, dan, gacha }: { d: HisobotDavomat; dan: strin
                 <td className={td}><Link href={r('dav_kutilgan')} className={rq}>{b.kutilgan}</Link></td>
                 <td className={td}><Link href={r('dav_keldi')} className={rq}>{keldi}</Link></td>
                 <td className={td}><Link href={r('dav_kelmadi')} className={rq}>{b.kelmadi}</Link></td>
-                <td className={td}><Link href={r('dav_sababli')} className={rq}>{b.sababli}</Link></td>
                 <td className={td}><Link href={r('dav_belgisiz')} className={rq}>{b.belgilanmagan}</Link></td>
                 <td className={td}><FoizBelgi f={foiz(keldi, qoyilgan)} yaxshi={85} /></td>
               </tr>

@@ -7,7 +7,7 @@ test('kunlarOraligi — ikkala chet ham kiradi, oy chegarasidan o‘tadi', () =>
   assert.deepEqual(kunlarOraligi('2026-10-02', '2026-10-01'), [])
 })
 
-test('umumiyDavomat — foiz, sababli va belgilanmagan kunlar', () => {
+test('umumiyDavomat — foiz va belgilanmagan kunlar', () => {
   // 2026-09-28 dushanba (1), 2026-09-30 chorshanba (3), 2026-10-02 juma (5)
   const kunlar = kunlarOraligi('2026-09-28', '2026-10-02')
   const q = umumiyDavomat(
@@ -21,8 +21,8 @@ test('umumiyDavomat — foiz, sababli va belgilanmagan kunlar', () => {
     [
       { lesson_id: 'L1', holat: 'keldi' },
       { lesson_id: 'L1', holat: 'kelmadi' },
-      { lesson_id: 'L1', holat: 'sababli' },
-      { lesson_id: 'L1', holat: 'kechikdi' },
+      { lesson_id: 'L1', holat: 'kelmadi' },
+      { lesson_id: 'L1', holat: 'keldi' },
     ],
   )
   assert.equal(q.length, 1)

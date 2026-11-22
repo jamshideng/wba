@@ -472,7 +472,7 @@ async function probniyKabinet(chat: number, p: Ulanish) {
     return xabar(chat, 'Sinov davri tugagan. Qaytadan yozilish uchun markaz administratori bilan bog‘laning.', orqaga)
   }
   if (k.holat === 'oquvchi') return xabar(chat, 'Siz guruhga yozildingiz — menyuda o‘quvchi bo‘limi ochiladi. /menyu', orqaga)
-  const kelgan = k.davomat.filter((d) => d.holat === 'keldi' || d.holat === 'kechikdi').length
+  const kelgan = k.davomat.filter((d) => d.holat === 'keldi').length
   const qator = [
     `<b>${html(p.ism)}</b> — sinov darslari`,
     k.guruh ? `${html(k.guruh.fan ?? k.guruh.nom)} · ustoz: ${html(k.guruh.ustoz ?? '—')}` : '',

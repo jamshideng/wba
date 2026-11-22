@@ -49,8 +49,6 @@ const HOLAT_TONI: Record<string, 'ok' | 'accent' | 'brand' | 'jim'> = {
 
 const DAVOMAT_NOMI: Record<AttendanceStatus, string> = {
   keldi: 'Keldi',
-  kechikdi: 'Kechikdi',
-  sababli: 'Sababli',
   kelmadi: 'Kelmadi',
 }
 
@@ -984,7 +982,7 @@ export default async function OquvchiProfil({
               ))
             )}
             <p className="lbl pt-1">
-              {DAVOMAT_NOMI.keldi} va {DAVOMAT_NOMI.kechikdi} — kelgan deb sanaladi
+              Foiz = {DAVOMAT_NOMI.keldi} / belgilangan darslar
             </p>
           </div>
         </Card>

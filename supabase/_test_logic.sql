@@ -304,7 +304,7 @@ select davomat_saqla(
 \echo '--- qayta saqlash: belgi yangilanadi, BALL IKKILANMAYDI ---'
 select davomat_saqla(
   'N03', current_date,
-  jsonb_build_object('S004', 'kechikdi'),
+  jsonb_build_object('S004', 'kelmadi'),
   jsonb_build_object('S004', 3)
 ) as natija;
 
@@ -322,7 +322,7 @@ where l.group_id = 'N03' and l.sana = current_date;
 \echo '--- server nomidan (auth.uid() bo''sh) davomat yozilishi kerak (0013) ---'
 reset role;
 reset request.jwt.claim.sub;
-select davomat_saqla('N03', current_date, jsonb_build_object('S004', 'sababli')) -> 'davomat' as server_yozdi;
+select davomat_saqla('N03', current_date, jsonb_build_object('S004', 'kelmadi')) -> 'davomat' as server_yozdi;
 set role authenticated;
 set request.jwt.claim.sub = '66666666-6666-6666-6666-666666666666';
 
@@ -687,7 +687,7 @@ begin
 end $$;
 
 set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
-select davomat_saqla('N01', bugun_toshkent() - 1, jsonb_build_object('S001', 'kechikdi')) -> 'davomat' as admin_otgan_kun;
+select davomat_saqla('N01', bugun_toshkent() - 1, jsonb_build_object('S001', 'kelmadi')) -> 'davomat' as admin_otgan_kun;
 
 reset role;
 
@@ -1040,7 +1040,7 @@ set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';   -- admin
 do $$
 declare n int;
 begin
-  update attendance set holat = 'kechikdi'
+  update attendance set holat = 'kelmadi'
    where student_id = 'S001'
      and lesson_id = (select id from lessons where group_id = 'N01' and sana = bugun_toshkent() - 2);
   get diagnostics n = row_count;
@@ -2072,7 +2072,7 @@ do $$
 declare r jsonb := hisobot_davomat('2020-01-01', bugun_toshkent());
         b jsonb := r->'belgilar'; d jsonb := r->'darslar';
 begin
-  if (b->>'kutilgan')::int <> (b->>'keldi')::int + (b->>'kechikdi')::int + (b->>'sababli')::int
+  if (b->>'kutilgan')::int <> (b->>'keldi')::int
                               + (b->>'kelmadi')::int + (b->>'belgilanmagan')::int then
     raise exception 'XATO: kutilgan belgi qismlar yig''indisiga teng emas: %', b;
   end if;
@@ -3272,4 +3272,41 @@ begin
     raise exception 'XATO: 0132 — oxirgi fanda o''quvchi arxivga o''tishi kerak (%)', v_n;
   end if;
   raise notice 'OK: 0132 — oxirgi fan chiqarilganda o''quvchi arxivga';
+end $$;
+
+\echo '--- 0137: davomat faqat keldi/kelmadi, davomat_vaqti bir marta yoziladi ---'
+reset role;
+do $$
+declare v_l uuid; v_t1 timestamptz; v_t2 timestamptz; v_ok boolean := false;
+begin
+  if (select array_agg(e::text order by e) from unnest(enum_range(null::attendance_status)) e)
+     <> array['keldi', 'kelmadi'] then
+    raise exception 'XATO: 0137 — attendance_status faqat keldi/kelmadi bo''lishi kerak';
+  end if;
+  begin
+    perform 'kechikdi'::attendance_status;
+  exception when invalid_text_representation then v_ok := true;
+  end;
+  if not v_ok then raise exception 'XATO: 0137 — kechikdi qabul qilinmasligi kerak'; end if;
+
+  insert into students (id, fish) values ('S937', 'Davomat Vaqti');
+  insert into enrollments (student_id, group_id, boshlandi) values ('S937', 'N02', '2020-01-01');
+  insert into lessons (group_id, sana) values ('N02', '2020-03-02') returning id into v_l;
+  -- guruhdagi boshqa faol o'quvchilar ham bor — avval faqat bittasi belgilanadi
+  insert into attendance (lesson_id, student_id, holat) values (v_l, 'S937', 'keldi');
+  if (select count(*) from enrollments e where e.group_id = 'N02' and e.holat = 'faol' and e.boshlandi <= '2020-03-02') > 1
+     and (select davomat_vaqti from lessons where id = v_l) is not null then
+    raise exception 'XATO: 0137 — to''liq bo''lmagan davomatda vaqt yozilmasligi kerak';
+  end if;
+  insert into attendance (lesson_id, student_id, holat)
+  select v_l, e.student_id, 'kelmadi' from enrollments e
+   where e.group_id = 'N02' and e.holat = 'faol' and e.boshlandi <= '2020-03-02'
+     and (e.tugadi is null or e.tugadi >= '2020-03-02') and e.student_id <> 'S937';
+  select davomat_vaqti into v_t1 from lessons where id = v_l;
+  if v_t1 is null then raise exception 'XATO: 0137 — to''liq davomatda vaqt yozilishi kerak'; end if;
+  perform pg_sleep(0.01);
+  update attendance set holat = 'kelmadi' where lesson_id = v_l and student_id = 'S937';
+  select davomat_vaqti into v_t2 from lessons where id = v_l;
+  if v_t2 <> v_t1 then raise exception 'XATO: 0137 — davomat_vaqti o''zgarmasligi kerak'; end if;
+  raise notice 'OK: 0137 — 2 holat, davomat_vaqti bir marta';
 end $$;

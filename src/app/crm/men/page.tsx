@@ -18,8 +18,6 @@ export const dynamic = 'force-dynamic'
 
 const DAVOMAT_NOMI: Record<AttendanceStatus, string> = {
   keldi: 'Keldi',
-  kechikdi: 'Kechikdi',
-  sababli: 'Sababli',
   kelmadi: 'Kelmadi',
 }
 
@@ -322,7 +320,7 @@ export default async function MeningSahifam({
               ))
             )}
             <p className="pt-1 text-[12px] text-ink-3">
-              {DAVOMAT_NOMI.keldi} va {DAVOMAT_NOMI.kechikdi} — kelgan deb sanaladi
+              Foiz = {DAVOMAT_NOMI.keldi} / belgilangan darslar
             </p>
           </div>
         </Card>

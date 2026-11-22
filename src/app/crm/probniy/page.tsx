@@ -50,7 +50,7 @@ export default async function ProbniyKabinet({ searchParams }: { searchParams: P
     )
   }
 
-  const kelgan = k.davomat.filter((d) => d.holat === 'keldi' || d.holat === 'kechikdi').length
+  const kelgan = k.davomat.filter((d) => d.holat === 'keldi').length
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-5 py-5">
@@ -117,12 +117,12 @@ export default async function ProbniyKabinet({ searchParams }: { searchParams: P
             {k.davomat.map((d) => (
               <li
                 key={d.sana}
-                data-belgi={d.holat === 'keldi' || d.holat === 'kechikdi' ? 'keldi' : undefined}
+                data-belgi={d.holat === 'keldi' ? 'keldi' : undefined}
                 className="flex items-center justify-between py-2.5 text-[13.5px]"
               >
                 <span>{sana(d.sana)}</span>
-                <Badge ton={d.holat === 'keldi' || d.holat === 'kechikdi' ? 'ok' : 'brand'}>
-                  {d.holat === 'keldi' || d.holat === 'kechikdi' ? 'Keldi' : 'Kelmadi'}
+                <Badge ton={d.holat === 'keldi' ? 'ok' : 'brand'}>
+                  {d.holat === 'keldi' ? 'Keldi' : 'Kelmadi'}
                 </Badge>
               </li>
             ))}
