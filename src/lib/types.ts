@@ -881,6 +881,23 @@ export type UstozKechikishOylik = {
 
 /* ---------- Supabase klient uchun sxema ---------- */
 
+/* 0142 — kitoblar hisobi */
+export type Kitob = {
+  id: string; nom: string; subject_id: string | null; holat: 'faol' | 'arxiv'
+  created_by: string | null; created_at: string; updated_at: string
+}
+export type KitobKirim = {
+  id: string; sana: string; kitob_id: string; soni: number; izoh: string | null
+  kiritdi: string | null; created_at: string
+}
+export type KitobBuyurtma = {
+  id: string; kod: string; kitob_id: string; kitob_nomi: string; teacher_id: string | null; group_id: string | null
+  soni: number; holat: 'kutilmoqda' | 'berildi' | 'bekor'; buyurtmachi: string | null; berdi: string | null
+  berildi_vaqt: string | null; bekor_sabab: string | null; bekor_qildi: string | null; bekor_vaqt: string | null
+  created_at: string
+}
+export type KitobBuyurtmaOquvchi = { buyurtma_id: string; student_id: string }
+
 type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Row: Row
   Insert: Insert
@@ -925,6 +942,10 @@ export type Database = {
       probniy_woblar: Table<ProbniyWoblar>
       woblr_rewards: Table<WoblrReward>
       woblr_redemptions: Table<WoblrRedemption>
+      kitoblar: Table<Kitob>
+      kitob_kirim: Table<KitobKirim>
+      kitob_buyurtmalar: Table<KitobBuyurtma>
+      kitob_buyurtma_oquvchilar: Table<KitobBuyurtmaOquvchi>
       woblr_takliflar: Table<import('./market').Taklif>
       invoices: Table<Invoice>
       payments: Table<Payment>
@@ -1054,6 +1075,13 @@ export type Database = {
       market_buyurtma: { Args: { p_reward: string; p_soni?: number }; Returns: string }
       market_bozor_xarid: { Args: { p_nom: string; p_ball: number }; Returns: string }
       market_berildi: { Args: { p_kod: string }; Returns: undefined }
+      kitob_qoldiq: {
+        Args: Record<string, never>
+        Returns: { kitob_id: string; nom: string; subject_id: string | null; holat: 'faol' | 'arxiv'; kelgan: number; berilgan: number; band: number; omborda: number; bosh: number }[]
+      }
+      kitob_buyurtma: { Args: { p_kitob: string; p_group: string; p_oquvchilar: string[] }; Returns: string }
+      kitob_berildi: { Args: { p_kod: string }; Returns: undefined }
+      kitob_bekor: { Args: { p_kod: string; p_sabab: string }; Returns: undefined }
       market_bekor: { Args: { p_kod: string; p_sabab?: string | null }; Returns: undefined }
       market_keldi: { Args: { p_kod: string }; Returns: string }
       market_mahsulot_ochir: { Args: { p_reward: string }; Returns: { student_id: string; kod: string }[] }
