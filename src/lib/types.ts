@@ -883,7 +883,7 @@ export type UstozKechikishOylik = {
 
 /* 0142 — kitoblar hisobi */
 export type Kitob = {
-  id: string; nom: string; subject_id: string | null; holat: 'faol' | 'arxiv'; izoh: string | null
+  id: string; nom: string; subject_id: string | null; holat: 'faol' | 'arxiv'; izoh: string | null; rasm_url: string | null
   created_by: string | null; created_at: string; updated_at: string
 }
 export type KitobKirim = {
@@ -896,6 +896,14 @@ export type KitobBuyurtma = {
   soni: number; holat: 'kutilmoqda' | 'berildi' | 'bekor' | 'qaytarildi'; buyurtmachi: string | null; berdi: string | null
   berildi_vaqt: string | null; bekor_sabab: string | null; bekor_qildi: string | null; bekor_vaqt: string | null
   created_at: string
+}
+/* 0144 — ustoz kitob taklifi */
+export type KitobTaklifHolati = 'yangi' | 'buyurtma_qilindi' | 'keldi' | 'rad_etildi' | 'bekor_qilindi'
+export type KitobTaklif = {
+  id: string; teacher_id: string; nom: string; subject_id: string; soni: number; sabab: string
+  rasm_url: string; havola: string | null; holat: KitobTaklifHolati; javob: string | null; kitob_id: string | null
+  kalit: string; created_by: string | null; ozgartirdi: string | null; ozgartirish_vaqt: string | null
+  created_at: string; updated_at: string
 }
 export type KitobBuyurtmaOquvchi = {
   id: string; buyurtma_id: string; student_id: string; holat: 'faol' | 'olib_tashlandi' | 'qaytarildi'
@@ -950,6 +958,7 @@ export type Database = {
       kitob_kirim: Table<KitobKirim>
       kitob_buyurtmalar: Table<KitobBuyurtma>
       kitob_buyurtma_oquvchilar: Table<KitobBuyurtmaOquvchi>
+      kitob_takliflar: Table<KitobTaklif>
       woblr_takliflar: Table<import('./market').Taklif>
       invoices: Table<Invoice>
       payments: Table<Payment>
@@ -1085,6 +1094,14 @@ export type Database = {
       }
       kitob_kirim_tahrir: { Args: { p_kirim: string; p_soni: number; p_sana: string | null; p_izoh: string | null }; Returns: undefined }
       kitob_kirim_bekor: { Args: { p_kirim: string; p_sabab: string }; Returns: undefined }
+      kitob_taklif_yubor: { Args: { p_nom: string; p_fan: string; p_soni: number; p_sabab: string; p_rasm: string; p_havola: string | null }; Returns: string }
+      kitob_taklif_tahrir: { Args: { p_id: string; p_nom: string; p_fan: string; p_soni: number; p_sabab: string; p_rasm: string | null; p_havola: string | null }; Returns: undefined }
+      kitob_taklif_bekor: { Args: { p_id: string; p_sabab: string | null }; Returns: undefined }
+      kitob_taklif_holat: { Args: { p_idlar: string[]; p_holat: string; p_javob: string | null }; Returns: { soni: number; tg: { chat: number; sarlavha: string; matn?: string; havola?: string }[] } }
+      kitob_taklif_keldi: {
+        Args: { p_idlar: string[]; p_kitob: string | null; p_nom: string | null; p_fan: string | null; p_rasm: string | null; p_kirim_soni: number | null; p_kirim_sana: string | null; p_javob: string | null }
+        Returns: { soni: number; kitob_id: string; tg: { chat: number; sarlavha: string; matn?: string; havola?: string }[] }
+      }
       kitob_buyurtma_ozgartir: { Args: { p_kod: string; p_oquvchilar: string[] }; Returns: undefined }
       kitob_qaytar: { Args: { p_kod: string; p_oquvchilar: string[] | null; p_sabab: string }; Returns: number }
       kitob_takroriy: { Args: { p_kitob: string; p_oquvchilar: string[] }; Returns: { student_id: string; kod: string; holat: string; sana: string }[] }
