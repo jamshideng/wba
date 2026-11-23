@@ -270,8 +270,8 @@ export default async function MeningSahifam({
                 </div>
               ))
             )}
-            <Link href="/crm/woblr" className="mt-2 text-[12.5px] text-accent hover:text-brand">
-              Woblar reytingini ko‘rish →
+            <Link href="/crm/reyting" className="mt-2 text-[12.5px] text-accent hover:text-brand">
+              Reytingni ko‘rish →
             </Link>
           </div>
         </Card>

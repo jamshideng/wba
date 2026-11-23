@@ -1097,6 +1097,14 @@ export type Database = {
       reyting_sozlama_saqla: { Args: { p_qiymat: import('./reyting').ReytingSozlama }; Returns: import('./reyting').ReytingSozlama }
       ketish_sabab_bogliq: { Args: { p_kalit: string; p_bogliq: boolean }; Returns: undefined }
       oylik_qayta_ruxsat: { Args: { p_natija: string; p_sabab: string }; Returns: undefined }
+      // 0139–0141 — o'quvchi va ustoz reytingi
+      reyting_hisobla: { Args: { p_tur: string; p_sana?: string | null }; Returns: number }
+      reyting_davrlari: { Args: { p_tur?: string | null }; Returns: import('./reyting').ReytingDavr[] }
+      reyting_guruh: { Args: { p_davr: number; p_group: string; p_student?: string | null }; Returns: import('./reyting').GuruhReytingQatori[] }
+      reyting_fan: { Args: { p_davr: number; p_fan: string; p_student?: string | null }; Returns: import('./reyting').FanReytingQatori[] }
+      reyting_tarixim: { Args: { p_student?: string | null }; Returns: import('./reyting').ReytingTarixQatori[] }
+      reyting_ustozlar: { Args: { p_davr: number }; Returns: import('./reyting').UstozReytingQatori[] }
+      reyting_ustoz_tarixi: { Args: { p_teacher: string }; Returns: import('./reyting').UstozTarixQatori[] }
       ketish_tahlili: { Args: { p_dan: string; p_gacha: string }; Returns: import('./ketish').KetishTahlili }
       kunlik_qoshimcha: { Args: { p_kun: string }; Returns: Record<string, unknown> }
       ertangi_maslahat: { Args: { p_kun: string }; Returns: Record<string, unknown> }

@@ -1,114 +1,52 @@
-import { IconMedal, IconTanga } from '@/components/icons'
 import Link from 'next/link'
-import { talabProfil, getUstoz, adminmi, staffmi, ustozRejimi } from '@/lib/auth'
+import { redirect } from 'next/navigation'
+import { talabProfil, getUstoz, adminmi, ustozRejimi } from '@/lib/auth'
 import { woblarChegara } from '@/lib/woblar-chegara'
-import { JonliForma } from '@/components/jonli-forma'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Empty } from '@/components/ui'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
-import { Maydon, Xabar, kirishKlass } from '@/components/forma'
+import { Xabar } from '@/components/forma'
 import { WoblarBerishForma, type BerishOquvchi } from './berish-forma'
 import { royxatOl, royxatVariantlari } from '@/lib/royxat'
 import { WoblarLimitKartasi } from '@/components/woblar-limit'
 import type { WoblarLimiti } from '@/lib/woblar-chegara'
 import { guruhUstozsiz } from '@/lib/format'
-import { xatoMatni } from '@/lib/kiritish'
-import type { LeaderboardRow } from '@/lib/types'
 
 export const metadata = { title: 'Woblar' }
-
-/** 1–3-o'rin raqam o'rniga medal (Jamshid, 16.10) */
-const MEDAL = [
-  { nom: 'oltin', sinf: 'bg-oltin-soft text-oltin' },
-  { nom: 'kumush', sinf: 'bg-kumush-soft text-kumush' },
-  { nom: 'bronza', sinf: 'bg-bronza-soft text-bronza' },
-] as const
 export const dynamic = 'force-dynamic'
 
 /**
- * Woblar reytingi. Woblar — o'quvchini rag'batlantiruvchi mukofot birligi; darsda davomat bilan birga yoki shu yerda beriladi
- * (/crm/davomat). Reyting — HOZIRGI balans (olgan − Market sarfi, 0061), funksiya orqali: faqat ism va ball —
- * telefon, qarz, davomat chiqmaydi.
+ * Woblar berish (ustoz — o'z o'quvchisiga, admin — hammaga). Woblar odatda
+ * darsda davomat bilan birga beriladi (/crm/davomat) — reytingga faqat
+ * DARSDAGI woblar kiradi; bu yerda berilgani (lesson_id yo'q) kirmaydi.
  *
- * Kim nimani ko'radi (Q6, bazada ham tekshiriladi — 0020):
- *   o'quvchi — butun markaz va o'zi o'qiydigan fan(lar); boshqa fan yo'q
- *   ustoz    — butun markaz, o'z fanlari va o'z guruhlari
- *   xodim    — hammasi
- * Tanlov bitta `k` parametrida: "markaz", "fan:ingliz-tili", "guruh:G05".
+ * Eski "woblar balansi reytingi" (0061/0070) 0139 dan /crm/reyting bilan
+ * almashtirildi. Woblar berolmaydiganlar (o'quvchi, ota-ona) o'sha yerga o'tadi.
  */
-type Korinish = { k: string; nom: string; guruh: string | null; fan: string | null }
-
 export default async function Woblr({
   searchParams,
 }: {
-  searchParams: Promise<{ k?: string; guruh?: string; davr?: string; ok?: string; xato?: string }>
+  searchParams: Promise<{ guruh?: string; ok?: string; xato?: string }>
 }) {
   const profil = await talabProfil()
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Woblar" />
 
+  const ustoz = await getUstoz()
+  const admin = adminmi(profil.rol)
+  if (!ustoz && !admin) redirect('/crm/reyting')
+
   const s = await searchParams
   const supabase = await createClient()
   const sabablar = await royxatOl(supabase, 'woblar_sabab')
-  const oquvchimi = profil.rol === 'oquvchi'
 
-  // RLS: ustozga o'z guruhlari, o'quvchiga o'zi o'qiydigan guruhlar, xodimga hammasi
-  const { data: guruhlar } = await supabase
-    .from('groups')
-    .select('id, nom, subject_id, teacher_id, subjects(nom)')
-    .eq('holat', 'faol')
-    .order('nom')
-  const ustozIdsi = ustozRejimi(profil) ? (await getUstoz())?.id : undefined
-  const gList = ((guruhlar ?? []) as unknown as { id: string; nom: string; subject_id: string | null; teacher_id: string | null; subjects: { nom: string } | null }[])
-    // Xodim "Ustoz" rolida — faqat o'z guruhlari (RLS unga hammasini beradi)
-    .filter((g) => !ustozIdsi || g.teacher_id === ustozIdsi)
+  // RLS: ustozga o'z guruhlari, xodimga hammasi
+  const { data: guruhlar } = await supabase.from('groups').select('id, nom, teacher_id').eq('holat', 'faol').order('nom')
+  const ustozIdsi = ustozRejimi(profil) ? ustoz?.id : undefined
+  const berishGuruhlari = ((guruhlar ?? []) as { id: string; nom: string; teacher_id: string | null }[])
+    .filter((g) => (admin && !ustozIdsi) || g.teacher_id === ustoz?.id)
+    .map((g) => ({ id: g.id, nom: admin ? g.nom : guruhUstozsiz(g.nom) }))
 
-  const fanlar = new Map<string, string>()
-  for (const g of gList) if (g.subject_id) fanlar.set(g.subject_id, g.subjects?.nom ?? g.subject_id)
-
-  const markaz: Korinish = { k: 'markaz', nom: 'Butun markaz', guruh: null, fan: null }
-  const fanKorinish: Korinish[] = [...fanlar]
-    .sort((a, b) => a[1].localeCompare(b[1], 'uz'))
-    .map(([id, nom]) => ({ k: `fan:${id}`, nom, guruh: null, fan: id }))
-  // O'quvchiga guruh bo'yicha tanlov berilmaydi — reyting markaz va fan bo'yicha (Q6)
-  // Ustozga o'z ismisiz nom ("Beginner · 15:00-16:30, Toq kun") — telefonda tanlov qutisiga sig'sin
-  const guruhKorinish: Korinish[] = oquvchimi
-    ? []
-    : gList.map((g) => ({ k: `guruh:${g.id}`, nom: staffmi(profil.rol) ? g.nom : guruhUstozsiz(g.nom), guruh: g.id, fan: null }))
-  const hammasi = [markaz, ...fanKorinish, ...guruhKorinish]
-
-  // Eski havolalar (?guruh=G05) ham ishlasin. Ustoz odatda o'z guruhida
-  // woblar beradi — shuning uchun unga birinchi guruh ochiladi.
-  const soralgan = s.k ?? (s.guruh ? `guruh:${s.guruh}` : undefined)
-  const tanlov =
-    hammasi.find((v) => v.k === soralgan) ??
-    (profil.rol === 'ustoz' && guruhKorinish[0] ? guruhKorinish[0] : markaz)
-  const guruh = tanlov.guruh
-
-  const { data, error: reytingXato } = await supabase.rpc('woblr_leaderboard', {
-    p_group: tanlov.guruh,
-    p_fan: tanlov.fan,
-  })
-  const reyting = (data ?? []) as LeaderboardRow[]
-  /* 0070: xodim bo'lmaganga baza top 10 (+ o'quvchiga o'z qatori) qaytaradi —
-     markazdagi bolalar soni bilinmasin. Ustoz o'z guruhini to'liq ko'radi. */
-  const yopiq = !staffmi(profil.rol) && !(profil.rol === 'ustoz' && guruh)
-  const top = yopiq ? reyting.filter((r) => r.orin <= 10) : reyting
-  const men = yopiq ? (reyting.find((r) => r.orin > 10) ?? null) : null
-
-  const { data: stavka } = await supabase.from('settings').select('qiymat').eq('kalit', 'woblr.oylik_stavka').maybeSingle()
-
-  /* Woblar berish huquqi: ustoz (o'z o'quvchisiga) yoki admin.
-     Ro'yxatni RLS cheklaydi — ustozga faqat o'z guruhlari keladi. */
-  const ustoz = await getUstoz()
-  const beraOladi = Boolean(ustoz) || adminmi(profil.rol)
-
-  /* Berish ro'yxati: ustozga faqat O'Z guruhlari va o'quvchilari, adminga hammasi.
-     Tanlangan reyting (markaz / fan / guruh) ga bog'liq emas — har doim beriladi. */
-  const admin = adminmi(profil.rol)
-  const berishGuruhlari = beraOladi
-    ? gList.filter((g) => admin || g.teacher_id === ustoz?.id).map((g) => ({ id: g.id, nom: admin ? g.nom : guruhUstozsiz(g.nom) }))
-    : []
   const { data: qatnashuvchilar } = berishGuruhlari.length
     ? await supabase
         .from('enrollments')
@@ -125,127 +63,49 @@ export default async function Woblr({
     berishMap.set(e.student_id, o)
   }
   const berishOquvchilar = [...berishMap.values()].sort((a, b) => a.fish.localeCompare(b.fish, 'uz'))
-  const qaytishYoli = `/crm/woblr?k=${encodeURIComponent(tanlov.k)}`
+  const boshGuruh = berishGuruhlari.find((g) => g.id === s.guruh)?.id ?? null
+
+  const { data: stavka } = await supabase.from('settings').select('qiymat').eq('kalit', 'woblr.oylik_stavka').maybeSingle()
 
   // 0064 — ustozning oylik limiti (admin limitsiz)
-  const { data: limitXom } = beraOladi && !admin && ustoz
-    ? await supabase.rpc('ustoz_woblar_limiti', {})
-    : { data: null }
+  const { data: limitXom } = !admin && ustoz ? await supabase.rpc('ustoz_woblar_limiti', {}) : { data: null }
   const limit = limitXom as WoblarLimiti | null
 
   return (
     <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
-      <Sarlavha
-        nom="Woblar reytingi"
-        izoh={`${tanlov.nom} · hozirgi woblar`}
-      />
+      <Sarlavha nom="Woblar" izoh="woblar berish" />
+      <Xabar ok={s.ok} xato={s.xato} />
 
-      <Xabar ok={s.ok} xato={s.xato ?? (reytingXato ? xatoMatni(reytingXato) : undefined)} />
-
-      {/* Tanlov o'zgarishi bilan natija chiqadi — "Ko'rsatish" tugmasi kerak emas */}
-      <JonliForma className="flex flex-wrap items-end gap-2.5">
-        <Maydon nom="Reyting">
-          <select name="k" defaultValue={tanlov.k} className={kirishKlass}>
-            <option value={markaz.k}>{markaz.nom}</option>
-            {fanKorinish.length > 0 && (
-              <optgroup label={oquvchimi ? 'Mening fanim' : 'Fan bo‘yicha'}>
-                {fanKorinish.map((v) => (
-                  <option key={v.k} value={v.k}>{v.nom}</option>
-                ))}
-              </optgroup>
-            )}
-            {guruhKorinish.length > 0 && (
-              <optgroup label="Guruh bo‘yicha">
-                {guruhKorinish.map((v) => (
-                  <option key={v.k} value={v.k}>{v.nom}</option>
-                ))}
-              </optgroup>
-            )}
-          </select>
-        </Maydon>
-      </JonliForma>
-
-      <Card className="flex flex-col">
-        <CardHeader
-          title={yopiq ? 'Reyting · eng yaxshi 10 ta' : 'Reyting'}
-          action={
-            <span className="flex size-8 items-center justify-center text-accent" title="Woblar">
-              <IconTanga size={24} />
-              <span className="sr-only">Woblar</span>
-            </span>
-          }
-        />
-        {reyting.length === 0 ? (
-          <div className="px-5 pb-5">
-            <Empty>Hali woblar berilmagan. Woblar davomat ekranida yoki pastdagi bo‘limda beriladi.</Empty>
-          </div>
-        ) : (
-          <ol>
-            {[...top, ...(men ? [men] : [])].map((r) => (
-              <li
-                key={r.student_id}
-                className={`flex items-center gap-3 px-5 py-3 ${r === men ? 'mt-1 border-t-2 border-dashed border-line bg-surface-2' : 'border-t border-line-soft'}`}
-              >
-                {r.orin <= 3 ? (
-                  <span
-                    className={`flex size-9 shrink-0 items-center justify-center rounded-full ${MEDAL[r.orin - 1].sinf}`}
-                    title={`${r.orin}-o‘rin · ${MEDAL[r.orin - 1].nom}`}
-                  >
-                    <IconMedal size={22} />
-                    <span className="sr-only">{r.orin}-o‘rin, {MEDAL[r.orin - 1].nom} medal</span>
-                  </span>
-                ) : (
-                  <span className="tnum flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-2 font-[family-name:var(--font-display)] text-[14px] font-bold text-ink-3">
-                    {r.orin}
-                  </span>
-                )}
-                {/* Profil faqat xodimga ochiq — ustoz va o'quvchiga oddiy ism */}
-                {!staffmi(profil.rol) ? (
-                  <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold">
-                    {r.fish}
-                    {r === men && <span className="ml-1.5 text-[12px] font-normal text-ink-3">· siz</span>}
-                  </span>
-                ) : (
-                  <Link href={`/crm/oquvchilar/${r.student_id}`} className="min-w-0 flex-1 truncate text-[13.5px] font-semibold hover:text-brand">
-                    {r.fish}
-                  </Link>
-                )}
-                <span
-                  className={`tnum w-16 shrink-0 text-right font-[family-name:var(--font-display)] text-[19px] font-extrabold ${r.ball > 0 ? 'text-accent' : 'text-brand'}`}
-                >
-                  {r.ball}
-                </span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </Card>
+      <p className="rounded-[10px] border border-line bg-surface px-4 py-3 text-[12.5px] text-ink-2">
+        Reyting endi davomat, darsdagi woblar va oylik test bo‘yicha hisoblanadi —{' '}
+        <Link href="/crm/reyting" className="font-semibold text-accent hover:text-brand">Reyting</Link>.
+        Bu yerda berilgan woblar balansga qo‘shiladi, lekin reytingga faqat darsda (davomat ekranida) berilgani kiradi.
+      </p>
 
       {limit && <WoblarLimitKartasi limit={limit} guruh={null} kim="Sizning woblar limitingiz" />}
 
-      {beraOladi && berishGuruhlari.length > 0 && (
+      {berishGuruhlari.length > 0 ? (
         <Card className="flex flex-col">
           <CardHeader title="Woblar berish" meta={admin ? 'barcha o‘quvchilar' : 'faqat o‘z o‘quvchilaringiz'} />
           <WoblarBerishForma
             sabablar={royxatVariantlari(sabablar)}
             guruhlar={berishGuruhlari}
             oquvchilar={berishOquvchilar}
-            boshGuruh={guruh}
+            boshGuruh={boshGuruh}
             chegara={woblarChegara()}
             admin={admin}
-            qaytish={qaytishYoli}
+            qaytish="/crm/woblr"
             limit={limit ? { jami: limit.jami.qoldi, guruhlar: Object.fromEntries(limit.guruhlar.map((x) => [x.group_id, x.qoldi])) } : null}
           />
         </Card>
+      ) : (
+        <Empty>Faol guruh yo‘q.</Empty>
       )}
 
-      {/* Woblar beradiganlar uchun eslatma — o'quvchiga keraksiz */}
-      {beraOladi && (
-        <p className="text-[12px] text-ink-3">
-          Ustozning oylik limiti: darslar × o‘quvchilar × {stavka?.qiymat != null ? String(stavka.qiymat) : '3'} (bir darsda bitta bolaga).
-          Xohlasa bir kunda, xohlasa bo‘lib beradi; minus woblar limitga qaytadi. Admin — limitsiz.
-        </p>
-      )}
+      <p className="text-[12px] text-ink-3">
+        Ustozning oylik limiti: darslar × o‘quvchilar × {stavka?.qiymat != null ? String(stavka.qiymat) : '3'} (bir darsda bitta bolaga).
+        Xohlasa bir kunda, xohlasa bo‘lib beradi; minus woblar limitga qaytadi. Admin — limitsiz.
+      </p>
     </div>
   )
 }

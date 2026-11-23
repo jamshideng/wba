@@ -3355,3 +3355,150 @@ begin
   end if;
   raise notice 'OK: 0138 — sozlama, izoh, qayta topshirish';
 end $$;
+
+\echo '--- 0139: o''quvchi reytingi — formula, oxirgi dars, yangi, o''rinlar ---'
+reset role;
+do $$
+declare v_d bigint; v_t uuid; l uuid[]; r record; v_fan text;
+begin
+  select subject_id into v_fan from groups where subject_id is not null limit 1;
+  insert into groups (id, nom, subject_id, boshlanish, tugash, oylik_narx, kunlar)
+  values ('RT1', 'Reyting sinov', v_fan, '10:00', '11:30', 100000, '{1,3,5}');
+  insert into students (id, fish) values ('SR1', 'Reyting Bir'), ('SR2', 'Reyting Ikki'), ('SR3', 'Reyting Uch');
+  insert into enrollments (student_id, group_id, boshlandi) values
+    ('SR1', 'RT1', '2020-04-01'), ('SR2', 'RT1', '2020-04-01'), ('SR3', 'RT1', '2020-05-09');
+  with x as (
+    insert into lessons (group_id, sana, otkazildi)
+    select 'RT1', s, true from unnest(array['2020-05-04','2020-05-06','2020-05-08','2020-05-11','2020-05-13']::date[]) s
+    returning id, sana)
+  select array_agg(id order by sana) into l from x;
+
+  insert into attendance (lesson_id, student_id, holat)
+  select i, 'SR1', 'keldi' from unnest(l) i;
+  insert into attendance (lesson_id, student_id, holat)
+  select l[k], 'SR2', case when k = 5 then 'kelmadi' else 'keldi' end::attendance_status from generate_series(1, 5) k;
+  insert into attendance (lesson_id, student_id, holat) values (l[4], 'SR3', 'keldi'), (l[5], 'SR3', 'keldi');
+
+  insert into woblr (student_id, lesson_id, ball) values ('SR1', l[1], 2), ('SR1', l[5], 4), ('SR2', l[1], 3);
+  insert into woblr (student_id, lesson_id, ball, group_id) values ('SR2', null, 10, 'RT1');  -- darsdan tashqari — kirmaydi
+
+  insert into oylik_testlar (group_id, davr, turi) values ('RT1', '2020-05', 'foiz') returning id into v_t;
+  insert into oylik_test_natijalar (test_id, student_id, keldi, ball) values (v_t, 'SR1', true, 80), (v_t, 'SR2', false, null);
+
+  v_d := reyting_hisobla('oylik', '2020-05-15');
+  select * into r from oquvchi_reyting where davr_id = v_d and student_id = 'SR1';
+  if r.davomat <> 100 or r.woblar_bolinuvchi <> 4 or r.woblar <> 50 or r.test <> 80 or r.umumiy <> 80 or r.orin_guruh <> 1 then
+    raise exception 'XATO: 0139 — SR1 oylik: %', row_to_json(r);
+  end if;
+  select * into r from oquvchi_reyting where davr_id = v_d and student_id = 'SR2';
+  -- oxirgi darsga kelmagan — bo'luvchidan ayirilmaydi; testga kelmagan = 0
+  if r.davomat <> 80 or r.woblar_bolinuvchi <> 4 or r.woblar <> 25 or r.test <> 0 or r.umumiy <> 29 or r.orin_guruh <> 2 then
+    raise exception 'XATO: 0139 — SR2 oylik: %', row_to_json(r);
+  end if;
+  select * into r from oquvchi_reyting where davr_id = v_d and student_id = 'SR3';
+  if not r.yangi or r.orin_guruh is not null or r.darslar <> 2 then
+    raise exception 'XATO: 0139 — SR3 yangi bo''lishi kerak: %', row_to_json(r);
+  end if;
+
+  -- haftalik: hamma kelgan darslar bo'luvchida
+  v_d := reyting_hisobla('haftalik', '2020-05-06');
+  select * into r from oquvchi_reyting where davr_id = v_d and student_id = 'SR2';
+  if r.woblar_bolinuvchi <> 3 or r.woblar <> 33.3 or r.umumiy <> 73.3 or r.orin_guruh <> 1 or r.test is not null then
+    raise exception 'XATO: 0139 — SR2 haftalik: %', row_to_json(r);
+  end if;
+  if (select orin_guruh from oquvchi_reyting where davr_id = v_d and student_id = 'SR1') <> 2 then
+    raise exception 'XATO: 0139 — SR1 haftalik o''rni';
+  end if;
+
+  -- qayta hisoblash — yangi davr qatori ochilmaydi
+  if reyting_hisobla('haftalik', '2020-05-10') <> v_d then
+    raise exception 'XATO: 0139 — qayta hisoblash yangi davr ochdi';
+  end if;
+  begin
+    perform reyting_hisobla('oylik', bugun_toshkent());
+    raise exception 'XATO: 0139 — tugamagan oy hisoblandi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: 0139 — o''quvchi reytingi formulasi';
+end $$;
+
+\echo '--- 0140: ustoz reytingi — kechikish, intizom, ushlash, test, davomat ---'
+reset role;
+do $$
+declare v_d bigint; l uuid[]; r record; v_eski jsonb := reyting_sozlama(); v_h bigint;
+begin
+  perform reyting_sozlama_saqla(jsonb_build_object('boshlanish_sana', '2020-01-01'));
+  insert into teachers (id, ism) values ('UR1', 'Reyting Ustoz');
+  update groups set teacher_id = 'UR1' where id = 'RT1';
+  select array_agg(id order by sana) into l from lessons where group_id = 'RT1';
+
+  insert into students (id, fish) values ('SR4', 'Reyting Tort'), ('SR5', 'Reyting Besh');
+  insert into enrollments (student_id, group_id, boshlandi, tugadi, holat, ketish_sababi) values
+    ('SR4', 'RT1', '2020-04-01', '2020-05-09', 'tugagan', 'kochdi'),   -- bog'liq emas: 0,25
+    ('SR5', 'RT1', '2020-04-01', '2020-05-07', 'tugagan', null);       -- 1 darsga kelgan: sanalmaydi
+  insert into attendance (lesson_id, student_id, holat) values
+    (l[1], 'SR4', 'keldi'), (l[2], 'SR4', 'keldi'), (l[3], 'SR4', 'keldi'), (l[1], 'SR5', 'keldi');
+
+  -- davomat: 4 dars o'z kunida, 5-si keyingi kuni
+  update lessons set davomat_vaqti = ((sana + time '12:00') at time zone 'Asia/Tashkent') where id = any(l[1:4]);
+  update lessons set davomat_vaqti = ((sana + 1 + time '12:00') at time zone 'Asia/Tashkent') where id = l[5];
+
+  insert into ustoz_kechikish (sana, group_id, teacher_id, daqiqa) values ('2020-05-06', 'RT1', 'UR1', 10);
+  insert into nazorat_hodisalar (turi, sana, teacher_id, group_id, tafsilot, kalit) values
+    ('woblar_berilmadi', '2020-05-10', 'UR1', 'RT1', 'sinov', 'rt-1'),
+    ('woblar_berilmadi', '2020-05-11', 'UR1', 'RT1', 'sinov', 'rt-2'),
+    ('ustoz_kechikdi', '2020-05-06', 'UR1', 'RT1', 'sinov', 'rt-3');
+  update nazorat_hodisalar set holat = 'yopildi' where kalit = 'rt-2';
+  insert into ogohlantirishlar (teacher_id, davr, matn, created_at) values ('UR1', '2020-05', 'sinov', '2020-05-12 10:00+05');
+
+  v_d := reyting_hisobla('oylik', '2020-05-15');
+  select * into r from ustoz_reyting where davr_id = v_d and teacher_id = 'UR1';
+  -- test (80+0+0)/3=26.7 · ushlash 100×(1−0,25/5)=95 · kechikish (4×100+50)/5=90
+  -- hodisa: nazorat 1 + ogohlantirish 1 + davomat kech 1 + test natijasi kech 1 = 4 → 60
+  -- davomat 15/16 = 93.8 · umumiy (26.7×40+95×25+90×15+60×10+93.8×10)/100 = 63.3
+  if r.test <> 26.7 or r.oquvchilar <> 5 or r.ketish <> 0.25 or r.ushlash <> 95 or r.kechikish <> 90
+     or r.hodisalar <> 4 or r.intizom <> 60 or r.davomat <> 93.8 or r.umumiy <> 63.3 or r.orin <> 1 then
+    raise exception 'XATO: 0140 — ustoz oylik: %', row_to_json(r);
+  end if;
+
+  -- test o'tkazilmagan guruh: test 0 va intizomga +1 hodisa (natija kechikishi o'rniga)
+  delete from oylik_testlar where group_id = 'RT1' and davr = '2020-05';
+  v_d := reyting_hisobla('oylik', '2020-05-15');
+  select * into r from ustoz_reyting where davr_id = v_d and teacher_id = 'UR1';
+  if r.test <> 0 or r.hodisalar <> 4 or (r.tafsilot ->> 'test_yoq')::int <> 1 then
+    raise exception 'XATO: 0140 — testsiz guruh: %', row_to_json(r);
+  end if;
+
+  -- haftalik (04–10.05): kechikish 40, intizom 30, davomat 30; test yo'q
+  v_h := reyting_hisobla('haftalik', '2020-05-06');
+  select * into r from ustoz_reyting where davr_id = v_h and teacher_id = 'UR1';
+  -- darslar 3: (100+50+100)/3=83.3 · hodisa: nazorat 1 (10.05) → 90 · davomat 3 dars: 2+2+2+0+... belgilar
+  if r.test is not null or r.darslar <> 3 or r.kechikish <> 83.3 or r.hodisalar <> 1 or r.intizom <> 90 then
+    raise exception 'XATO: 0140 — ustoz haftalik: %', row_to_json(r);
+  end if;
+
+  perform reyting_sozlama_saqla(v_eski);
+  raise notice 'OK: 0140 — ustoz reytingi formulasi';
+end $$;
+
+\echo '--- 0139/0140: huquq — ustoz reytingi faqat rahbariyatga ---'
+set role authenticated;
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';   -- qabulxona
+do $$
+begin
+  begin
+    perform * from reyting_ustozlar((select max(id) from reyting_davrlar));
+    raise exception 'XATO: 0140 — qabulxona ustoz reytingini ko''rdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  if exists (select 1 from ustoz_reyting) then
+    raise exception 'XATO: 0140 — ustoz_reyting jadvali qabulxonaga ochiq';
+  end if;
+  begin
+    perform reyting_hisobla('haftalik', '2020-05-06');
+    raise exception 'XATO: 0139 — qabulxona reytingni hisobladi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  raise notice 'OK: 0140 — huquqlar';
+end $$;
+reset role;

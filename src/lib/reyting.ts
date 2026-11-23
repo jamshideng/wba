@@ -95,3 +95,74 @@ export function davrNomi(tur: ReytingTur, dan: string, gacha: string): string {
   const k = (s: string) => `${s.slice(8, 10)}.${s.slice(5, 7)}`
   return `${k(dan)}–${k(gacha)}`
 }
+
+export type ReytingDavr = { id: number; tur: ReytingTur; dan: string; gacha: string; hisoblangan: string }
+
+export type GuruhReytingQatori = {
+  orin: number | null
+  student_id: string
+  fish: string
+  umumiy: number
+  davomat: number | null
+  woblar: number | null
+  test: number | null
+  darslar: number | null
+  kelgan: number | null
+  yangi: boolean
+  menmi: boolean
+}
+
+export type FanReytingQatori = Omit<GuruhReytingQatori, 'yangi'> & { guruh: string | null; jami: number | null }
+
+export type ReytingTarixQatori = {
+  davr_id: number
+  tur: ReytingTur
+  dan: string
+  gacha: string
+  group_id: string
+  guruh: string
+  subject_id: string | null
+  fan: string | null
+  orin_guruh: number | null
+  guruh_soni: number
+  orin_fan: number | null
+  umumiy: number
+  davomat: number
+  woblar: number
+  test: number | null
+  yangi: boolean
+}
+
+export type UstozReytingQatori = {
+  orin: number | null
+  teacher_id: string
+  ism: string
+  umumiy: number
+  test: number | null
+  ushlash: number
+  kechikish: number
+  intizom: number
+  davomat: number
+  darslar: number
+  guruhlar: number
+  oquvchilar: number
+  ketish: number
+  kechikish_daqiqa: number
+  hodisalar: number
+  tafsilot: {
+    nazorat: number
+    ogohlantirish: number
+    davomat_kech: number
+    test_yoq: number
+    test_kech: number
+    ketganlar: { student_id: string; group_id: string; sabab: string | null; vazn: number }[]
+  }
+}
+
+export type UstozTarixQatori = { davr_id: number; tur: ReytingTur; dan: string; gacha: string; orin: number | null; jami: number; umumiy: number }
+
+/** Ball rangi: 85+ yaxshi, 70+ o'rta, qolgani past */
+export function ballTon(b: number | null | undefined): 'ok' | 'accent' | 'brand' | 'jim' {
+  if (b == null) return 'jim'
+  return b >= 85 ? 'ok' : b >= 70 ? 'accent' : 'brand'
+}

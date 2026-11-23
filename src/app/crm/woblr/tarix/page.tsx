@@ -89,7 +89,7 @@ export default async function WoblarTarixi({ searchParams }: { searchParams: Pro
         nom="Woblar tarixi"
         izoh={xodim ? 'kim, kimga, qaysi darsda, nechta' : ustozmi ? 'siz bergan woblar' : 'siz olgan woblar'}
         amal={
-          <Link href="/crm/woblr" className="text-[12.5px] text-accent hover:text-brand">
+          <Link href="/crm/reyting" className="text-[12.5px] text-accent hover:text-brand">
             Reytingga →
           </Link>
         }
