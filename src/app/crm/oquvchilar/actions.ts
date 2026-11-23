@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { talabRol } from '@/lib/auth'
 import { matn, sanaOqi, sonOqi, summaOqi, telefonOqi, xabarliYol, xatoMatni, ichkiYol } from '@/lib/kiritish'
+import { KETISH_IZOH_TALABI, ketishIzohiYaroqli } from '@/lib/reyting'
 
 /**
  * Chegirma maydonlari — Qatnashuvdagidek ikki bosqich.
@@ -356,7 +357,8 @@ export async function oquvchiArxivla(fd: FormData) {
   // 0083 — sabab ro'yxatdan majburiy; "Boshqa" bo'lsa izoh ham
   const turi = matn(fd.get('turi'))
   if (!turi) redirect(xabarliYol(yol, { xato: 'Ketish sababini tanlang.' }))
-  if (turi === 'boshqa' && !matn(fd.get('sabab'))) redirect(xabarliYol(yol, { xato: '“Boshqa” tanlansa, sababini yozing.' }))
+  // 0138 — izoh ham majburiy: kamida 3 so'z va 15 belgi
+  if (!ketishIzohiYaroqli(matn(fd.get('sabab')))) redirect(xabarliYol(yol, { xato: `${KETISH_IZOH_TALABI}.` }))
 
   const supabase = await createClient()
   const { error } = await supabase.rpc('oquvchi_arxivla', {
@@ -437,6 +439,7 @@ export async function fanArxivla(fd: FormData) {
   const yol = `/crm/oquvchilar/${studentId}`
   if (!studentId || !enrollmentId) redirect('/crm/oquvchilar')
   if (!turi) redirect(xabarliYol(yol, { xato: 'Ketish sababini tanlang.' }))
+  if (!ketishIzohiYaroqli(matn(fd.get('izoh')))) redirect(xabarliYol(yol, { xato: `${KETISH_IZOH_TALABI}.` }))
 
   const supabase = await createClient()
   const { data, error } = await supabase.rpc('fan_arxivla', {

@@ -1092,6 +1092,11 @@ export type Database = {
       ketish_sababi_belgila: { Args: { p_student: string; p_turi: string; p_izoh?: string | null }; Returns: undefined }
       fan_arxivla: { Args: { p_enrollment: string; p_sana?: string | null; p_turi: string; p_izoh?: string | null }; Returns: 'fan' | 'oquvchi' }
       fan_ketish_sababi_belgila: { Args: { p_enrollment: string; p_turi: string; p_izoh?: string | null }; Returns: undefined }
+      // 0138 — reyting sozlamalari, ketish sababi, testni qayta topshirish
+      reyting_sozlama: { Args: Record<string, never>; Returns: import('./reyting').ReytingSozlama }
+      reyting_sozlama_saqla: { Args: { p_qiymat: import('./reyting').ReytingSozlama }; Returns: import('./reyting').ReytingSozlama }
+      ketish_sabab_bogliq: { Args: { p_kalit: string; p_bogliq: boolean }; Returns: undefined }
+      oylik_qayta_ruxsat: { Args: { p_natija: string; p_sabab: string }; Returns: undefined }
       ketish_tahlili: { Args: { p_dan: string; p_gacha: string }; Returns: import('./ketish').KetishTahlili }
       kunlik_qoshimcha: { Args: { p_kun: string }; Returns: Record<string, unknown> }
       ertangi_maslahat: { Args: { p_kun: string }; Returns: Record<string, unknown> }

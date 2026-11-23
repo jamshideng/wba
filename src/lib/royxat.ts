@@ -5,7 +5,7 @@
 
 export type RoyxatTur = 'lid_manba' | 'xarajat_toifa' | 'ketish_sabab' | 'woblar_sabab' | 'tolov_usul' | 'vazifa_turi' | 'lavozim'
 
-export type RoyxatBand = { kalit: string; nom: string; faol: boolean; tizim: boolean; tartib: number }
+export type RoyxatBand = { kalit: string; nom: string; faol: boolean; tizim: boolean; tartib: number; ustozga_bogliq?: boolean }
 
 export const ROYXAT_NOMI: Record<RoyxatTur, { nom: string; izoh: string }> = {
   lid_manba: { nom: 'Lid manbasi', izoh: 'Lid qayerdan keldi' },
@@ -33,7 +33,7 @@ type Oquvchi = {
 export async function royxatOl(db: unknown, tur: RoyxatTur): Promise<RoyxatBand[]> {
   const { data } = await (db as Oquvchi)
     .from('royxatlar')
-    .select('kalit, nom, faol, tizim, tartib')
+    .select('kalit, nom, faol, tizim, tartib, ustozga_bogliq')
     .eq('tur', tur)
     .order('tartib')
     .order('nom')

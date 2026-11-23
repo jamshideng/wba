@@ -8,7 +8,7 @@ import { Xabar, kirishKlass } from '@/components/forma'
 import { IconArrowLeft } from '@/components/icons'
 import { Yuborish } from '@/components/yuborish'
 import { ROYXAT_NOMI, ROYXAT_TURLARI, royxatOl } from '@/lib/royxat'
-import { variantQosh, variantNomi, variantHolat } from './actions'
+import { variantQosh, variantNomi, variantHolat, variantBogliq } from './actions'
 
 export const metadata = { title: 'Ro‘yxatlar' }
 export const dynamic = 'force-dynamic'
@@ -55,6 +55,13 @@ export default async function Royxatlar({
                     <input name="nom" required maxLength={60} defaultValue={b.nom} aria-label={`${b.nom}: nomi`} className={`${kirishKlass} min-w-0 flex-1`} />
                     <Yuborish tur="ikkilamchi" kutish="…">Saqlash</Yuborish>
                   </form>
+                  {tur === 'ketish_sabab' && (
+                    <form action={variantBogliq} title="Ustoz reytingida: bog‘liq yoki belgilanmagan sabab — to‘liq 1 ketish, bog‘liq emas — koeffitsient bilan">
+                      <input type="hidden" name="kalit" value={b.kalit} />
+                      <input type="hidden" name="bogliq" value={b.ustozga_bogliq ? '0' : '1'} />
+                      <Yuborish tur="ikkilamchi" kutish="…">{b.ustozga_bogliq ? 'Ustozga bog‘liq' : 'Bog‘liq emas'}</Yuborish>
+                    </form>
+                  )}
                   {b.tizim ? (
                     <span title="Tizimda ishlatiladi: nomini o‘zgartirsa bo‘ladi, yashirib bo‘lmaydi"><Badge>tizim</Badge></span>
                   ) : (

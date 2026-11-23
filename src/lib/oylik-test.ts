@@ -41,6 +41,9 @@ export type OylikNatija = {
   elon_qilingan: boolean
   elon_vaqti: string | null
   orin: number | null
+  /** 0138: kelmagan o'quvchiga qayta topshirishga ruxsat berilgan */
+  qayta?: boolean
+  qayta_vaqt?: string | null
 }
 
 export const TUR_NOMI: Record<OylikTestTuri, string> = {

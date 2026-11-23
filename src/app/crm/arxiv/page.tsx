@@ -13,6 +13,7 @@ import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { pul, sana, jadval } from '@/lib/format'
 import type { ArxivFan } from '@/lib/types'
 import { SanaKiritish } from '@/components/sana-kiritish'
+import { KETISH_IZOH_NAQSH, KETISH_IZOH_TALABI } from '@/lib/reyting'
 
 export const metadata = { title: 'Arxiv' }
 export const dynamic = 'force-dynamic'
@@ -350,8 +351,8 @@ function SababForma({
             ))}
           </select>
         </Maydon>
-        <Maydon nom="Izoh" izoh="“Boshqa” bo‘lsa — majburiy">
-          <input name="izoh" placeholder={izoh ?? ''} className={kirishKlass} />
+        <Maydon nom="Izoh" izoh={KETISH_IZOH_TALABI}>
+          <input name="izoh" required minLength={15} pattern={KETISH_IZOH_NAQSH} title={KETISH_IZOH_TALABI} defaultValue={izoh ?? ''} className={kirishKlass} />
         </Maydon>
         <Yuborish kutish="…">Saqlash</Yuborish>
       </form>

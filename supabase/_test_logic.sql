@@ -979,7 +979,7 @@ begin
   raise notice 'OK: VIP — hisob 0, olinsa narx qaytadi';
 
   -- Arxiv: yozilishlar yopiladi, qarz qoladi, qaytariladi
-  perform oquvchi_arxivla('S003', bugun_toshkent(), 'sinov');
+  perform oquvchi_arxivla('S003', bugun_toshkent(), 'sinov uchun arxivga o''tkazildi', 'boshqa');
   if (select holat from students where id = 'S003') <> 'ketgan'
      or exists (select 1 from enrollments where student_id = 'S003' and holat <> 'tugagan') then
     raise exception 'XATO: arxivlash yozilishlarni yopmadi';
@@ -2414,7 +2414,12 @@ begin
     raise exception 'XATO: "Boshqa" izohsiz o''tdi';
   exception when others then if sqlerrm like 'XATO%' then raise; end if;
   end;
-  perform oquvchi_arxivla('SK1', bugun_toshkent(), 'Chilonzorga', 'kochdi');
+  begin
+    perform oquvchi_arxivla('SK1', bugun_toshkent(), 'ko''chdi', 'kochdi');
+    raise exception 'XATO: 0138 — qisqa izoh o''tdi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  perform oquvchi_arxivla('SK1', bugun_toshkent(), 'Chilonzor tumaniga ko''chib ketishdi', 'kochdi');
   if (select ketish_sababi from students where id = 'SK1') <> 'kochdi' then
     raise exception 'XATO: ketish sababi yozilmadi';
   end if;
@@ -3138,7 +3143,7 @@ do $$
 declare v_e uuid; v_t bigint; v_yangi uuid; v_tuz numeric;
 begin
   select id into v_e from enrollments where student_id = 'S002' and group_id = 'N01' and holat <> 'tugagan';
-  perform oquvchi_arxivla('S002', '2026-10-15', 'test', null);
+  perform oquvchi_arxivla('S002', '2026-10-15', 'test uchun arxivga o''tkazildi', 'boshqa');
   -- yopilgan yozilishga tuzatish — o'qigan oyga mumkin, keyingisiga yo'q
   v_t := tuzatish_qosh(v_e, '2026-10', 100000, '1 dars kelgan');
   begin
@@ -3162,7 +3167,7 @@ begin
   end if;
   if (select holat from enrollments where id = v_e) <> 'tugagan' then raise exception 'XATO: eski yozilish ochilib ketdi'; end if;
   -- guruhsiz qaytarish
-  perform oquvchi_arxivla('S002', '2026-11-03', 'test', null);
+  perform oquvchi_arxivla('S002', '2026-11-03', 'test uchun arxivga o''tkazildi', 'boshqa');
   perform oquvchi_qaytar('S002', null, null, '{}'::jsonb);
   if (select holat from students where id = 'S002') <> 'faol'
      or exists (select 1 from enrollments where student_id = 'S002' and holat <> 'tugagan') then
@@ -3309,4 +3314,44 @@ begin
   select davomat_vaqti into v_t2 from lessons where id = v_l;
   if v_t2 <> v_t1 then raise exception 'XATO: 0137 — davomat_vaqti o''zgarmasligi kerak'; end if;
   raise notice 'OK: 0137 — 2 holat, davomat_vaqti bir marta';
+end $$;
+
+\echo '--- 0138: reyting sozlamalari, ketish izohi, testni qayta topshirish ---'
+reset role;
+do $$
+declare v_ok boolean := false; v_t uuid; v_n uuid;
+begin
+  if (reyting_sozlama() -> 'oquvchi_oylik' ->> 'test')::int <> 50 or (reyting_sozlama() ->> 'oylik_sana')::int <> 6 then
+    raise exception 'XATO: 0138 — standart sozlama noto''g''ri: %', reyting_sozlama();
+  end if;
+  begin
+    perform reyting_sozlama_saqla(jsonb_build_object('oquvchi_oylik', jsonb_build_object('test', 50, 'davomat', 30, 'woblar', 30)));
+  exception when others then v_ok := sqlerrm like '%yig''indisi 100%';
+  end;
+  if not v_ok then raise exception 'XATO: 0138 — yig''indisi 110 bo''lgan vazn saqlandi'; end if;
+  perform reyting_sozlama_saqla(jsonb_build_object('oquvchi_haftalik', jsonb_build_object('davomat', 70, 'woblar', 30)));
+  if (reyting_sozlama() -> 'oquvchi_haftalik' ->> 'davomat')::int <> 70 then
+    raise exception 'XATO: 0138 — to''g''ri vazn saqlanmadi';
+  end if;
+  perform reyting_sozlama_saqla(jsonb_build_object('oquvchi_haftalik', jsonb_build_object('davomat', 60, 'woblar', 40)));
+
+  if not ketish_izoh_yaroqli('Oilasi boshqa shaharga ko''chdi') or ketish_izoh_yaroqli('vaqt yo''q') then
+    raise exception 'XATO: 0138 — izoh tekshiruvi noto''g''ri';
+  end if;
+  if not (select ustozga_bogliq from royxatlar where tur = 'ketish_sabab' and kalit = 'ustoz') then
+    raise exception 'XATO: 0138 — "ustoz" sababi ustozga bog''liq bo''lishi kerak';
+  end if;
+
+  insert into oylik_testlar (group_id, davr, turi) values ('N01', '2019-01', 'foiz') returning id into v_t;
+  insert into oylik_test_natijalar (test_id, student_id, keldi, elon_qilingan) values (v_t, 'S001', false, true) returning id into v_n;
+  perform oylik_qayta_ruxsat(v_n, 'kasal edi');
+  if not (select qayta and not elon_qilingan from oylik_test_natijalar where id = v_n)
+     or (select count(*) from oylik_test_tarix where natija_id = v_n) <> 1 then
+    raise exception 'XATO: 0138 — qayta topshirish ruxsati ishlamadi';
+  end if;
+  update oylik_test_natijalar set keldi = true, ball = 80 where id = v_n;
+  if (select foiz from oylik_test_natijalar where id = v_n) <> 80 then
+    raise exception 'XATO: 0138 — qayta topshirilgan natija foizi';
+  end if;
+  raise notice 'OK: 0138 — sozlama, izoh, qayta topshirish';
 end $$;

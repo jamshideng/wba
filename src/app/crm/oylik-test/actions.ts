@@ -199,3 +199,23 @@ export async function bittaElon(id: string, qaytar: boolean, fd: FormData) {
   revalidatePath('/crm/oylik-test')
   redirect(xabarliYol(yol, { ok: qaytar ? 'Natija e’londan olindi.' : 'Natija e’lon qilindi.' }))
 }
+
+/**
+ * Testga kelmagan o'quvchiga qayta topshirishga ruxsat (0138). Eski natija
+ * tarixga yoziladi, qator e'londan olinadi — ustoz yangi natijani kiritadi.
+ * Sabab — shu qatordagi izoh (bo'sh bo'lsa "Sababli kelmagan").
+ */
+export async function qaytaRuxsat(id: string, studentId: string, fd: FormData) {
+  const profil = await talabProfil()
+  const yol = matn(fd.get('qaytish')) ?? '/crm/oylik-test'
+  if (!adminmi(profil.rol)) redirect(xabarliYol(yol, { xato: 'Qayta topshirishga faqat rahbariyat ruxsat beradi.' }))
+
+  const izoh = matn(fd.get(`izoh_${studentId}`))
+  const sabab = izoh && izoh.length >= 3 ? izoh : 'Sababli kelmagan'
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('oylik_qayta_ruxsat', { p_natija: id, p_sabab: sabab })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+  revalidatePath('/crm/oylik-test')
+  redirect(xabarliYol(yol, { ok: 'Qayta topshirishga ruxsat berildi. Ustoz yangi natijani kiritadi, keyin e’lon qiling.' }))
+}

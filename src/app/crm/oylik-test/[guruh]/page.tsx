@@ -10,7 +10,7 @@ import { IconArrowLeft } from '@/components/icons'
 import { davrNomi, joriyDavr, guruhUstozsiz } from '@/lib/format'
 import { davrOqi } from '@/lib/kiritish'
 import { asosiy, foizTon, son, type OylikNatija, type OylikTest } from '@/lib/oylik-test'
-import { testSaqla, natijalarSaqla, elonQil, bittaElon } from '../actions'
+import { testSaqla, natijalarSaqla, elonQil, bittaElon, qaytaRuxsat } from '../actions'
 import { TestSozlamasi } from './test-sozlamasi'
 import { SanaKiritish } from '@/components/sana-kiritish'
 
@@ -209,7 +209,20 @@ export default async function GuruhTesti({
                             {n?.foiz != null ? (
                               <Badge ton={foizTon(n.foiz)}>{test.turi === 'ielts' ? `Overall ${asosiy(n)}` : asosiy(n)}</Badge>
                             ) : n && !n.keldi ? (
-                              <Badge>Kelmadi</Badge>
+                              <span className="flex flex-wrap items-center gap-1.5">
+                                <Badge>{n.qayta ? 'Qayta topshiradi' : 'Kelmadi'}</Badge>
+                                {admin && !n.qayta && (
+                                  <button
+                                    type="submit"
+                                    formAction={qaytaRuxsat.bind(null, n.id, o.id)}
+                                    formNoValidate
+                                    title="Sababli kelmagan bo‘lsa: eski natija tarixga, ustoz yangi natijani kiritadi. Sabab — izoh maydonidan."
+                                    className="min-h-11 rounded-[10px] border border-line px-2.5 text-[12px] font-semibold text-ink-2 hover:border-ink-3"
+                                  >
+                                    Qayta topshirish
+                                  </button>
+                                )}
+                              </span>
                             ) : (
                               <span className="text-ink-4">—</span>
                             )}

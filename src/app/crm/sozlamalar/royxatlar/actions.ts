@@ -62,6 +62,19 @@ export async function variantNomi(fd: FormData) {
   redirect(xabarliYol(YOL, { ok: 'Nom saqlandi. Eski yozuvlarda ham yangi nom ko‘rinadi.' }))
 }
 
+/** Ketish sababi ustozga bog'liqmi (0138) — ustoz reytingidagi "ushlab qolish" omili uchun */
+export async function variantBogliq(fd: FormData) {
+  await talabRol('admin', 'direktor', 'manager')
+  const kalit = matn(fd.get('kalit'))
+  if (!kalit) redirect(YOL)
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('ketish_sabab_bogliq', { p_kalit: kalit!, p_bogliq: fd.get('bogliq') === '1' })
+  if (error) redirect(xabarliYol(YOL, { xato: xatoMatn(error) }))
+  revalidatePath('/crm', 'layout')
+  redirect(xabarliYol(YOL, { ok: fd.get('bogliq') === '1' ? 'Sabab ustozga bog‘liq deb belgilandi.' : 'Sabab ustozga bog‘liq emas deb belgilandi.' }))
+}
+
 export async function variantHolat(fd: FormData) {
   await talabRol('admin', 'direktor', 'manager')
   const tur = turOqi(fd.get('tur'))

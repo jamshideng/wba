@@ -34,7 +34,8 @@ export default async function Sozlamalar({
 
   // Ro'yxatda qo'lda o'zgartirilmaydi: nazorat.direktorga — maxsus tugma (0078);
   // sheets.muzlatilgan — doim true, Sheets bilan sinxron to'xtatilgan
-  const MAXSUS = ['sheets.muzlatilgan', 'nazorat.direktorga']
+  // reyting — o'z sahifasi bor (0138); woblr.max_ball_dars — 0057/0086 limitlari bilan almashgan
+  const MAXSUS = ['sheets.muzlatilgan', 'nazorat.direktorga', 'reyting']
   const hamma = (sozlamalar ?? []) as Setting[]
   const sList = hamma.filter((x) => !MAXSUS.includes(x.kalit))
   const aniqlanmagan = sList.filter((x) => x.qiymat === null)
@@ -60,6 +61,14 @@ export default async function Sozlamalar({
         <span className="flex min-w-0 flex-col gap-1">
           <span className="text-[14px] font-semibold">Ro‘yxatlar</span>
           <span className="text-[12.5px] text-ink-3">Lid manbasi, xarajat toifalari, ketish va woblar sabablari: variant qo‘shish, nomini o‘zgartirish, yashirish</span>
+        </span>
+        <span aria-hidden className="text-ink-3">→</span>
+      </Link>
+
+      <Link href="/crm/sozlamalar/reyting" className="flex items-center justify-between gap-3 rounded-[12px] border border-line bg-surface px-5 py-4 transition hover:border-ink-3">
+        <span className="flex min-w-0 flex-col gap-1">
+          <span className="text-[14px] font-semibold">Reyting</span>
+          <span className="text-[12.5px] text-ink-3">O‘quvchi va ustoz reytingi: vaznlar, hisoblash sanasi, dars chegaralari, koeffitsientlar</span>
         </span>
         <span aria-hidden className="text-ink-3">→</span>
       </Link>

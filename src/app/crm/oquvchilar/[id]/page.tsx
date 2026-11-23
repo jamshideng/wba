@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { loginNomi } from '@/lib/login'
 import { ketishNomi } from '@/lib/ketish'
 import { royxatOl, royxatVariantlari, royxatNomi } from '@/lib/royxat'
+import { KETISH_IZOH_NAQSH, KETISH_IZOH_TALABI } from '@/lib/reyting'
 import { notFound } from 'next/navigation'
 import { talabRol, staffmi, adminmi } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
@@ -612,8 +613,8 @@ export default async function OquvchiProfil({
                               ))}
                             </select>
                           </Maydon>
-                          <Maydon nom="Izoh" izoh="“Boshqa” bo‘lsa — majburiy">
-                            <input name="izoh" placeholder="Masalan: vaqti to‘g‘ri kelmadi" className={kirishKlass} />
+                          <Maydon nom="Izoh" izoh={KETISH_IZOH_TALABI}>
+                            <input name="izoh" required minLength={15} pattern={KETISH_IZOH_NAQSH} title={KETISH_IZOH_TALABI} placeholder="Masalan: vaqti to‘g‘ri kelmadi, kechki guruh kerak" className={kirishKlass} />
                           </Maydon>
                           <Yuborish tur="xavfli" kutish="…">Arxivga</Yuborish>
                           <p className="w-full text-[11.5px] text-ink-3">
@@ -789,8 +790,8 @@ export default async function OquvchiProfil({
                       ))}
                     </select>
                   </Maydon>
-                  <Maydon nom="Izoh" izoh="“Boshqa” bo‘lsa — majburiy">
-                    <input name="sabab" placeholder="Masalan: Chilonzorga ko‘chdi" className={kirishKlass} />
+                  <Maydon nom="Izoh" izoh={KETISH_IZOH_TALABI}>
+                    <input name="sabab" required minLength={15} pattern={KETISH_IZOH_NAQSH} title={KETISH_IZOH_TALABI} placeholder="Masalan: oilasi Chilonzorga ko‘chib ketdi" className={kirishKlass} />
                   </Maydon>
                   <Yuborish tur="xavfli" kutish="…">Arxivga</Yuborish>
                   <p className="w-full text-[11.5px] text-ink-3">
