@@ -37,7 +37,7 @@ export async function reytingSozlamaSaqla(fd: FormData) {
   }
 
   const boshlanish = sanaOqi(fd.get('boshlanish_sana'))
-  const qiymat = { ...vaznlar, ...qolgan, boshlanish_sana: boshlanish } as unknown as ReytingSozlama
+  const qiymat = { ...vaznlar, ...qolgan, boshlanish_sana: boshlanish, oquvchiga_ochiq: fd.get('oquvchiga_ochiq') === 'on' } as unknown as ReytingSozlama
 
   const supabase = await createClient()
   const { error } = await supabase.rpc('reyting_sozlama_saqla', { p_qiymat: qiymat })

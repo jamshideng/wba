@@ -76,7 +76,8 @@ drop policy if exists reyting_davrlar_oqish on reyting_davrlar;
 create policy reyting_davrlar_oqish on reyting_davrlar for select to authenticated using (true);
 
 drop policy if exists oquvchi_reyting_staff on oquvchi_reyting;
-create policy oquvchi_reyting_staff on oquvchi_reyting for select to authenticated using (app_is_staff());
+create policy oquvchi_reyting_staff on oquvchi_reyting for select to authenticated
+  using (coalesce(app_rol() in ('admin', 'direktor', 'manager'), false));
 
 -- ------------------------------------------------------------
 -- Hisoblash
@@ -269,12 +270,27 @@ grant  execute on function reyting_hisobla(text, date) to authenticated, service
 -- Ko'rish (huquq shu yerda)
 -- ------------------------------------------------------------
 
+/* Sinov davri (Jamshid, 23.11): o'quvchi reytingi hozircha faqat rahbariyatga.
+   Sozlamalar → Reyting → "O'quvchilarga ochiq" yoqilsa — o'quvchi, ota-ona, ustoz ham. */
+create or replace function reyting_ochiqmi() returns boolean
+language sql stable security definer set search_path = public as $$
+  select auth.uid() is null
+      or coalesce(app_rol() in ('admin', 'direktor', 'manager'), false)
+      or coalesce((reyting_sozlama() ->> 'oquvchiga_ochiq')::boolean, false)
+$$;
+
+revoke execute on function reyting_ochiqmi() from public, anon;
+grant  execute on function reyting_ochiqmi() to authenticated, service_role;
+
 /* Kimning nomidan: o'quvchining o'zi yoki ota-onaning farzandi */
 create or replace function reyting_kim(p_student text) returns text
 language plpgsql stable security definer set search_path = public as $$
 declare
   v text := app_student_id();
 begin
+  if not reyting_ochiqmi() then
+    raise exception 'Reyting sinov bosqichida — hozircha faqat rahbariyat ko''radi.';
+  end if;
   if p_student is null or p_student = v then return v; end if;
   if app_farzandmi(p_student) or app_is_staff() or app_teaches_student(p_student) then return p_student; end if;
   raise exception 'Bu o''quvchi reytingini ko''rish huquqingiz yo''q.';

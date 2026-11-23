@@ -3502,3 +3502,34 @@ begin
   raise notice 'OK: 0140 — huquqlar';
 end $$;
 reset role;
+
+\echo '--- 0139: sinov davri — o''quvchi reytingi faqat rahbariyatga ---'
+set role authenticated;
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';   -- qabulxona (rahbariyat emas)
+do $$
+declare v_d bigint := (select max(id) from reyting_davrlar where tur = 'oylik');
+begin
+  if reyting_ochiqmi() then raise exception 'XATO: 0139 — sinov davrida qabulxonaga ochiq'; end if;
+  begin
+    perform * from reyting_guruh(v_d, 'RT1');
+    raise exception 'XATO: 0139 — yopiq reyting ko''rindi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  if exists (select 1 from oquvchi_reyting) then
+    raise exception 'XATO: 0139 — oquvchi_reyting jadvali qabulxonaga ochiq';
+  end if;
+  raise notice 'OK: 0139 — sinov davrida yopiq';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+do $$ begin perform reyting_sozlama_saqla(jsonb_build_object('oquvchiga_ochiq', true)); end $$;
+set role authenticated;
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+do $$
+begin
+  if not reyting_ochiqmi() then raise exception 'XATO: 0139 — sozlama yoqilganda ochilmadi'; end if;
+  raise notice 'OK: 0139 — sozlama yoqilganda ochiladi';
+end $$;
+reset role;
+reset request.jwt.claim.sub;
+do $$ begin perform reyting_sozlama_saqla(jsonb_build_object('oquvchiga_ochiq', false)); end $$;

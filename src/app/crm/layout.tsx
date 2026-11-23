@@ -5,7 +5,7 @@ import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
-import { talabProfil, getUstoz, ROL_NOMI, staffmi, tasdiqlaydimi } from '@/lib/auth'
+import { talabProfil, getUstoz, ROL_NOMI, staffmi, tasdiqlaydimi, adminmi } from '@/lib/auth'
 import { menyular, tekisBandlar, type MenyuBand } from '@/lib/menyu'
 import { MenyuGuruh, BolimTablari, type TabGuruh } from '@/components/menyu-guruh'
 import { MENYU_COOKIE } from '@/lib/menyu-holat'
@@ -130,7 +130,11 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   const ikkiRol = Boolean(ustoz) && staffmi(haqiqiyRol)
   // 0116 — ota-onaga menyuda farzandlari (RLS faqat o'zinikini beradi)
   const farzandlar = profil.rol === 'ota_ona' ? await farzandlarim() : []
-  const bolimlar = menyular(profil.rol, Boolean(ustoz) && (!ikkiRol || profil.rol === 'ustoz'), farzandlar)
+  // 0139 — o'quvchi reytingi sinov davrida faqat rahbariyatga; ochilgach menyuda boshqalarga ham
+  const reytingOchiq = adminmi(profil.rol) || !supabaseSozlanganmi()
+    ? true
+    : Boolean((await (await createClient()).rpc('reyting_ochiqmi', {})).data)
+  const bolimlar = menyular(profil.rol, Boolean(ustoz) && (!ikkiRol || profil.rol === 'ustoz'), farzandlar, reytingOchiq)
   const rollar = ikkiRol
     ? [
         { kalit: 'xodim' as const, nom: ROL_NOMI[haqiqiyRol], faol: profil.rol !== 'ustoz' },

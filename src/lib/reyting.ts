@@ -20,6 +20,8 @@ export type ReytingSozlama = {
   min_qatnashgan_dars: number
   kechikish_k: number
   intizom_n: number
+  /** Sinov davrida false — o'quvchi reytingi faqat rahbariyatga (0139) */
+  oquvchiga_ochiq: boolean
 }
 
 export type VaznGuruhi = 'oquvchi_oylik' | 'oquvchi_haftalik' | 'ustoz_oylik' | 'ustoz_haftalik'

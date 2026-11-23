@@ -45,6 +45,8 @@ export default async function MeningSahifam({
   if (!supabaseSozlanganmi()) return <Ulanmagan nom="Mening sahifam" />
 
   const supabase = await createClient()
+  // 0139 — reyting sinov davrida o'quvchiga yopiq
+  const { data: reytingOchiq } = await supabase.rpc('reyting_ochiqmi', {})
   const usulRoyxat = await royxatOl(supabase, 'tolov_usul')
   const bugun = bugunToshkent()
   const davr = joriyDavr()
@@ -270,9 +272,11 @@ export default async function MeningSahifam({
                 </div>
               ))
             )}
-            <Link href="/crm/reyting" className="mt-2 text-[12.5px] text-accent hover:text-brand">
-              Reytingni ko‘rish →
-            </Link>
+            {reytingOchiq && (
+              <Link href="/crm/reyting" className="mt-2 text-[12.5px] text-accent hover:text-brand">
+                Reytingni ko‘rish →
+              </Link>
+            )}
           </div>
         </Card>
       </div>

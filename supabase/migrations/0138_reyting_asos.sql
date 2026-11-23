@@ -35,7 +35,8 @@ language sql immutable as $$
     'bogliq_emas_koef',   0.25,  -- ustozga bog'liq bo'lmagan sabab bilan ketish
     'min_qatnashgan_dars', 2,    -- ketish hisoblanishi uchun kamida shuncha darsga kelgan
     'kechikish_k',        5,     -- har kechikkan daqiqa uchun shuncha ball ayriladi
-    'intizom_n',          10     -- har intizom hodisasi uchun shuncha ball ayriladi
+    'intizom_n',          10,    -- har intizom hodisasi uchun shuncha ball ayriladi
+    'oquvchiga_ochiq',    false  -- o'quvchi reytingi o'quvchi, ota-ona va ustozga ko'rinadimi (sinov davrida — yo'q)
   )
 $$;
 
@@ -101,6 +102,9 @@ begin
   end if;
   if (s ->> 'kechikish_k')::numeric < 0 or (s ->> 'intizom_n')::numeric < 0 then
     raise exception 'Kechikish va intizom koeffitsientlari manfiy bo''lmaydi.';
+  end if;
+  if jsonb_typeof(s -> 'oquvchiga_ochiq') <> 'boolean' then
+    raise exception '"O''quvchilarga ochiq" ha/yo''q bo''lishi kerak.';
   end if;
   if s ->> 'boshlanish_sana' is not null and (s ->> 'boshlanish_sana') !~ '^\d{4}-\d{2}-\d{2}$' then
     raise exception 'Boshlanish sanasi YYYY-MM-DD ko''rinishida.';

@@ -1103,6 +1103,7 @@ export type Database = {
       reyting_guruh: { Args: { p_davr: number; p_group: string; p_student?: string | null }; Returns: import('./reyting').GuruhReytingQatori[] }
       reyting_fan: { Args: { p_davr: number; p_fan: string; p_student?: string | null }; Returns: import('./reyting').FanReytingQatori[] }
       reyting_tarixim: { Args: { p_student?: string | null }; Returns: import('./reyting').ReytingTarixQatori[] }
+      reyting_ochiqmi: { Args: Record<string, never>; Returns: boolean }
       reyting_ustozlar: { Args: { p_davr: number }; Returns: import('./reyting').UstozReytingQatori[] }
       reyting_ustoz_tarixi: { Args: { p_teacher: string }; Returns: import('./reyting').UstozTarixQatori[] }
       ketish_tahlili: { Args: { p_dan: string; p_gacha: string }; Returns: import('./ketish').KetishTahlili }

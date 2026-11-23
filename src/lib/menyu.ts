@@ -61,7 +61,7 @@ export function tekisBandlar(bolimlar: MenyuBolim[]): MenyuBand[] {
 /** Ota-ona menyusi uchun farzandlar (0116) — layout RLS bilan oladi */
 export type MenyuFarzand = { id: string; fish: string }
 
-export function menyular(rol: UserRole, ustozmi: boolean, farzandlar: MenyuFarzand[] = []): MenyuBolim[] {
+export function menyular(rol: UserRole, ustozmi: boolean, farzandlar: MenyuFarzand[] = [], reytingOchiq = false): MenyuBolim[] {
   const bolimlar: MenyuBolim[] = []
   const xodim = staffmi(rol)
   const admin = adminmi(rol)
@@ -81,7 +81,7 @@ export function menyular(rol: UserRole, ustozmi: boolean, farzandlar: MenyuFarza
             { href: '/crm/woblr', nom: 'Woblar', Icon: IconWoblr, tayyor: true, mobil: true },
             { href: '/crm/woblr/tarix', nom: 'Woblar tarixi', Icon: IconWoblr, tayyor: true },
             // 0139 — o'z guruhlari reytingi
-            { href: '/crm/reyting', nom: 'Reyting', Icon: IconMedal, tayyor: true },
+            ...(reytingOchiq ? [{ href: '/crm/reyting', nom: 'Reyting', Icon: IconMedal, tayyor: true }] : []),
             { href: '/crm/jadval', nom: 'Dars jadvali', Icon: IconJadval, tayyor: true, mobil: true },
             // 0104 — oylik test natijalarini kiritish (Jamshid, 29.10: dars jadvalidan keyin)
             { href: '/crm/oylik-test', nom: 'Oylik test', Icon: IconMedal, tayyor: true },
@@ -134,7 +134,7 @@ export function menyular(rol: UserRole, ustozmi: boolean, farzandlar: MenyuFarza
         ]),
         // 0139/0140 — o'quvchi va ustoz reytingi (ustozlar reytingi faqat rahbariyatga)
         ...guruh('Reyting', IconMedal, [
-          { href: '/crm/reyting', nom: 'O‘quvchilar reytingi', Icon: IconMedal, tayyor: true },
+          ...(admin || reytingOchiq ? [{ href: '/crm/reyting', nom: 'O‘quvchilar reytingi', Icon: IconMedal, tayyor: true }] : []),
           ...(admin ? [{ href: '/crm/reyting/ustozlar', nom: 'Ustozlar reytingi', Icon: IconMedal, tayyor: true }] : []),
         ]),
         // Xodimlar (Jamshid, 13.10): administratorlar, ustozlar (maoshi, davomati),
@@ -188,7 +188,7 @@ export function menyular(rol: UserRole, ustozmi: boolean, farzandlar: MenyuFarza
       nom: 'Mening sahifam',
       bandlar: [
         { href: '/crm/men', nom: 'Bosh sahifa', Icon: IconDashboard, tayyor: true, mobil: true },
-        { href: '/crm/reyting', nom: 'Reyting', Icon: IconMedal, tayyor: true, mobil: true },
+        ...(reytingOchiq ? [{ href: '/crm/reyting', nom: 'Reyting', Icon: IconMedal, tayyor: true, mobil: true }] : []),
         { href: '/crm/woblr/tarix', nom: 'Woblar tarixi', Icon: IconWoblr, tayyor: true },
         { href: '/crm/market', nom: 'Woblar market', Icon: IconMarket, tayyor: true, mobil: true },
       ],
@@ -223,7 +223,7 @@ export function menyular(rol: UserRole, ustozmi: boolean, farzandlar: MenyuFarza
         // Market va woblar tarixi — faqat o'quvchi farzand bo'lsa (sinovdagi "L-" emas, 0117)
         ...(farzandlar.some((f) => !f.id.startsWith('L-'))
           ? [
-              { href: '/crm/reyting', nom: 'Reyting', Icon: IconMedal, tayyor: true, mobil: true },
+              ...(reytingOchiq ? [{ href: '/crm/reyting', nom: 'Reyting', Icon: IconMedal, tayyor: true, mobil: true }] : []),
               { href: '/crm/market', nom: 'Woblar market', Icon: IconMarket, tayyor: true, mobil: true },
               { href: '/crm/woblr/tarix', nom: 'Woblar tarixi', Icon: IconWoblr, tayyor: true },
             ]

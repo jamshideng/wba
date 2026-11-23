@@ -25,7 +25,7 @@ export default async function ReytingSozlamalari({
 
   const s = await searchParams
   const supabase = await createClient()
-  const { data } = await supabase.rpc('reyting_sozlama')
+  const { data } = await supabase.rpc('reyting_sozlama', {})
   const r = (data ?? {}) as ReytingSozlama
 
   const sonMaydon = (nom: string, kalit: keyof ReytingSozlama, izoh: string, qadam = '1') => (
@@ -43,6 +43,19 @@ export default async function ReytingSozlamalari({
       <Xabar ok={s.ok} xato={s.xato} />
 
       <form action={reytingSozlamaSaqla} className="flex flex-col gap-4">
+        <Card className="flex flex-col">
+          <CardHeader title="Kim ko‘radi" meta="ustozlar reytingi doim faqat rahbariyatga" />
+          <label className="flex min-h-11 items-start gap-3 px-5 pb-5 text-[13px]">
+            <input name="oquvchiga_ochiq" type="checkbox" defaultChecked={Boolean(r.oquvchiga_ochiq)} className="mt-0.5 size-5 shrink-0" />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-semibold">O‘quvchi reytingi o‘quvchi, ota-ona va ustozlarga ochiq</span>
+              <span className="text-[12px] text-ink-3">
+                O‘chiq bo‘lsa (sinov davri) — faqat admin, direktor va manager ko‘radi. Yoqilganda menyuda “Reyting” chiqadi.
+              </span>
+            </span>
+          </label>
+        </Card>
+
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           {VAZN_GURUHLARI.map((g) => (
             <Card key={g.kalit} className="flex flex-col">

@@ -62,6 +62,19 @@ export default async function Reyting({
   const xodim = staffmi(profil.rol)
   const rahbar = adminmi(profil.rol)
 
+  // Sinov davri (0139): o'quvchi reytingi hozircha faqat rahbariyatga. Bazada ham yopiq.
+  if (!rahbar) {
+    const { data: ochiq } = await supabase.rpc('reyting_ochiqmi', {})
+    if (!ochiq) {
+      return (
+        <div className="flex flex-col gap-4 px-5 py-5 lg:px-7">
+          <Sarlavha nom="Reyting" />
+          <Empty>Reyting sinov bosqichida — tez orada shu yerda ko‘rinadi.</Empty>
+        </div>
+      )
+    }
+  }
+
   // Kimning nomidan: o'quvchi — o'zi, ota-ona — tanlangan farzandi
   let men: string | null = null
   let farzandlar: { id: string; fish: string }[] = []
@@ -230,7 +243,7 @@ export default async function Reyting({
                         </span>
                       )}
                     </span>
-                    <span className={`tnum w-14 shrink-0 text-right font-[family-name:var(--font-display)] text-[19px] font-extrabold ${ballTon(r.umumiy) === 'ok' ? 'text-ok' : ballTon(r.umumiy) === 'accent' ? 'text-accent' : 'text-brand'}`}>
+                    <span className={`tnum w-14 shrink-0 text-right font-[family-name:var(--font-display)] text-[19px] font-extrabold ${r.orin == null ? 'text-ink-3' : ballTon(r.umumiy) === 'ok' ? 'text-ok' : ballTon(r.umumiy) === 'accent' ? 'text-accent' : 'text-brand'}`}>
                       {son(r.umumiy)}
                     </span>
                   </li>
