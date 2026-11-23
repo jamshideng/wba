@@ -156,20 +156,27 @@ Markazning o'z sotuv skriptidan olingan qoidalar:
 Bular Jamshiddan javob kutadi. **Taxmin qilib raqam yozilmaydi** — UI
 "aniqlanmagan" deb ko'rsatadi.
 
-1. **Ustoz maoshi qanday hisoblanadi?** Sheets'dagi `Ustozlar` varag'ida
-   "Maosh turi" va "Qiymati" ustunlari bor — ular to'ldirilganmi, tekshirilsin.
-2. **Bir darsda nechta wobl berish mumkin?** Chegara bormi, manfiy ball
-   bo'ladimi? (`settings` → `woblr.max_ball_dars` hozircha `null`)
-3. **Chegirma miqdorlari:** ikki fanga yozilganda va aka-uka/do'st bilan
-   kelganda qancha?
+Avvalgi uch savol hal bo'lgan (23.11 holati): ustoz maoshi — 0075/0118
+(Maosh sozlamalari); woblar chegarasi — 0037/0057/0064/0086 (ustozga
+−10…+10 va oylik limit, admin limitsiz; `woblr.max_ball_dars` eski kalit);
+chegirma — `settings` → `chegirma.kop_fan`, `chegirma.birga_kelish`.
+
+> **Holat (23.11):** quyidagi "IKKI TIZIM" bo'limi tarixiy. Hozir asosiy
+> manba — sayt (wbalc.uz, `main` → Vercel prod), bot webhook'i saytda
+> (`/api/telegram`), Sheets bilan sinxron 31.10 dan o'chiq. Migratsiyalar
+> 0141 gacha. Rollar: admin, direktor, manager, qabulxona, ustoz, oquvchi,
+> ota_ona, probniy (rahbariyat = admin, direktor, manager — `adminmi`).
 
 ## Davomat tarixi
 
 Sentabrdan beri Sheets'da har bir dars bo'yicha jurnal yuritilyapti
 (`Davomat toq` / `Davomat juft` / `Davomat dam olish`, `Q_Jurnal.js`), ya'ni
-davomat ko'chirilishi mumkin. Jurnalda uchinchi holat yo'q — katak doim
-`true` yoki `false`, shuning uchun `kechikdi` va `sababli` faqat yangi
-tizimda paydo bo'ladi.
+davomat ko'chirilishi mumkin. Davomat **faqat ikki holat**: `keldi` va
+`kelmadi` (0137 — `kechikdi`/`sababli` enum, funksiya va UI'dan olib
+tashlangan). `lessons.davomat_vaqti` — darsning davomati birinchi marta
+to'liq bo'lgan vaqt (bir marta yoziladi; ustoz reytingidagi intizom uchun).
+Sentabr davomati 02.10 da import qilingan — o'sha darslarning
+`davomat_vaqti` haqiqiy emas.
 
 Undan oldingi (avgust va eskiroq) davomat ko'chirilmaydi: manbada faqat
 oylik jamlanma bor.
@@ -198,6 +205,36 @@ belgi), ustozga eslatma: 1-si tugagach 10 daq, 2-si 60 daq keyin
   jurnalida o'sha kun "zamena" deb yopiq (`davomat_belgila` ham to'sadi).
 
 ---
+
+## Reyting (0138–0141)
+
+Jonli emas — **snapshot**: `reyting_hisobla(tur, sana)` davrni hisoblab
+`reyting_davrlar` + `oquvchi_reyting` + `ustoz_reyting` ga yozadi; qayta
+yurgizilsa shu davr almashtiriladi, tugamagan davr hisoblanmaydi.
+pg_cron (0141): haftalik — yakshanba 23:30 Toshkent; oylik — har kecha
+tekshiradi, `oylik_sana` (standart 6) kuni o'tgan oyni.
+
+- Sozlamalar — bitta `settings['reyting']` jsonb (vaznlar, chegaralar,
+  koeffitsientlar, `boshlanish_sana`, `oquvchiga_ochiq`); vaznlar yig'indisi
+  100 bo'lmasa trigger saqlamaydi. UI: `/crm/sozlamalar/reyting`.
+- O'quvchi: davomat = kelgan/belgilangan darslar; woblar — faqat darsdagi
+  (`lesson_id` bor), `min(100, o'rtacha/N×100)`, oylikda bo'luvchi −1 agar
+  guruhning oydagi oxirgi darsiga kelgan bo'lsa; test — `oylik_testlar.davr`,
+  kelmagan = 0, guruhda test yo'q — vazn qolganlarga taqsimlanadi.
+  Market sarfi kirmaydi. Kam dars — `yangi`, o'rin yo'q.
+- Ustoz: zamena darslari kirmaydi; kechikish har dars `100 − daqiqa×K`;
+  intizom `100 − hodisa×N` (nazorat hodisalari — `ustoz_kechikdi`,
+  `davomat_qilinmadi`, `oquvchi_3_kelmadi`, yopilgan va ogohlantirishga
+  aylanganlardan tashqari; ogohlantirishlar; davomat dars kunidan keyin;
+  test yo'q / natija muddatdan kech); ketish `royxatlar.ustozga_bogliq`
+  bo'yicha 1 yoki 0,25, `boshlanish_sana` dan oldingilar kirmaydi.
+- Ko'rish: ustozlar reytingi faqat rahbariyat. O'quvchi reytingi **sinov
+  davrida faqat rahbariyat** (`reyting_ochiqmi()`, `oquvchiga_ochiq=false`);
+  ochilgach o'quvchi/ota-ona — guruh to'liq + fan top 10 + o'z o'rni,
+  boshqalarning faqat ismi va umumiy bali.
+- Ketish sababi (0138): arxivlashda ro'yxatdan majburiy + izoh ≥ 3 so'z
+  va 15 belgi (`ketish_tekshir`). Oylik testga qayta topshirish —
+  `oylik_qayta_ruxsat` (faqat kelmaganga, eski natija `oylik_test_tarix`).
 
 ## Nima qilinmaydi
 
