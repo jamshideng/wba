@@ -237,6 +237,15 @@ export const IconMarket = (p: P) => (
   </Svg>
 )
 
+/** Kitob (0142 — kitoblar hisobi) */
+export const IconKitob = (p: P) => (
+  <Svg {...p}>
+    <path d="M3.5 4.5A1.5 1.5 0 0 1 5 3h9.5v10.5H5a1.5 1.5 0 0 0-1.5 1.5z" />
+    <path d="M3.5 15A1.5 1.5 0 0 0 5 16.5h9.5v-3" />
+    <path d="M6.5 6.5h5" />
+  </Svg>
+)
+
 /** Woblar tangasi */
 export const IconTanga = (p: P) => (
   <Svg {...p}>

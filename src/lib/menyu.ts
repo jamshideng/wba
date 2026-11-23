@@ -18,6 +18,7 @@
 import type { UserRole } from '@/lib/types'
 import { adminmi, staffmi, tasdiqlaydimi, managermi } from '@/lib/auth'
 import {
+  IconKitob,
   IconDashboard, IconStudents, IconGroups, IconTeacher, IconAttendance,
   IconWoblr, IconPayments, IconDebt, IconLeads, IconReports, IconSettings, IconSend, IconAlert, IconArxiv, IconXarajat, IconAudit,
   IconJadval, IconMarket, IconMedal,
@@ -74,6 +75,8 @@ export function menyular(rol: UserRole, ustozmi: boolean, farzandlar: MenyuFarza
           [
             { href: '/crm/kechikishlarim', nom: 'Kechikishlarim', Icon: IconAttendance, tayyor: true },
             { href: '/crm/maosh/men', nom: 'Maoshim', Icon: IconPayments, tayyor: true },
+            // 0142 — o'quvchilarga kitob buyurtmasi
+            { href: '/crm/kitoblar?tab=buyurtma', nom: 'Kitoblar', Icon: IconKitob, tayyor: true },
           ]
         : [
             { href: '/crm/davomat', nom: 'Davomat', Icon: IconAttendance, tayyor: true, mobil: true },
@@ -89,6 +92,8 @@ export function menyular(rol: UserRole, ustozmi: boolean, farzandlar: MenyuFarza
             { href: '/crm/kechikishlarim', nom: 'Kechikishlarim', Icon: IconAttendance, tayyor: true },
             // 0075 — o'z maoshi, har davomatdan keyin yangilanadi (Jamshid, 17.10)
             { href: '/crm/maosh/men', nom: 'Maoshim', Icon: IconPayments, tayyor: true },
+            // 0142 — o'quvchilarga kitob buyurtmasi
+            { href: '/crm/kitoblar?tab=buyurtma', nom: 'Kitoblar', Icon: IconKitob, tayyor: true },
           ],
     })
   }
@@ -115,6 +120,8 @@ export function menyular(rol: UserRole, ustozmi: boolean, farzandlar: MenyuFarza
           { href: '/crm/dam-kunlar', nom: 'Dam olish kunlari', Icon: IconAttendance, tayyor: true },
           // 0104 — oylik test: natijalar, e'lon, Excel/PDF
           { href: '/crm/oylik-test', nom: 'Oylik test', Icon: IconMedal, tayyor: true },
+          // 0142 — kitoblar hisobi (kirim, kod bilan berish, qoldiq): rahbariyat
+          ...(admin ? [{ href: '/crm/kitoblar', nom: 'Kitoblar', Icon: IconKitob, tayyor: true }] : []),
         ]),
         ...guruh('Lidlar', IconLeads, [
           { href: '/crm/lidlar', nom: 'Lidlar', Icon: IconLeads, tayyor: true },
