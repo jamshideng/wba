@@ -13,6 +13,7 @@ import {
   kitobHolati, kitobOchir, kitobQaytar, kitobQosh, kitobTahrir,
 } from './actions'
 import { KodQR } from './qr'
+import { TakliflarTab, TakliflarimTab } from './takliflar'
 
 export const metadata = { title: 'Kitoblar' }
 export const dynamic = 'force-dynamic'
@@ -76,10 +77,13 @@ export default async function KitoblarSahifa({
           { id: 'buyurtmalar', nom: 'Buyurtmalar' },
           { id: 'kirim', nom: 'Kirim' },
           { id: 'katalog', nom: 'Katalog' },
+          { id: 'takliflar', nom: 'Takliflar' },
           { id: 'hisobot', nom: 'Hisobot' },
         ]
       : []),
-    ...(ustoz ? [{ id: 'buyurtma', nom: 'Buyurtma berish' }, { id: 'mening', nom: 'Buyurtmalarim' }] : []),
+    ...(ustoz
+      ? [{ id: 'buyurtma', nom: 'Buyurtma berish' }, { id: 'mening', nom: 'Buyurtmalarim' }, { id: 'takliflarim', nom: 'Takliflarim' }]
+      : []),
   ]
   const kod = kodNormal(s.kod)
   const standartTab = kod ? (admin ? 'buyurtmalar' : 'mening') : tablar[0].id
@@ -120,6 +124,10 @@ export default async function KitoblarSahifa({
       {tab === 'hisobot' && <HisobotTab qoldiq={qoldiq} dan={sanami(s.dan)} gacha={sanami(s.gacha)} />}
       {tab === 'buyurtma' && ustoz && <BuyurtmaBerishTab ustozId={ustoz.id} guruhId={s.guruh} kitobId={s.kitob} qoldiq={qoldiq} />}
       {tab === 'mening' && ustoz && <MeningTab ustozId={ustoz.id} />}
+      {tab === 'takliflar' && admin && (
+        <TakliflarTab fanlar={(fanlar ?? []) as { id: string; nom: string }[]} katalog={qoldiq.map((q) => ({ id: q.kitob_id, nom: q.nom }))} />
+      )}
+      {tab === 'takliflarim' && ustoz && <TakliflarimTab uid={profil.id} ustozId={ustoz.id} fanlar={(fanlar ?? []) as { id: string; nom: string }[]} />}
     </div>
   )
 }
@@ -384,7 +392,11 @@ function FanTanlash({ fanlar, qiymat }: { fanlar: { id: string; nom: string }[];
   )
 }
 
-function KatalogTab({ qoldiq, fanlar, fanNomi }: { qoldiq: Qoldiq[]; fanlar: { id: string; nom: string }[]; fanNomi: Map<string, string> }) {
+async function KatalogTab({ qoldiq, fanlar, fanNomi }: { qoldiq: Qoldiq[]; fanlar: { id: string; nom: string }[]; fanNomi: Map<string, string> }) {
+  // 0144 — muqova (ustoz taklifidan kelgan kitoblarda)
+  const supabase = await createClient()
+  const { data: rasmlar } = await supabase.from('kitoblar').select('id, rasm_url').not('rasm_url', 'is', null)
+  const muqova = new Map((rasmlar ?? []).map((r) => [r.id, r.rasm_url as string]))
   return (
     <>
       <Card className="p-4">
@@ -414,6 +426,10 @@ function KatalogTab({ qoldiq, fanlar, fanNomi }: { qoldiq: Qoldiq[]; fanlar: { i
               return (
                 <li key={q.kitob_id} className="flex flex-col gap-2 px-4 py-2.5">
                   <div className="flex min-h-11 flex-wrap items-center gap-3">
+                    {muqova.get(q.kitob_id) && (
+                      // eslint-disable-next-line @next/next/no-img-element -- Supabase storage muqovasi
+                      <img src={muqova.get(q.kitob_id)} alt="" loading="lazy" className="h-12 w-9 shrink-0 rounded border border-line object-cover" />
+                    )}
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="text-[13.5px] font-semibold">{q.nom}</span>
                       <span className="text-[11.5px] text-ink-3">
