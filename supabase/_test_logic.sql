@@ -1873,6 +1873,14 @@ begin
     raise exception 'XATO: ustoz o''ziga bonus yozdi';
   exception when others then if sqlerrm like 'XATO%' then raise; end if;
   end;
+  -- 0146: zamena kuni guruh ustozi woblar bera olmaydi
+  begin
+    perform woblar_ber('NM1', 'SM1', 1);
+    raise exception 'XATO: zamena kuni guruh ustozi woblar berdi';
+  exception when others then
+    if sqlerrm like 'XATO%' then raise; end if;
+    if sqlerrm not like '%zamena%' then raise exception 'XATO: boshqa sabab bilan to''sildi: %', sqlerrm; end if;
+  end;
   raise notice 'OK: maosh — ustoz faqat o''zinikini ko''radi; zamenani bugunga qo''ya oladi, o''tganga yo''q';
 end $$;
 
@@ -1881,6 +1889,10 @@ do $$
 begin
   if not app_teaches_group('NM1') or (select count(*) from groups where id = 'NM1') <> 1 then
     raise exception 'XATO: o''rinbosar zamena guruhini ko''rmadi';
+  end if;
+  -- 0146: o'rinbosar zamena kuni woblar bera oladi
+  if woblar_ber('NM1', 'SM1', 1) < 1 then
+    raise exception 'XATO: o''rinbosar zamena kuni woblar bera olmadi';
   end if;
   begin
     perform zamena_belgila('NM1', bugun_toshkent(), 'U03', 'x');
