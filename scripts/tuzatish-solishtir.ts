@@ -1,7 +1,7 @@
 /**
  * 0147 tekshiruvi — migratsiyadan oldin va keyin pul hisobi bir xilmi.
  *
- *   npx tsx scripts/tuzatish-solishtir.ts surat  <DB_URL> <fayl.json>
+ *   npx tsx scripts/tuzatish-solishtir.ts surat  <DB_URL|prod> <fayl.json>   (prod — supabase CLI, read-only)
  *   npx tsx scripts/tuzatish-solishtir.ts solishtir <oldin.json> <keyin.json>
  *
  * Surat (faqat o'qiydi): har yozilish bo'yicha Σ invoices.summa, Σ invoices.tuzatish,
@@ -13,6 +13,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 
 type Qator = { eid: string; inv: string; tuz: string; tol: string; qarz: string }
 type Surat = {
@@ -53,10 +54,29 @@ function psql(url: string, sql: string): string {
   return execFileSync(bin, [url, '-Atq', '-v', 'ON_ERROR_STOP=1', '-c', sql], { encoding: 'utf8', maxBuffer: 1 << 28 })
 }
 
+/** Prod (bog'langan loyiha) — supabase CLI orqali, faqat o'qish tranzaksiyasida */
+function prodSurat(): Surat {
+  // Ko'p qatorli SQL — fayl orqali (Windows buyruq qatori uni buzadi)
+  const fayl = join(tmpdir(), `tuzatish-solishtir-${process.pid}.sql`)
+  writeFileSync(fayl, `${SQL} as natija;`)
+  const chiqish = execFileSync(
+    process.platform === 'win32' ? 'npx.cmd' : 'npx',
+    ['supabase', 'db', 'query', '--remote', '--read-only', '--output-format', 'json', '--file', fayl],
+    { encoding: 'utf8', maxBuffer: 1 << 28, shell: process.platform === 'win32' },
+  )
+  const j = JSON.parse(chiqish.slice(chiqish.indexOf('{'), chiqish.lastIndexOf('}') + 1)) as { rows: { natija: Surat }[] }
+  return j.rows[0].natija
+}
+
 function surat(url: string, fayl: string) {
-  // json_agg qatorlarni yangi satr bilan ajratadi — butun chiqishdan { … } olinadi
-  const chiqish = psql(url, `begin read only; ${SQL}; commit;`)
-  const s = JSON.parse(chiqish.slice(chiqish.indexOf('{'), chiqish.lastIndexOf('}') + 1)) as Surat
+  let s: Surat
+  if (url === 'prod') {
+    s = prodSurat()
+  } else {
+    // json_agg qatorlarni yangi satr bilan ajratadi — butun chiqishdan { … } olinadi
+    const chiqish = psql(url, `begin read only; ${SQL}; commit;`)
+    s = JSON.parse(chiqish.slice(chiqish.indexOf('{'), chiqish.lastIndexOf('}') + 1)) as Surat
+  }
   writeFileSync(fayl, JSON.stringify(s, null, 1))
   console.log(`Surat: ${s.qatorlar.length} yozilish · hisob-faktura ${s.jami.inv} · tuzatish ${s.jami.tuz} · to'lov ${s.jami.tol} · qarz ${s.jami.qarz} · tuzatishlar ${s.jami.tuzatishlar_soni} ta / ${s.jami.tuzatishlar_summa}`)
 }
