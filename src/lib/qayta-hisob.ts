@@ -13,18 +13,24 @@
  * tuzatish_darslar_qosh ham naqdda shu summani qaytaradi.
  */
 export type QaytaHisobHolati =
-  | { tur: 'tolangan'; shuSafar: number; jami: number }
+  | { tur: 'tolangan'; shuSafar: number; jami: number; naqd: number }
   | { tur: 'tolanmagan'; endiTolanadi: number }
   | { tur: 'qisman'; qarz: number; endiTolanadi: number }
-  | { tur: 'qisman_ortiqcha'; qarz: number; jami: number }
+  | { tur: 'qisman_ortiqcha'; qarz: number; jami: number; naqd: number }
 
-export function qaytaHisobHolati(S: number, F: number, P: number): QaytaHisobHolati {
+/**
+ * B — o'quvchining umumiy ortiqcha balansi (Σ to'lovlar − Σ hisob-fakturalar, barcha oylar,
+ * shu qayta hisobdan OLDIN). Naqd qaytarish = min(jami, max(0, B + S)): keyingi oyga o'tib
+ * ishlatilgan ortiqcha qayta qaytarilmaydi (bazada ham shunday).
+ */
+export function qaytaHisobHolati(S: number, F: number, P: number, B = Infinity): QaytaHisobHolati {
   const jami = Math.max(0, P - (F - S))
-  if (P >= F) return { tur: 'tolangan', shuSafar: S, jami }
+  const naqd = Math.min(jami, Math.max(0, B + S))
+  if (P >= F) return { tur: 'tolangan', shuSafar: S, jami, naqd }
   if (P <= 0) return { tur: 'tolanmagan', endiTolanadi: Math.max(0, F - S) }
   const qarz = F - P
   if (jami === 0) return { tur: 'qisman', qarz, endiTolanadi: qarz - S }
-  return { tur: 'qisman_ortiqcha', qarz, jami }
+  return { tur: 'qisman_ortiqcha', qarz, jami, naqd }
 }
 
 /** 173075 → "173 075" (oddiy probel; brauzer lokaliga bog'liq emas) */

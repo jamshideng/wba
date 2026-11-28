@@ -3558,7 +3558,8 @@ insert into groups (id, nom, subject_id, teacher_id, boshlanish, tugash, kun_tur
   ('TZ1', 'Tuzatish test', 'ingliz-tili', 'U02', '15:00', '16:30', 'toq', 650000);
 insert into students (id, fish, qoshilgan_sana) values
   ('TZA', 'Tuz Bir', '2026-09-01'), ('TZB', 'Tuz Ikki', '2026-09-01'),
-  ('TZC', 'Tuz Uch', '2026-09-01'), ('TZD', 'Tuz Tort', '2026-09-01'), ('TZE', 'Tuz Besh', '2026-09-01');
+  ('TZC', 'Tuz Uch', '2026-09-01'), ('TZD', 'Tuz Tort', '2026-09-01'), ('TZE', 'Tuz Besh', '2026-09-01'),
+  ('TZG', 'Tuz Olti', '2026-09-01');
 create temp table _tz as
   select row_number() over (order by k) as i, k::date as sana
   from generate_series('2026-09-01'::date, '2026-09-30', '1 day') k, groups g
@@ -3566,7 +3567,7 @@ create temp table _tz as
 delete from _tz where i > 13;
 insert into lessons (group_id, sana, otkazildi) select 'TZ1', sana, true from _tz;
 insert into enrollments (student_id, group_id, boshlandi)
-  select s, 'TZ1', '2026-09-01' from unnest(array['TZA', 'TZB', 'TZC', 'TZD', 'TZE']) s;
+  select s, 'TZ1', '2026-09-01' from unnest(array['TZA', 'TZB', 'TZC', 'TZD', 'TZE', 'TZG']) s;
 -- TZA: 5 kelmadi · TZB: 3, 7 · TZC: 4-5-6 ketma-ket · TZD: 9 kelmadi, 13 belgilanmagan
 insert into attendance (lesson_id, student_id, holat)
   select l.id, s.id, case
@@ -3574,10 +3575,10 @@ insert into attendance (lesson_id, student_id, holat)
     when s.id = 'TZB' and k.i in (3, 7) then 'kelmadi'
     when s.id = 'TZC' and k.i in (4, 5, 6) then 'kelmadi'
     when s.id = 'TZD' and k.i = 9 then 'kelmadi'
-    when s.id = 'TZE' and k.i in (2, 4) then 'kelmadi'
+    when s.id in ('TZE', 'TZG') and k.i in (2, 4) then 'kelmadi'
     else 'keldi' end::attendance_status
   from _tz k join lessons l on l.group_id = 'TZ1' and l.sana = k.sana
-  cross join (values ('TZA'), ('TZB'), ('TZC'), ('TZD'), ('TZE')) s(id)
+  cross join (values ('TZA'), ('TZB'), ('TZC'), ('TZD'), ('TZE'), ('TZG')) s(id)
   where not (s.id = 'TZD' and k.i = 13);
 insert into invoices (enrollment_id, davr, summa)
   select e.id, '2026-09', 550000 from enrollments e where e.group_id = 'TZ1';
@@ -3728,6 +3729,30 @@ begin
         - (select sum(summa) from payments where enrollment_id = v_e and not bekor) <> 0 then
     raise exception 'XATO: 0147 — jami ortiqcha naqd: shu safar %, qaytarildi % (kutilgan 84616)', v_r ->> 'summa', v_r ->> 'qaytarildi';
   end if;
+
+  -- Umumiy balans chegarasi: sentabr ortiqchasi (42 308) oktabrda ishlatilgan →
+  -- keyingi naqd faqat shu safargi 42 308 ni beradi (oyning jami ortiqchasi 84 616 bo'lsa ham)
+  select id into v_e from enrollments where student_id = 'TZG' and group_id = 'TZ1';
+  insert into invoices (enrollment_id, davr, summa) values (v_e, '2026-10', 550000);
+  insert into payments (student_id, enrollment_id, sana, davr, summa, usul)
+  values ('TZG', v_e, bugun_toshkent(), '2026-09', 550000, 'naqd');
+  perform tuzatish_darslar_qosh(v_e, '2026-09',
+    array(select l.id from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i = 2));
+  insert into payments (student_id, enrollment_id, sana, davr, summa, usul)   -- oktabr: 550 000 − 42 308
+  values ('TZG', v_e, bugun_toshkent(), '2026-10', 507692, 'naqd');
+  if oquvchi_ortiqcha_balans('TZG') <> 0 then
+    raise exception 'XATO: 0147 — TZG balansi 0 bo''lishi kerak: %', oquvchi_ortiqcha_balans('TZG');
+  end if;
+  v_r := tuzatish_darslar_qosh(v_e, '2026-09',
+    array(select l.id from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i = 4), null, 'naqd');
+  if (v_r ->> 'qaytarildi')::numeric <> 42308
+     or (select summa from payments where enrollment_id = v_e and qaytarish and not bekor) <> -42308
+     or oquvchi_ortiqcha_balans('TZG') <> 0 then
+    raise exception 'XATO: 0147 — ishlatilgan ortiqcha qayta qaytdi: qaytarildi % (kutilgan 42308), balans %',
+      v_r ->> 'qaytarildi', oquvchi_ortiqcha_balans('TZG');
+  end if;
+  -- Balans 0 bo'lsa va oyning ortiqchasi faqat ishlatilgan qism bo'lsa — naqd rad etiladi
+  -- (bu yerda tekshirilmaydi: TZG da kelmagan dars qolmadi)
 
   -- Eski qo'lda tuzatishli oyda — "tekshirdim" belgisisiz saqlanmaydi
   select id into v_e from enrollments where student_id = 'TZD' and group_id = 'TZ1';

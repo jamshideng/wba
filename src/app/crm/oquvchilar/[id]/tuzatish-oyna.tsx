@@ -63,11 +63,13 @@ export function TuzatishOynasi({
   const summa = birDars * k
   // To'lov holati (a/b/c): F — shu oy hozir to'lanishi kerak, P — to'langan (src/lib/qayta-hisob.ts)
   const holat = useMemo(
-    () => (oyna && k > 0 ? qaytaHisobHolati(summa, Number(oyna.qoldiq), Number(oyna.tolangan)) : null),
+    () => (oyna && k > 0 ? qaytaHisobHolati(summa, Number(oyna.qoldiq), Number(oyna.tolangan), Number(oyna.balans)) : null),
     [oyna, k, summa],
   )
   // Jami ortiqcha (to'langan − barcha qayta hisoblardan keyingi summa) — radio tanlov shu summa uchun
   const ortiqcha = holat && (holat.tur === 'tolangan' || holat.tur === 'qisman_ortiqcha') ? holat.jami : 0
+  // Naqd — umumiy balansdan oshmaydi (keyingi oylarda ishlatilgani qaytarilmaydi)
+  const naqd = holat && (holat.tur === 'tolangan' || holat.tur === 'qisman_ortiqcha') ? holat.naqd : 0
   const [qaytarish, setQaytarish] = useState<'keyingi_oy' | 'naqd'>('keyingi_oy')
   useEffect(() => {
     if (ortiqcha === 0) setQaytarish('keyingi_oy')
@@ -239,19 +241,26 @@ export function TuzatishOynasi({
                   onChange={() => setQaytarish('keyingi_oy')}
                   className="size-4"
                 />
-                Keyingi oyga hisoblash — keyingi oy {somProbel(ortiqcha)} so‘m kam to‘laydi
+                Keyingi oyga hisoblash — keyingi oy {somProbel(naqd)} so‘m kam to‘laydi
               </label>
-              <label className="flex min-h-11 cursor-pointer items-center gap-2">
-                <input
-                  type="radio"
-                  name="qaytarish"
-                  value="naqd"
-                  checked={qaytarish === 'naqd'}
-                  onChange={() => setQaytarish('naqd')}
-                  className="size-4"
-                />
-                Naqd qaytarish — {somProbel(ortiqcha)} so‘m kassadan qaytariladi (direktorga xabar boradi)
-              </label>
+              {naqd > 0 && (
+                <label className="flex min-h-11 cursor-pointer items-center gap-2">
+                  <input
+                    type="radio"
+                    name="qaytarish"
+                    value="naqd"
+                    checked={qaytarish === 'naqd'}
+                    onChange={() => setQaytarish('naqd')}
+                    className="size-4"
+                  />
+                  Naqd qaytarish — {somProbel(naqd)} so‘m kassadan qaytariladi (direktorga xabar boradi)
+                </label>
+              )}
+              {naqd < ortiqcha && (
+                <span className="text-[11.5px] text-ink-3">
+                  {somProbel(ortiqcha - naqd)} so‘m keyingi oylarda ishlatilgan yoki boshqa qarzni yopgan — u qaytarilmaydi.
+                </span>
+              )}
             </fieldset>
           ) : (
             <input type="hidden" name="qaytarish" value="keyingi_oy" />

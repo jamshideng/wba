@@ -241,6 +241,18 @@ revoke execute on function tuzatish_oy_darslari(text, text) from public, anon;
 grant execute on function tuzatish_oy_darslari(text, text) to authenticated, service_role;
 
 
+-- O'quvchining umumiy ortiqcha balansi: Σ to'lovlar − Σ hisob-fakturalar (barcha
+-- yozilishlar va oylar). Musbat — ortiqcha to'lagan, manfiy — qarzdor.
+create or replace function oquvchi_ortiqcha_balans(p_student text) returns numeric
+language sql stable security definer set search_path = public as $$
+  select coalesce((select sum(p.summa) from payments p where p.student_id = p_student and not p.bekor), 0)
+       - coalesce((select sum(i.summa) from invoices i join enrollments e on e.id = i.enrollment_id
+                   where e.student_id = p_student and i.holat <> 'bekor'), 0)
+$$;
+revoke execute on function oquvchi_ortiqcha_balans(text) from public, anon, authenticated;
+grant execute on function oquvchi_ortiqcha_balans(text) to service_role;
+
+
 -- ------------------------------------------------------------
 -- 6. Tuzatish oynasi — oy darslari va holati
 -- ------------------------------------------------------------
@@ -300,6 +312,8 @@ begin
     'tuzatish_jami', coalesce(v_inv.tuzatish, 0),
     -- hozirgi qoldiq summa va shu oy uchun to'langan — ortiqcha to'lovni oynada hisoblash uchun
     'qoldiq', coalesce(v_inv.summa, 0),
+    -- o'quvchining umumiy ortiqcha balansi (naqd qaytarish chegarasi)
+    'balans', oquvchi_ortiqcha_balans(e.student_id),
     'tolangan', (select coalesce(sum(p.summa), 0) from payments p
                  where p.enrollment_id = p_enrollment and p.davr = p_davr and not p.bekor),
     'n', v_n,
@@ -444,7 +458,13 @@ begin
   -- Naqd — jami ortiqcha (Jamshid 28.11): to'langan − shu oyning barcha qayta hisoblaridan
   -- keyingi summasi; avvalgi qayta hisobdan keyingi oyga o'tgan ortiqcha ham qaytadi.
   -- Oy qisman to'langan bo'lsa — avval qarz yopiladi, faqat ortgani qaytadi.
-  v_qaytar := v_ortiqcha;
+  -- Lekin o'quvchining umumiy ortiqcha balansidan oshmaydi (Σ to'lovlar − Σ hisob-fakturalar,
+  -- barcha yozilish va oylar, shu qayta hisobdan keyin): keyingi oyga o'tib ishlatilgan
+  -- summa qayta qaytarilmaydi.
+  v_qaytar := least(v_ortiqcha, greatest(0, oquvchi_ortiqcha_balans(e.student_id) + v_summa));
+  if p_qaytarish = 'naqd' and v_qaytar <= 0 then
+    raise exception 'O''quvchida umumiy ortiqcha balans yo''q (ortiqcha keyingi oylarda ishlatilgan) — naqd qaytarib bo''lmaydi.';
+  end if;
 
   select string_agg(to_char(l.sana, 'DD.MM'), ', ' order by l.sana) into v_sanalar
   from lessons l where l.id = any (p_darslar);

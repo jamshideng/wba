@@ -317,6 +317,8 @@ export type TuzatishOyna = {
   qoldiq: number
   /** shu oy uchun to'langan (naqd qaytarishlar ayirilgan) */
   tolangan: number
+  /** o'quvchining umumiy ortiqcha balansi — Σ to'lovlar − Σ hisob-fakturalar (barcha oylar) */
+  balans: number
   n: number
   bir_dars: number | null
   qulf: boolean
