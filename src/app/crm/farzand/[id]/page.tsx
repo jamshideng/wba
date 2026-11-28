@@ -104,6 +104,22 @@ export default async function Farzand({ params }: { params: Promise<{ id: string
     supabase.rpc('oylik_natijalari_farzand', { p_student: oquvchi.id }),
     ...ustozIdlar.map((t) => supabase.rpc('farzand_ustozi', { p_teacher: t })),
   ])
+  // 0147: tuzatishlar — sana va summa (tafsilot sozlamasi o'chiq bo'lsa faqat summa)
+  const [{ data: tuzXom }, { data: korinadi }] = await Promise.all([
+    supabase
+      .from('tuzatishlar')
+      .select('id, davr, summa, sabab, turi, qaytarish, created_at, tuzatish_darslar(sana, bekor), enrollments!inner(student_id)')
+      .eq('enrollments.student_id', oquvchi.id)
+      .eq('bekor', false)
+      .order('davr', { ascending: false })
+      .limit(12),
+    supabase.rpc('tuzatish_korinadimi', { p_kim: 'ota_ona' }),
+  ])
+  const tuzatishlar = (tuzXom ?? []) as unknown as {
+    id: number; davr: string; summa: number; sabab: string; turi: 'qolda' | 'darslar'; qaytarish: 'keyingi_oy' | 'naqd'
+    tuzatish_darslar: { sana: string; bekor: boolean }[]
+  }[]
+  const tafsilot = korinadi !== false
   const oylik = (oylikXom ?? []) as MeningOylikNatijam[]
   const ustozlar = new Map(ustozIdlar.map((t, i) => [t, ((ustozXom[i]?.data ?? []) as UstozMalumot[])[0] ?? null]))
   const yol = `/crm/farzand/${oquvchi.id}`
@@ -194,6 +210,8 @@ export default async function Farzand({ params }: { params: Promise<{ id: string
                   <span className="flex items-center gap-2">
                     {t.bekor ? (
                       <Badge ton="jim">bekor</Badge>
+                    ) : Number(t.summa) < 0 ? (
+                      <Badge ton="accent">naqd qaytarildi</Badge>
                     ) : t.tasdiqlangan ? (
                       <Badge ton="ok">tasdiq</Badge>
                     ) : (
@@ -207,6 +225,35 @@ export default async function Farzand({ params }: { params: Promise<{ id: string
           </div>
         </Card>
       </div>
+
+      {tuzatishlar.length > 0 && (
+        <Card className="flex flex-col">
+          <CardHeader title="Qayta hisoblar" meta="kelmagan darslar va boshqa sabablar" />
+          <ul className="flex flex-col px-5 pb-4">
+            {tuzatishlar.map((t) => {
+              const sanalar = t.tuzatish_darslar
+                .filter((d) => !d.bekor)
+                .map((d) => `${d.sana.slice(8, 10)}.${d.sana.slice(5, 7)}`)
+                .sort()
+              return (
+                <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-line-soft py-2.5 text-[12.5px] last:border-0">
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span>
+                      {t.turi === 'darslar' && tafsilot && sanalar.length > 0
+                        ? `${sanalar.join(', ')} ${sanalar.length > 1 ? 'darslari' : 'darsi'} uchun ${pul(t.summa)} so‘m ayirildi`
+                        : `${davrNomi(t.davr)}: ${pul(t.summa)} so‘m ayirildi`}
+                    </span>
+                    {t.turi === 'qolda' && tafsilot && <span className="text-[11px] text-ink-3">{t.sabab}</span>}
+                  </span>
+                  <Badge ton={t.qaytarish === 'naqd' ? 'accent' : 'ok'}>
+                    {t.qaytarish === 'naqd' ? 'naqd qaytarildi' : 'to‘lovdan ayirildi'}
+                  </Badge>
+                </li>
+              )
+            })}
+          </ul>
+        </Card>
+      )}
     </div>
   )
 }

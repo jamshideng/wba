@@ -116,7 +116,7 @@ export default async function Dashboard() {
         <section className="flex flex-col gap-2">
           <h2 className="lbl">Bugun · {sana(bugun)}</h2>
           <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-            <Stat label="Bugungi tushum" value={Number(k.tushum)} sub={`${k.soni} ta to‘lov`} ton="ok" Icon={IconPayments} href={bugunRoyxat('tushum')} />
+            <Stat label="Bugungi tushum" value={Number(k.tushum)} sub={`${k.soni} ta to‘lov${Number(k.qaytarish ?? 0) > 0 ? ` · qaytarildi −${pul(k.qaytarish)} · sof ${pul(k.sof)}` : ''}`} ton="ok" Icon={IconPayments} href={bugunRoyxat('tushum')} />
             <Stat
               label="Davomat qo‘yilmagan"
               value={k.darslar.qilinmagan}

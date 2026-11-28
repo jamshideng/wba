@@ -92,6 +92,9 @@ export async function kunlikHisobotMatn(kun: string = bugunToshkent()): Promise<
   const k = qoshimcha as KunlikQoshimcha | null
   t.push('<b>TO‘LOV</b>')
   t.push(`To‘lov: <b>${h?.soni ?? 0}</b> ta · <b>${pul(h?.tushum ?? 0)} so‘m</b>`)
+  // 0147: naqd qaytarish alohida qator, sof — kassadagi pul
+  t.push(`Naqd qaytarildi: <b>${Number(h?.qaytarish ?? 0) > 0 ? '−' : ''}${pul(h?.qaytarish ?? 0)} so‘m</b>`)
+  t.push(`Sof: <b>${pul(h?.sof ?? 0)} so‘m</b>`)
   t.push(`To‘lagan o‘quvchi: <b>${h?.odam ?? 0}</b>`)
   if (k) {
     // Hamma usul: ro'yxatga yangi qo'shilgani ham kunlik hisobotdan tushib qolmasin (0115)

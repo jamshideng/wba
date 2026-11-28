@@ -12,12 +12,14 @@ import { Yuborish } from '@/components/yuborish'
 import { JonliForma } from '@/components/jonli-forma'
 import { pul, davrNomi, joriyDavr } from '@/lib/format'
 import type { MaoshHarakat, UstozMaosh, XodimMaosh } from '@/lib/types'
-import { harakatQosh, harakatBekor, oyTasdiqla, oyQaytaOch } from './actions'
+import { harakatQosh, harakatBekor, oyTasdiqla, oyQaytaOch, tuzatishMaoshQaror } from './actions'
 
 export const metadata = { title: 'Maosh' }
 export const dynamic = 'force-dynamic'
 
-const TURLAR: Record<MaoshHarakat['turi'], string> = { avans: 'Avans', bonus: 'Bonus', jarima: 'Jarima', tuzatish: 'Tuzatish' }
+const TURLAR: Record<MaoshHarakat['turi'], string> = {
+  avans: 'Avans', bonus: 'Bonus', jarima: 'Jarima', tuzatish: 'Tuzatish', oquvchi_tuzatish: 'O‘quvchi tuzatishi',
+}
 
 const vaqtFmt = new Intl.DateTimeFormat('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', year: 'numeric' })
 
@@ -62,6 +64,19 @@ export default async function Maosh({
       .order('id', { ascending: false }),
     manager ? supabase.rpc('xodim_maosh', { p_davr: davr }) : Promise.resolve({ data: [] }),
   ])
+  // 0147: qulflangan oy tuzatishlari — direktor qarorini kutadi (hamma oylar)
+  const { data: kutXom } = adminmi(profil.rol)
+    ? await supabase
+        .from('tuzatishlar')
+        .select('id, davr, summa, sabab, created_at, enrollments!inner(student_id, students(fish), groups(nom))')
+        .eq('maosh_holati', 'kutilmoqda')
+        .eq('bekor', false)
+        .order('created_at')
+    : { data: [] }
+  const kutilmoqda = (kutXom ?? []) as unknown as {
+    id: number; davr: string; summa: number; sabab: string; created_at: string
+    enrollments: { student_id: string; students: { fish: string } | null; groups: { nom: string } | null }
+  }[]
 
   const qatorlar = (maoshXom ?? []) as UstozMaosh[]
   const harakatlar = (harakatXom ?? []) as MaoshHarakat[]
@@ -96,6 +111,45 @@ export default async function Maosh({
       />
 
       <Xabar ok={s.ok} xato={s.xato ?? (xato ? 'Maoshni o‘qib bo‘lmadi.' : undefined)} />
+
+      {kutilmoqda.length > 0 && (
+        <Card className="flex flex-col">
+          <CardHeader
+            title="Qulflangan oy tuzatishlari — qaror kutilmoqda"
+            meta={direktor ? 'o‘quvchining hisobi qayta hisoblangan; ustoz qismi sizning qaroringizni kutadi' : 'direktor qarori kutilmoqda'}
+          />
+          <ul className="flex flex-col">
+            {kutilmoqda.map((t) => (
+              <li key={t.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft px-5 py-3">
+                <span className="flex min-w-0 flex-col gap-0.5 text-[13px]">
+                  <Link href={`/crm/oquvchilar/${t.enrollments.student_id}`} className="font-semibold hover:text-brand">
+                    {t.enrollments.students?.fish ?? t.enrollments.student_id}
+                  </Link>
+                  <span className="text-[11.5px] text-ink-3">
+                    {davrNomi(t.davr)} oyligi qulflangan · {t.enrollments.groups?.nom} · {t.sabab} · o‘quvchiga −{pul(t.summa)} so‘m
+                  </span>
+                </span>
+                {direktor && (
+                  <span className="flex flex-wrap gap-2">
+                    <form action={tuzatishMaoshQaror}>
+                      <input type="hidden" name="id" value={t.id} />
+                      <input type="hidden" name="qaror" value="keyingi_oy" />
+                      <input type="hidden" name="qaytish" value={joriy} />
+                      <Yuborish kutish="…">Keyingi oylikdan ayirish</Yuborish>
+                    </form>
+                    <form action={tuzatishMaoshQaror}>
+                      <input type="hidden" name="id" value={t.id} />
+                      <input type="hidden" name="qaror" value="otkazish" />
+                      <input type="hidden" name="qaytish" value={joriy} />
+                      <Yuborish kutish="…" tur="ikkilamchi">O‘tkazib yuborish</Yuborish>
+                    </form>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
         <div className="flex min-w-0 flex-col gap-1">

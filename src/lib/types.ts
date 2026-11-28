@@ -294,6 +294,8 @@ export type Payment = {
   bekor: boolean
   bekor_sabab: string | null
   izoh: string | null
+  /** 0147: naqd qaytarish — summa manfiy */
+  qaytarish: boolean
   created_at: string
   updated_at: string
 }
@@ -586,6 +588,34 @@ export type Tuzatish = {
   bekor_sabab: string | null
   bekor_qildi: string | null
   created_at: string
+  /** 0147: qolda — summa qo'lda (28.11 gacha hammasi); darslar — tanlangan kelmagan darslar */
+  turi: 'qolda' | 'darslar'
+  /** 0147: ustoz qismi (faqat darslar) */
+  maosh_holati: 'oylikda' | 'kutilmoqda' | 'keyingi_oy' | 'otkazildi' | null
+  qaytarish: 'keyingi_oy' | 'naqd'
+  payment_id: number | null
+  tekshirdim: boolean
+  maosh_qaror_qildi: string | null
+  maosh_qaror_vaqti: string | null
+}
+
+/** 0147: tuzatish qaysi darslar uchun */
+export type TuzatishDars = {
+  id: number
+  tuzatish_id: number
+  enrollment_id: string
+  lesson_id: string
+  sana: string
+  teacher_id: string | null
+  maosh_harakat_id: number | null
+  bekor: boolean
+  created_at: string
+}
+
+/** 0147: maosh_ayirmalar() qatori */
+export type MaoshAyirma = {
+  teacher_id: string; group_id: string; guruh: string; student_id: string; fish: string
+  sana: string; sabab: 'ketma_ket' | 'tuzatish'; summa: number
 }
 
 /** Markaz xarajati (0033). O'chirilmaydi — bekor qilinadi. */
@@ -617,7 +647,8 @@ export type MaoshHarakat = {
   /** Xodim (admin) yozuvi — 0077; teacher_id bilan bittasi */
   profile_id: string | null
   davr: string
-  turi: 'avans' | 'bonus' | 'jarima' | 'tuzatish'
+  /** oquvchi_tuzatish (0147) — qulflangan oy tuzatishi keyingi oylikdan ayiriladi */
+  turi: 'avans' | 'bonus' | 'jarima' | 'tuzatish' | 'oquvchi_tuzatish'
   summa: number
   izoh: string | null
   kiritgan: string | null
@@ -815,7 +846,13 @@ export type HisobotDavomat = {
 /** 0010 · tushum_hisobot() natijasi */
 export type HisobotQator = { nom: string; summa: number; soni: number }
 export type Hisobot = {
+  /** 0147: kirim (qaytarishsiz) */
   tushum: number
+  /** 0147: naqd qaytarilgan (musbat son) */
+  qaytarish: number
+  /** 0147: sof = tushum − qaytarish */
+  sof: number
+  /** 0147: qaytarishlar sanalmaydi */
   soni: number
   odam: number
   tasdiqlanmagan: number
@@ -966,6 +1003,7 @@ export type Database = {
       crm_vazifalar: Table<Vazifa>
       ustoz_kechikish: Table<UstozKechikish>
       tuzatishlar: Table<Tuzatish>
+      tuzatish_darslar: Table<TuzatishDars>
       xarajatlar: Table<Xarajat>
       teacher_salaries: Table<TeacherSalary>
       maosh_harakatlar: Table<MaoshHarakat>
@@ -1228,6 +1266,17 @@ export type Database = {
         Returns: number
       }
       tuzatish_bekor: { Args: { p_id: number; p_sabab?: string | null }; Returns: undefined }
+      tuzatish_oyna: { Args: { p_enrollment: string; p_davr: string }; Returns: unknown }
+      tuzatish_darslar_qosh: {
+        Args: {
+          p_enrollment: string; p_davr: string; p_darslar: string[]; p_izoh?: string | null
+          p_qaytarish?: 'keyingi_oy' | 'naqd'; p_tekshirdim?: boolean
+        }
+        Returns: unknown
+      }
+      tuzatish_maosh_qaror: { Args: { p_id: number; p_qaror: 'keyingi_oy' | 'otkazish' }; Returns: number }
+      maosh_ayirmalar: { Args: { p_davr: string; p_ustoz?: string | null }; Returns: MaoshAyirma[] }
+      tuzatish_korinadimi: { Args: { p_kim: 'ota_ona' | 'ustoz' }; Returns: boolean }
       woblar_ber: { Args: { p_group: string; p_student: string; p_ball: number }; Returns: number }
       keyingi_id: { Args: { p_jadval: string; p_prefiks: string; p_uzunlik?: number }; Returns: string }
       oquvchi_qosh: { Args: { p: Record<string, unknown> }; Returns: string }
