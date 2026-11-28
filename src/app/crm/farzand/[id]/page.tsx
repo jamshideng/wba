@@ -228,7 +228,7 @@ export default async function Farzand({ params }: { params: Promise<{ id: string
 
       {tuzatishlar.length > 0 && (
         <Card className="flex flex-col">
-          <CardHeader title="Chegirmalar (tuzatish)" meta="kelmagan darslar va boshqa sabablar" />
+          <CardHeader title="Qayta hisoblar" meta="kelmagan darslar va boshqa sabablar" />
           <ul className="flex flex-col px-5 pb-4">
             {tuzatishlar.map((t) => {
               const sanalar = t.tuzatish_darslar

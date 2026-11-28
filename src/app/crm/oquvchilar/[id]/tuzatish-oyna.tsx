@@ -9,6 +9,7 @@ import { tuzatishOynaOl, tuzatishDarslarQosh, type TuzatishOyna, type TuzatishDa
 import { Maydon, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
 import { pul, sana } from '@/lib/format'
+import { qaytaHisobHolati, somProbel } from '@/lib/qayta-hisob'
 
 const KLASS: Record<TuzatishDarsHolati, string> = {
   keldi: 'border-ok bg-ok-soft text-ok cursor-not-allowed',
@@ -60,13 +61,13 @@ export function TuzatishOynasi({
   // Bazadagi formula bilan bir xil: round(oylik ÷ n) × k — ko'rsatilgan raqam = haqiqiy summa
   const birDars = oyna?.bir_dars ? Number(oyna.bir_dars) : 0
   const summa = birDars * k
-  // Ortiqcha to'lov: shu oy uchun to'langan − tuzatishdan keyingi summa (bazadagi bilan bir xil)
-  const ortiqcha = useMemo(() => {
-    if (!oyna || k === 0) return 0
-    return Math.max(0, Number(oyna.tolangan) - (Number(oyna.qoldiq) - summa))
-  }, [oyna, k, summa])
-  // Naqd — faqat shu tuzatish summasi, ortiqchadan ko'p emas (bazada ham least(summa, ortiqcha))
-  const naqdSumma = Math.min(summa, ortiqcha)
+  // To'lov holati (a/b/c): F — shu oy hozir to'lanishi kerak, P — to'langan (src/lib/qayta-hisob.ts)
+  const holat = useMemo(
+    () => (oyna && k > 0 ? qaytaHisobHolati(summa, Number(oyna.qoldiq), Number(oyna.tolangan)) : null),
+    [oyna, k, summa],
+  )
+  // Jami ortiqcha (to'langan − barcha qayta hisoblardan keyingi summa) — radio tanlov shu summa uchun
+  const ortiqcha = holat && (holat.tur === 'tolangan' || holat.tur === 'qisman_ortiqcha') ? holat.jami : 0
   const [qaytarish, setQaytarish] = useState<'keyingi_oy' | 'naqd'>('keyingi_oy')
   useEffect(() => {
     if (ortiqcha === 0) setQaytarish('keyingi_oy')
@@ -165,7 +166,7 @@ export function TuzatishOynasi({
 
           {oyna.qulf && (
             <p className="rounded-[9px] border border-warn px-3 py-2 text-[12px] text-ink-2">
-              Bu oy ustoz oyligi qulflangan: o‘quvchiga chegirma darhol beriladi, ustoz qismi direktor qarorini kutadi.
+              Bu oy ustoz oyligi qulflangan: o‘quvchining hisobi darhol to‘g‘rilanadi, ustoz qismi direktor qarorini kutadi.
             </p>
           )}
 
@@ -191,15 +192,44 @@ export function TuzatishOynasi({
               <span className="text-ink-3">Kelmagan darslarni tanlang</span>
             ) : (
               <span className="tnum font-[family-name:var(--font-mono)] font-semibold">
-                {k} dars × {pul(birDars)} = {pul(summa)} so‘m
+                {k} dars × {somProbel(birDars)} = {somProbel(summa)} so‘m
               </span>
             )}
           </div>
 
-          {/* Tanlov faqat ortiqcha to'lov chiqqanda; aks holda summa shu oy qarzidan ayiriladi */}
+          {/* b) to'lanmagan va c) qarzdan oshmaydi — faqat ma'lumot, tanlov yo'q */}
+          {holat?.tur === 'tolanmagan' && (
+            <div className="flex flex-col gap-1 text-[12.5px]">
+              <span className="lbl">Oy hali to‘lanmagan</span>
+              <span>
+                {somProbel(summa)} so‘m shu oy to‘lovidan ayiriladi. Endi to‘lanadigan summa:{' '}
+                <b className="tnum">{somProbel(holat.endiTolanadi)} so‘m</b>
+              </span>
+            </div>
+          )}
+          {holat?.tur === 'qisman' && (
+            <div className="flex flex-col gap-1 text-[12.5px]">
+              <span className="lbl">Oy qisman to‘langan — qarz {somProbel(holat.qarz)} so‘m</span>
+              <span>
+                {somProbel(summa)} so‘m qolgan qarzdan ayiriladi. Endi to‘lanadigan summa:{' '}
+                <b className="tnum">{somProbel(holat.endiTolanadi)} so‘m</b>
+              </span>
+            </div>
+          )}
+
+          {/* a) to'langan va c) qarzdan oshgani — ortiqcha uchun tanlov */}
           {ortiqcha > 0 ? (
             <fieldset className="flex flex-col gap-1 text-[12.5px]">
-              <legend className="lbl mb-1">Oy to‘langan — tuzatishdan keyin ortiqcha {pul(ortiqcha)} so‘m</legend>
+              <legend className="lbl mb-1">
+                {holat?.tur === 'qisman_ortiqcha'
+                  ? `Qarz ${somProbel(holat.qarz)} so‘m yopiladi — ${somProbel(ortiqcha)} so‘m ortiqcha to‘langan`
+                  : `Oy to‘langan — ${somProbel(ortiqcha)} so‘m ortiqcha to‘langan`}
+              </legend>
+              {holat?.tur === 'tolangan' && (
+                <span className="tnum mb-1 text-[12.5px] text-ink-2">
+                  Shu safar: {somProbel(holat.shuSafar)} so‘m · Jami ortiqcha: <b>{somProbel(holat.jami)} so‘m</b>
+                </span>
+              )}
               <label className="flex min-h-11 cursor-pointer items-center gap-2">
                 <input
                   type="radio"
@@ -209,7 +239,7 @@ export function TuzatishOynasi({
                   onChange={() => setQaytarish('keyingi_oy')}
                   className="size-4"
                 />
-                Keyingi oyga o‘tkazish — {pul(naqdSumma)} so‘m keyingi oy to‘lovidan ayiriladi
+                Keyingi oyga hisoblash — keyingi oy {somProbel(ortiqcha)} so‘m kam to‘laydi
               </label>
               <label className="flex min-h-11 cursor-pointer items-center gap-2">
                 <input
@@ -220,7 +250,7 @@ export function TuzatishOynasi({
                   onChange={() => setQaytarish('naqd')}
                   className="size-4"
                 />
-                Naqd qaytarish — {pul(naqdSumma)} so‘m (kassadan chiqadi, direktorga xabar boradi)
+                Naqd qaytarish — {somProbel(ortiqcha)} so‘m kassadan qaytariladi (direktorga xabar boradi)
               </label>
             </fieldset>
           ) : (

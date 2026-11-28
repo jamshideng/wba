@@ -70,7 +70,7 @@ export function BoshqaTuzatish({
               </li>
             ))}
           </ul>
-          <p className="mt-1">Kelmagan dars uchun qo‘lda ham summa yozilsa, chegirma ikki marta beriladi.</p>
+          <p className="mt-1">Kelmagan dars uchun qo‘lda ham summa yozilsa, shu dars ikki marta qayta hisoblanadi.</p>
           <label className="mt-1 flex min-h-11 cursor-pointer items-center gap-2">
             <input type="checkbox" required checked={tekshirdim} onChange={(e) => setTekshirdim(e.target.checked)} className="size-4" />
             Tekshirdim, ikki marta emas

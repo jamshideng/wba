@@ -415,7 +415,7 @@ begin
     select 1 from tuzatish_darslar td
     where td.enrollment_id = p_enrollment and not td.bekor and td.lesson_id = any (p_darslar)
   ) then
-    raise exception 'Tanlangan darslardan biri uchun chegirma allaqachon berilgan.';
+    raise exception 'Tanlangan darslardan biri allaqachon qayta hisoblangan.';
   end if;
 
   v_n := tuzatish_oy_darslari(e.group_id, p_davr);
@@ -431,7 +431,7 @@ begin
     raise exception 'Hisoblangan summa 0 — oylik to''lov yo''q.';
   end if;
   if v_summa > v_inv.summa then
-    raise exception 'Chegirma (% so''m) oyning qolgan summasidan (% so''m) katta.', v_summa, v_inv.summa;
+    raise exception 'Qayta hisob summasi (% so''m) oyning qolgan summasidan (% so''m) katta.', v_summa, v_inv.summa;
   end if;
 
   -- Ortiqcha to'lov: shu oy uchun to'langan − tuzatishdan keyingi summa
@@ -441,8 +441,10 @@ begin
   if p_qaytarish = 'naqd' and v_ortiqcha <= 0 then
     raise exception 'Bu oy uchun ortiqcha to''lov chiqmaydi — naqd qaytarib bo''lmaydi.';
   end if;
-  -- Naqd faqat ortiqcha qismi qaytariladi (oy qisman to'langan bo'lsa — qolgani qarzni yopadi)
-  v_qaytar := least(v_summa, v_ortiqcha);
+  -- Naqd — jami ortiqcha (Jamshid 28.11): to'langan − shu oyning barcha qayta hisoblaridan
+  -- keyingi summasi; avvalgi qayta hisobdan keyingi oyga o'tgan ortiqcha ham qaytadi.
+  -- Oy qisman to'langan bo'lsa — avval qarz yopiladi, faqat ortgani qaytadi.
+  v_qaytar := v_ortiqcha;
 
   select string_agg(to_char(l.sana, 'DD.MM'), ', ' order by l.sana) into v_sanalar
   from lessons l where l.id = any (p_darslar);

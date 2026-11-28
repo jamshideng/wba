@@ -520,8 +520,9 @@ export default async function OquvchiProfil({
 
                     {tuzatishAdmin && (
                       <details className="w-full">
-                        <summary className="flex min-h-11 cursor-pointer items-center text-[12.5px] font-semibold text-ink-2 hover:text-ink">
-                          Tuzatish — kelmagan darslar uchun chegirma
+                        {/* Pastdagi bo'limlar kabi oddiy summary — brauzerning ▶/▼ belgisi; belgi o'lchami va rangi ular bilan bir xil */}
+                        <summary className="cursor-pointer py-3 text-[12.5px] font-semibold text-ink-2 hover:text-ink marker:text-[12px] marker:font-normal marker:text-ink-3">
+                          Qayta hisoblash — kelmagan darslar
                         </summary>
                         <TuzatishOynasi
                           studentId={oquvchi.id}
@@ -531,7 +532,7 @@ export default async function OquvchiProfil({
                           standartDavr={y.tugadi && y.tugadi.slice(0, 7) < davr ? y.tugadi.slice(0, 7) : davr}
                         />
                         <details className="mt-3 border-t border-line-soft pt-2">
-                          <summary className="flex min-h-11 cursor-pointer items-center text-[12px] text-ink-3 hover:text-ink">
+                          <summary className="cursor-pointer py-3 text-[12px] text-ink-3 hover:text-ink">
                             Boshqa tuzatish (qo‘lda summa)
                           </summary>
                           <BoshqaTuzatish
@@ -835,6 +836,9 @@ export default async function OquvchiProfil({
           </div>
         </Card>
 
+        {/* ── O'ng ustun: Aloqa → Davomat → To'lov tarixi. Kompyuterda sticky (Guruhlar aylantirilganda joyida turadi),
+             ekrandan baland bo'lsa o'zi aylanadi; tor ekranda oddiy oqim (sticky yo'q). top = yuqori panel (~61px) + bo'shliq ── */}
+        <div className="flex flex-col gap-3.5 lg:sticky lg:top-[76px] lg:max-h-[calc(100dvh-88px)] lg:self-start lg:overflow-y-auto lg:overscroll-contain">
         {/* ── Aloqa ── */}
         <Card className="flex flex-col">
           <CardHeader title="Aloqa" />
@@ -919,9 +923,38 @@ export default async function OquvchiProfil({
             )}
           </div>
         </Card>
-      </div>
 
-      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        {/* ── Davomat ── */}
+        <Card className="flex flex-col">
+          <CardHeader title="Davomat" meta={davrNomi(davr)} />
+          <div className="flex flex-col gap-2 px-5 pb-4">
+            {dList.length === 0 ? (
+              <Empty>Hali davomat belgilanmagan.</Empty>
+            ) : (
+              dList.map((d) => (
+                <Link
+                  key={`${d.davr}-${d.group_id}`}
+                  href={`/crm/davomat/${d.group_id}?oy=${d.davr}&b=oq:${oquvchi.id}`}
+                  className="-mx-2 flex items-center justify-between gap-3 rounded-lg border-b border-line-soft px-2 py-2 transition last:border-0 hover:bg-surface-2"
+                >
+                  <span className="text-[12.5px]">{davrNomi(d.davr)}</span>
+                  <span className="flex items-center gap-2.5">
+                    <span className="text-[11.5px] text-ink-3">
+                      {d.kelgan} / {d.darslar} dars
+                    </span>
+                    <Badge ton={d.foiz >= 80 ? 'ok' : d.foiz >= 60 ? 'accent' : 'brand'}>
+                      {d.foiz}%
+                    </Badge>
+                  </span>
+                </Link>
+              ))
+            )}
+            <p className="lbl pt-1">
+              Foiz = {DAVOMAT_NOMI.keldi} / belgilangan darslar
+            </p>
+          </div>
+        </Card>
+
         {/* ── To'lov tarixi ── */}
         {pulKoradi && (
           <Card className="flex flex-col">
@@ -963,37 +996,7 @@ export default async function OquvchiProfil({
             </div>
           </Card>
         )}
-
-        {/* ── Davomat ── */}
-        <Card className="flex flex-col">
-          <CardHeader title="Davomat" meta={davrNomi(davr)} />
-          <div className="flex flex-col gap-2 px-5 pb-4">
-            {dList.length === 0 ? (
-              <Empty>Hali davomat belgilanmagan.</Empty>
-            ) : (
-              dList.map((d) => (
-                <Link
-                  key={`${d.davr}-${d.group_id}`}
-                  href={`/crm/davomat/${d.group_id}?oy=${d.davr}&b=oq:${oquvchi.id}`}
-                  className="-mx-2 flex items-center justify-between gap-3 rounded-lg border-b border-line-soft px-2 py-2 transition last:border-0 hover:bg-surface-2"
-                >
-                  <span className="text-[12.5px]">{davrNomi(d.davr)}</span>
-                  <span className="flex items-center gap-2.5">
-                    <span className="text-[11.5px] text-ink-3">
-                      {d.kelgan} / {d.darslar} dars
-                    </span>
-                    <Badge ton={d.foiz >= 80 ? 'ok' : d.foiz >= 60 ? 'accent' : 'brand'}>
-                      {d.foiz}%
-                    </Badge>
-                  </span>
-                </Link>
-              ))
-            )}
-            <p className="lbl pt-1">
-              Foiz = {DAVOMAT_NOMI.keldi} / belgilangan darslar
-            </p>
-          </div>
-        </Card>
+        </div>
       </div>
     </div>
   )

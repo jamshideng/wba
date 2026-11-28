@@ -3558,7 +3558,7 @@ insert into groups (id, nom, subject_id, teacher_id, boshlanish, tugash, kun_tur
   ('TZ1', 'Tuzatish test', 'ingliz-tili', 'U02', '15:00', '16:30', 'toq', 650000);
 insert into students (id, fish, qoshilgan_sana) values
   ('TZA', 'Tuz Bir', '2026-09-01'), ('TZB', 'Tuz Ikki', '2026-09-01'),
-  ('TZC', 'Tuz Uch', '2026-09-01'), ('TZD', 'Tuz Tort', '2026-09-01');
+  ('TZC', 'Tuz Uch', '2026-09-01'), ('TZD', 'Tuz Tort', '2026-09-01'), ('TZE', 'Tuz Besh', '2026-09-01');
 create temp table _tz as
   select row_number() over (order by k) as i, k::date as sana
   from generate_series('2026-09-01'::date, '2026-09-30', '1 day') k, groups g
@@ -3566,7 +3566,7 @@ create temp table _tz as
 delete from _tz where i > 13;
 insert into lessons (group_id, sana, otkazildi) select 'TZ1', sana, true from _tz;
 insert into enrollments (student_id, group_id, boshlandi)
-  select s, 'TZ1', '2026-09-01' from unnest(array['TZA', 'TZB', 'TZC', 'TZD']) s;
+  select s, 'TZ1', '2026-09-01' from unnest(array['TZA', 'TZB', 'TZC', 'TZD', 'TZE']) s;
 -- TZA: 5 kelmadi · TZB: 3, 7 · TZC: 4-5-6 ketma-ket · TZD: 9 kelmadi, 13 belgilanmagan
 insert into attendance (lesson_id, student_id, holat)
   select l.id, s.id, case
@@ -3574,9 +3574,10 @@ insert into attendance (lesson_id, student_id, holat)
     when s.id = 'TZB' and k.i in (3, 7) then 'kelmadi'
     when s.id = 'TZC' and k.i in (4, 5, 6) then 'kelmadi'
     when s.id = 'TZD' and k.i = 9 then 'kelmadi'
+    when s.id = 'TZE' and k.i in (2, 4) then 'kelmadi'
     else 'keldi' end::attendance_status
   from _tz k join lessons l on l.group_id = 'TZ1' and l.sana = k.sana
-  cross join (values ('TZA'), ('TZB'), ('TZC'), ('TZD')) s(id)
+  cross join (values ('TZA'), ('TZB'), ('TZC'), ('TZD'), ('TZE')) s(id)
   where not (s.id = 'TZD' and k.i = 13);
 insert into invoices (enrollment_id, davr, summa)
   select e.id, '2026-09', 550000 from enrollments e where e.group_id = 'TZ1';
@@ -3710,6 +3711,22 @@ begin
   end if;
   if (select count(*) from maosh_ayirmalar('2026-09', 'U02') a where a.student_id = 'TZC') <> 3 then
     raise exception 'XATO: 0147 — bitta sana ikki sabab bilan chiqdi';
+  end if;
+
+  -- Jami ortiqcha (Jamshid 28.11): oy to'langan, 1-qayta hisob keyingi oyga (42 308),
+  -- 2-sida naqd → jami ortiqcha 42 308 + 42 308 = 84 616 qaytadi
+  select id into v_e from enrollments where student_id = 'TZE' and group_id = 'TZ1';
+  insert into payments (student_id, enrollment_id, sana, davr, summa, usul)
+  values ('TZE', v_e, bugun_toshkent(), '2026-09', 550000, 'naqd');
+  perform tuzatish_darslar_qosh(v_e, '2026-09',
+    array(select l.id from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i = 2));
+  v_r := tuzatish_darslar_qosh(v_e, '2026-09',
+    array(select l.id from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i = 4), null, 'naqd');
+  if (v_r ->> 'summa')::numeric <> 42308 or (v_r ->> 'qaytarildi')::numeric <> 84616
+     or (select summa from payments where enrollment_id = v_e and qaytarish and not bekor) <> -84616
+     or (select summa from invoices where enrollment_id = v_e and davr = '2026-09')
+        - (select sum(summa) from payments where enrollment_id = v_e and not bekor) <> 0 then
+    raise exception 'XATO: 0147 — jami ortiqcha naqd: shu safar %, qaytarildi % (kutilgan 84616)', v_r ->> 'summa', v_r ->> 'qaytarildi';
   end if;
 
   -- Eski qo'lda tuzatishli oyda — "tekshirdim" belgisisiz saqlanmaydi

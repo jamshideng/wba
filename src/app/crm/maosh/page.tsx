@@ -116,7 +116,7 @@ export default async function Maosh({
         <Card className="flex flex-col">
           <CardHeader
             title="Qulflangan oy tuzatishlari — qaror kutilmoqda"
-            meta={direktor ? 'o‘quvchiga chegirma berilgan; ustoz qismi sizning qaroringizni kutadi' : 'direktor qarori kutilmoqda'}
+            meta={direktor ? 'o‘quvchining hisobi qayta hisoblangan; ustoz qismi sizning qaroringizni kutadi' : 'direktor qarori kutilmoqda'}
           />
           <ul className="flex flex-col">
             {kutilmoqda.map((t) => (
