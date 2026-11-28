@@ -57,10 +57,10 @@ export function TuzatishOynasi({
   }, [enrollmentId, davr])
 
   const k = tanlangan.size
-  // Bazadagi formula bilan bir xil: floor(oylik × k / n)
+  // Bazadagi formula bilan bir xil: round(oylik × k / n) — 0,5 va undan yuqori yuqoriga
   const summa = useMemo(() => {
     if (!oyna?.oylik || !oyna.n) return 0
-    return Math.floor((Number(oyna.oylik) * k) / oyna.n)
+    return Math.round((Number(oyna.oylik) * k) / oyna.n)
   }, [oyna, k])
 
   function almashtir(id: string) {

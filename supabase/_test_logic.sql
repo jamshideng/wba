@@ -3601,8 +3601,9 @@ begin
   v_r := tuzatish_darslar_qosh(v_e, '2026-09',
            array(select l.id from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i in (3, 7)),
            'kasal', 'naqd');
-  if (v_r ->> 'summa')::numeric <> 84615 or (v_r ->> 'n')::int <> 13 then
-    raise exception 'XATO: 0147 — summa % (kutilgan 84615), n %', v_r ->> 'summa', v_r ->> 'n';
+  -- round: 1 100 000 / 13 = 84 615,38 → 84 615; bir dars 42 307,69 → 42 308 (floor emas)
+  if (v_r ->> 'summa')::numeric <> 84615 or (v_r ->> 'n')::int <> 13 or (v_r ->> 'bir_dars')::numeric <> 42308 then
+    raise exception 'XATO: 0147 — summa % (kutilgan 84615), n %, bir dars % (kutilgan 42308)', v_r ->> 'summa', v_r ->> 'n', v_r ->> 'bir_dars';
   end if;
   if (select summa from invoices where enrollment_id = v_e and davr = '2026-09') <> 550000 - 84615 then
     raise exception 'XATO: 0147 — hisob-faktura kamaymadi';
@@ -3679,7 +3680,12 @@ begin
      or (select summa from invoices where enrollment_id = v_e and davr = '2026-09') <> 550000 then
     raise exception 'XATO: 0147 — bekor qilinganda qaytmadi';
   end if;
-  perform tuzatish_darslar_qosh(v_e, '2026-09', array[v_l]);   -- sana yana bo'sh
+  v_r := tuzatish_darslar_qosh(v_e, '2026-09', array[v_l]);   -- sana yana bo'sh
+  -- round: 550 000 / 13 = 42 307,69 → 42 308 (yuqoriga)
+  if (v_r ->> 'summa')::numeric <> 42308
+     or (select summa from invoices where enrollment_id = v_e and davr = '2026-09') <> 550000 - 42308 then
+    raise exception 'XATO: 0147 — yaxlitlash: % (kutilgan 42308)', v_r ->> 'summa';
+  end if;
 
   -- TZC: ketma-ket 3 dan biri tuzatilsa — ustozdan qo'shimcha ayirilmaydi (10/13 = 500 000)
   select id into v_e from enrollments where student_id = 'TZC' and group_id = 'TZ1';
@@ -3725,6 +3731,16 @@ begin
     raise exception 'XATO: 0147 — keyingi oylikdan ayirma yozilmadi: soni %, %', v_t,
       (select jsonb_agg(to_jsonb(m)) from maosh_harakatlar m where m.turi = 'oquvchi_tuzatish');
   end if;
+
+  -- Ustoz tomonida ham round: stavka 250 000 / 13 = 19 230,77 → 19 231 (TZA, 1 tuzatilgan dars)
+  update teacher_salaries set qiymati = 250000 where teacher_id = 'U02';
+  if (select summa from maosh_ayirmalar('2026-09', 'U02') a where a.student_id = 'TZA' and a.sabab = 'tuzatish') <> 19231
+     or (select summa from maosh_qatorlari('2026-09') where group_id = 'TZ1' and student_id = 'TZA') <> 250000 - 19231 then
+    raise exception 'XATO: 0147 — ustoz yaxlitlashi: ayirma %, ulush %',
+      (select summa from maosh_ayirmalar('2026-09', 'U02') a where a.student_id = 'TZA' and a.sabab = 'tuzatish'),
+      (select summa from maosh_qatorlari('2026-09') where group_id = 'TZ1' and student_id = 'TZA');
+  end if;
+  update teacher_salaries set qiymati = 650000 where teacher_id = 'U02';
 
   -- Boshqa guruhlardagi eski tuzatishlar o'zgarmadi
   if (select coalesce(sum(tuzatish), 0) from invoices where enrollment_id not in

@@ -3,7 +3,8 @@
 --
 -- Admin endi summa yozmaydi: oy darslaridan "kelmadi" sanalarini tanlaydi,
 -- summa bazada hisoblanadi:
---   chegirma = floor(oylik_tolov × tanlangan / oydagi_darslar)
+--   chegirma = round(oylik_tolov × tanlangan / oydagi_darslar)
+--   (oddiy yaxlitlash: 0,5 va undan yuqori — yuqoriga; ustoz tomonida ham round)
 --   oylik_tolov    = invoices.summa + invoices.tuzatish (chegirmalardan keyin,
 --                    tuzatishlardan oldin)
 --   oydagi_darslar = oy tugagan bo'lsa o'tilgan darslar, tugamagan bo'lsa
@@ -298,7 +299,7 @@ begin
     'tuzatish_jami', coalesce(v_inv.tuzatish, 0),
     'n', v_n,
     'bir_dars', case when v_inv.id is null or v_n = 0 then null
-                     else floor((v_inv.summa + v_inv.tuzatish) / v_n) end,
+                     else round((v_inv.summa + v_inv.tuzatish) / v_n) end,
     'qulf', maosh_oy_qulfmi(p_davr),
     'darslar', coalesce((select jsonb_agg(jsonb_build_object(
         'lesson_id', h.lesson_id, 'sana', h.sana, 'zamena', h.zamena,
@@ -413,7 +414,7 @@ begin
     raise exception 'Bu oyda guruh darslari topilmadi.';
   end if;
   v_oylik := v_inv.summa + v_inv.tuzatish;
-  v_summa := floor(v_oylik * v_k / v_n);
+  v_summa := round(v_oylik * v_k / v_n);
   if v_summa <= 0 then
     raise exception 'Hisoblangan summa 0 — oylik to''lov yo''q.';
   end if;
@@ -471,7 +472,7 @@ begin
   end if;
 
   return jsonb_build_object('id', v_id, 'summa', v_summa, 'darslar', v_k, 'n', v_n,
-                            'bir_dars', floor(v_oylik / v_n), 'kutilmoqda', v_qulf);
+                            'bir_dars', round(v_oylik / v_n), 'kutilmoqda', v_qulf);
 end;
 $$;
 revoke execute on function tuzatish_darslar_qosh(uuid, text, uuid[], text, text, boolean) from public, anon;
