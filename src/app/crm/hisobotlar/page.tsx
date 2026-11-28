@@ -262,7 +262,7 @@ export default async function Hisobotlar({
         </Card>
       ) : (
         <>
-          <UmumiyBolim h={h} g={g} oylar={oylar} dan={o.dan} gacha={o.gacha} usulRoyxat={await royxatOl(supabase, 'tolov_usul')} />
+          {/* dizayn-1: nazorat uchun muhim — hisobot tepasida (avval sahifaning eng pastida edi) */}
           {qilinmagan.size > 0 && (
             <Card className="flex flex-col">
               <CardHeader
@@ -291,8 +291,8 @@ export default async function Hisobotlar({
                 )}
               </div>
             </Card>
-
           )}
+          <UmumiyBolim h={h} g={g} oylar={oylar} dan={o.dan} gacha={o.gacha} usulRoyxat={await royxatOl(supabase, 'tolov_usul')} />
         </>
       )}
     </div>

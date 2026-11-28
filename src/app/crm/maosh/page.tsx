@@ -18,7 +18,7 @@ export const metadata = { title: 'Maosh' }
 export const dynamic = 'force-dynamic'
 
 const TURLAR: Record<MaoshHarakat['turi'], string> = {
-  avans: 'Avans', bonus: 'Bonus', jarima: 'Jarima', tuzatish: 'Tuzatish', oquvchi_tuzatish: 'O‘quvchi tuzatishi',
+  avans: 'Avans', bonus: 'Bonus', jarima: 'Jarima', tuzatish: 'Oylik tuzatishi', oquvchi_tuzatish: 'O‘quvchi qayta hisobi',
 }
 
 const vaqtFmt = new Intl.DateTimeFormat('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -319,8 +319,8 @@ export default async function Maosh({
                     </option>
                     <option value="bonus">Bonus (qo‘shiladi)</option>
                     <option value="jarima">Jarima (ayiriladi)</option>
-                    <option value="tuzatish_plus">Tuzatish — qo‘shish</option>
-                    <option value="tuzatish_minus">Tuzatish — ayirish</option>
+                    <option value="tuzatish_plus">Oylik tuzatishi — qo‘shish</option>
+                    <option value="tuzatish_minus">Oylik tuzatishi — ayirish</option>
                   </select>
                 </Maydon>
                 <Maydon nom="Summa" izoh="Masalan: 300000 yoki 300 ming">

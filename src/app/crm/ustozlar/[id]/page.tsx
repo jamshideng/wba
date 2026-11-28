@@ -233,6 +233,8 @@ export default async function UstozProfil({
           </div>
         </Card>
 
+        {/* dizayn-1: o'ng ustun — woblar + so'nggi amallar (Guruhlari yonida bo'sh joy qolmasin) */}
+        <div className="flex flex-col gap-3.5">
         <Card className="flex flex-col">
           <CardHeader title="Bergan woblari" meta="so‘nggi 10 ta" />
           <div className="flex flex-col px-5 pb-4">
@@ -261,7 +263,6 @@ export default async function UstozProfil({
             )}
           </div>
         </Card>
-      </div>
 
       <Card className="flex flex-col">
         <CardHeader title="Tizimdagi so‘nggi amallari" meta="Auditdan" />
@@ -291,6 +292,8 @@ export default async function UstozProfil({
           )}
         </div>
       </Card>
+        </div>
+      </div>
 
       <Card className="flex flex-col">
         <CardHeader title="Hisob va ma‘lumotlar" />
