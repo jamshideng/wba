@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { talabRol } from '@/lib/auth'
 import { matn, sanaOqi, sonOqi, summaOqi, telefonOqi, xabarliYol, xatoMatni, ichkiYol } from '@/lib/kiritish'
 import { KETISH_IZOH_TALABI, ketishIzohiYaroqli } from '@/lib/reyting'
+import { pul } from '@/lib/format'
 
 /**
  * Chegirma maydonlari — Qatnashuvdagidek ikki bosqich.
@@ -304,7 +305,7 @@ export async function tuzatishQosh(fd: FormData) {
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
 
   revalidatePath('/crm', 'layout')
-  redirect(xabarliYol(yol, { ok: `Tuzatish yozildi: ${davr} oyidan ${summa!.toLocaleString('ru-RU')} so‘m ayirildi.` }))
+  redirect(xabarliYol(yol, { ok: `Qayta hisob yozildi: ${davr} oyidan ${pul(summa!)} so‘m ayirildi.` }))
 }
 
 export type TuzatishDarsHolati = 'keldi' | 'kelmadi' | 'belgilanmagan' | 'ayirilgan' | 'otilmagan'
@@ -366,9 +367,9 @@ export async function tuzatishDarslarQosh(fd: FormData) {
   redirect(
     xabarliYol(yol, {
       ok:
-        `Tuzatish yozildi: ${r.darslar} dars, ${Number(r.summa).toLocaleString('ru-RU')} so‘m ayirildi` +
+        `Qayta hisob yozildi: ${r.darslar} dars, ${pul(r.summa)} so‘m ayirildi` +
         (qaytarish === 'naqd'
-          ? ` — ${Number(r.qaytarildi).toLocaleString('ru-RU')} so‘m naqd qaytarildi, direktorga xabar ketdi.`
+          ? ` — ${pul(r.qaytarildi)} so‘m naqd qaytarildi, direktorga xabar ketdi.`
           : '.') +
         (r.kutilmoqda ? ' Oylik qulflangan: ustoz qismi direktor qarorini kutadi.' : ''),
     }),
@@ -387,7 +388,7 @@ export async function tuzatishBekor(fd: FormData) {
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
 
   revalidatePath('/crm', 'layout')
-  redirect(xabarliYol(yol, { ok: 'Tuzatish bekor qilindi — o‘sha oy qayta hisoblandi.' }))
+  redirect(xabarliYol(yol, { ok: 'Qayta hisob bekor qilindi — o‘sha oy qayta hisoblandi.' }))
 }
 
 /** Tuzatishni tahrirlash (0120): summa va sabab, o'sha oy qayta hisoblanadi. */
@@ -405,7 +406,7 @@ export async function tuzatishTahrir(fd: FormData) {
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
 
   revalidatePath('/crm', 'layout')
-  redirect(xabarliYol(yol, { ok: 'Tuzatish o‘zgartirildi — o‘sha oy qayta hisoblandi.' }))
+  redirect(xabarliYol(yol, { ok: 'Qayta hisob o‘zgartirildi — o‘sha oy qayta hisoblandi.' }))
 }
 
 /** VIP — to'lamaydi, lekin faol hisobda (0030). Faqat admin va direktor. */

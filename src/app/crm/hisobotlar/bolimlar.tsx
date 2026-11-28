@@ -97,7 +97,7 @@ export function MoliyaBolimi({ m }: { m: HisobotMoliya }) {
             <thead className="border-y border-line bg-surface-2/60">
               <tr>
                 <th className={th}>Oy</th><th className={th}>To‘lashi kerak</th><th className={th}>Yig‘ildi</th>
-                <th className={th}>%</th><th className={th}>Chegirma</th><th className={th}>VIP</th><th className={th}>Tuzatish</th>
+                <th className={th}>%</th><th className={th}>Chegirma</th><th className={th}>VIP</th><th className={th}>Qayta hisob</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">

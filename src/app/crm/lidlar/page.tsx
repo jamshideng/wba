@@ -155,7 +155,7 @@ export default async function Lidlar({
 
       <Card className="flex flex-col">
         <details open={hammasi.length === 0 || s.yangi === '1'}>
-          <summary className="flex min-h-12 cursor-pointer items-center px-5 font-[family-name:var(--font-display)] text-[15px] font-bold">
+          <summary className="cursor-pointer px-5 py-3.5 font-[family-name:var(--font-display)] text-[15px] font-bold marker:text-[12px] marker:font-normal marker:text-ink-3">
             + Yangi lid
           </summary>
           <form action={lidQosh} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-3">

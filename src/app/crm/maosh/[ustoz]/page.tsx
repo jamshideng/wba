@@ -15,7 +15,7 @@ export const metadata = { title: 'Maosh' }
 export const dynamic = 'force-dynamic'
 
 const TURLAR: Record<MaoshHarakat['turi'], string> = {
-  avans: 'Avans', bonus: 'Bonus', jarima: 'Jarima', tuzatish: 'Tuzatish', oquvchi_tuzatish: 'O‘quvchi tuzatishi',
+  avans: 'Avans', bonus: 'Bonus', jarima: 'Jarima', tuzatish: 'Oylik tuzatishi', oquvchi_tuzatish: 'O‘quvchi qayta hisobi',
 }
 /** 0147: ayiriladigan harakatlar */
 const AYIR = new Set<MaoshHarakat['turi']>(['avans', 'jarima', 'oquvchi_tuzatish'])
@@ -138,7 +138,7 @@ export default async function UstozMaoshi({
       <Card className="px-5 py-4 text-[12.5px] leading-relaxed text-ink-2">
         Har o‘quvchi uchun: <b>stavka ÷ oydagi darslar</b> (kamida 12; haftada 2 kunlik guruhda jadvaldagi darslar) <b>× hisobga kirgan darslar</b>; 12 va undan ko‘p dars hisobga kirsa — <b>to‘liq stavka</b>. Ketma-ket 3 va undan
         ko‘p qoldirilgan darslar ayiriladi, 1–2 tasi to‘lanadi. Oy o‘rtasida kelgan o‘quvchi kelgan kunidan hisoblanadi.
-        Zamena darsi o‘tgan ustozga yoziladi. Admin o‘quvchiga tuzatish bergan dars esa (1 ta bo‘lsa ham) <b>stavka ÷ oydagi darslar</b>{' '}
+        Zamena darsi o‘tgan ustozga yoziladi. Admin o‘quvchi uchun qayta hisoblagan dars esa (1 ta bo‘lsa ham) <b>stavka ÷ oydagi darslar</b>{' '}
         qilib ayiriladi — 12 lik qoidadan keyin; ketma-ket qoldirish sababli ayirilgan dars ikkinchi marta ayirilmaydi.
         {jam?.aniqmas && (
           <span className="mt-2 block text-brand">Ba’zi guruhlarda stavka belgilanmagan — summa [ANIQLANMAGAN].</span>
@@ -219,7 +219,7 @@ export default async function UstozMaoshi({
                     <td className="tnum px-5 py-2.5">{a.sana.slice(8, 10)}.{a.sana.slice(5, 7)}</td>
                     <td className="px-3 py-2.5">{a.fish}</td>
                     <td className="px-3 py-2.5">
-                      {a.sabab === 'tuzatish' ? <Badge ton="accent">tuzatish</Badge> : <Badge ton="brand">ketma-ket 3+ kelmaslik</Badge>}
+                      {a.sabab === 'tuzatish' ? <Badge ton="accent">qayta hisob</Badge> : <Badge ton="brand">ketma-ket 3+ kelmaslik</Badge>}
                     </td>
                     <td className="tnum px-5 py-2.5 text-right font-[family-name:var(--font-mono)]">
                       {a.sabab === 'tuzatish' ? `−${pul(a.summa)}` : <span className="text-ink-3">hisobga kirmagan</span>}

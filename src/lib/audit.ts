@@ -49,7 +49,7 @@ export const JADVAL_NOMI: Record<string, string> = {
   enrollments: 'Guruhga yozilish',
   students: 'O‘quvchi',
   groups: 'Guruh',
-  tuzatishlar: 'Tuzatish',
+  tuzatishlar: 'Qayta hisob',
   xarajatlar: 'Xarajat',
   teacher_salaries: 'Ustoz stavkasi',
   maosh_harakatlar: 'Maosh (avans/bonus/jarima)',

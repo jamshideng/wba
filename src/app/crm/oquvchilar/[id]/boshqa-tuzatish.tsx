@@ -81,7 +81,7 @@ export function BoshqaTuzatish({
       <p className="text-[11.5px] text-ink-3">
         Faqat tanlangan oy uchun: o‘sha oyning to‘lovidan ayiriladi. Kelmagan darslar uchun yuqoridagi “Tuzatish” oynasidan foydalaning.
       </p>
-      <Yuborish kutish="…" tur="ikkilamchi">Boshqa tuzatishni yozish</Yuborish>
+      <Yuborish kutish="…" tur="ikkilamchi">Boshqa qayta hisobni yozish</Yuborish>
     </form>
   )
 }

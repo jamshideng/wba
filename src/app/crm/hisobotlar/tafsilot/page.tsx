@@ -20,7 +20,7 @@ const TURLAR = {
   chegirma: { nom: 'Chegirma', ustun: 'chegirma' },
   vip: { nom: 'VIP chegirma', ustun: 'vip' },
   chegirma_jami: { nom: 'Berilgan chegirma (VIP bilan)', ustun: 'chegirma_jami' },
-  tuzatish: { nom: 'Tuzatish', ustun: 'tuzatish' },
+  tuzatish: { nom: 'Qayta hisob', ustun: 'tuzatish' },
   keyingi: { nom: 'Keyingi oy kutilmoqda', ustun: 'summa' },
 } as const
 type Tur = keyof typeof TURLAR

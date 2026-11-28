@@ -471,7 +471,7 @@ export default async function OquvchiProfil({
 
                     {pulKoradi && tuzList.some((t) => t.enrollment_id === y.id) && (
                       <div className="flex w-full flex-col gap-1.5 rounded-[9px] bg-surface-2 px-3 py-2.5">
-                        <span className="lbl">Tuzatishlar (oydan ayirilgan)</span>
+                        <span className="lbl">Qayta hisoblar (oydan ayirilgan)</span>
                         {tuzList
                           .filter((t) => t.enrollment_id === y.id)
                           .map((t) => (
@@ -489,7 +489,7 @@ export default async function OquvchiProfil({
                                   <span className="flex flex-wrap items-center gap-1">
                                     {t.turi === 'qolda' && (
                                     <details className="group">
-                                      <summary className="flex min-h-11 cursor-pointer items-center px-2 text-[12px] text-ink-3 hover:text-ink">Tahrirlash</summary>
+                                      <summary className="flex min-h-11 cursor-pointer list-none items-center rounded-[9px] border border-line px-3 text-[12px] text-ink-2 transition hover:border-ink-3 hover:text-ink">Tahrirlash</summary>
                                       <form action={tuzatishTahrir} className="mt-1 flex flex-wrap items-end gap-2">
                                         <input type="hidden" name="student_id" value={oquvchi.id} />
                                         <input type="hidden" name="id" value={t.id} />
@@ -506,7 +506,7 @@ export default async function OquvchiProfil({
                                     <form action={tuzatishBekor}>
                                       <input type="hidden" name="student_id" value={oquvchi.id} />
                                       <input type="hidden" name="id" value={t.id} />
-                                      <button type="submit" className="min-h-11 px-2 text-[12px] text-ink-3 transition hover:text-brand">
+                                      <button type="submit" className="min-h-11 rounded-[9px] border border-line px-3 text-[12px] text-ink-2 transition hover:border-brand-line hover:text-brand">
                                         Bekor qilish
                                       </button>
                                     </form>
@@ -533,7 +533,7 @@ export default async function OquvchiProfil({
                         />
                         <details className="mt-3 border-t border-line-soft pt-2">
                           <summary className="cursor-pointer py-3 text-[12px] text-ink-3 hover:text-ink">
-                            Boshqa tuzatish (qo‘lda summa)
+                            Boshqa qayta hisob (qo‘lda summa)
                           </summary>
                           <BoshqaTuzatish
                             studentId={oquvchi.id}
@@ -901,8 +901,11 @@ export default async function OquvchiProfil({
                 </Link>
               </div>
             )}
+            {/* dizayn-1: yig'iladigan — Aloqa qisqa bo'lsin, Davomat yuqoriroqda ko'rinsin */}
             {otaOnaAdmin && !otaOnaHisob && otaOnalar.length > 0 && (
-              <form action={farzandBiriktir} className="flex flex-col gap-2 rounded-[10px] border border-dashed border-line px-4 py-3 sm:flex-row sm:items-end">
+              <details className="rounded-[10px] border border-dashed border-line px-4 py-1">
+              <summary className="cursor-pointer py-2.5 text-[12px] text-ink-3 hover:text-ink">Ota-onaga biriktirish (hali bog‘lanmagan)</summary>
+              <form action={farzandBiriktir} className="flex flex-col gap-2 pb-3 sm:flex-row sm:items-end">
                 <input type="hidden" name="student" value={oquvchi.id} />
                 <input type="hidden" name="qaytish" value={`/crm/oquvchilar/${oquvchi.id}`} />
                 <Maydon nom="Mavjud ota-onaga biriktirish" izoh="Aka-uka / opa-singil: bir ota-ona hisobiga bir nechta farzand" className="flex-1">
@@ -920,6 +923,7 @@ export default async function OquvchiProfil({
                   yoki yangi ota-ona
                 </Link>
               </form>
+              </details>
             )}
           </div>
         </Card>

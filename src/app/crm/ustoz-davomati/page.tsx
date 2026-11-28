@@ -69,7 +69,7 @@ export default async function UstozDavomati({
 
       <Card className="flex flex-col">
         <details>
-          <summary className="flex min-h-12 cursor-pointer items-center px-5 font-[family-name:var(--font-display)] text-[15px] font-bold">
+          <summary className="cursor-pointer px-5 py-3.5 font-[family-name:var(--font-display)] text-[15px] font-bold marker:text-[12px] marker:font-normal marker:text-ink-3">
             + Kechikish qo‘shish
           </summary>
           <form action={kechikishQosh} className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-[150px_minmax(0,1fr)_120px]">

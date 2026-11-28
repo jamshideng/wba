@@ -4,8 +4,10 @@ import type { DayType } from '@/lib/types'
 export function pul(n: number | string | null | undefined): string {
   const v = Number(n ?? 0)
   if (!Number.isFinite(v)) return '0'
-  return new Intl.NumberFormat('uz-UZ', { maximumFractionDigits: 0 })
-    .format(v)
+  // Lokalga bog'liq emas (dizayn-1): Intl 'uz-UZ' serverda probel, ba'zi brauzerlarda
+  // vergul ("650,000") berardi — client komponentlarda summalar har xil chiqardi.
+  const r = Math.round(Math.abs(v))
+  return `${v < 0 && r !== 0 ? '-' : ''}${String(r).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}`
     .replace(/ /g, ' ')
 }
 
