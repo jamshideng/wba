@@ -881,7 +881,7 @@ begin
   perform tuzatish_qosh((select id from enrollments where student_id = 'S002' and group_id = 'NX'), '2026-09', 100000, 'kasal');
   raise exception 'XATO: ustoz tuzatish kiritdi!';
 exception when others then
-  if sqlerrm not like '%admin yoki direktor%' then raise; end if;
+  if sqlerrm not like '%faqat admin%' then raise; end if;   -- 0148: matn "Qayta hisobni faqat admin, direktor yoki menejer…"
   raise notice 'OK: tuzatish faqat admin/direktorga';
 end $$;
 
@@ -3804,4 +3804,29 @@ begin
     raise exception 'XATO: 0147 — eski tuzatishlar summasi o''zgardi';
   end if;
   raise notice 'OK: 0147 — 42 308 × 2 = 84 616, naqd faqat ortiqcha (22 308), ikki marta yo''q, keldi/belgilanmagan yopiq, 600 000, ketma-ket ustma-ust emas, bekor, qolda ogohlantirish, qulf → keyingi oy';
+end $$;
+
+-- ============================================================
+--  0148 — qayta hisob matnlari (faqat matn, mantiq o'zgarmagan)
+-- ============================================================
+\echo '--- 0148: qayta hisob matnlari ---'
+do $$
+declare f text;
+begin
+  if not exists (select 1 from bildirishnomalar where manba = 'tuzatish_qulf' and sarlavha like '%qayta hisoblandi%') then
+    raise exception 'XATO: 0148 — qulf bildirishnomasi eski matnda';
+  end if;
+  if not exists (select 1 from maosh_harakatlar where turi = 'oquvchi_tuzatish' and izoh like 'Sentabr qayta hisobi:%') then
+    raise exception 'XATO: 0148 — ustoz panelidagi izoh eski matnda: %',
+      (select string_agg(izoh, ' | ') from maosh_harakatlar where turi = 'oquvchi_tuzatish');
+  end if;
+  foreach f in array array['tuzatish_darslar_qosh(uuid, text, uuid[], text, text, boolean)', 'tuzatish_oyna(uuid, text)',
+                           'tuzatish_bekor(bigint, text)', 'tuzatish_maosh_qaror(bigint, text)',
+                           'tuzatish_qosh(uuid, text, numeric, text)', 'tuzatish_tahrir(bigint, numeric, text)', 'tuzatish_ochirilmaydi()'] loop
+    -- foydalanuvchiga ko'rinadigan eski matnlar qolmasin (izoh qatorlari hisobga olinmaydi)
+    if pg_get_functiondef(f::regprocedure) ~ '(''Tuzatish|tuzatish berildi|'' tuzatishi: ''|qo''''lda tuzatish bor|— tuzatish #|Bu tuzatish bo''''yicha)' then
+      raise exception 'XATO: 0148 — % da eski "tuzatish" matni qoldi', f;
+    end if;
+  end loop;
+  raise notice 'OK: 0148 — bildirishnoma, ustoz izohi va xato xabarlari "qayta hisob"';
 end $$;
