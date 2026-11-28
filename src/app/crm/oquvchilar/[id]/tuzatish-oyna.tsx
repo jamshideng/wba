@@ -57,11 +57,20 @@ export function TuzatishOynasi({
   }, [enrollmentId, davr])
 
   const k = tanlangan.size
-  // Bazadagi formula bilan bir xil: round(oylik × k / n) — 0,5 va undan yuqori yuqoriga
-  const summa = useMemo(() => {
-    if (!oyna?.oylik || !oyna.n) return 0
-    return Math.round((Number(oyna.oylik) * k) / oyna.n)
-  }, [oyna, k])
+  // Bazadagi formula bilan bir xil: round(oylik ÷ n) × k — ko'rsatilgan raqam = haqiqiy summa
+  const birDars = oyna?.bir_dars ? Number(oyna.bir_dars) : 0
+  const summa = birDars * k
+  // Ortiqcha to'lov: shu oy uchun to'langan − tuzatishdan keyingi summa (bazadagi bilan bir xil)
+  const ortiqcha = useMemo(() => {
+    if (!oyna || k === 0) return 0
+    return Math.max(0, Number(oyna.tolangan) - (Number(oyna.qoldiq) - summa))
+  }, [oyna, k, summa])
+  // Naqd — faqat shu tuzatish summasi, ortiqchadan ko'p emas (bazada ham least(summa, ortiqcha))
+  const naqdSumma = Math.min(summa, ortiqcha)
+  const [qaytarish, setQaytarish] = useState<'keyingi_oy' | 'naqd'>('keyingi_oy')
+  useEffect(() => {
+    if (ortiqcha === 0) setQaytarish('keyingi_oy')
+  }, [ortiqcha])
 
   function almashtir(id: string) {
     setTanlangan((eski) => {
@@ -130,7 +139,15 @@ export function TuzatishOynasi({
                   >
                     <span className="tnum font-[family-name:var(--font-mono)]">{sana(d.sana).slice(0, 5)}</span>
                     <span className="text-[10.5px]">
-                      {d.holat === 'ayirilgan' ? 'ayirilgan' : d.holat === 'belgilanmagan' ? 'belgisiz' : d.zamena ? 'zamena' : ''}
+                      {d.holat === 'ayirilgan'
+                        ? 'ayirilgan'
+                        : d.holat === 'belgilanmagan'
+                          ? 'belgisiz'
+                          : d.holat === 'otilmagan'
+                            ? 'o‘tilmagan'
+                            : d.zamena
+                              ? 'zamena'
+                              : ''}
                     </span>
                   </button>
                 )
@@ -143,6 +160,7 @@ export function TuzatishOynasi({
             <span className="flex items-center gap-1"><i className="inline-block size-2.5 rounded-sm bg-brand" /> kelmadi (tanlanadi)</span>
             <span className="flex items-center gap-1"><i className="inline-block size-2.5 rounded-sm bg-warn" /> belgilanmagan — avval ustoz davomatni belgilashi kerak</span>
             <span className="flex items-center gap-1"><i className="inline-block size-2.5 rounded-sm bg-ink-4" /> ayirilgan</span>
+            <span className="flex items-center gap-1"><i className="inline-block size-2.5 rounded-sm border border-dashed border-ink-4" /> hali o‘tilmagan</span>
           </div>
 
           {oyna.qulf && (
@@ -173,22 +191,41 @@ export function TuzatishOynasi({
               <span className="text-ink-3">Kelmagan darslarni tanlang</span>
             ) : (
               <span className="tnum font-[family-name:var(--font-mono)] font-semibold">
-                {k} dars × {pul(oyna.bir_dars ?? 0)} = {pul(summa)} so‘m
+                {k} dars × {pul(birDars)} = {pul(summa)} so‘m
               </span>
             )}
           </div>
 
-          <fieldset className="flex flex-col gap-1 text-[12.5px]">
-            <legend className="lbl mb-1">Oy to‘lab bo‘lingan bo‘lsa</legend>
-            <label className="flex min-h-11 cursor-pointer items-center gap-2">
-              <input type="radio" name="qaytarish" value="keyingi_oy" defaultChecked className="size-4" />
-              Keyingi oyga o‘tkazish
-            </label>
-            <label className="flex min-h-11 cursor-pointer items-center gap-2">
-              <input type="radio" name="qaytarish" value="naqd" className="size-4" />
-              Naqd qaytarish (kassadan chiqadi, direktorga xabar boradi)
-            </label>
-          </fieldset>
+          {/* Tanlov faqat ortiqcha to'lov chiqqanda; aks holda summa shu oy qarzidan ayiriladi */}
+          {ortiqcha > 0 ? (
+            <fieldset className="flex flex-col gap-1 text-[12.5px]">
+              <legend className="lbl mb-1">Oy to‘langan — tuzatishdan keyin ortiqcha {pul(ortiqcha)} so‘m</legend>
+              <label className="flex min-h-11 cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="qaytarish"
+                  value="keyingi_oy"
+                  checked={qaytarish === 'keyingi_oy'}
+                  onChange={() => setQaytarish('keyingi_oy')}
+                  className="size-4"
+                />
+                Keyingi oyga o‘tkazish — {pul(naqdSumma)} so‘m keyingi oy to‘lovidan ayiriladi
+              </label>
+              <label className="flex min-h-11 cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="qaytarish"
+                  value="naqd"
+                  checked={qaytarish === 'naqd'}
+                  onChange={() => setQaytarish('naqd')}
+                  className="size-4"
+                />
+                Naqd qaytarish — {pul(naqdSumma)} so‘m (kassadan chiqadi, direktorga xabar boradi)
+              </label>
+            </fieldset>
+          ) : (
+            <input type="hidden" name="qaytarish" value="keyingi_oy" />
+          )}
 
           <Maydon nom="Izoh" izoh="Ixtiyoriy">
             <input name="izoh" placeholder="Masalan: kasal" className={kirishKlass} />

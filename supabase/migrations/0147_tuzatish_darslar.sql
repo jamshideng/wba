@@ -3,8 +3,9 @@
 --
 -- Admin endi summa yozmaydi: oy darslaridan "kelmadi" sanalarini tanlaydi,
 -- summa bazada hisoblanadi:
---   chegirma = round(oylik_tolov × tanlangan / oydagi_darslar)
---   (oddiy yaxlitlash: 0,5 va undan yuqori — yuqoriga; ustoz tomonida ham round)
+--   chegirma = round(oylik_tolov / oydagi_darslar) × tanlangan
+--   (oddiy yaxlitlash: 0,5 va undan yuqori — yuqoriga; ustoz tomonida ham
+--    round(stavka / n) × tuzatilgan darslar — ko'rsatilgan raqam = haqiqiy summa)
 --   oylik_tolov    = invoices.summa + invoices.tuzatish (chegirmalardan keyin,
 --                    tuzatishlardan oldin)
 --   oydagi_darslar = oy tugagan bo'lsa o'tilgan darslar, tugamagan bo'lsa
@@ -297,6 +298,10 @@ begin
     'davr', p_davr,
     'oylik', case when v_inv.id is null then null else v_inv.summa + v_inv.tuzatish end,
     'tuzatish_jami', coalesce(v_inv.tuzatish, 0),
+    -- hozirgi qoldiq summa va shu oy uchun to'langan — ortiqcha to'lovni oynada hisoblash uchun
+    'qoldiq', coalesce(v_inv.summa, 0),
+    'tolangan', (select coalesce(sum(p.summa), 0) from payments p
+                 where p.enrollment_id = p_enrollment and p.davr = p_davr and not p.bekor),
     'n', v_n,
     'bir_dars', case when v_inv.id is null or v_n = 0 then null
                      else round((v_inv.summa + v_inv.tuzatish) / v_n) end,
@@ -342,7 +347,11 @@ declare
   v_n       int;
   v_k       int;
   v_oylik   numeric;
+  v_bir     numeric;
   v_summa   numeric;
+  v_tol     numeric;
+  v_ortiqcha numeric;
+  v_qaytar  numeric;
   v_id      bigint;
   v_qulf    boolean;
   v_pay     bigint;
@@ -414,13 +423,26 @@ begin
     raise exception 'Bu oyda guruh darslari topilmadi.';
   end if;
   v_oylik := v_inv.summa + v_inv.tuzatish;
-  v_summa := round(v_oylik * v_k / v_n);
+  -- Jamshid 28.11: bir dars narxi yaxlitlanadi, keyin darslar soniga ko'paytiriladi —
+  -- oynada ko'rsatilgan "k × bir dars" bilan haqiqiy summa doim bir xil
+  v_bir   := round(v_oylik / v_n);
+  v_summa := v_bir * v_k;
   if v_summa <= 0 then
     raise exception 'Hisoblangan summa 0 — oylik to''lov yo''q.';
   end if;
   if v_summa > v_inv.summa then
     raise exception 'Chegirma (% so''m) oyning qolgan summasidan (% so''m) katta.', v_summa, v_inv.summa;
   end if;
+
+  -- Ortiqcha to'lov: shu oy uchun to'langan − tuzatishdan keyingi summa
+  select coalesce(sum(p.summa), 0) into v_tol
+  from payments p where p.enrollment_id = p_enrollment and p.davr = p_davr and not p.bekor;
+  v_ortiqcha := greatest(0, v_tol - (v_inv.summa - v_summa));
+  if p_qaytarish = 'naqd' and v_ortiqcha <= 0 then
+    raise exception 'Bu oy uchun ortiqcha to''lov chiqmaydi — naqd qaytarib bo''lmaydi.';
+  end if;
+  -- Naqd faqat ortiqcha qismi qaytariladi (oy qisman to'langan bo'lsa — qolgani qarzni yopadi)
+  v_qaytar := least(v_summa, v_ortiqcha);
 
   select string_agg(to_char(l.sana, 'DD.MM'), ', ' order by l.sana) into v_sanalar
   from lessons l where l.id = any (p_darslar);
@@ -445,7 +467,7 @@ begin
   if p_qaytarish = 'naqd' then
     insert into payments (student_id, enrollment_id, sana, davr, summa, usul, qabul_qildi, izoh, qaytarish,
                           tasdiqlangan, tasdiqlangan_vaqt)
-    values (e.student_id, p_enrollment, bugun_toshkent(), p_davr, -v_summa, 'naqd', auth.uid(),
+    values (e.student_id, p_enrollment, bugun_toshkent(), p_davr, -v_qaytar, 'naqd', auth.uid(),
             'Naqd qaytarildi — tuzatish #' || v_id, true, true, now())
     returning id into v_pay;
     update tuzatishlar set payment_id = v_pay where id = v_id;
@@ -453,7 +475,7 @@ begin
     -- Kassadan haqiqiy pul chiqadi — direktorga xabar (tasdiq shart emas)
     select fish into v_fish from students where id = e.student_id;
     insert into bildirishnomalar (turi, sarlavha, matn, havola, havola_matn, kimga, filtr, tugash, yaratdi, manba)
-    values ('eslatma', 'Kassadan naqd qaytarildi: ' || v_summa || ' so''m',
+    values ('eslatma', 'Kassadan naqd qaytarildi: ' || v_qaytar || ' so''m',
             left(coalesce(v_fish, e.student_id) || ', ' || p_davr || ', darslar: ' || v_sanalar
                  || coalesce(E'\nIzoh: ' || nullif(trim(p_izoh), ''), ''), 2000),
             '/crm/oquvchilar/' || e.student_id, 'Ko''rish', array['xodim'],
@@ -472,7 +494,8 @@ begin
   end if;
 
   return jsonb_build_object('id', v_id, 'summa', v_summa, 'darslar', v_k, 'n', v_n,
-                            'bir_dars', round(v_oylik / v_n), 'kutilmoqda', v_qulf);
+                            'bir_dars', v_bir, 'kutilmoqda', v_qulf,
+                            'qaytarildi', case when p_qaytarish = 'naqd' then v_qaytar else 0 end);
 end;
 $$;
 revoke execute on function tuzatish_darslar_qosh(uuid, text, uuid[], text, text, boolean) from public, anon;
@@ -638,7 +661,7 @@ language sql stable security definer set search_path = public as $$
                         then sum(count(*) filter (where not s.ayir)) over (partition by s.eid)
                         else s.n end)
            /* 0147: tuzatilgan dars — 12 lik qoidadan keyin, har doim stavka/n */
-           - round(gs.stavka * count(*) filter (where s.tuz and not s.ayir) / s.n)),
+           - round(gs.stavka / s.n) * count(*) filter (where s.tuz and not s.ayir)),
          bool_or(s.zamena)
   from maosh_dars_holati(p_davr) s
   join groups g on g.id = s.group_id

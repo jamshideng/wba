@@ -313,6 +313,10 @@ export type TuzatishOyna = {
   davr: string
   oylik: number | null
   tuzatish_jami: number
+  /** hisob-fakturaning hozirgi summasi (tuzatishlardan keyin) */
+  qoldiq: number
+  /** shu oy uchun to'langan (naqd qaytarishlar ayirilgan) */
+  tolangan: number
   n: number
   bir_dars: number | null
   qulf: boolean
@@ -355,13 +359,15 @@ export async function tuzatishDarslarQosh(fd: FormData) {
   })
   if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
 
-  const r = data as unknown as { summa: number; darslar: number; kutilmoqda: boolean }
+  const r = data as unknown as { summa: number; darslar: number; kutilmoqda: boolean; qaytarildi: number }
   revalidatePath('/crm', 'layout')
   redirect(
     xabarliYol(yol, {
       ok:
         `Tuzatish yozildi: ${r.darslar} dars, ${Number(r.summa).toLocaleString('ru-RU')} so‘m ayirildi` +
-        (qaytarish === 'naqd' ? ' — naqd qaytarildi, direktorga xabar ketdi.' : ' — keyingi oyga o‘tadi.') +
+        (qaytarish === 'naqd'
+          ? ` — ${Number(r.qaytarildi).toLocaleString('ru-RU')} so‘m naqd qaytarildi, direktorga xabar ketdi.`
+          : '.') +
         (r.kutilmoqda ? ' Oylik qulflangan: ustoz qismi direktor qarorini kutadi.' : ''),
     }),
   )

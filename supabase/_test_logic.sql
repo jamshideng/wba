@@ -3596,19 +3596,22 @@ begin
     raise exception 'XATO: 0147 — eski tuzatish qolda deb belgilanmadi';
   end if;
 
-  -- Formula: 550 000, 13 dars, 2 kelmadi → 84 615 (TZB, naqd qaytarish)
+  -- Formula (Jamshid 28.11): round(550 000 / 13) × 2 = 42 308 × 2 = 84 616 (TZB, oy to'liq to'langan → naqd)
   select id into v_e from enrollments where student_id = 'TZB' and group_id = 'TZ1';
+  insert into payments (student_id, enrollment_id, sana, davr, summa, usul)
+  values ('TZB', v_e, bugun_toshkent(), '2026-09', 550000, 'naqd');
   v_r := tuzatish_darslar_qosh(v_e, '2026-09',
            array(select l.id from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i in (3, 7)),
            'kasal', 'naqd');
-  -- round: 1 100 000 / 13 = 84 615,38 → 84 615; bir dars 42 307,69 → 42 308 (floor emas)
-  if (v_r ->> 'summa')::numeric <> 84615 or (v_r ->> 'n')::int <> 13 or (v_r ->> 'bir_dars')::numeric <> 42308 then
-    raise exception 'XATO: 0147 — summa % (kutilgan 84615), n %, bir dars % (kutilgan 42308)', v_r ->> 'summa', v_r ->> 'n', v_r ->> 'bir_dars';
+  -- bir dars 42 307,69 → 42 308 (round), summa = 42 308 × 2 — ko'rsatilgan raqam bilan bir xil
+  if (v_r ->> 'summa')::numeric <> 84616 or (v_r ->> 'n')::int <> 13 or (v_r ->> 'bir_dars')::numeric <> 42308
+     or (v_r ->> 'summa')::numeric <> (v_r ->> 'bir_dars')::numeric * 2 then
+    raise exception 'XATO: 0147 — summa % (kutilgan 84616), n %, bir dars % (kutilgan 42308)', v_r ->> 'summa', v_r ->> 'n', v_r ->> 'bir_dars';
   end if;
-  if (select summa from invoices where enrollment_id = v_e and davr = '2026-09') <> 550000 - 84615 then
+  if (select summa from invoices where enrollment_id = v_e and davr = '2026-09') <> 550000 - 84616 then
     raise exception 'XATO: 0147 — hisob-faktura kamaymadi';
   end if;
-  if (select summa from payments where enrollment_id = v_e and qaytarish) <> -84615 then
+  if (select summa from payments where enrollment_id = v_e and qaytarish) <> -84616 or (v_r ->> 'qaytarildi')::numeric <> 84616 then
     raise exception 'XATO: 0147 — naqd qaytarish manfiy to''lov yozilmadi';
   end if;
   if not (select tasdiqlangan and tasdiqladi is null from payments where enrollment_id = v_e and qaytarish) then
@@ -3618,10 +3621,8 @@ begin
     raise exception 'XATO: 0147 — direktorga naqd qaytarish xabari ketmadi';
   end if;
   -- Kassa: to'lovlar soniga qaytarish kirmaydi; tushum / qaytarish / sof
-  insert into payments (student_id, enrollment_id, sana, davr, summa, usul)
-  values ('TZB', v_e, bugun_toshkent(), '2026-09', 550000, 'naqd');
   v_r := tushum_hisobot_ichki(bugun_toshkent(), bugun_toshkent());
-  if (v_r ->> 'qaytarish')::numeric < 84615
+  if (v_r ->> 'qaytarish')::numeric < 84616
      or (v_r ->> 'sof')::numeric <> (v_r ->> 'tushum')::numeric - (v_r ->> 'qaytarish')::numeric
      or (v_r ->> 'soni')::int <> (select count(*) from payments where not bekor and sana = bugun_toshkent() and summa > 0) then
     raise exception 'XATO: 0147 — kassa hisoboti: %', v_r - 'usul' - 'ustoz' - 'yonalish' - 'kunlar' - 'qilinmagan';
@@ -3689,8 +3690,21 @@ begin
 
   -- TZC: ketma-ket 3 dan biri tuzatilsa — ustozdan qo'shimcha ayirilmaydi (10/13 = 500 000)
   select id into v_e from enrollments where student_id = 'TZC' and group_id = 'TZ1';
-  perform tuzatish_darslar_qosh(v_e, '2026-09',
-    array(select l.id from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i = 5));
+  select l.id into v_l from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i = 5;
+  -- To'lov yo'q — ortiqcha chiqmaydi, naqd qaytarib bo'lmaydi
+  begin
+    perform tuzatish_darslar_qosh(v_e, '2026-09', array[v_l], null, 'naqd');
+    raise exception 'XATO: 0147 — ortiqcha to''lovsiz naqd qaytarildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  -- Qisman to'langan (530 000): yangi summa 550 000 − 42 308 = 507 692 → faqat 22 308 naqd qaytadi
+  insert into payments (student_id, enrollment_id, sana, davr, summa, usul)
+  values ('TZC', v_e, bugun_toshkent(), '2026-09', 530000, 'naqd');
+  v_r := tuzatish_darslar_qosh(v_e, '2026-09', array[v_l], null, 'naqd');
+  if (v_r ->> 'qaytarildi')::numeric <> 22308
+     or (select summa from payments where enrollment_id = v_e and qaytarish and not bekor) <> -22308 then
+    raise exception 'XATO: 0147 — qisman to''langan oyda naqd qaytarish: %', v_r ->> 'qaytarildi';
+  end if;
   if (select summa from maosh_qatorlari('2026-09') where group_id = 'TZ1' and student_id = 'TZC') <> 500000 then
     raise exception 'XATO: 0147 — ketma-ket kelmaslik + tuzatish ikki marta ayirildi';
   end if;
@@ -3747,5 +3761,5 @@ begin
       (select id from enrollments where group_id = 'TZ1')) <> v_inv then
     raise exception 'XATO: 0147 — eski tuzatishlar summasi o''zgardi';
   end if;
-  raise notice 'OK: 0147 — 84 615, ikki marta yo''q, keldi/belgilanmagan yopiq, 600 000, ketma-ket ustma-ust emas, bekor, qolda ogohlantirish, qulf → keyingi oy';
+  raise notice 'OK: 0147 — 42 308 × 2 = 84 616, naqd faqat ortiqcha (22 308), ikki marta yo''q, keldi/belgilanmagan yopiq, 600 000, ketma-ket ustma-ust emas, bekor, qolda ogohlantirish, qulf → keyingi oy';
 end $$;
