@@ -270,7 +270,7 @@ export async function chegirmaOzgartir(fd: FormData) {
  * Faqat admin va direktor; bazada ham tekshiriladi.
  */
 export async function tuzatishQosh(fd: FormData) {
-  await talabRol('admin', 'direktor')
+  await talabRol('admin', 'direktor', 'manager')
   const studentId = matn(fd.get('student_id'))
   const enrollmentId = matn(fd.get('enrollment_id'))
   const yol = `/crm/oquvchilar/${studentId}`
@@ -281,9 +281,20 @@ export async function tuzatishQosh(fd: FormData) {
   const sabab = matn(fd.get('sabab'))
   if (!davr || !/^\d{4}-(0[1-9]|1[0-2])$/.test(davr)) redirect(xabarliYol(yol, { xato: 'Oyni tanlang.' }))
   if (!summa) redirect(xabarliYol(yol, { xato: 'Ayiriladigan summani yozing. Masalan: 150000 yoki 150.' }))
-  if (!sabab) redirect(xabarliYol(yol, { xato: 'Sababini yozing — masalan: kasal, 3 dars.' }))
+  if (!sabab) redirect(xabarliYol(yol, { xato: 'Sababini yozing — masalan: oy o‘rtasida boshladi.' }))
 
   const supabase = await createClient()
+  // 0147: shu oyda dars bo'yicha tuzatish bo'lsa — kelmagan dars ikki marta berilmasin
+  const { count: darslarSoni } = await supabase
+    .from('tuzatishlar')
+    .select('id', { count: 'exact', head: true })
+    .eq('enrollment_id', enrollmentId!)
+    .eq('davr', davr!)
+    .eq('turi', 'darslar')
+    .eq('bekor', false)
+  if ((darslarSoni ?? 0) > 0 && fd.get('tekshirdim') !== '1') {
+    redirect(xabarliYol(yol, { xato: 'Bu oyda dars bo‘yicha tuzatish bor — “Tekshirdim, ikki marta emas” belgisini qo‘ying.' }))
+  }
   const { error } = await supabase.rpc('tuzatish_qosh', {
     p_enrollment: enrollmentId!,
     p_davr: davr!,
@@ -296,8 +307,68 @@ export async function tuzatishQosh(fd: FormData) {
   redirect(xabarliYol(yol, { ok: `Tuzatish yozildi: ${davr} oyidan ${summa!.toLocaleString('ru-RU')} so‘m ayirildi.` }))
 }
 
+export type TuzatishDarsHolati = 'keldi' | 'kelmadi' | 'belgilanmagan' | 'ayirilgan' | 'otilmagan'
+export type TuzatishOyna = {
+  enrollment_id: string
+  davr: string
+  oylik: number | null
+  tuzatish_jami: number
+  n: number
+  bir_dars: number | null
+  qulf: boolean
+  darslar: { lesson_id: string | null; sana: string; zamena: boolean; holat: TuzatishDarsHolati; tuzatish_id: number | null }[]
+  qolda: { id: number; summa: number; sabab: string; sana: string }[]
+}
+
+/** 0147: tuzatish oynasi — oy darslari va holati (rahbariyat; bazada ham tekshiriladi) */
+export async function tuzatishOynaOl(enrollmentId: string, davr: string): Promise<{ data?: TuzatishOyna; xato?: string }> {
+  await talabRol('admin', 'direktor', 'manager')
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(davr)) return { xato: 'Oy noto‘g‘ri.' }
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('tuzatish_oyna', { p_enrollment: enrollmentId, p_davr: davr })
+  if (error) return { xato: xatoMatni(error) }
+  return { data: data as unknown as TuzatishOyna }
+}
+
+/** 0147: tanlangan kelmagan darslar — summa bazada hisoblanadi */
+export async function tuzatishDarslarQosh(fd: FormData) {
+  await talabRol('admin', 'direktor', 'manager')
+  const studentId = matn(fd.get('student_id'))
+  const enrollmentId = matn(fd.get('enrollment_id'))
+  const yol = `/crm/oquvchilar/${studentId}`
+  if (!studentId || !enrollmentId) redirect('/crm/oquvchilar')
+
+  const davr = matn(fd.get('davr'))
+  const darslar = fd.getAll('dars').map(String).filter((x) => /^[0-9a-f-]{36}$/.test(x))
+  const qaytarish = fd.get('qaytarish') === 'naqd' ? 'naqd' : 'keyingi_oy'
+  if (!davr || !/^\d{4}-(0[1-9]|1[0-2])$/.test(davr)) redirect(xabarliYol(yol, { xato: 'Oyni tanlang.' }))
+  if (darslar.length === 0) redirect(xabarliYol(yol, { xato: 'Kamida bitta kelmagan darsni tanlang.' }))
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('tuzatish_darslar_qosh', {
+    p_enrollment: enrollmentId!,
+    p_davr: davr!,
+    p_darslar: darslar,
+    p_izoh: matn(fd.get('izoh')),
+    p_qaytarish: qaytarish,
+    p_tekshirdim: fd.get('tekshirdim') === '1',
+  })
+  if (error) redirect(xabarliYol(yol, { xato: xatoMatni(error) }))
+
+  const r = data as unknown as { summa: number; darslar: number; kutilmoqda: boolean }
+  revalidatePath('/crm', 'layout')
+  redirect(
+    xabarliYol(yol, {
+      ok:
+        `Tuzatish yozildi: ${r.darslar} dars, ${Number(r.summa).toLocaleString('ru-RU')} so‘m ayirildi` +
+        (qaytarish === 'naqd' ? ' — naqd qaytarildi, direktorga xabar ketdi.' : ' — keyingi oyga o‘tadi.') +
+        (r.kutilmoqda ? ' Oylik qulflangan: ustoz qismi direktor qarorini kutadi.' : ''),
+    }),
+  )
+}
+
 export async function tuzatishBekor(fd: FormData) {
-  await talabRol('admin', 'direktor')
+  await talabRol('admin', 'direktor', 'manager')
   const studentId = matn(fd.get('student_id'))
   const id = sonOqi(fd.get('id'))
   const yol = `/crm/oquvchilar/${studentId}`
@@ -313,7 +384,7 @@ export async function tuzatishBekor(fd: FormData) {
 
 /** Tuzatishni tahrirlash (0120): summa va sabab, o'sha oy qayta hisoblanadi. */
 export async function tuzatishTahrir(fd: FormData) {
-  await talabRol('admin', 'direktor')
+  await talabRol('admin', 'direktor', 'manager')
   const studentId = matn(fd.get('student_id'))
   const id = sonOqi(fd.get('id'))
   const yol = `/crm/oquvchilar/${studentId}`

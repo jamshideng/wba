@@ -94,7 +94,10 @@ async function oraliqMatn(dan: string, gacha: string, nom: 'HAFTALIK' | 'OYLIK')
 
   t.push('<b>TUSHUM</b>')
   for (const u of h?.usul ?? []) t.push(`${u.nom === 'aniqlanmagan' ? 'Usuli yozilmagan' : html(royxatNomi(usulRoyxat, u.nom))} — <b>${pul(u.summa)}</b> so‘m`)
-  t.push(`<b>JAMI — ${pul(h?.tushum ?? 0)} so‘m</b> (${h?.soni ?? 0} ta to‘lov)`)
+  t.push(`<b>TUSHUM — ${pul(h?.tushum ?? 0)} so‘m</b> (${h?.soni ?? 0} ta to‘lov)`)
+  // 0147: qaytarish va sof alohida qatorda
+  t.push(`Naqd qaytarildi — ${Number(h?.qaytarish ?? 0) > 0 ? '−' : ''}${pul(h?.qaytarish ?? 0)} so‘m`)
+  t.push(`<b>SOF — ${pul(h?.sof ?? 0)} so‘m</b>`)
   if (h?.tasdiqlanmagan) t.push(`Direktor tasdiqlamagan — ${pul(h.tasdiqlanmagan)} so‘m`)
   t.push('')
 

@@ -114,6 +114,27 @@ export function UmumiyBolim({
         />
       </div>
 
+      {/* 0147: kassa — kirim, naqd qaytarish va sof alohida; to'lovlar soniga qaytarish kirmaydi */}
+      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-[12px] border border-line bg-line sm:grid-cols-3">
+        <div className="flex flex-col gap-0.5 bg-surface px-4 py-3">
+          <span className="lbl">Tushum (kirim)</span>
+          <span className="tnum font-[family-name:var(--font-mono)] text-[17px] font-semibold">{pul(h.tushum)} so‘m</span>
+          <span className="text-[11.5px] text-ink-3">{h.soni} ta to‘lov · {h.odam} o‘quvchi</span>
+        </div>
+        <div className="flex flex-col gap-0.5 bg-surface px-4 py-3">
+          <span className="lbl">Naqd qaytarildi</span>
+          <span className={`tnum font-[family-name:var(--font-mono)] text-[17px] font-semibold ${Number(h.qaytarish) > 0 ? 'text-brand' : 'text-ink-3'}`}>
+            {Number(h.qaytarish) > 0 ? '−' : ''}{pul(h.qaytarish)} so‘m
+          </span>
+          <span className="text-[11.5px] text-ink-3">tuzatishdan keyin kassadan</span>
+        </div>
+        <div className="flex flex-col gap-0.5 bg-surface px-4 py-3">
+          <span className="lbl">Sof</span>
+          <span className="tnum font-[family-name:var(--font-mono)] text-[17px] font-semibold text-ok">{pul(h.sof)} so‘m</span>
+          <span className="text-[11.5px] text-ink-3">tushum − qaytarish</span>
+        </div>
+      </div>
+
       {(Number(h.tasdiqlanmagan) > 0 || h.darslar.qilinmagan > 0) && (
         <div className="flex flex-wrap gap-2.5">
           {Number(h.tasdiqlanmagan) > 0 && (

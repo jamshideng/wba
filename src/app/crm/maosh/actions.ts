@@ -140,6 +140,29 @@ export async function oyQaytaOch(fd: FormData) {
   redirect(xabarliYol(orqaga, { ok: 'Oy qayta ochildi. Kiritilgan to‘lovlar saqlanadi.' }))
 }
 
+/**
+ * 0147: qulflangan oyda o'quvchiga tuzatish berilgan — ustoz qismi bo'yicha
+ * direktor qarori: keyingi oylikdan ayirish yoki o'tkazib yuborish.
+ */
+export async function tuzatishMaoshQaror(fd: FormData) {
+  await talabRol('direktor')
+  const orqaga = qaytish(fd)
+  const id = Number(fd.get('id'))
+  const qaror = fd.get('qaror') === 'otkazish' ? 'otkazish' : 'keyingi_oy'
+  if (!Number.isInteger(id) || id <= 0) redirect(orqaga)
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('tuzatish_maosh_qaror', { p_id: id, p_qaror: qaror })
+  if (error) redirect(xabarliYol(orqaga, { xato: xatoMatni(error) }))
+
+  revalidatePath(YOL, 'layout')
+  redirect(
+    xabarliYol(orqaga, {
+      ok: qaror === 'keyingi_oy' ? `Keyingi oylikdan ayiriladi (${data ?? 0} ta dars).` : 'O‘tkazib yuborildi — ustozdan ayirilmaydi.',
+    }),
+  )
+}
+
 /** Xodim (admin, qabulxona, manager) oyligi — faqat manager va direktor (0077). Bo'sh — olib tashlanadi. */
 export async function xodimOylikSaqla(fd: FormData) {
   await talabRol('manager', 'direktor')

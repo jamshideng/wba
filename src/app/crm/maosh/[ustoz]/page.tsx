@@ -9,12 +9,16 @@ import { kirishKlass } from '@/components/forma'
 import { JonliForma } from '@/components/jonli-forma'
 import { IconArrowLeft } from '@/components/icons'
 import { pul, davrNomi, joriyDavr, guruhUstozsiz } from '@/lib/format'
-import type { MaoshHarakat, MaoshTafsilot, UstozMaosh } from '@/lib/types'
+import type { MaoshAyirma, MaoshHarakat, MaoshTafsilot, UstozMaosh } from '@/lib/types'
 
 export const metadata = { title: 'Maosh' }
 export const dynamic = 'force-dynamic'
 
-const TURLAR: Record<MaoshHarakat['turi'], string> = { avans: 'Avans', bonus: 'Bonus', jarima: 'Jarima', tuzatish: 'Tuzatish' }
+const TURLAR: Record<MaoshHarakat['turi'], string> = {
+  avans: 'Avans', bonus: 'Bonus', jarima: 'Jarima', tuzatish: 'Tuzatish', oquvchi_tuzatish: 'O‘quvchi tuzatishi',
+}
+/** 0147: ayiriladigan harakatlar */
+const AYIR = new Set<MaoshHarakat['turi']>(['avans', 'jarima', 'oquvchi_tuzatish'])
 
 /**
  * Bitta ustozning maoshi (0075): guruh → o'quvchi bo'yicha hisob.
@@ -53,7 +57,12 @@ export default async function UstozMaoshi({
       .order('id'),
   ])
 
-  const { data: tolovXom } = await supabase.rpc('maosh_tolov_holati', { p_davr: davr })
+  const [{ data: tolovXom }, { data: ayirXom }] = await Promise.all([
+    supabase.rpc('maosh_tolov_holati', { p_davr: davr }),
+    // 0147: har ayirilgan sana va sababi (ustozga — sozlama yoqiq bo'lsa; bazada tekshiriladi)
+    supabase.rpc('maosh_ayirmalar', { p_davr: davr, p_ustoz: ustozId! }),
+  ])
+  const ayirmalar = (ayirXom ?? []) as MaoshAyirma[]
   const tolov = ((tolovXom ?? []) as { tur: string; kim: string; hisob: number; avans: number; maosh: number; qoldi: number }[])
     .find((t) => t.tur === 'ustoz' && t.kim === ustozId)
   const jam = ((jamXom ?? []) as UstozMaosh[]).find((q) => q.teacher_id === ustozId) ?? null
@@ -129,7 +138,8 @@ export default async function UstozMaoshi({
       <Card className="px-5 py-4 text-[12.5px] leading-relaxed text-ink-2">
         Har o‘quvchi uchun: <b>stavka ÷ oydagi darslar</b> (kamida 12; haftada 2 kunlik guruhda jadvaldagi darslar) <b>× hisobga kirgan darslar</b>; 12 va undan ko‘p dars hisobga kirsa — <b>to‘liq stavka</b>. Ketma-ket 3 va undan
         ko‘p qoldirilgan darslar ayiriladi, 1–2 tasi to‘lanadi. Oy o‘rtasida kelgan o‘quvchi kelgan kunidan hisoblanadi.
-        Zamena darsi o‘tgan ustozga yoziladi.
+        Zamena darsi o‘tgan ustozga yoziladi. Admin o‘quvchiga tuzatish bergan dars esa (1 ta bo‘lsa ham) <b>stavka ÷ oydagi darslar</b>{' '}
+        qilib ayiriladi — 12 lik qoidadan keyin; ketma-ket qoldirish sababli ayirilgan dars ikkinchi marta ayirilmaydi.
         {jam?.aniqmas && (
           <span className="mt-2 block text-brand">Ba’zi guruhlarda stavka belgilanmagan — summa [ANIQLANMAGAN].</span>
         )}
@@ -190,6 +200,38 @@ export default async function UstozMaoshi({
         })
       )}
 
+      {ayirmalar.length > 0 && (
+        <Card className="flex flex-col">
+          <CardHeader title="Ayirilgan darslar" meta={`${ayirmalar.length} ta sana`} />
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-[12.5px]">
+              <thead>
+                <tr className="border-t border-line-soft text-left text-[11.5px] text-ink-3">
+                  <th className="px-5 py-2 font-medium">Sana</th>
+                  <th className="px-3 py-2 font-medium">O‘quvchi</th>
+                  <th className="px-3 py-2 font-medium">Sabab</th>
+                  <th className="px-5 py-2 text-right font-medium">Ulushga ta’siri</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ayirmalar.map((a) => (
+                  <tr key={`${a.student_id}-${a.sana}`} className="border-t border-line-soft">
+                    <td className="tnum px-5 py-2.5">{a.sana.slice(8, 10)}.{a.sana.slice(5, 7)}</td>
+                    <td className="px-3 py-2.5">{a.fish}</td>
+                    <td className="px-3 py-2.5">
+                      {a.sabab === 'tuzatish' ? <Badge ton="accent">tuzatish</Badge> : <Badge ton="brand">ketma-ket 3+ kelmaslik</Badge>}
+                    </td>
+                    <td className="tnum px-5 py-2.5 text-right font-[family-name:var(--font-mono)]">
+                      {a.sabab === 'tuzatish' ? `−${pul(a.summa)}` : <span className="text-ink-3">hisobga kirmagan</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
       {(jam?.doimiy_tafsilot ?? []).length > 0 && (
         <Card className="flex flex-col">
           <CardHeader title="Doimiy" meta="har oy avtomatik" />
@@ -216,11 +258,11 @@ export default async function UstozMaoshi({
           <CardHeader title="Avans, bonus, jarima, tuzatish" meta={`${harakatlar.length} ta`} />
           <ul className="flex flex-col">
             {harakatlar.map((h) => {
-              const t = h.turi === 'avans' || h.turi === 'jarima' ? -Number(h.summa) : Number(h.summa)
+              const t = AYIR.has(h.turi) ? -Number(h.summa) : Number(h.summa)
               return (
                 <li
                   key={h.id}
-                  data-belgi={`harakat ${h.turi === 'avans' || h.turi === 'jarima' ? 'ayir' : 'qosh'}`}
+                  data-belgi={`harakat ${AYIR.has(h.turi) ? 'ayir' : 'qosh'}`}
                   className="flex items-start justify-between gap-3 border-t border-line-soft px-5 py-3"
                 >
                   <span className="flex min-w-0 flex-col gap-0.5">

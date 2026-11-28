@@ -11,8 +11,10 @@ import { supabaseSozlanganmi } from '@/lib/supabase/env'
 import { Card, CardHeader, Stat, Badge, Empty, Button } from '@/components/ui'
 import { Maydon, Xabar, kirishKlass } from '@/components/forma'
 import { Yuborish } from '@/components/yuborish'
-import { guruhgaBiriktir, guruhAlmashtir, qoshilganSanaOzgartir, guruhdanChiqar, chegirmaOzgartir, tuzatishQosh, tuzatishBekor, tuzatishTahrir, vipOzgartir, oquvchiArxivla, fanArxivla, fanQayta, oquvchiXatoOchir } from '../actions'
+import { guruhgaBiriktir, guruhAlmashtir, qoshilganSanaOzgartir, guruhdanChiqar, chegirmaOzgartir, tuzatishBekor, tuzatishTahrir, vipOzgartir, oquvchiArxivla, fanArxivla, fanQayta, oquvchiXatoOchir } from '../actions'
 import { ChegirmaMaydonlari } from '../bolaklar'
+import { TuzatishOynasi } from './tuzatish-oyna'
+import { BoshqaTuzatish } from './boshqa-tuzatish'
 import { HisobForma } from '@/components/hisob'
 import { Sarlavha, Ulanmagan } from '@/components/crm'
 import { IconArrowLeft, IconPhone } from '@/components/icons'
@@ -121,7 +123,7 @@ export default async function OquvchiProfil({
     pulKoradi
       ? supabase
           .from('tuzatishlar')
-          .select('id, enrollment_id, davr, summa, sabab, bekor, bekor_sabab, created_at, enrollments!inner(student_id)')
+          .select('id, enrollment_id, davr, summa, sabab, bekor, bekor_sabab, created_at, turi, qaytarish, maosh_holati, enrollments!inner(student_id)')
           .eq('enrollments.student_id', id)
           .order('davr', { ascending: false })
           .order('id', { ascending: false })
@@ -181,7 +183,10 @@ export default async function OquvchiProfil({
     ),
   )
 
-  type TuzatishQatori = { id: number; enrollment_id: string; davr: string; summa: number; sabab: string; bekor: boolean; bekor_sabab: string | null }
+  type TuzatishQatori = {
+    id: number; enrollment_id: string; davr: string; summa: number; sabab: string; bekor: boolean; bekor_sabab: string | null
+    created_at: string; turi: 'qolda' | 'darslar'; qaytarish: 'keyingi_oy' | 'naqd'; maosh_holati: string | null
+  }
   const tuzList = (tuzatishlar ?? []) as unknown as TuzatishQatori[]
   const tuzatishAdmin = adminmi(profil.rol)
 
@@ -473,12 +478,16 @@ export default async function OquvchiProfil({
                             <div key={t.id} className="flex flex-wrap items-center justify-between gap-2 text-[12.5px]">
                               <span className={t.bekor ? 'text-ink-4 line-through' : ''}>
                                 {davrNomi(t.davr)} · −{pul(t.summa)} · {t.sabab}
+                                {t.turi === 'qolda' && <Badge ton="jim">{t.created_at < '2026-11-28' ? 'qo‘lda (eski)' : 'qo‘lda'}</Badge>}
+                                {t.qaytarish === 'naqd' && <Badge ton="accent">naqd qaytarildi</Badge>}
+                                {t.maosh_holati === 'kutilmoqda' && <Badge ton="brand">ustoz qismi: qaror kutilmoqda</Badge>}
                               </span>
                               {t.bekor ? (
                                 <span className="text-[11px] text-ink-4">bekor{t.bekor_sabab ? `: ${t.bekor_sabab}` : ''}</span>
                               ) : (
                                 tuzatishAdmin && (
                                   <span className="flex flex-wrap items-center gap-1">
+                                    {t.turi === 'qolda' && (
                                     <details className="group">
                                       <summary className="flex min-h-11 cursor-pointer items-center px-2 text-[12px] text-ink-3 hover:text-ink">Tahrirlash</summary>
                                       <form action={tuzatishTahrir} className="mt-1 flex flex-wrap items-end gap-2">
@@ -493,6 +502,7 @@ export default async function OquvchiProfil({
                                         <Yuborish kutish="…">Saqlash</Yuborish>
                                       </form>
                                     </details>
+                                    )}
                                     <form action={tuzatishBekor}>
                                       <input type="hidden" name="student_id" value={oquvchi.id} />
                                       <input type="hidden" name="id" value={t.id} />
@@ -510,34 +520,31 @@ export default async function OquvchiProfil({
 
                     {tuzatishAdmin && (
                       <details className="w-full">
-                        <summary className="cursor-pointer text-[12px] text-ink-3 hover:text-ink">Tuzatish — shu oydan ayirish</summary>
-                        <form action={tuzatishQosh} className="mt-2 flex flex-col gap-2">
-                          <input type="hidden" name="student_id" value={oquvchi.id} />
-                          <input type="hidden" name="enrollment_id" value={y.id} />
-                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_2fr]">
-                            <Maydon nom="Oy">
-                              <input
-                                type="month"
-                                name="davr"
-                                required
-                                min={y.boshlandi.slice(0, 7)}
-                                max={y.tugadi ? y.tugadi.slice(0, 7) : undefined}
-                                defaultValue={y.tugadi && y.tugadi.slice(0, 7) < davr ? y.tugadi.slice(0, 7) : davr}
-                                className={kirishKlass}
-                              />
-                            </Maydon>
-                            <Maydon nom="Ayiriladi">
-                              <input name="summa" required inputMode="decimal" placeholder="150 000" className={kirishKlass} />
-                            </Maydon>
-                            <Maydon nom="Sabab">
-                              <input name="sabab" required placeholder="Masalan: kasal, 3 dars" className={kirishKlass} />
-                            </Maydon>
-                          </div>
-                          <p className="text-[11.5px] text-ink-3">
-                            Faqat tanlangan oy uchun: o‘sha oyning to‘lovidan ayiriladi, keyingi oylar o‘zgarmaydi (Sheets’dagi “Tuzatishlar” kabi).
-                          </p>
-                          <Yuborish kutish="…">Tuzatishni yozish</Yuborish>
-                        </form>
+                        <summary className="flex min-h-11 cursor-pointer items-center text-[12.5px] font-semibold text-ink-2 hover:text-ink">
+                          Tuzatish — kelmagan darslar uchun chegirma
+                        </summary>
+                        <TuzatishOynasi
+                          studentId={oquvchi.id}
+                          enrollmentId={y.id}
+                          boshlandi={y.boshlandi}
+                          tugadi={y.tugadi}
+                          standartDavr={y.tugadi && y.tugadi.slice(0, 7) < davr ? y.tugadi.slice(0, 7) : davr}
+                        />
+                        <details className="mt-3 border-t border-line-soft pt-2">
+                          <summary className="flex min-h-11 cursor-pointer items-center text-[12px] text-ink-3 hover:text-ink">
+                            Boshqa tuzatish (qo‘lda summa)
+                          </summary>
+                          <BoshqaTuzatish
+                            studentId={oquvchi.id}
+                            enrollmentId={y.id}
+                            boshlandi={y.boshlandi}
+                            tugadi={y.tugadi}
+                            standartDavr={y.tugadi && y.tugadi.slice(0, 7) < davr ? y.tugadi.slice(0, 7) : davr}
+                            darslarTuzatish={tuzList
+                              .filter((t) => t.enrollment_id === y.id && t.turi === 'darslar' && !t.bekor)
+                              .map((t) => ({ davr: t.davr, summa: t.summa, sabab: t.sabab }))}
+                          />
+                        </details>
                       </details>
                     )}
 

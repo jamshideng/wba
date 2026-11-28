@@ -3545,3 +3545,191 @@ end $$;
 reset role;
 reset request.jwt.claim.sub;
 do $$ begin perform reyting_sozlama_saqla(jsonb_build_object('oquvchiga_ochiq', false)); end $$;
+
+-- ============================================================
+--  0147 — kelmagan darslar bo'yicha avtomatik tuzatish
+-- ============================================================
+\echo '--- 0147: dars bo''yicha tuzatish va ustoz oyligi ---'
+reset role;
+reset request.jwt.claim.sub;
+insert into teacher_salaries (teacher_id, qiymati) values ('U02', 650000)
+  on conflict (teacher_id) do update set qiymati = excluded.qiymati;
+insert into groups (id, nom, subject_id, teacher_id, boshlanish, tugash, kun_turi, oylik_narx) values
+  ('TZ1', 'Tuzatish test', 'ingliz-tili', 'U02', '15:00', '16:30', 'toq', 650000);
+insert into students (id, fish, qoshilgan_sana) values
+  ('TZA', 'Tuz Bir', '2026-09-01'), ('TZB', 'Tuz Ikki', '2026-09-01'),
+  ('TZC', 'Tuz Uch', '2026-09-01'), ('TZD', 'Tuz Tort', '2026-09-01');
+create temp table _tz as
+  select row_number() over (order by k) as i, k::date as sana
+  from generate_series('2026-09-01'::date, '2026-09-30', '1 day') k, groups g
+  where g.id = 'TZ1' and guruh_dars_kunimi(g.kunlar, k::date);
+delete from _tz where i > 13;
+insert into lessons (group_id, sana, otkazildi) select 'TZ1', sana, true from _tz;
+insert into enrollments (student_id, group_id, boshlandi)
+  select s, 'TZ1', '2026-09-01' from unnest(array['TZA', 'TZB', 'TZC', 'TZD']) s;
+-- TZA: 5 kelmadi · TZB: 3, 7 · TZC: 4-5-6 ketma-ket · TZD: 9 kelmadi, 13 belgilanmagan
+insert into attendance (lesson_id, student_id, holat)
+  select l.id, s.id, case
+    when s.id = 'TZA' and k.i = 5 then 'kelmadi'
+    when s.id = 'TZB' and k.i in (3, 7) then 'kelmadi'
+    when s.id = 'TZC' and k.i in (4, 5, 6) then 'kelmadi'
+    when s.id = 'TZD' and k.i = 9 then 'kelmadi'
+    else 'keldi' end::attendance_status
+  from _tz k join lessons l on l.group_id = 'TZ1' and l.sana = k.sana
+  cross join (values ('TZA'), ('TZB'), ('TZC'), ('TZD')) s(id)
+  where not (s.id = 'TZD' and k.i = 13);
+insert into invoices (enrollment_id, davr, summa)
+  select e.id, '2026-09', 550000 from enrollments e where e.group_id = 'TZ1';
+
+do $$
+declare
+  v_e    uuid;
+  v_r    jsonb;
+  v_l    uuid;
+  v_t    bigint;
+  v_inv  numeric;
+begin
+  -- Qarz va hisob-faktura jami — eski tuzatishlar tegilmaganini tekshirish uchun
+  select coalesce(sum(tuzatish), 0) into v_inv from invoices where enrollment_id not in
+    (select id from enrollments where group_id = 'TZ1');
+  if exists (select 1 from tuzatishlar where turi <> 'qolda') then
+    raise exception 'XATO: 0147 — eski tuzatish qolda deb belgilanmadi';
+  end if;
+
+  -- Formula: 550 000, 13 dars, 2 kelmadi → 84 615 (TZB, naqd qaytarish)
+  select id into v_e from enrollments where student_id = 'TZB' and group_id = 'TZ1';
+  v_r := tuzatish_darslar_qosh(v_e, '2026-09',
+           array(select l.id from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i in (3, 7)),
+           'kasal', 'naqd');
+  if (v_r ->> 'summa')::numeric <> 84615 or (v_r ->> 'n')::int <> 13 then
+    raise exception 'XATO: 0147 — summa % (kutilgan 84615), n %', v_r ->> 'summa', v_r ->> 'n';
+  end if;
+  if (select summa from invoices where enrollment_id = v_e and davr = '2026-09') <> 550000 - 84615 then
+    raise exception 'XATO: 0147 — hisob-faktura kamaymadi';
+  end if;
+  if (select summa from payments where enrollment_id = v_e and qaytarish) <> -84615 then
+    raise exception 'XATO: 0147 — naqd qaytarish manfiy to''lov yozilmadi';
+  end if;
+  if not (select tasdiqlangan and tasdiqladi is null from payments where enrollment_id = v_e and qaytarish) then
+    raise exception 'XATO: 0147 — naqd qaytarish tasdiq navbatiga tushdi';
+  end if;
+  if not exists (select 1 from bildirishnomalar where manba = 'naqd_qaytarish' and filtr ->> 'rol' = 'direktor') then
+    raise exception 'XATO: 0147 — direktorga naqd qaytarish xabari ketmadi';
+  end if;
+  -- Kassa: to'lovlar soniga qaytarish kirmaydi; tushum / qaytarish / sof
+  insert into payments (student_id, enrollment_id, sana, davr, summa, usul)
+  values ('TZB', v_e, bugun_toshkent(), '2026-09', 550000, 'naqd');
+  v_r := tushum_hisobot_ichki(bugun_toshkent(), bugun_toshkent());
+  if (v_r ->> 'qaytarish')::numeric < 84615
+     or (v_r ->> 'sof')::numeric <> (v_r ->> 'tushum')::numeric - (v_r ->> 'qaytarish')::numeric
+     or (v_r ->> 'soni')::int <> (select count(*) from payments where not bekor and sana = bugun_toshkent() and summa > 0) then
+    raise exception 'XATO: 0147 — kassa hisoboti: %', v_r - 'usul' - 'ustoz' - 'yonalish' - 'kunlar' - 'qilinmagan';
+  end if;
+  if (kunlik_qoshimcha(bugun_toshkent()) ->> 'soni')::int <> (v_r ->> 'soni')::int then
+    raise exception 'XATO: 0147 — kunlik_qoshimcha soni qaytarishni sanadi';
+  end if;
+
+  -- Bir sanani ikkinchi marta tanlab bo'lmaydi
+  begin
+    perform tuzatish_darslar_qosh(v_e, '2026-09',
+      array(select l.id from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i = 3));
+    raise exception 'XATO: 0147 — bir dars ikki marta ayirildi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  -- Keldi kuni tanlanmaydi
+  begin
+    perform tuzatish_darslar_qosh(v_e, '2026-09',
+      array(select l.id from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i = 1));
+    raise exception 'XATO: 0147 — keldi kuni tanlandi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  -- Belgilanmagan kun tanlanmaydi (TZD, 13-dars)
+  select id into v_e from enrollments where student_id = 'TZD' and group_id = 'TZ1';
+  begin
+    perform tuzatish_darslar_qosh(v_e, '2026-09',
+      array(select l.id from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i = 13));
+    raise exception 'XATO: 0147 — belgilanmagan kun tanlandi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  -- Oyna holatlari
+  v_r := tuzatish_oyna(v_e, '2026-09');
+  if (select count(*) from jsonb_array_elements(v_r -> 'darslar') d where d ->> 'holat' = 'belgilanmagan') <> 1
+     or (select count(*) from jsonb_array_elements(v_r -> 'darslar') d where d ->> 'holat' = 'kelmadi') <> 1 then
+    raise exception 'XATO: 0147 — oyna holatlari noto''g''ri: %', v_r -> 'darslar';
+  end if;
+
+  -- Ustoz: TZD 1 kelmagan, tuzatishsiz → to'liq 650 000
+  if (select summa from maosh_qatorlari('2026-09') where group_id = 'TZ1' and student_id = 'TZD') <> 650000 then
+    raise exception 'XATO: 0147 — tuzatishsiz 1 kelmaslik to''liq stavka emas';
+  end if;
+  -- TZA: 1 kelmagan + tuzatish → 650 000 − 50 000 (12 lik qoida yopib qo'ymaydi)
+  select id into v_e from enrollments where student_id = 'TZA' and group_id = 'TZ1';
+  select l.id into v_l from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i = 5;
+  v_t := (tuzatish_darslar_qosh(v_e, '2026-09', array[v_l]) ->> 'id')::bigint;
+  if (select summa from maosh_qatorlari('2026-09') where group_id = 'TZ1' and student_id = 'TZA') <> 600000 then
+    raise exception 'XATO: 0147 — tuzatilgan dars ustozdan ayirilmadi: %',
+      (select summa from maosh_qatorlari('2026-09') where group_id = 'TZ1' and student_id = 'TZA');
+  end if;
+  if not exists (select 1 from maosh_ayirmalar('2026-09', 'U02') a where a.student_id = 'TZA' and a.sabab = 'tuzatish' and a.summa = 50000) then
+    raise exception 'XATO: 0147 — maosh_ayirmalar tuzatishni ko''rsatmadi';
+  end if;
+  -- Bekor → dars ustozga qaytadi, sana bo'shaydi
+  perform tuzatish_bekor(v_t, 'xato');
+  if (select summa from maosh_qatorlari('2026-09') where group_id = 'TZ1' and student_id = 'TZA') <> 650000
+     or (select summa from invoices where enrollment_id = v_e and davr = '2026-09') <> 550000 then
+    raise exception 'XATO: 0147 — bekor qilinganda qaytmadi';
+  end if;
+  perform tuzatish_darslar_qosh(v_e, '2026-09', array[v_l]);   -- sana yana bo'sh
+
+  -- TZC: ketma-ket 3 dan biri tuzatilsa — ustozdan qo'shimcha ayirilmaydi (10/13 = 500 000)
+  select id into v_e from enrollments where student_id = 'TZC' and group_id = 'TZ1';
+  perform tuzatish_darslar_qosh(v_e, '2026-09',
+    array(select l.id from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i = 5));
+  if (select summa from maosh_qatorlari('2026-09') where group_id = 'TZ1' and student_id = 'TZC') <> 500000 then
+    raise exception 'XATO: 0147 — ketma-ket kelmaslik + tuzatish ikki marta ayirildi';
+  end if;
+  if (select count(*) from maosh_ayirmalar('2026-09', 'U02') a where a.student_id = 'TZC') <> 3 then
+    raise exception 'XATO: 0147 — bitta sana ikki sabab bilan chiqdi';
+  end if;
+
+  -- Eski qo'lda tuzatishli oyda — "tekshirdim" belgisisiz saqlanmaydi
+  select id into v_e from enrollments where student_id = 'TZD' and group_id = 'TZ1';
+  perform tuzatish_qosh(v_e, '2026-09', 10000, 'eski qo''lda');
+  select l.id into v_l from lessons l join _tz k on k.sana = l.sana where l.group_id = 'TZ1' and k.i = 9;
+  begin
+    perform tuzatish_darslar_qosh(v_e, '2026-09', array[v_l]);
+    raise exception 'XATO: 0147 — qo''lda tuzatishli oyda ogohlantirishsiz saqlandi';
+  exception when others then if sqlerrm like 'XATO%' then raise; end if;
+  end;
+  if jsonb_array_length(tuzatish_oyna(v_e, '2026-09') -> 'qolda') <> 1 then
+    raise exception 'XATO: 0147 — oynada qo''lda tuzatish ko''rinmadi';
+  end if;
+
+  -- Qulflangan oy: o'quvchiga darhol, ustoz qismi kutiladi → keyingi oylikdan
+  insert into maosh_oylar (davr) values ('2026-09') on conflict do nothing;
+  v_r := tuzatish_darslar_qosh(v_e, '2026-09', array[v_l], null, 'keyingi_oy', true);
+  if not (v_r ->> 'kutilmoqda')::boolean
+     or (select maosh_holati from tuzatishlar where id = (v_r ->> 'id')::bigint) <> 'kutilmoqda' then
+    raise exception 'XATO: 0147 — qulflangan oyda kutilmoqda emas';
+  end if;
+  if not exists (select 1 from bildirishnomalar where manba = 'tuzatish_qulf') then
+    raise exception 'XATO: 0147 — rahbariyatga bildirishnoma ketmadi';
+  end if;
+  if (select summa from maosh_qatorlari('2026-09') where group_id = 'TZ1' and student_id = 'TZD') <> 650000 then
+    raise exception 'XATO: 0147 — qulflangan oy oyligi o''zgardi';
+  end if;
+  v_t := tuzatish_maosh_qaror((v_r ->> 'id')::bigint, 'keyingi_oy');
+  if v_t <> 1
+     or not exists (select 1 from maosh_harakatlar where teacher_id = 'U02' and davr = '2026-10'
+                    and turi = 'oquvchi_tuzatish' and summa = 50000 and not bekor) then
+    raise exception 'XATO: 0147 — keyingi oylikdan ayirma yozilmadi: soni %, %', v_t,
+      (select jsonb_agg(to_jsonb(m)) from maosh_harakatlar m where m.turi = 'oquvchi_tuzatish');
+  end if;
+
+  -- Boshqa guruhlardagi eski tuzatishlar o'zgarmadi
+  if (select coalesce(sum(tuzatish), 0) from invoices where enrollment_id not in
+      (select id from enrollments where group_id = 'TZ1')) <> v_inv then
+    raise exception 'XATO: 0147 — eski tuzatishlar summasi o''zgardi';
+  end if;
+  raise notice 'OK: 0147 — 84 615, ikki marta yo''q, keldi/belgilanmagan yopiq, 600 000, ketma-ket ustma-ust emas, bekor, qolda ogohlantirish, qulf → keyingi oy';
+end $$;
